@@ -214,6 +214,13 @@ async function install(opts = {}) {
     appendLog(`WRITE: ${change.path}`);
   }
 
+  // memory/ 디렉토리를 읽기 전용으로 잠금 (cc-baseline 경로 보호)
+  // chmod 555: 새 파일 추가·수정 모두 차단. 수정 시엔 chmod 755 후 작업.
+  try {
+    fs.chmodSync(path.join(CLAUDE_DIR, 'memory'), 0o555);
+    appendLog('CHMOD 555: memory/');
+  } catch {}
+
   // bin/cli.js 실행 권한 보장
   try {
     fs.chmodSync(path.join(__dirname, '..', 'bin', 'cli.js'), 0o755);

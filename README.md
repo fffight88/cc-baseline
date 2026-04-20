@@ -199,6 +199,8 @@ grep -n "cc-baseline" ~/.claude/CLAUDE.md
 ### 2. memory/ 파일 제거
 
 ```bash
+# 디렉토리 잠금 해제 후 삭제
+chmod 755 ~/.claude/memory/
 rm ~/.claude/memory/all_session_basic_rules.md
 rm ~/.claude/memory/doc_structure_rules.md
 rm ~/.claude/memory/phase_start.md
