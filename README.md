@@ -13,7 +13,7 @@ Claude Code 하네스 번들 인스톨러 — 행동 규칙·커스텀 스킬·E
 | 행동 규칙 (`CLAUDE.md`, `memory/*.md`) | 응답 언어·불확실성 명시·병렬 읽기·최소 수정 등 8개 기본 규칙 |
 | 커스텀 스킬 (`/plan`, `/clean`) | 플랜 모드 진입 스킬, 고아 프로세스 정리 스킬 |
 | E2E 테스터 에이전트 (`e2e-tester`) | Playwright MCP 기반 브라우저 E2E 테스트 실행 에이전트 |
-| 훅 설정 (`settings.json hooks`) | SessionStart 메모리 로드, PreToolUse E2E 가이드 로드, SessionEnd 프로세스 정리 |
+| 훅 설정 (`settings.json hooks`) | SessionStart 메모리 로드, PreToolUse E2E 가이드 로드 · cc-baseline 경로 보호, SessionEnd 프로세스 정리 |
 | MCP 서버 (`~/.claude.json`) | `playwright-test-1~5` 전역 MCP 서버 설정 |
 
 ---
@@ -78,6 +78,25 @@ npx github:fffight88/cc-baseline --dry-run
 | `--dry-run` | 파일 변경 없이 설치 예정 항목만 출력. 먼저 실행해서 확인 권장 |
 | `--yes`, `-y` | 충돌 경고·대화형 확인을 모두 자동 승인. CI/자동화 환경에서 사용 |
 | `--help`, `-h` | 도움말 출력 |
+
+---
+
+## 설치되는 훅 목록
+
+| 이벤트 | matcher | 역할 |
+|---|---|---|
+| `SessionStart` | (없음) | 세션 시작 시 `~/.claude/memory/MEMORY.md`와 기본 규칙을 컨텍스트에 주입 |
+| `PreToolUse` | `Write\|Edit` | `~/.claude/memory/`에 쓰기 시도를 차단하고 모델에게 올바른 경로(`~/.claude/projects/…/memory/`)를 피드백 |
+| `PreToolUse` | `mcp__playwright-test-.*` | Playwright MCP 호출 시 E2E 매니저 가이드를 컨텍스트에 주입 (세션당 1회) |
+| `SessionEnd` | (없음) | 세션 종료 시 고아 claude 프로세스 정리 |
+
+### cc-baseline 경로 보호 훅 상세
+
+`~/.claude/memory/`는 수동으로 관리하는 전용 경로입니다. Claude Code 내장 auto-memory 시스템이 자동으로 학습 내용을 저장하는 경로(`~/.claude/projects/…/memory/`)와 분리되어 있습니다.
+
+이 훅은 모델이 실수로 `~/.claude/memory/`에 자동 저장하려 할 때 차단하고, 올바른 auto-memory 경로로 안내합니다. 사용자 UI에는 표시되지 않으며 모델에게만 피드백이 전달됩니다.
+
+경로는 `os.path.expanduser('~/.claude/memory/')`로 런타임에 동적 결정되므로 사용자명이 하드코딩되지 않습니다.
 
 ---
 
@@ -202,6 +221,7 @@ rm ~/.claude/commands/clean.md
 
 `~/.claude/settings.json`을 열어 아래 statusMessage를 가진 훅 항목을 삭제합니다:
 - `"statusMessage": "세션 기본 규칙 로딩 중..."`
+- `"statusMessage": "cc-baseline 경로 보호 확인 중..."`
 - `"statusMessage": "E2E 테스트 가이드 로딩 중..."`
 - SessionEnd의 `pgrep -f 'claude'` 커맨드 항목
 
