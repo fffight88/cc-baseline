@@ -12,6 +12,16 @@
   ],
   "PreToolUse": [
     {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 -c \"\nimport json, sys, os\ndata = json.load(sys.stdin)\nfile_path = data.get('tool_input', {}).get('file_path', '')\nprotected = os.path.expanduser('~/.claude/memory/')\nif file_path.startswith(protected):\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'deny', 'permissionDecisionReason': 'cc-baseline 경로 보호: ~/.claude/memory/ 는 수동 관리 전용입니다. auto-memory는 ~/.claude/projects/로 시작하는 경로에 저장하세요.'}}))\n    sys.exit(2)\n\"",
+          "statusMessage": "cc-baseline 경로 보호 확인 중..."
+        }
+      ]
+    },
+    {
       "matcher": "mcp__playwright-test-.*",
       "hooks": [
         {
