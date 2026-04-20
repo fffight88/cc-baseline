@@ -21,7 +21,7 @@ Claude Code 하네스 번들 인스톨러 — 행동 규칙·커스텀 스킬·E
 ## 요구사항
 
 - **Node.js 18 이상**
-- macOS 또는 Linux (Windows 미지원)
+- macOS 또는 Linux (Windows 네이티브 미지원 — WSL 환경에서는 사용 가능)
 - `~/.claude/` 폴더에 쓰기 권한
 
 ---
@@ -29,13 +29,13 @@ Claude Code 하네스 번들 인스톨러 — 행동 규칙·커스텀 스킬·E
 ## 빠른 시작
 
 ```bash
-npx github:<계정>/cc-baseline
+npx github:fffight88/cc-baseline
 ```
 
 변경 내용을 먼저 확인하고 싶다면:
 
 ```bash
-npx github:<계정>/cc-baseline --dry-run
+npx github:fffight88/cc-baseline --dry-run
 ```
 
 ---
@@ -236,6 +236,21 @@ git push
 
 ## 트러블슈팅
 
+### Windows에서 실행하려면
+
+cc-baseline은 hooks와 `/clean` 커맨드가 bash·`pgrep` 등 Unix 명령어를 사용하므로 **Windows 네이티브 환경(cmd, PowerShell)에서는 동작하지 않습니다.**
+
+WSL(Windows Subsystem for Linux)을 사용하면 정상 동작합니다:
+
+```bash
+# WSL 터미널에서 실행
+npx github:fffight88/cc-baseline
+```
+
+WSL 설치: [Microsoft 공식 가이드](https://learn.microsoft.com/ko-kr/windows/wsl/install)
+
+---
+
 ### Node 버전 오류
 
 ```
@@ -264,13 +279,13 @@ SyntaxError: Unexpected token ...
 
 ```bash
 # npx 캐시 삭제 후 재실행
-npx --yes github:<계정>/cc-baseline
+npx --yes github:fffight88/cc-baseline
 ```
 
 또는 특정 커밋/태그를 지정:
 
 ```bash
-npx github:<계정>/cc-baseline#v1.0.0
+npx github:fffight88/cc-baseline#v1.0.0
 ```
 
 ### playwright-test MCP가 동작하지 않음
@@ -301,7 +316,7 @@ npx @playwright/mcp --version
 ## 기술 스택 & 구조
 
 - **런타임:** Node.js 18+ (외부 의존성 0 — 내장 모듈만 사용)
-- **배포:** 공개 GitHub 레포 → `npx github:<계정>/cc-baseline`
+- **배포:** 공개 GitHub 레포 → `npx github:fffight88/cc-baseline`
 
 ```
 cc-baseline/
