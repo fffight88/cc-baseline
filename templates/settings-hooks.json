@@ -1,0 +1,36 @@
+{
+  "SessionStart": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 -c \"\nimport json, sys\nsys.stdin.read()\nmemory = open('{{HOME}}/.claude/memory/MEMORY.md').read()\nrules = open('{{HOME}}/.claude/memory/all_session_basic_rules.md').read()\ncontext = '# MEMORY.md\\n' + memory + '\\n\\n# all_session_basic_rules.md\\n' + rules\nprint(json.dumps({'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': context}}))\n\"",
+          "statusMessage": "세션 기본 규칙 로딩 중..."
+        }
+      ]
+    }
+  ],
+  "PreToolUse": [
+    {
+      "matcher": "mcp__playwright-test-.*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 -c \"\nimport json, sys\nsys.stdin.read()\nboundary = open('{{HOME}}/.claude/memory/reference_subagent_boundary.md').read()\nguide = open('{{HOME}}/.claude/memory/reference_e2e_manager_guide.md').read()\ncontext = '# reference_subagent_boundary.md\\n' + boundary + '\\n\\n# reference_e2e_manager_guide.md\\n' + guide\nprint(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'additionalContext': context}}))\n\"",
+          "statusMessage": "E2E 테스트 가이드 로딩 중...",
+          "once": true
+        }
+      ]
+    }
+  ],
+  "SessionEnd": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "pgrep -f 'claude' | while read pid; do ppid=$(ps -o ppid= -p $pid 2>/dev/null | tr -d ' '); if [[ \"$ppid\" == \"1\" ]]; then kill $pid 2>/dev/null; fi; done"
+        }
+      ]
+    }
+  ]
+}

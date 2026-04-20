@@ -1,0 +1,21 @@
+{
+  "name": "cc-baseline",
+  "version": "1.0.0",
+  "description": "Claude Code 하네스 번들 인스톨러 — 행동 규칙·커스텀 스킬·E2E 에이전트·훅 설정을 새 머신에 한 줄로 설치",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "cc-baseline": "./bin/cli.js"
+  },
+  "scripts": {
+    "start": "node bin/cli.js",
+    "test": "node test/run.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "templates/"
+  ]
+}
