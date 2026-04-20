@@ -147,6 +147,27 @@ npx github:fffight88/cc-baseline --dry-run
 
 ---
 
+## memory/ 파일 수정 방법
+
+설치 후 `~/.claude/memory/` 디렉토리는 **읽기 전용(chmod 555)**으로 잠깁니다. cc-baseline 경로를 auto-memory가 오염시키는 것을 막기 위한 보호 장치입니다.
+
+파일을 수정하려면 잠금을 임시 해제한 뒤 작업하고 다시 잠그세요:
+
+```bash
+# 1. 잠금 해제
+chmod 755 ~/.claude/memory/
+
+# 2. 원하는 파일 수정
+#    예: MEMORY.md에 새 항목 추가, 규칙 파일 편집 등
+
+# 3. 수정 완료 후 다시 잠금
+chmod 555 ~/.claude/memory/
+```
+
+> **주의:** 잠금 해제 상태로 두면 Claude Code auto-memory가 이 경로에 자동 저장할 수 있습니다. 수정 후 반드시 `chmod 555`로 복구하세요.
+
+---
+
 ## 백업 및 복구
 
 ### 백업 위치
