@@ -90,3 +90,21 @@ osascript -e 'display notification "보안감사: 사용자 결정 필요 (N건)
 - ✅ DO: `design` / `business` 이슈가 있을 때 인터뷰 직전에만 발동
 - ❌ DON'T: 감사 시작·완료 시점에 알림 발동 금지
 - ❌ DON'T: `auto` 이슈만 있는 경우 알림 발동 금지
+
+---
+
+## 10. 메모리 경로 구분 (글로벌 vs 프로젝트)
+
+- ✅ DO: 프로젝트별 진행 상태·결정 이력은 시스템 프롬프트의 auto-memory 경로(`~/.claude/projects/<project-slug>/memory/`)에 저장
+- ✅ DO: 모든 프로젝트 공통 룰·reference만 `~/.claude/memory/`에 유지
+- ❌ DON'T: `project_*.md` 같은 프로젝트 한정 메모리를 `~/.claude/memory/`에 저장 금지
+- 검증: 글로벌 `MEMORY.md`에 `project_*` 항목이 있으면 잘못된 위치
+
+---
+
+## 11. 글로벌 메모리 수정은 cc-baseline templates 경유
+
+- ✅ DO: `~/.claude/memory/*.md` 변경이 필요하면 cc-baseline `templates/memory/*.md` 수정 → `node bin/cli.js --yes` 재실행으로 propagate
+- ❌ DON'T: PreToolUse hook을 Bash `cat >>`/`sed -i`/`chmod 755 후 직접 편집`으로 우회 금지
+- Why: hook 우회로 변경한 내용은 cc-baseline 다음 설치 시 templates로 덮어써져 손실됨
+- 예외: cc-baseline 자체 디렉토리(`templates/`, `src/` 등) 직접 편집은 정상 (hook 대상 아님)

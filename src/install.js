@@ -226,6 +226,7 @@ async function install(opts = {}) {
   // ── 8. settings.json hooks 머지 ──────────────────────────────────────────
   const harnessHooks = JSON.parse(readTemplate('settings-hooks.json'));
   const mergedHooks = mergeHooks(existingHooks, harnessHooks);
+  // permissions 키는 보안상 cc-baseline이 절대 추가/수정하지 않음. 사용자 기존 키는 그대로 보존.
   const newSettings = Object.assign({}, existingSettings, { hooks: mergedHooks });
   changes.push({
     label: 'settings.json (hooks 머지)',

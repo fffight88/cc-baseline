@@ -361,6 +361,20 @@ npx @playwright/mcp --version
 
 ---
 
+## 보안 정책: settings.json `permissions` 키 배포 금지
+
+cc-baseline은 사용자 `~/.claude/settings.json`의 `permissions` 키를 **읽지도 쓰지도 않습니다**. 이유:
+
+- `permissions.allow` 룰은 Claude Code의 사용자 동의 프롬프트를 우회합니다 (예: `Bash(*)` 자동 허용 → 모든 셸 명령 무프롬프트 실행)
+- 베이스라인 배포로 사용자가 명시 동의하지 않은 권한이 부여되는 것은 supply-chain 리스크입니다
+- `Edit(~/.claude/**)` 같은 허용 룰을 배포하면 Claude Code 내장 `.claude/` 경로 보호도 우회됩니다
+
+**원칙:** 권한 룰은 각 사용자가 자신의 환경에서 직접 추가해야 하며, 베이스라인 인스톨러는 절대 자동으로 생성·수정하지 않습니다.
+
+**`.claude/` 수정 시 매번 뜨는 퍼미션 프롬프트는 Claude Code 런타임 내장 보호입니다.** `settings.json`의 `permissions` 키와 무관하며, 우회보다는 cc-baseline `templates/` → installer 워크플로우를 사용하는 것이 정상 패턴입니다.
+
+---
+
 ## 보안·프라이버시 노트
 
 - 이 리포지토리의 `templates/` 폴더에는 **사용자명·비밀번호·API 키·DB 접속 정보가 포함되지 않습니다**.
