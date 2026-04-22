@@ -73,8 +73,8 @@ N에는 실제 design+business 이슈 건수를 대입.
 ## 6. 리포트 경로 규칙
 
 ```
-<target_dir>/.claude/audit-reports/<plan-slug>/iter-<n>.md
-<target_dir>/.claude/audit-reports/<plan-slug>/iter-<n>.json
+<target_dir>/.cc-audits/<plan-slug>/iter-<n>.md
+<target_dir>/.cc-audits/<plan-slug>/iter-<n>.json
 ```
 
 `plan-slug`는 플랜 파일명(확장자 제외). 예: `iridescent-swinging-wave`

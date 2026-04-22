@@ -361,6 +361,18 @@ npx @playwright/mcp --version
 
 ---
 
+## 보안감사 리포트 저장 경로
+
+`security-auditor` 에이전트는 감사 리포트를 `<프로젝트 루트>/.cc-audits/<플랜 슬러그>/iter-<n>.{md,json}`에 저장합니다.
+
+- `.claude/` 밖에 저장하므로 Claude Code 내장 보호 프롬프트가 발생하지 않습니다
+- cc-baseline이 설치한 PreToolUse hook이 `/.cc-audits/` 경로 Write/Edit를 자동 승인합니다 (settings.json `permissions` 키 사용 안 함)
+- 자동 승인 범위: `Write|Edit` 도구 + `/.cc-audits/`를 포함하는 file_path만
+
+**권장:** 각 프로젝트의 `.gitignore`에 `.cc-audits/` 한 줄을 추가하세요. 리포트는 로컬에서만 보관하는 것이 일반적입니다.
+
+---
+
 ## 보안 정책: settings.json `permissions` 키 배포 금지
 
 cc-baseline은 사용자 `~/.claude/settings.json`의 `permissions` 키를 **읽지도 쓰지도 않습니다**. 이유:

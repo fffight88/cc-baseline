@@ -16,8 +16,8 @@
       "hooks": [
         {
           "type": "command",
-          "command": "python3 -c \"\nimport json, sys, os\ndata = json.load(sys.stdin)\nfile_path = data.get('tool_input', {}).get('file_path', '')\nprotected = os.path.realpath(os.path.expanduser('~/.claude/memory/'))\ntry:\n    real_path = os.path.realpath(file_path) if file_path else ''\nexcept Exception:\n    real_path = ''\nif real_path.startswith(protected + os.sep) or real_path == protected:\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'deny', 'permissionDecisionReason': 'cc-baseline 경로 보호: ~/.claude/memory/ 는 수동 관리 전용입니다. auto-memory는 ~/.claude/projects/로 시작하는 경로에 저장하세요.'}}))\n    sys.exit(2)\n\"",
-          "statusMessage": "cc-baseline 경로 보호 확인 중..."
+          "command": "python3 -c \"\nimport json, sys, os\ndata = json.load(sys.stdin)\nfile_path = data.get('tool_input', {}).get('file_path', '')\ntry:\n    real_path = os.path.realpath(file_path) if file_path else ''\nexcept Exception:\n    real_path = ''\nprotected = os.path.realpath(os.path.expanduser('~/.claude/memory/'))\nif real_path.startswith(protected + os.sep) or real_path == protected:\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'deny', 'permissionDecisionReason': 'cc-baseline 경로 보호: ~/.claude/memory/ 는 수동 관리 전용입니다. auto-memory는 ~/.claude/projects/로 시작하는 경로에 저장하세요.'}}))\n    sys.exit(2)\nif '/.cc-audits/' in real_path:\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'allow', 'permissionDecisionReason': 'cc-baseline: .cc-audits/ 보안감사 리포트 경로 자동 승인'}}))\n    sys.exit(0)\n\"",
+          "statusMessage": "cc-baseline 경로 정책 적용 중..."
         }
       ]
     },

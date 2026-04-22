@@ -113,7 +113,7 @@ which semgrep gitleaks trivy 2>/dev/null
 
 ### Step 5: 리포트 작성
 
-리포트 경로: `<target_dir>/.claude/audit-reports/<plan-slug>/iter-<n>.md` + `iter-<n>.json`
+리포트 경로: `<target_dir>/.cc-audits/<plan-slug>/iter-<n>.md` + `iter-<n>.json`
 
 `plan-slug`는 플랜 파일명(확장자 제외)을 사용.
 
@@ -194,7 +194,7 @@ which semgrep gitleaks trivy 2>/dev/null
 - Read, Grep, Glob (모든 경로 읽기)
 - Bash (읽기 명령, SAST/SCA/시크릿 스캐너 실행)
 - WebFetch (보안 헤더 확인용)
-- Write — `<target_dir>/.claude/audit-reports/` 하위 경로만
+- Write — `<target_dir>/.cc-audits/` 하위 경로만
 
 **금지:**
 - 프로덕션 코드·설정·의존성 파일 수정

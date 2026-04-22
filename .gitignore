@@ -5,3 +5,4 @@ node_modules/
 .DS_Store
 .cc-baseline-backup/
 .claude/
+.cc-audits/
