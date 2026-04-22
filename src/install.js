@@ -59,7 +59,9 @@ const LOG_FILE = path.join(CLAUDE_DIR, '.cc-baseline-install.log');
 function appendLog(msg) {
   try {
     fs.mkdirSync(path.dirname(LOG_FILE), { recursive: true });
+    const isNew = !fs.existsSync(LOG_FILE);
     fs.appendFileSync(LOG_FILE, `[${new Date().toISOString()}] ${msg}\n`);
+    if (isNew) fs.chmodSync(LOG_FILE, 0o600);
   } catch {}
 }
 
@@ -72,8 +74,9 @@ function readJson(filePath) {
   if (!fs.existsSync(filePath)) return null;
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch {
-    return null;
+  } catch (e) {
+    console.warn(`⚠️  ${filePath} 파싱 실패: ${e.message}`);
+    return { __parseError: true };
   }
 }
 
@@ -93,7 +96,15 @@ async function install(opts = {}) {
 
   // ── 1. 기존 settings.json 읽기 → 충돌 검사 ─────────────────────────────
   const settingsPath = path.join(CLAUDE_DIR, 'settings.json');
-  const existingSettings = readJson(settingsPath) || {};
+  const existingSettingsRaw = readJson(settingsPath);
+  if (existingSettingsRaw && existingSettingsRaw.__parseError) {
+    const proceed = await confirm(
+      `${settingsPath}이 손상되었습니다. 빈 객체로 덮어쓰면 기존 설정이 모두 소실됩니다. 계속하시겠습니까?`,
+      autoYes
+    );
+    if (!proceed) { console.log('\n설치가 취소되었습니다.'); return; }
+  }
+  const existingSettings = (existingSettingsRaw && !existingSettingsRaw.__parseError) ? existingSettingsRaw : {};
   const existingHooks = existingSettings.hooks || {};
 
   const warnings = checkConflicts(existingHooks);
@@ -225,7 +236,15 @@ async function install(opts = {}) {
 
   // ── 9. ~/.claude.json mcpServers 머지 ────────────────────────────────────
   const claudeJsonPath = path.join(HOME, '.claude.json');
-  const existingClaudeJson = readJson(claudeJsonPath) || {};
+  const existingClaudeJsonRaw = readJson(claudeJsonPath);
+  if (existingClaudeJsonRaw && existingClaudeJsonRaw.__parseError) {
+    const proceed = await confirm(
+      `${claudeJsonPath}이 손상되었습니다. 빈 객체로 덮어쓰면 기존 설정이 모두 소실됩니다. 계속하시겠습니까?`,
+      autoYes
+    );
+    if (!proceed) { console.log('\n설치가 취소되었습니다.'); return; }
+  }
+  const existingClaudeJson = (existingClaudeJsonRaw && !existingClaudeJsonRaw.__parseError) ? existingClaudeJsonRaw : {};
   const incomingMcp = JSON.parse(readTemplate('mcp-servers.json'));
   const { result: mergedMcp, added, overwritten } = await mergeMcpServers(
     existingClaudeJson.mcpServers || {},

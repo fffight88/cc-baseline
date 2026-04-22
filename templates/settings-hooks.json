@@ -16,7 +16,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "python3 -c \"\nimport json, sys, os\ndata = json.load(sys.stdin)\nfile_path = data.get('tool_input', {}).get('file_path', '')\nprotected = os.path.expanduser('~/.claude/memory/')\nif file_path.startswith(protected):\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'deny', 'permissionDecisionReason': 'cc-baseline 경로 보호: ~/.claude/memory/ 는 수동 관리 전용입니다. auto-memory는 ~/.claude/projects/로 시작하는 경로에 저장하세요.'}}))\n    sys.exit(2)\n\"",
+          "command": "python3 -c \"\nimport json, sys, os\ndata = json.load(sys.stdin)\nfile_path = data.get('tool_input', {}).get('file_path', '')\nprotected = os.path.realpath(os.path.expanduser('~/.claude/memory/'))\ntry:\n    real_path = os.path.realpath(file_path) if file_path else ''\nexcept Exception:\n    real_path = ''\nif real_path.startswith(protected + os.sep) or real_path == protected:\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'deny', 'permissionDecisionReason': 'cc-baseline 경로 보호: ~/.claude/memory/ 는 수동 관리 전용입니다. auto-memory는 ~/.claude/projects/로 시작하는 경로에 저장하세요.'}}))\n    sys.exit(2)\n\"",
           "statusMessage": "cc-baseline 경로 보호 확인 중..."
         }
       ]
@@ -38,7 +38,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "pgrep -f 'claude' | while read pid; do ppid=$(ps -o ppid= -p $pid 2>/dev/null | tr -d ' '); if [[ \"$ppid\" == \"1\" ]]; then kill $pid 2>/dev/null; fi; done"
+          "command": "pgrep -f '@anthropic-ai/claude-code' | while read pid; do ppid=$(ps -o ppid= -p $pid 2>/dev/null | tr -d ' '); if [[ \"$ppid\" == \"1\" ]]; then kill \"$pid\" 2>/dev/null; fi; done"
         }
       ]
     }
