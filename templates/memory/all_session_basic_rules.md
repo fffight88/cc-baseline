@@ -76,3 +76,17 @@ type: feedback
 
 - ✅ DO: 최근 타인 커밋이 있으면 사용자에게 알리고 의도 확인 후 진행
 - ❌ DON'T: 확인 없이 공유 파일 바로 수정 금지
+
+---
+
+## 9. 보안감사 인터뷰 알림
+
+security-auditor 리포트에 `decision_type: design` 또는 `business` 이슈가 1건 이상 있고, 본체가 AskUserQuestion으로 인터뷰를 시작하기 직전에 아래 Bash 명령으로 알림 발송:
+
+```bash
+osascript -e 'display notification "보안감사: 사용자 결정 필요 (N건)" with title "Claude Code" sound name "Glass"'
+```
+
+- ✅ DO: `design` / `business` 이슈가 있을 때 인터뷰 직전에만 발동
+- ❌ DON'T: 감사 시작·완료 시점에 알림 발동 금지
+- ❌ DON'T: `auto` 이슈만 있는 경우 알림 발동 금지

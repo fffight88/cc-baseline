@@ -1,5 +1,45 @@
 'use strict';
 
+const { execSync } = require('child_process');
+
+function checkCmd(cmd) {
+  try { execSync(`which ${cmd}`, { stdio: 'ignore' }); return true; } catch { return false; }
+}
+
+async function installScanners(dryRun) {
+  const scanners = ['semgrep', 'gitleaks', 'trivy'];
+  const missing = scanners.filter(s => !checkCmd(s));
+  if (missing.length === 0) {
+    console.log('\n🔍 보안 스캐너: semgrep/gitleaks/trivy 모두 설치됨');
+    return;
+  }
+  console.log(`\n🔍 보안 스캐너 설치 중: ${missing.join(', ')}`);
+  if (dryRun) {
+    console.log('[DRY RUN] 스캐너 설치를 건너뜁니다.');
+    return;
+  }
+  const platform = process.platform;
+  try {
+    if (platform === 'darwin') {
+      execSync(`brew install ${missing.join(' ')}`, { stdio: 'inherit' });
+    } else {
+      // Linux/WSL
+      for (const s of missing) {
+        if (s === 'semgrep') {
+          execSync('pipx install semgrep || pip install semgrep', { stdio: 'inherit', shell: true });
+        } else if (s === 'gitleaks') {
+          execSync('curl -sSfL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_linux_amd64.tar.gz | tar -xz -C /usr/local/bin gitleaks', { stdio: 'inherit', shell: true });
+        } else if (s === 'trivy') {
+          execSync('curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin', { stdio: 'inherit', shell: true });
+        }
+      }
+    }
+    console.log('  ✅ 스캐너 설치 완료');
+  } catch (e) {
+    console.log(`  ⚠️  스캐너 자동 설치 실패 (수동 설치 필요): ${e.message}`);
+  }
+}
+
 const fs = require('fs');
 const path = require('path');
 
@@ -89,8 +129,10 @@ async function install(opts = {}) {
       'reference_subagent_boundary',
       'reference_doc_writing_style',
       'feedback_skill_description_budget',
+      'reference_security_auditor_protocol',
     ].map(f => path.join(CLAUDE_DIR, 'memory', `${f}.md`)),
     path.join(CLAUDE_DIR, 'agents', 'e2e-tester.md'),
+    path.join(CLAUDE_DIR, 'agents', 'security-auditor.md'),
     path.join(CLAUDE_DIR, 'commands', 'plan.md'),
     path.join(CLAUDE_DIR, 'commands', 'clean.md'),
     settingsPath,
@@ -145,6 +187,7 @@ async function install(opts = {}) {
     'reference_subagent_boundary.md',
     'reference_doc_writing_style.md',
     'feedback_skill_description_budget.md',
+    'reference_security_auditor_protocol.md',
   ];
   for (const f of memoryFiles) {
     const dest = path.join(CLAUDE_DIR, 'memory', f);
@@ -156,6 +199,11 @@ async function install(opts = {}) {
   const agentPath = path.join(CLAUDE_DIR, 'agents', 'e2e-tester.md');
   changes.push({ label: 'agents/e2e-tester.md', path: agentPath, content: readTemplate('agents/e2e-tester.md') });
   console.log(`  ✅ agents/e2e-tester.md — 덮어쓰기`);
+
+  // ── 6-1. agents/security-auditor.md ─────────────────────────────────────
+  const auditorPath = path.join(CLAUDE_DIR, 'agents', 'security-auditor.md');
+  changes.push({ label: 'agents/security-auditor.md', path: auditorPath, content: readTemplate('agents/security-auditor.md') });
+  console.log(`  ✅ agents/security-auditor.md — 덮어쓰기`);
 
   // ── 7. commands/ ──────────────────────────────────────────────────────────
   for (const f of ['plan.md', 'clean.md']) {
@@ -225,6 +273,9 @@ async function install(opts = {}) {
   try {
     fs.chmodSync(path.join(__dirname, '..', 'bin', 'cli.js'), 0o755);
   } catch {}
+
+  // ── 11. 보안 스캐너 자동 설치 (semgrep, gitleaks, trivy) ──────────────────
+  await installScanners(dryRun);
 
   console.log('✅ cc-baseline 설치 완료!\n');
   console.log(`📝 설치 로그: ${LOG_FILE}`);

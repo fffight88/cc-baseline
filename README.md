@@ -13,6 +13,7 @@ Claude Code 하네스 번들 인스톨러 — 행동 규칙·커스텀 스킬·E
 | 행동 규칙 (`CLAUDE.md`, `memory/*.md`) | 응답 언어·불확실성 명시·병렬 읽기·최소 수정 등 8개 기본 규칙 |
 | 커스텀 스킬 (`/plan`, `/clean`) | 플랜 모드 진입 스킬, 고아 프로세스 정리 스킬 |
 | E2E 테스터 에이전트 (`e2e-tester`) | Playwright MCP 기반 브라우저 E2E 테스트 실행 에이전트 |
+| 보안 감사 에이전트 (`security-auditor`) | 독립 감사자 관점의 SAST·SCA·시크릿 스캔 + 구조화 리포트 생성 |
 | 훅 설정 (`settings.json hooks`) | SessionStart 메모리 로드, PreToolUse E2E 가이드 로드 · cc-baseline 경로 보호, SessionEnd 프로세스 정리 |
 | MCP 서버 (`~/.claude.json`) | `playwright-test-1~5` 전역 MCP 서버 설정 |
 
@@ -23,6 +24,17 @@ Claude Code 하네스 번들 인스톨러 — 행동 규칙·커스텀 스킬·E
 - **Node.js 18 이상**
 - macOS 또는 Linux (Windows 네이티브 미지원 — WSL 환경에서는 사용 가능)
 - `~/.claude/` 폴더에 쓰기 권한
+
+---
+
+## 보안 스캐너 자동 설치
+
+설치 시 `semgrep`, `gitleaks`, `trivy` 세 가지 보안 스캐너를 자동으로 설치합니다:
+
+- **macOS**: `brew install semgrep gitleaks trivy`
+- **Linux/WSL**: pipx(semgrep) + GitHub 공식 바이너리(gitleaks, trivy)
+
+스캐너가 이미 설치되어 있으면 건너뜁니다. 자동 설치에 실패해도 cc-baseline 설치 자체는 완료되며, 실패 메시지만 출력됩니다. 스캐너가 없을 때 `security-auditor` 에이전트는 수동 코드 리뷰로 자동 폴백합니다.
 
 ---
 
@@ -56,7 +68,9 @@ npx github:fffight88/cc-baseline --dry-run
 | `memory/reference_subagent_boundary.md` | 〃 | 덮어쓰기 |
 | `memory/reference_doc_writing_style.md` | 〃 | 덮어쓰기 |
 | `memory/feedback_skill_description_budget.md` | 〃 | 덮어쓰기 |
+| `memory/reference_security_auditor_protocol.md` | 〃 | 덮어쓰기 |
 | `agents/e2e-tester.md` | `~/.claude/agents/e2e-tester.md` | 덮어쓰기 |
+| `agents/security-auditor.md` | `~/.claude/agents/security-auditor.md` | 덮어쓰기 |
 | `commands/plan.md` | `~/.claude/commands/plan.md` | 덮어쓰기 |
 | `commands/clean.md` | `~/.claude/commands/clean.md` | 덮어쓰기 |
 
@@ -376,8 +390,8 @@ cc-baseline/
 │       └── mcp-servers.js  # mcpServers 키 머지
 └── templates/              # 번들 파일 ({{HOME}} 플레이스홀더 포함)
     ├── CLAUDE.md
-    ├── memory/             # 9개 memory 파일
-    ├── agents/             # e2e-tester.md
+    ├── memory/             # 11개 memory 파일
+    ├── agents/             # e2e-tester.md, security-auditor.md
     ├── commands/           # plan.md, clean.md
     ├── settings-hooks.json # hooks 섹션만
     └── mcp-servers.json    # playwright-test-1~5만
