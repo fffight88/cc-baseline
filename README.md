@@ -10,7 +10,7 @@ Claude Code 하네스 번들 인스톨러 — 행동 규칙·커스텀 스킬·E
 
 | 구성 요소 | 설명 |
 |---|---|
-| 행동 규칙 (`CLAUDE.md`, `memory/*.md`) | 응답 언어·불확실성 명시·병렬 읽기·최소 수정 등 8개 기본 규칙 |
+| 행동 규칙 (`CLAUDE.md`, `memory/*.md`) | 응답 언어·불확실성 명시·병렬 읽기·최소 수정 등 11개 기본 규칙 |
 | 커스텀 스킬 (`/plan`, `/clean`) | 플랜 모드 진입 스킬, 고아 프로세스 정리 스킬 |
 | E2E 테스터 에이전트 (`e2e-tester`) | Playwright MCP 기반 브라우저 E2E 테스트 실행 에이전트 |
 | 보안 감사 에이전트 (`security-auditor`) | 독립 감사자 관점의 SAST·SCA·시크릿 스캔 + 구조화 리포트 생성 |
@@ -100,17 +100,18 @@ npx github:fffight88/cc-baseline --dry-run
 | 이벤트 | matcher | 역할 |
 |---|---|---|
 | `SessionStart` | (없음) | 세션 시작 시 `~/.claude/memory/MEMORY.md`와 기본 규칙을 컨텍스트에 주입 |
-| `PreToolUse` | `Write\|Edit` | `~/.claude/memory/`에 쓰기 시도를 차단하고 모델에게 올바른 경로(`~/.claude/projects/…/memory/`)를 피드백 |
+| `PreToolUse` | `Write\|Edit` | `.cc-audits/` 경로 Write/Edit를 자동 승인. `~/.claude/memory/`에 쓰기 시도를 차단하고 올바른 경로(`~/.claude/projects/…/memory/`)를 피드백 |
 | `PreToolUse` | `mcp__playwright-test-.*` | Playwright MCP 호출 시 E2E 매니저 가이드를 컨텍스트에 주입 (세션당 1회) |
 | `SessionEnd` | (없음) | 세션 종료 시 고아 claude 프로세스 정리 |
 
-### cc-baseline 경로 보호 훅 상세
+### cc-baseline 경로 정책 훅 상세
 
-`~/.claude/memory/`는 수동으로 관리하는 전용 경로입니다. Claude Code 내장 auto-memory 시스템이 자동으로 학습 내용을 저장하는 경로(`~/.claude/projects/…/memory/`)와 분리되어 있습니다.
+이 훅은 Write/Edit 시도 시 두 가지 정책을 순서대로 적용합니다:
 
-이 훅은 모델이 실수로 `~/.claude/memory/`에 자동 저장하려 할 때 차단하고, 올바른 auto-memory 경로로 안내합니다. 사용자 UI에는 표시되지 않으며 모델에게만 피드백이 전달됩니다.
+1. **차단 (deny):** `~/.claude/memory/` 경로는 수동 관리 전용입니다. 모델이 실수로 이 경로에 자동 저장하려 할 때 차단하고 올바른 경로(`~/.claude/projects/…/memory/`)를 안내합니다.
+2. **자동 승인 (allow):** `/.cc-audits/`를 포함하는 경로는 `security-auditor` 에이전트의 감사 리포트 저장 경로로 자동 승인합니다.
 
-경로는 `os.path.expanduser('~/.claude/memory/')`로 런타임에 동적 결정되므로 사용자명이 하드코딩되지 않습니다.
+두 판단 모두 `os.path.realpath()`로 경로를 정규화한 뒤 평가하므로 symlink·`../` traversal을 통한 우회가 차단됩니다. 사용자 UI에는 표시되지 않으며 모델에게만 피드백이 전달됩니다.
 
 ---
 
@@ -244,12 +245,14 @@ rm ~/.claude/memory/reference_e2e_manager_guide.md
 rm ~/.claude/memory/reference_subagent_boundary.md
 rm ~/.claude/memory/reference_doc_writing_style.md
 rm ~/.claude/memory/feedback_skill_description_budget.md
+rm ~/.claude/memory/reference_security_auditor_protocol.md
 ```
 
 ### 3. agents, commands 제거
 
 ```bash
 rm ~/.claude/agents/e2e-tester.md
+rm ~/.claude/agents/security-auditor.md
 rm ~/.claude/commands/plan.md
 rm ~/.claude/commands/clean.md
 ```
@@ -258,9 +261,9 @@ rm ~/.claude/commands/clean.md
 
 `~/.claude/settings.json`을 열어 아래 statusMessage를 가진 훅 항목을 삭제합니다:
 - `"statusMessage": "세션 기본 규칙 로딩 중..."`
-- `"statusMessage": "cc-baseline 경로 보호 확인 중..."`
+- `"statusMessage": "cc-baseline 경로 정책 적용 중..."`
 - `"statusMessage": "E2E 테스트 가이드 로딩 중..."`
-- SessionEnd의 `pgrep -f 'claude'` 커맨드 항목
+- SessionEnd의 `pgrep -f '@anthropic-ai/claude-code'` 커맨드 항목
 
 ### 5. MCP 서버 제거 (선택)
 
@@ -391,7 +394,7 @@ cc-baseline은 사용자 `~/.claude/settings.json`의 `permissions` 키를 **읽
 
 - 이 리포지토리의 `templates/` 폴더에는 **사용자명·비밀번호·API 키·DB 접속 정보가 포함되지 않습니다**.
 - `settings.json`의 훅 커맨드 내 경로는 `{{HOME}}` 플레이스홀더로 저장되며, 설치 시점에 해당 머신의 `$HOME` 경로로 치환됩니다.
-- 설치 로그(`~/.claude/.cc-baseline-install.log`)와 백업 폴더(`~/.claude/.cc-baseline-backup/`)는 `.gitignore`에 포함되어 Git에 커밋되지 않습니다.
+- 설치 로그(`~/.claude/.cc-baseline-install.log`)와 백업 폴더(`~/.claude/.cc-baseline-backup/`), 보안감사 리포트(`.cc-audits/`)는 `.gitignore`에 포함되어 Git에 커밋되지 않습니다.
 - `~/.claude.json`에서는 MCP 서버 설정(`playwright-test-1~5`)만 읽고 씁니다. 개인 사용 통계·UI 상태 등 다른 키는 일절 수정하지 않습니다.
 
 ---
@@ -416,7 +419,7 @@ cc-baseline/
 │       └── mcp-servers.js  # mcpServers 키 머지
 └── templates/              # 번들 파일 ({{HOME}} 플레이스홀더 포함)
     ├── CLAUDE.md
-    ├── memory/             # 11개 memory 파일
+    ├── memory/             # 10개 memory 파일 (MEMORY.md + 9개 개별 규칙)
     ├── agents/             # e2e-tester.md, security-auditor.md
     ├── commands/           # plan.md, clean.md
     ├── settings-hooks.json # hooks 섹션만
