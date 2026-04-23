@@ -24,4 +24,18 @@ async function mergeMcpServers(existing, incoming, confirmFn, autoYes) {
   return { result, added, overwritten };
 }
 
-module.exports = { mergeMcpServers };
+function removeHarnessMcpServers(existing, harnessKeys) {
+  const result = Object.assign({}, existing);
+  const removed = [];
+
+  for (const key of harnessKeys) {
+    if (key in result) {
+      delete result[key];
+      removed.push(key);
+    }
+  }
+
+  return { result, removed, isEmpty: Object.keys(result).length === 0 };
+}
+
+module.exports = { mergeMcpServers, removeHarnessMcpServers };

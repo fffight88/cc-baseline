@@ -2,6 +2,41 @@
 
 const { isHarnessHook } = require('../conflict-checker');
 
+const HARNESS_STATUS_MESSAGES_ALL = [
+  '세션 기본 규칙 로딩 중...',
+  'E2E 테스트 가이드 로딩 중...',
+  'cc-baseline 경로 정책 적용 중...',
+];
+const HARNESS_SESSION_END_COMMAND_PREFIX = "pgrep -f '@anthropic-ai/claude-code'";
+
+function removeHarnessHooks(existingHooks) {
+  const result = JSON.parse(JSON.stringify(existingHooks || {}));
+  let removedCount = 0;
+
+  for (const event of Object.keys(result)) {
+    result[event] = result[event].map(entry => {
+      const filtered = (entry.hooks || []).filter(hook => {
+        const isStatusMsg = hook.statusMessage && HARNESS_STATUS_MESSAGES_ALL.includes(hook.statusMessage);
+        const isSessionEndCmd = event === 'SessionEnd' &&
+          typeof hook.command === 'string' &&
+          hook.command.startsWith(HARNESS_SESSION_END_COMMAND_PREFIX);
+        if (isStatusMsg || isSessionEndCmd) {
+          removedCount++;
+          return false;
+        }
+        return true;
+      });
+      return { ...entry, hooks: filtered };
+    }).filter(entry => entry.hooks.length > 0);
+
+    if (result[event].length === 0) {
+      delete result[event];
+    }
+  }
+
+  return { hooks: result, removedCount };
+}
+
 function mergeHooks(existingHooks, harnessHooks) {
   const result = JSON.parse(JSON.stringify(existingHooks || {}));
 
@@ -46,4 +81,4 @@ function mergeHooks(existingHooks, harnessHooks) {
   return result;
 }
 
-module.exports = { mergeHooks };
+module.exports = { mergeHooks, removeHarnessHooks };

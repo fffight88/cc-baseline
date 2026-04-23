@@ -221,9 +221,45 @@ cp ~/.claude/.cc-baseline-backup/<타임스탬프>/.claude/settings.json ~/.clau
 
 ## 제거(Uninstall)
 
-cc-baseline이 설치한 항목을 제거하려면 아래 절차를 수동으로 수행합니다.
+### 자동 제거 (권장)
 
-### 1. CLAUDE.md에서 마커 블록 제거
+```bash
+npx github:fffight88/cc-baseline --uninstall
+```
+
+제거 전 변경 내용을 미리 확인하고 싶다면:
+
+```bash
+npx github:fffight88/cc-baseline --uninstall --dry-run
+```
+
+비대화형(CI) 환경:
+
+```bash
+npx github:fffight88/cc-baseline --uninstall --yes
+```
+
+외부 스캐너·백업까지 모두 제거:
+
+```bash
+npx github:fffight88/cc-baseline --uninstall --yes --purge --remove-scanners
+```
+
+언인스톨 직전 수정 대상 파일이 `~/.claude/.cc-baseline-uninstall-backup/<타임스탬프>/`에 자동 스냅샷됩니다.
+
+| 옵션 | 동작 |
+|---|---|
+| `--uninstall` | 하네스 항목 제거 (설치 백업·외부 스캐너 기본 보존) |
+| `--dry-run` | 미리보기만 출력, 변경 없음 |
+| `--yes` | 비대화형 승인. 단 외부 스캐너는 건드리지 않음 |
+| `--purge` | `~/.claude/.cc-baseline-backup/` 디렉토리까지 함께 제거 |
+| `--remove-scanners` | semgrep/gitleaks/trivy 제거 (macOS: brew uninstall, Linux: pipx/rm) |
+
+### 자동 제거 실패 시 수동 절차
+
+자동 제거가 실패하거나 수동으로 처리하려면 아래 절차를 수행합니다.
+
+**1. CLAUDE.md에서 마커 블록 제거**
 
 ```bash
 # 마커 블록 확인
@@ -232,7 +268,7 @@ grep -n "cc-baseline" ~/.claude/CLAUDE.md
 # 편집기에서 <!-- BEGIN cc-baseline --> ... <!-- END cc-baseline --> 블록 삭제
 ```
 
-### 2. memory/ 파일 제거
+**2. memory/ 파일 제거**
 
 ```bash
 # 디렉토리 잠금 해제 후 삭제
@@ -248,7 +284,7 @@ rm ~/.claude/memory/feedback_skill_description_budget.md
 rm ~/.claude/memory/reference_security_auditor_protocol.md
 ```
 
-### 3. agents, commands 제거
+**3. agents, commands 제거**
 
 ```bash
 rm ~/.claude/agents/e2e-tester.md
@@ -257,7 +293,7 @@ rm ~/.claude/commands/plan.md
 rm ~/.claude/commands/clean.md
 ```
 
-### 4. settings.json hooks 제거
+**4. settings.json hooks 제거**
 
 `~/.claude/settings.json`을 열어 아래 statusMessage를 가진 훅 항목을 삭제합니다:
 - `"statusMessage": "세션 기본 규칙 로딩 중..."`
@@ -265,7 +301,7 @@ rm ~/.claude/commands/clean.md
 - `"statusMessage": "E2E 테스트 가이드 로딩 중..."`
 - SessionEnd의 `pgrep -f '@anthropic-ai/claude-code'` 커맨드 항목
 
-### 5. MCP 서버 제거 (선택)
+**5. MCP 서버 제거 (선택)**
 
 `~/.claude.json`의 `mcpServers`에서 `playwright-test-1` ~ `playwright-test-5` 키를 삭제합니다.
 
