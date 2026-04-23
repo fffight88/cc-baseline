@@ -9,7 +9,7 @@ function checkCmd(cmd) {
 const fs = require('fs');
 const path = require('path');
 
-const { HOME } = require('./paths');
+const { HOME, NPM_GLOBAL_PREFIX, PLAYWRIGHT_MCP_BIN } = require('./paths');
 const { createBackup } = require('./backup');
 const { confirm } = require('./prompt');
 const { removeMarkerBlock, hasMarkerBlock } = require('./merge/markdown');
@@ -109,6 +109,7 @@ function buildSummary() {
   }
 
   if (fs.existsSync(LOG_FILE)) lines.push(`  🗑️  ~/.claude/.cc-baseline-install.log`);
+  if (fs.existsSync(PLAYWRIGHT_MCP_BIN)) lines.push(`  🗑️  ~/.npm-global/bin/playwright-mcp (--remove-scanners 시)`);
 
   return lines;
 }
@@ -116,9 +117,10 @@ function buildSummary() {
 async function uninstallScanners(dryRun) {
   const scanners = ['semgrep', 'gitleaks', 'trivy'];
   const present = scanners.filter(s => checkCmd(s));
+  const pwInstalled = fs.existsSync(PLAYWRIGHT_MCP_BIN);
 
-  if (present.length === 0) {
-    console.log('\n🔍 보안 스캐너: 설치된 항목 없음, 건너뜁니다.');
+  if (present.length === 0 && !pwInstalled) {
+    console.log('\n🔍 외부 도구: 제거 대상 없음, 건너뜁니다.');
     return;
   }
 
@@ -149,6 +151,20 @@ async function uninstallScanners(dryRun) {
       }
     } catch (e) {
       console.log(`  ⚠️  ${s} 제거 실패 (수동 제거 필요): ${e.message}`);
+    }
+  }
+
+  if (pwInstalled) {
+    console.log('\n🎭 Playwright MCP 제거 중');
+    if (dryRun) {
+      console.log('[DRY RUN] Playwright MCP 제거를 건너뜁니다.');
+    } else {
+      try {
+        execSync(`npm uninstall -g @playwright/mcp --prefix "${NPM_GLOBAL_PREFIX}"`, { stdio: 'inherit' });
+        console.log('  ✅ @playwright/mcp 제거 완료');
+      } catch (e) {
+        console.log(`  ⚠️  @playwright/mcp 제거 실패 (수동 제거 필요): ${e.message}`);
+      }
     }
   }
 }

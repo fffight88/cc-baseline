@@ -7,6 +7,18 @@ async function mergeMcpServers(existing, incoming, confirmFn, autoYes) {
 
   for (const [key, val] of Object.entries(incoming)) {
     if (result[key]) {
+      const prev = result[key] || {};
+      const isLegacyHarness =
+        prev.command === 'npx' &&
+        Array.isArray(prev.args) &&
+        prev.args[0] === '@playwright/mcp';
+
+      if (isLegacyHarness) {
+        result[key] = val;
+        overwritten.push(key);
+        continue;
+      }
+
       const ok = await confirmFn(
         `[mcpServers] "${key}"가 이미 존재합니다. 덮어쓰겠습니까?`,
         autoYes

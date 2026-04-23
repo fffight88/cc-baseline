@@ -36,6 +36,22 @@ Claude Code 하네스 번들 인스톨러 — 행동 규칙·커스텀 스킬·E
 
 스캐너가 이미 설치되어 있으면 건너뜁니다. 자동 설치에 실패해도 cc-baseline 설치 자체는 완료되며, 실패 메시지만 출력됩니다. 스캐너가 없을 때 `security-auditor` 에이전트는 수동 코드 리뷰로 자동 폴백합니다.
 
+## Playwright MCP 자동 설치
+
+설치 시 E2E 테스트용 `@playwright/mcp` 패키지를 `~/.npm-global`에 자동 설치합니다:
+
+```bash
+npm install -g @playwright/mcp --prefix ~/.npm-global
+```
+
+설치 후 `~/.claude.json`의 `playwright-test-1~5` MCP 서버 command는 절대경로(`~/.npm-global/bin/playwright-mcp`)로 설정됩니다. `npx` 방식 대비 패키지 사전 설치로 첫 연결 신뢰성이 높아집니다.
+
+> **PATH 설정 권장:** Claude Code 외부(터미널)에서 `playwright-mcp` 명령을 사용하려면 셸 rc에 추가하세요:
+> ```bash
+> export PATH="$HOME/.npm-global/bin:$PATH"
+> ```
+> Claude Code 자체는 `~/.claude.json`의 절대경로를 사용하므로 PATH 없이도 MCP 서버는 정상 동작합니다.
+
 ---
 
 ## 빠른 시작
@@ -253,7 +269,7 @@ npx github:fffight88/cc-baseline --uninstall --yes --purge --remove-scanners
 | `--dry-run` | 미리보기만 출력, 변경 없음 |
 | `--yes` | 비대화형 승인. 단 외부 스캐너는 건드리지 않음 |
 | `--purge` | `~/.claude/.cc-baseline-backup/` 디렉토리까지 함께 제거 |
-| `--remove-scanners` | semgrep/gitleaks/trivy 제거 (macOS: brew uninstall, Linux: pipx/rm) |
+| `--remove-scanners` | semgrep/gitleaks/trivy + @playwright/mcp 제거 (macOS: brew uninstall, Linux: pipx/rm/npm) |
 
 ### 자동 제거 실패 시 수동 절차
 
@@ -384,19 +400,29 @@ npx --yes github:fffight88/cc-baseline
 npx github:fffight88/cc-baseline#v1.0.0
 ```
 
-### playwright-test MCP가 동작하지 않음
+### playwright-test MCP가 동작하지 않음 ("Failed to reconnect")
 
-`~/.claude.json`에 mcpServers가 추가되었는지 확인:
-
-```bash
-cat ~/.claude.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(list(d.get('mcpServers',{}).keys()))"
-```
-
-`@playwright/mcp` 패키지가 설치되어 있는지 확인:
+**1. 바이너리 존재 확인:**
 
 ```bash
-npx @playwright/mcp --version
+ls ~/.npm-global/bin/playwright-mcp
 ```
+
+없으면 수동 설치:
+
+```bash
+npm install -g @playwright/mcp --prefix ~/.npm-global
+```
+
+**2. `.claude.json` command 경로 확인:**
+
+```bash
+cat ~/.claude.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('mcpServers',{}).get('playwright-test-1',{}).get('command'))"
+```
+
+`~/.npm-global/bin/playwright-mcp` 절대경로가 표시되어야 합니다. `npx`로 표시되면 `npx github:fffight88/cc-baseline --yes`를 재실행하면 자동으로 교체됩니다.
+
+**3. Claude Code 재시작:** 경로가 올바르게 설정된 후 Claude Code를 재시작하면 5개 서버 모두 연결됩니다.
 
 ---
 

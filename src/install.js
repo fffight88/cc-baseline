@@ -1,6 +1,7 @@
 'use strict';
 
 const { execSync } = require('child_process');
+const fs = require('fs');
 
 function checkCmd(cmd) {
   try { execSync(`which ${cmd}`, { stdio: 'ignore' }); return true; } catch { return false; }
@@ -40,10 +41,41 @@ async function installScanners(dryRun) {
   }
 }
 
-const fs = require('fs');
+async function installPlaywrightMcp(dryRun) {
+  if (fs.existsSync(PLAYWRIGHT_MCP_BIN)) {
+    console.log('\n🎭 Playwright MCP: ~/.npm-global/bin/playwright-mcp 감지됨, 설치 생략');
+    return;
+  }
+
+  if (!checkCmd('npm')) {
+    console.log('\n⚠️  Playwright MCP: `npm`을 찾을 수 없어 설치를 건너뜁니다. Node.js 설치 후 `cc-baseline --yes`를 재실행하세요.');
+    return;
+  }
+
+  console.log('\n🎭 Playwright MCP 설치 중 (~/.npm-global 로컬 prefix)');
+  if (dryRun) {
+    console.log('[DRY RUN] Playwright MCP 설치를 건너뜁니다.');
+    return;
+  }
+
+  try {
+    fs.mkdirSync(NPM_GLOBAL_PREFIX, { recursive: true });
+    execSync(`npm install -g @playwright/mcp --prefix "${NPM_GLOBAL_PREFIX}"`, { stdio: 'inherit' });
+    if (fs.existsSync(PLAYWRIGHT_MCP_BIN)) {
+      console.log('  ✅ Playwright MCP 설치 완료');
+      console.log(`  ℹ️  PATH 확인: ${NPM_GLOBAL_PREFIX}/bin 이(가) PATH에 없으면 셸 rc에 추가하세요`);
+    } else {
+      console.log(`  ⚠️  npm 성공했으나 ${PLAYWRIGHT_MCP_BIN} 바이너리가 보이지 않음. 수동 확인 필요.`);
+    }
+  } catch (e) {
+    console.log(`  ⚠️  Playwright MCP 자동 설치 실패 (수동 설치 필요): ${e.message}`);
+    console.log(`     수동: npm install -g @playwright/mcp --prefix "${NPM_GLOBAL_PREFIX}"`);
+  }
+}
+
 const path = require('path');
 
-const { HOME, applyHome } = require('./paths');
+const { HOME, applyHome, NPM_GLOBAL_PREFIX, PLAYWRIGHT_MCP_BIN } = require('./paths');
 const { createBackup } = require('./backup');
 const { confirm } = require('./prompt');
 const { checkConflicts } = require('./conflict-checker');
@@ -296,6 +328,9 @@ async function install(opts = {}) {
 
   // ── 11. 보안 스캐너 자동 설치 (semgrep, gitleaks, trivy) ──────────────────
   await installScanners(dryRun);
+
+  // ── 12. Playwright MCP 바이너리 자동 설치 ─────────────────────────────────
+  await installPlaywrightMcp(dryRun);
 
   console.log('✅ cc-baseline 설치 완료!\n');
   console.log(`📝 설치 로그: ${LOG_FILE}`);
