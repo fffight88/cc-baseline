@@ -132,18 +132,18 @@ function issuesTable(issues, title) {
       : '';
 
     return `<tr>
-      <td style="padding:8px;white-space:nowrap;font-weight:600">${esc(issue.id)}</td>
-      <td style="padding:8px">${sevBadge(issue.severity)}</td>
-      <td style="padding:8px;color:#6b7280;font-size:12px">${esc(issue.category)}</td>
-      <td style="padding:8px;max-width:200px">
+      <td style="padding:8px;white-space:nowrap;font-weight:600;width:90px">${esc(issue.id)}</td>
+      <td style="padding:8px;width:80px">${sevBadge(issue.severity)}</td>
+      <td style="padding:8px;color:#6b7280;font-size:12px;width:90px">${esc(issue.category)}</td>
+      <td style="padding:8px;width:35%">
         <strong>${esc(issue.title)}</strong><br>
         <span style="color:#6b7280;font-size:12px">${esc(issue.description)}</span>
       </td>
-      <td style="padding:8px;font-size:12px;font-family:monospace">
+      <td style="padding:8px;font-size:12px;font-family:monospace;width:15%">
         ${location}${snippet}
       </td>
-      <td style="padding:8px">${dtBadge(issue.decision_type)}</td>
-      <td style="padding:8px;font-size:12px;color:#374151">${esc(issue.fix_suggestion)}</td>
+      <td style="padding:8px;width:70px">${dtBadge(issue.decision_type)}</td>
+      <td style="padding:8px;font-size:12px;color:#374151;width:18%;word-break:break-word">${esc(issue.fix_suggestion)}</td>
     </tr>`;
   }).join('');
 
@@ -153,13 +153,13 @@ function issuesTable(issues, title) {
     <table style="border-collapse:collapse;width:100%;font-size:13px">
       <thead>
         <tr style="background:#f9fafb;border-bottom:2px solid #e5e7eb">
-          <th style="padding:8px;text-align:left">ID</th>
-          <th style="padding:8px;text-align:left">Severity</th>
-          <th style="padding:8px;text-align:left">Category</th>
-          <th style="padding:8px;text-align:left">Title / Description</th>
-          <th style="padding:8px;text-align:left">File:Line</th>
-          <th style="padding:8px;text-align:left">Decision</th>
-          <th style="padding:8px;text-align:left">Fix</th>
+          <th style="padding:8px;text-align:left;width:90px">ID</th>
+          <th style="padding:8px;text-align:left;width:80px">Severity</th>
+          <th style="padding:8px;text-align:left;width:90px">Category</th>
+          <th style="padding:8px;text-align:left;width:35%">Title / Description</th>
+          <th style="padding:8px;text-align:left;width:15%">File:Line</th>
+          <th style="padding:8px;text-align:left;width:70px">Decision</th>
+          <th style="padding:8px;text-align:left;width:18%">Fix</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
