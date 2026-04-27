@@ -17,9 +17,12 @@ type: feedback
 ```markdown
 ## 메타
 - Security Impact: Yes | No | Unknown
+- Code Quality Impact: Yes | No | Unknown
 - 사유: <1줄, Yes/Unknown인 경우 어떤 영역이 영향받는지>
 ```
 
-- ✅ DO: `Security Impact: Yes` 또는 `Unknown`이면 플랜 완료 후 보안 감사 자동 트리거
-- ✅ DO: `Security Impact: No`이면 감사 생략
-- ❌ DON'T: `Security Impact` 필드 없이 구현 플랜 제출 금지
+- ✅ DO: `Security Impact: Yes` 또는 `Unknown`이면 플랜 완료 후 security-auditor 자동 트리거
+- ✅ DO: `Code Quality Impact: Yes` 또는 `Unknown`이면 플랜 완료 후 code-reviewer 자동 트리거
+- ✅ DO: 두 필드가 모두 Yes/Unknown이면 두 에이전트를 단일 메시지에서 병렬 호출
+- ✅ DO: `Security Impact: No` / `Code Quality Impact: No`이면 해당 감사 생략
+- ❌ DON'T: `Security Impact` 또는 `Code Quality Impact` 필드 없이 구현 플랜 제출 금지

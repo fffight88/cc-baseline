@@ -173,9 +173,11 @@ async function install(opts = {}) {
       'reference_doc_writing_style',
       'feedback_skill_description_budget',
       'reference_security_auditor_protocol',
+      'reference_code_reviewer_protocol',
     ].map(f => path.join(CLAUDE_DIR, 'memory', `${f}.md`)),
     path.join(CLAUDE_DIR, 'agents', 'e2e-tester.md'),
     path.join(CLAUDE_DIR, 'agents', 'security-auditor.md'),
+    path.join(CLAUDE_DIR, 'agents', 'code-reviewer.md'),
     path.join(CLAUDE_DIR, 'commands', 'plan.md'),
     path.join(CLAUDE_DIR, 'commands', 'clean.md'),
     settingsPath,
@@ -231,6 +233,7 @@ async function install(opts = {}) {
     'reference_doc_writing_style.md',
     'feedback_skill_description_budget.md',
     'reference_security_auditor_protocol.md',
+    'reference_code_reviewer_protocol.md',
   ];
   for (const f of memoryFiles) {
     const dest = path.join(CLAUDE_DIR, 'memory', f);
@@ -247,6 +250,11 @@ async function install(opts = {}) {
   const auditorPath = path.join(CLAUDE_DIR, 'agents', 'security-auditor.md');
   changes.push({ label: 'agents/security-auditor.md', path: auditorPath, content: readTemplate('agents/security-auditor.md') });
   console.log(`  ✅ agents/security-auditor.md — 덮어쓰기`);
+
+  // ── 6-2. agents/code-reviewer.md ─────────────────────────────────────────
+  const codeReviewerPath = path.join(CLAUDE_DIR, 'agents', 'code-reviewer.md');
+  changes.push({ label: 'agents/code-reviewer.md', path: codeReviewerPath, content: readTemplate('agents/code-reviewer.md') });
+  console.log(`  ✅ agents/code-reviewer.md — 덮어쓰기`);
 
   // ── 7. commands/ ──────────────────────────────────────────────────────────
   for (const f of ['plan.md', 'clean.md']) {
@@ -308,6 +316,12 @@ async function install(opts = {}) {
     console.log('[DRY RUN] 실제 파일은 변경되지 않았습니다.');
     return;
   }
+
+  // memory/ 디렉토리 쓰기 잠금 해제 (이전 설치 시 555로 잠겼을 수 있음)
+  try {
+    fs.chmodSync(path.join(CLAUDE_DIR, 'memory'), 0o755);
+    appendLog('CHMOD 755: memory/ (unlock for write)');
+  } catch {}
 
   for (const change of changes) {
     writeFile(change.path, change.content, false);

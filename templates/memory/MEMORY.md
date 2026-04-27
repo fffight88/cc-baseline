@@ -9,3 +9,4 @@
 - [phase_start.md](phase_start.md) — Phase 시작 시 체크리스트: 주제별 가이드 문서 검색·로드, task 목록 재확인
 - [phase_end.md](phase_end.md) — Phase 종료 시 체크리스트: 모든 task 완료될 때까지 미완료 task 수행 반복
 - [reference_security_auditor_protocol.md](reference_security_auditor_protocol.md) — security-auditor 자동 트리거·호출 프로토콜·루프 관리·decision_type별 후속 처리·알림 규칙
+- [reference_code_reviewer_protocol.md](reference_code_reviewer_protocol.md) — code-reviewer 자동 트리거·호출 프로토콜·루프 관리·decision_type별 후속 처리·프로파일 캐시 관리
