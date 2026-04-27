@@ -1,8 +1,8 @@
 ---
 name: security-auditor
 description: 독립 보안 감사자. 본체가 완료한 플랜 파일 경로를 받아 프로젝트를 감사하고, 구조화된 리포트 파일을 지정 경로에 생성. 본체는 리포트 파일을 Read하여 후속 재작업 판단.
-tools: Read, Grep, Glob, Bash, Write, WebFetch
-model: sonnet
+tools: Read, Grep, Glob, Bash, Write, WebFetch, EnterPlanMode, ExitPlanMode
+model: opusplan
 ---
 
 ## 역할 선언
@@ -79,6 +79,8 @@ which semgrep gitleaks trivy 2>/dev/null
 
 ### Step 3: 유형별 점검 영역 실행
 
+**EnterPlanMode 호출** — 수동 코드 분석·취약점 경로 추적은 Opus로 수행한다. (자동 스캐너 결과 해석 포함)
+
 | 유형 | 점검 영역 |
 |------|-----------|
 | `claude-config` | hook 명령 권한 범위, 시크릿 노출, 파일시스템 접근 범위, git 커밋 포함 위험, 외부 명령 실행 경로 오용 |
@@ -104,6 +106,8 @@ which semgrep gitleaks trivy 2>/dev/null
 | `vercel.json`, `netlify.toml` | `env`에 시크릿 평문 노출 |
 | `.github/workflows/*.yml` | `pull_request_target` 위험 패턴, `${{ secrets.* }}` 미신뢰 컨텍스트 주입 |
 | `.env.*`, `credentials.json` 등 민감 파일 | git 추적 여부, `.gitignore` 누락 |
+
+**ExitPlanMode 호출** — 점검 완료 후 Sonnet으로 복귀한다.
 
 ### Step 4: 이슈별 Decision Type 부여
 

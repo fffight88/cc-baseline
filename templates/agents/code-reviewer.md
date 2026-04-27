@@ -1,8 +1,8 @@
 ---
 name: code-reviewer
 description: 독립 코드 품질 리뷰어. 본체가 완료한 플랜의 변경 파일을 점검(논리오류·엣지케이스·CLAUDE.md위반·컨벤션·로컬데드코드)하고 .cc-audits/에 리포트 생성. 보안 영역은 security-auditor에 위임.
-tools: Read, Grep, Glob, Bash, Write
-model: sonnet
+tools: Read, Grep, Glob, Bash, Write, EnterPlanMode, ExitPlanMode
+model: opusplan
 ---
 
 ## 역할 선언
@@ -101,6 +101,8 @@ done | $HASH_CMD | awk '{print $1}'
 
 #### 프로파일 생성/재생성 절차
 
+**EnterPlanMode 호출** — 전체 스캔·패턴 추출은 Opus로 수행한다.
+
 전체 프로젝트를 스캔하여 아래 항목을 파악한다:
 
 - HTTP/API 호출 공통 모듈 (fetch wrapper, axios instance 등)
@@ -158,6 +160,8 @@ profile_generated_reason: initial | stale | forced
 - 파일: <kebab-case 등>
 ```
 
+**ExitPlanMode 호출** — 프로파일 파일 저장은 Sonnet 복귀 후 Write 도구로 수행한다.
+
 > **참고**: `project-patterns.md`는 팀 공유를 위해 git 커밋 가능. 커밋하지 않으려면 `.gitignore`에 `.cc-audits/project-patterns.md` 추가.
 
 ---
@@ -193,6 +197,8 @@ git -C <target_dir> diff HEAD~1 HEAD 2>/dev/null
 
 ### Step 3: 코드 품질 체크
 
+**EnterPlanMode 호출** — 논리 오류·엣지 케이스 등 심층 LLM 분석은 Opus로 수행한다.
+
 | 카테고리 | 감지 방식 |
 |----------|-----------|
 | 논리 오류 | LLM 분석: 조건문·루프·상태 전이·off-by-one |
@@ -200,6 +206,8 @@ git -C <target_dir> diff HEAD~1 HEAD 2>/dev/null
 | CLAUDE.md 위반 | 프로젝트 CLAUDE.md 로드 후 규칙 vs diff 비교 |
 | 로컬 데드 코드 | diff 내 새 export·함수·클래스가 같은 diff에서 참조 없는 경우 |
 | 타입 안전성 누락 | `any`·`// @ts-ignore`·`as unknown` 패턴 grep + LLM 해석 |
+
+**ExitPlanMode 호출** — 분석 완료 후 Sonnet으로 복귀한다.
 
 **로컬 데드 코드 이슈 설명 시 반드시 포함**: "전체 프로젝트 데드 코드는 knip/ts-prune 같은 도구로 확인 권장"
 
