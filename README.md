@@ -1,67 +1,41 @@
 # cc-baseline
 
-Claude Code 하네스 번들 인스톨러 — 행동 규칙·커스텀 스킬·E2E 에이전트·훅 설정을 새 머신에 한 줄로 설치합니다.
+One-command installer that wires up a full Claude Code harness — behavior rules, custom skills, autonomous agents, and hooks — across any new machine.
 
 ---
 
-## 개요
+## Why cc-baseline?
 
-`cc-baseline`은 아래 구성 요소를 `~/.claude/` 전역에 설치합니다. 기존 설정은 **덮어쓰지 않고 병합**하며, 설치 전 자동 백업을 생성합니다.
+Setting up Claude Code consistently across machines is tedious. cc-baseline solves this by bundling everything into a single `npx` command that merges cleanly into your existing `~/.claude/` config without overwriting anything you already have.
 
-| 구성 요소 | 설명 |
-|---|---|
-| 행동 규칙 (`CLAUDE.md`, `memory/*.md`) | 응답 언어·불확실성 명시·병렬 읽기·최소 수정 등 11개 기본 규칙 |
-| 커스텀 스킬 (`/plan`, `/clean`) | 플랜 모드 진입 스킬, 고아 프로세스 정리 스킬 |
-| E2E 테스터 에이전트 (`e2e-tester`) | Playwright MCP 기반 브라우저 E2E 테스트 실행 에이전트 |
-| 보안 감사 에이전트 (`security-auditor`) | 독립 감사자 관점의 SAST·SCA·시크릿 스캔 + 구조화 리포트 생성 |
-| 코드 리뷰 에이전트 (`code-reviewer`) | 독립 코드 품질 리뷰어 — 논리오류·엣지케이스·CLAUDE.md 위반·컨벤션 점검, 보안 영역은 security-auditor에 위임 |
-| 훅 설정 (`settings.json hooks`) | SessionStart 메모리 로드, PreToolUse E2E 가이드 로드 · cc-baseline 경로 보호, SessionEnd 프로세스 정리 |
-| MCP 서버 (`~/.claude.json`) | `playwright-test-1~5` 전역 MCP 서버 설정 |
+**What you get out of the box:**
 
----
-
-## 요구사항
-
-- **Node.js 18 이상**
-- macOS 또는 Linux (Windows 네이티브 미지원 — WSL 환경에서는 사용 가능)
-- `~/.claude/` 폴더에 쓰기 권한
+- **11 behavior rules** loaded at session start — response language, uncertainty disclosure, parallel reads, minimal edits, and more
+- **Security auditor agent** that runs real SAST/SCA/secret scans (semgrep, gitleaks, trivy) and produces structured JSON+Markdown reports with per-issue `decision_type` (auto / design / business) so you always know what to fix vs. what to discuss
+- **Code reviewer agent** that checks logic errors, edge cases, convention violations, and CLAUDE.md compliance independently from the security pass
+- **HTML report generator** (`audit-report.js`) that turns audit JSON into a color-coded, severity-sorted web page — opened automatically when a scan loop completes
+- **Reliable notifications** via `terminal-notifier` (auto-installed on macOS) so you never miss an interview prompt for design/business decisions
+- **E2E tester agent** backed by five parallel Playwright MCP servers, with an HTML report at the end
+- **Safe merge strategy** — CLAUDE.md and MEMORY.md use marker-block merge; hooks use status-message deduplication. Your personal settings are never touched.
+- **Auto-backup** before every install; one-command uninstall with `--purge` and `--remove-scanners` options
 
 ---
 
-## 보안 스캐너 자동 설치
+## Requirements
 
-설치 시 `semgrep`, `gitleaks`, `trivy` 세 가지 보안 스캐너를 자동으로 설치합니다:
-
-- **macOS**: `brew install semgrep gitleaks trivy`
-- **Linux/WSL**: pipx(semgrep) + GitHub 공식 바이너리(gitleaks, trivy)
-
-스캐너가 이미 설치되어 있으면 건너뜁니다. 자동 설치에 실패해도 cc-baseline 설치 자체는 완료되며, 실패 메시지만 출력됩니다. 스캐너가 없을 때 `security-auditor` 에이전트는 수동 코드 리뷰로 자동 폴백합니다.
-
-## Playwright MCP 자동 설치
-
-설치 시 E2E 테스트용 `@playwright/mcp` 패키지를 `~/.npm-global`에 자동 설치합니다:
-
-```bash
-npm install -g @playwright/mcp --prefix ~/.npm-global
-```
-
-설치 후 `~/.claude.json`의 `playwright-test-1~5` MCP 서버 command는 절대경로(`~/.npm-global/bin/playwright-mcp`)로 설정됩니다. `npx` 방식 대비 패키지 사전 설치로 첫 연결 신뢰성이 높아집니다.
-
-> **PATH 설정 권장:** Claude Code 외부(터미널)에서 `playwright-mcp` 명령을 사용하려면 셸 rc에 추가하세요:
-> ```bash
-> export PATH="$HOME/.npm-global/bin:$PATH"
-> ```
-> Claude Code 자체는 `~/.claude.json`의 절대경로를 사용하므로 PATH 없이도 MCP 서버는 정상 동작합니다.
+- **Node.js 18+**
+- macOS or Linux (Windows native not supported — WSL works)
+- Write access to `~/.claude/`
 
 ---
 
-## 빠른 시작
+## Quick Start
 
 ```bash
 npx github:fffight88/cc-baseline
 ```
 
-변경 내용을 먼저 확인하고 싶다면:
+Preview changes before applying:
 
 ```bash
 npx github:fffight88/cc-baseline --dry-run
@@ -69,228 +43,217 @@ npx github:fffight88/cc-baseline --dry-run
 
 ---
 
-## 설치 항목 상세
+## What Gets Installed
 
-### 파일 설치 방식
+### Overview
 
-| 파일 | 타겟 경로 | 방식 |
-|---|---|---|
-| `CLAUDE.md` | `~/.claude/CLAUDE.md` | 마커 블록 머지 — 기존 내용 보존, `<!-- BEGIN cc-baseline -->` 블록만 추가/교체 |
-| `memory/MEMORY.md` | `~/.claude/memory/MEMORY.md` | 마커 블록 머지 |
-| `memory/all_session_basic_rules.md` | `~/.claude/memory/` 동명 | 덮어쓰기 (설치 전 백업) |
-| `memory/doc_structure_rules.md` | 〃 | 덮어쓰기 |
-| `memory/phase_start.md` | 〃 | 덮어쓰기 |
-| `memory/phase_end.md` | 〃 | 덮어쓰기 |
-| `memory/reference_e2e_manager_guide.md` | 〃 | 덮어쓰기 |
-| `memory/reference_subagent_boundary.md` | 〃 | 덮어쓰기 |
-| `memory/reference_doc_writing_style.md` | 〃 | 덮어쓰기 |
-| `memory/feedback_skill_description_budget.md` | 〃 | 덮어쓰기 |
-| `memory/reference_security_auditor_protocol.md` | 〃 | 덮어쓰기 |
-| `memory/reference_code_reviewer_protocol.md` | 〃 | 덮어쓰기 |
-| `agents/e2e-tester.md` | `~/.claude/agents/e2e-tester.md` | 덮어쓰기 |
-| `agents/security-auditor.md` | `~/.claude/agents/security-auditor.md` | 덮어쓰기 |
-| `agents/code-reviewer.md` | `~/.claude/agents/code-reviewer.md` | 덮어쓰기 |
-| `commands/plan.md` | `~/.claude/commands/plan.md` | 덮어쓰기 |
-| `commands/clean.md` | `~/.claude/commands/clean.md` | 덮어쓰기 |
-
-### JSON 병합 방식
-
-| 대상 | 방식 |
+| Component | Description |
 |---|---|
-| `~/.claude/settings.json`의 `hooks` 키 | `statusMessage` 기준으로 하네스 훅만 교체. 사용자의 기존 훅은 유지 |
-| `~/.claude.json`의 `mcpServers` 키 | `playwright-test-1~5`만 추가. 동명 키가 있으면 대화형 확인 후 덮어쓰기 |
+| Behavior rules (`CLAUDE.md`, `memory/*.md`) | 11 session rules: response language, uncertainty, parallel reads, minimal edits, git safety, and more |
+| Custom skills (`/plan`, `/clean`) | Plan-mode entry skill; orphan-process cleanup skill |
+| E2E tester agent (`e2e-tester`) | Browser-based E2E test runner using Playwright MCP |
+| Security auditor agent (`security-auditor`) | SAST · SCA · secret scan with structured per-issue reports |
+| Code reviewer agent (`code-reviewer`) | Logic errors · edge cases · CLAUDE.md violations · convention checks; defers security to security-auditor |
+| HTML report generator (`scripts/audit-report.js`) | Converts audit/review JSON into a severity-colored, decision-badged HTML page. Run with `node ~/.claude/scripts/audit-report.js <audit-dir>` |
+| Hook config (`settings.json hooks`) | SessionStart memory load, PreToolUse E2E guide inject · path guard, SessionEnd process cleanup |
+| MCP servers (`~/.claude.json`) | `playwright-test-1~5` global MCP server entries |
 
-> **건드리지 않는 것:** `settings.json`의 `env`, `model`, `effortLevel` 등 개인 선호 설정, `~/.claude.json`의 사용 통계·UI 상태 등
+### File Install Details
 
----
-
-## 옵션 플래그
-
-| 플래그 | 설명 |
-|---|---|
-| `--dry-run` | 파일 변경 없이 설치 예정 항목만 출력. 먼저 실행해서 확인 권장 |
-| `--yes`, `-y` | 충돌 경고·대화형 확인을 모두 자동 승인. CI/자동화 환경에서 사용 |
-| `--help`, `-h` | 도움말 출력 |
-
----
-
-## 설치되는 훅 목록
-
-| 이벤트 | matcher | 역할 |
+| File | Target path | Method |
 |---|---|---|
-| `SessionStart` | (없음) | 세션 시작 시 `~/.claude/memory/MEMORY.md`와 기본 규칙을 컨텍스트에 주입 |
-| `PreToolUse` | `Write\|Edit` | `.cc-audits/` 경로 Write/Edit를 자동 승인. `~/.claude/memory/`에 쓰기 시도를 차단하고 올바른 경로(`~/.claude/projects/…/memory/`)를 피드백 |
-| `PreToolUse` | `mcp__playwright-test-.*` | Playwright MCP 호출 시 E2E 매니저 가이드를 컨텍스트에 주입 (세션당 1회) |
-| `SessionEnd` | (없음) | 세션 종료 시 고아 claude 프로세스 정리 |
+| `CLAUDE.md` | `~/.claude/CLAUDE.md` | Marker-block merge — existing content preserved, only `<!-- BEGIN cc-baseline -->` block added/replaced |
+| `memory/MEMORY.md` | `~/.claude/memory/MEMORY.md` | Marker-block merge |
+| `memory/all_session_basic_rules.md` | `~/.claude/memory/` (same name) | Overwrite (backup taken first) |
+| `memory/doc_structure_rules.md` | 〃 | Overwrite |
+| `memory/phase_start.md` | 〃 | Overwrite |
+| `memory/phase_end.md` | 〃 | Overwrite |
+| `memory/reference_e2e_manager_guide.md` | 〃 | Overwrite |
+| `memory/reference_subagent_boundary.md` | 〃 | Overwrite |
+| `memory/reference_doc_writing_style.md` | 〃 | Overwrite |
+| `memory/feedback_skill_description_budget.md` | 〃 | Overwrite |
+| `memory/reference_security_auditor_protocol.md` | 〃 | Overwrite |
+| `memory/reference_code_reviewer_protocol.md` | 〃 | Overwrite |
+| `agents/e2e-tester.md` | `~/.claude/agents/e2e-tester.md` | Overwrite |
+| `agents/security-auditor.md` | `~/.claude/agents/security-auditor.md` | Overwrite |
+| `agents/code-reviewer.md` | `~/.claude/agents/code-reviewer.md` | Overwrite |
+| `commands/plan.md` | `~/.claude/commands/plan.md` | Overwrite |
+| `commands/clean.md` | `~/.claude/commands/clean.md` | Overwrite |
+| `scripts/audit-report.js` | `~/.claude/scripts/audit-report.js` | Overwrite |
 
-### cc-baseline 경로 정책 훅 상세
+### JSON Merge Details
 
-이 훅은 Write/Edit 시도 시 두 가지 정책을 순서대로 적용합니다:
+| Target | Method |
+|---|---|
+| `hooks` key in `~/.claude/settings.json` | Deduplicates by `statusMessage`; replaces only harness hooks, leaves user hooks intact |
+| `mcpServers` key in `~/.claude.json` | Adds `playwright-test-1~5`; prompts before overwriting an existing key with the same name |
 
-1. **차단 (deny):** `~/.claude/memory/` 경로는 수동 관리 전용입니다. 모델이 실수로 이 경로에 자동 저장하려 할 때 차단하고 올바른 경로(`~/.claude/projects/…/memory/`)를 안내합니다.
-2. **자동 승인 (allow):** `/.cc-audits/`를 포함하는 경로는 `security-auditor` 에이전트의 감사 리포트 저장 경로로 자동 승인합니다.
-
-두 판단 모두 `os.path.realpath()`로 경로를 정규화한 뒤 평가하므로 symlink·`../` traversal을 통한 우회가 차단됩니다. 사용자 UI에는 표시되지 않으며 모델에게만 피드백이 전달됩니다.
-
----
-
-## 훅 충돌 경고 해석 가이드
-
-설치 시 기존 `~/.claude/settings.json`의 훅과 충돌 여부를 자동으로 검사합니다. 아래 4가지 규칙을 기준으로 경고가 출력됩니다.
-
-### 규칙 1: `[WARN]` SessionStart 기존 훅 존재
-
-```
-[WARN] SessionStart 이벤트에 기존 훅이 있습니다.
-이유: cc-baseline도 SessionStart에서 메모리 컨텍스트를 주입합니다.
-     상충되는 지시가 있으면 Claude 동작이 예상과 달라질 수 있습니다.
-조치: 설치 후 ~/.claude/settings.json의 SessionStart hooks를 검토하고 필요 시 통합하세요.
-```
-
-**대응법:** 기존 SessionStart 훅의 역할을 확인한 뒤 중복이라면 제거하고, cc-baseline 훅과 역할이 다르다면 하나의 python 스크립트로 통합하는 것을 권장합니다.
-
-### 규칙 2: `[WARN]` PreToolUse matcher 겹침
-
-```
-[WARN] PreToolUse matcher ".*"가 playwright-test MCP와 겹칩니다.
-이유: E2E 가이드 주입 훅과 이중 실행되거나, playwright MCP 호출 자체가 차단될 수 있습니다.
-조치: 해당 훅의 matcher를 구체화하거나 cc-baseline 훅과 통합하세요.
-```
-
-**대응법:** `".*"` 같은 포괄 matcher를 사용하는 기존 훅이 있다면 `mcp__playwright-test-.*`를 제외하는 정규식으로 변경하세요.
-
-### 규칙 3: `[HIGH]` 차단 훅 감지 — 즉시 조치 필요
-
-```
-[HIGH] 세션 또는 도구를 차단하는 훅이 감지됩니다.
-이유: 이 훅이 실행되면 cc-baseline 부트업 또는 MCP 호출 자체가 막힐 수 있습니다.
-조치: 해당 훅을 제거하거나 cc-baseline 설치 전 수동으로 검토하세요.
-```
-
-**대응법:** `decision: block` 또는 `decision: deny`를 반환하는 훅이 있습니다. 이 훅이 의도적인 경우 cc-baseline 훅이 통과되도록 조건을 수정해야 합니다. 그렇지 않다면 불필요한 훅이므로 제거하세요.
-
-### 규칙 4: `[INFO]` SessionEnd 기존 훅 존재
-
-```
-[INFO] SessionEnd에 기존 훅이 있습니다.
-이유: cc-baseline의 SessionEnd 훅과 함께 실행됩니다. 충돌 위험은 낮습니다.
-조치: 특별한 조치 없음.
-```
-
-**대응법:** 정보 제공용입니다. 두 훅이 함께 실행되며 일반적으로 문제없습니다.
+> **Never touched:** `settings.json` fields like `env`, `model`, `effortLevel`; usage stats and UI state in `~/.claude.json`
 
 ---
 
-## memory/ 파일 수정 방법
+## Auto-installed Tools
 
-설치 후 `~/.claude/memory/` 디렉토리는 **읽기 전용(chmod 555)**으로 잠깁니다. cc-baseline 경로를 auto-memory가 오염시키는 것을 막기 위한 보호 장치입니다.
+### Security Scanners
 
-파일을 수정하려면 잠금을 임시 해제한 뒤 작업하고 다시 잠그세요:
+`semgrep`, `gitleaks`, and `trivy` are installed automatically:
+
+- **macOS**: `brew install semgrep gitleaks trivy`
+- **Linux/WSL**: pipx (semgrep) + official binaries (gitleaks, trivy)
+
+Already installed? Skipped silently. If auto-install fails, cc-baseline still completes and prints a warning. The `security-auditor` agent falls back to manual code review when scanners are absent.
+
+### terminal-notifier (macOS)
+
+`terminal-notifier` is installed automatically on macOS via `brew install terminal-notifier`. It registers directly with Notification Center, making audit interview alerts more reliable than plain `osascript`. On Linux, `notify-send` is used as a fallback.
+
+### Playwright MCP
+
+`@playwright/mcp` is installed to `~/.npm-global`:
 
 ```bash
-# 1. 잠금 해제
+npm install -g @playwright/mcp --prefix ~/.npm-global
+```
+
+The five `playwright-test-*` MCP server entries in `~/.claude.json` point to the absolute binary path, so no PATH change is required for Claude Code itself.
+
+> **Optional — add to PATH for terminal use:**
+> ```bash
+> export PATH="$HOME/.npm-global/bin:$PATH"
+> ```
+
+---
+
+## Options
+
+| Flag | Description |
+|---|---|
+| `--dry-run` | Print planned changes without writing any files |
+| `--yes`, `-y` | Auto-approve all prompts (useful in CI) |
+| `--help`, `-h` | Show help |
+
+---
+
+## Hooks Installed
+
+| Event | Matcher | Role |
+|---|---|---|
+| `SessionStart` | (none) | Injects `~/.claude/memory/MEMORY.md` and session rules into context |
+| `PreToolUse` | `Write\|Edit` | Auto-approves writes to `/.cc-audits/`; blocks writes to `~/.claude/memory/` and redirects to the correct project memory path |
+| `PreToolUse` | `mcp__playwright-test-.*` | Injects E2E manager guide into context on first Playwright MCP call per session |
+| `SessionEnd` | (none) | Cleans up orphaned claude processes |
+
+### Path Policy Hook Details
+
+Applied in order on every Write/Edit attempt:
+
+1. **Block (deny):** `~/.claude/memory/` is managed by cc-baseline only. If the model tries to write here directly, the hook blocks it and suggests `~/.claude/projects/…/memory/` instead.
+2. **Auto-approve (allow):** Any path containing `/.cc-audits/` is approved automatically — this is where `security-auditor` and `code-reviewer` write their reports.
+
+Both checks normalize paths via `os.path.realpath()` to prevent symlink or `../` traversal bypasses.
+
+---
+
+## Hook Conflict Warning Guide
+
+The installer checks your existing `~/.claude/settings.json` hooks against four rules:
+
+### `[WARN]` Existing SessionStart hook
+
+cc-baseline also uses SessionStart to inject memory context. Conflicting instructions may produce unexpected behavior. **Action:** review and merge the two SessionStart hooks after installation.
+
+### `[WARN]` PreToolUse matcher overlap
+
+A broad matcher like `".*"` may double-fire with the Playwright E2E guide hook or block MCP calls. **Action:** narrow the matcher or exclude `mcp__playwright-test-.*`.
+
+### `[HIGH]` Blocking hook detected
+
+A hook returning `decision: block` or `decision: deny` may prevent cc-baseline from booting or MCP calls from completing. **Action:** remove or adjust the hook before installing.
+
+### `[INFO]` Existing SessionEnd hook
+
+Low conflict risk — both hooks run together. No action required.
+
+---
+
+## Editing memory/ Files After Install
+
+`~/.claude/memory/` is locked **read-only (chmod 555)** after install to prevent auto-memory from polluting cc-baseline paths. To edit:
+
+```bash
+# 1. Unlock
 chmod 755 ~/.claude/memory/
 
-# 2. 원하는 파일 수정
-#    예: MEMORY.md에 새 항목 추가, 규칙 파일 편집 등
+# 2. Edit the file
 
-# 3. 수정 완료 후 다시 잠금
+# 3. Re-lock
 chmod 555 ~/.claude/memory/
 ```
 
-> **주의:** 잠금 해제 상태로 두면 Claude Code auto-memory가 이 경로에 자동 저장할 수 있습니다. 수정 후 반드시 `chmod 555`로 복구하세요.
+> **Note:** Leave it unlocked only while editing. Claude Code auto-memory may write to this path if it stays writable.
 
 ---
 
-## 백업 및 복구
+## Backup & Recovery
 
-### 백업 위치
+### Backup Location
 
-설치 시 수정 대상 파일의 원본이 자동으로 아래 경로에 저장됩니다:
+Modified files are snapshotted before every install:
 
 ```
-~/.claude/.cc-baseline-backup/<ISO-타임스탬프>/
+~/.claude/.cc-baseline-backup/<ISO-timestamp>/
 ```
 
-예시:
-```
-~/.claude/.cc-baseline-backup/2026-04-20T12-00-00-000Z/
-  .claude/
-    CLAUDE.md
-    settings.json
-    memory/
-      MEMORY.md
-      all_session_basic_rules.md
-      ...
-```
-
-### 복구 방법
-
-특정 파일을 되돌리려면 백업 폴더에서 원본을 수동 복사합니다:
+### Recovery
 
 ```bash
-# 예시: CLAUDE.md 복구
-cp ~/.claude/.cc-baseline-backup/<타임스탬프>/.claude/CLAUDE.md ~/.claude/CLAUDE.md
-
-# 예시: settings.json 복구
-cp ~/.claude/.cc-baseline-backup/<타임스탬프>/.claude/settings.json ~/.claude/settings.json
+# Example: restore CLAUDE.md
+cp ~/.claude/.cc-baseline-backup/<timestamp>/.claude/CLAUDE.md ~/.claude/CLAUDE.md
 ```
 
 ---
 
-## 제거(Uninstall)
+## Uninstall
 
-### 자동 제거 (권장)
+### Automatic (recommended)
 
 ```bash
 npx github:fffight88/cc-baseline --uninstall
 ```
 
-제거 전 변경 내용을 미리 확인하고 싶다면:
-
 ```bash
+# Preview only
 npx github:fffight88/cc-baseline --uninstall --dry-run
-```
 
-비대화형(CI) 환경:
-
-```bash
+# Non-interactive
 npx github:fffight88/cc-baseline --uninstall --yes
-```
 
-외부 스캐너·백업까지 모두 제거:
-
-```bash
+# Remove everything including backups and scanners
 npx github:fffight88/cc-baseline --uninstall --yes --purge --remove-scanners
 ```
 
-언인스톨 직전 수정 대상 파일이 `~/.claude/.cc-baseline-uninstall-backup/<타임스탬프>/`에 자동 스냅샷됩니다.
+A pre-uninstall snapshot is saved to `~/.claude/.cc-baseline-uninstall-backup/<timestamp>/`.
 
-| 옵션 | 동작 |
+| Option | Effect |
 |---|---|
-| `--uninstall` | 하네스 항목 제거 (설치 백업·외부 스캐너 기본 보존) |
-| `--dry-run` | 미리보기만 출력, 변경 없음 |
-| `--yes` | 비대화형 승인. 단 외부 스캐너는 건드리지 않음 |
-| `--purge` | `~/.claude/.cc-baseline-backup/` 디렉토리까지 함께 제거 |
-| `--remove-scanners` | semgrep/gitleaks/trivy + @playwright/mcp 제거 (macOS: brew uninstall, Linux: pipx/rm/npm) |
+| `--uninstall` | Removes harness files (preserves backups and external scanners) |
+| `--dry-run` | Preview only |
+| `--yes` | Non-interactive; does not touch external scanners |
+| `--purge` | Also deletes `~/.claude/.cc-baseline-backup/` |
+| `--remove-scanners` | Uninstalls semgrep/gitleaks/trivy + @playwright/mcp |
 
-### 자동 제거 실패 시 수동 절차
+### Manual Removal
 
-자동 제거가 실패하거나 수동으로 처리하려면 아래 절차를 수행합니다.
-
-**1. CLAUDE.md에서 마커 블록 제거**
+**1. Remove the CLAUDE.md marker block**
 
 ```bash
-# 마커 블록 확인
 grep -n "cc-baseline" ~/.claude/CLAUDE.md
-
-# 편집기에서 <!-- BEGIN cc-baseline --> ... <!-- END cc-baseline --> 블록 삭제
+# Delete the <!-- BEGIN cc-baseline --> ... <!-- END cc-baseline --> block
 ```
 
-**2. memory/ 파일 제거**
+**2. Remove memory files**
 
 ```bash
-# 디렉토리 잠금 해제 후 삭제
 chmod 755 ~/.claude/memory/
 rm ~/.claude/memory/all_session_basic_rules.md
 rm ~/.claude/memory/doc_structure_rules.md
@@ -301,9 +264,10 @@ rm ~/.claude/memory/reference_subagent_boundary.md
 rm ~/.claude/memory/reference_doc_writing_style.md
 rm ~/.claude/memory/feedback_skill_description_budget.md
 rm ~/.claude/memory/reference_security_auditor_protocol.md
+rm ~/.claude/memory/reference_code_reviewer_protocol.md
 ```
 
-**3. agents, commands 제거**
+**3. Remove agents, commands, and scripts**
 
 ```bash
 rm ~/.claude/agents/e2e-tester.md
@@ -311,183 +275,170 @@ rm ~/.claude/agents/security-auditor.md
 rm ~/.claude/agents/code-reviewer.md
 rm ~/.claude/commands/plan.md
 rm ~/.claude/commands/clean.md
+rm ~/.claude/scripts/audit-report.js
 ```
 
-**4. settings.json hooks 제거**
+**4. Remove hooks from settings.json**
 
-`~/.claude/settings.json`을 열어 아래 statusMessage를 가진 훅 항목을 삭제합니다:
-- `"statusMessage": "세션 기본 규칙 로딩 중..."`
-- `"statusMessage": "cc-baseline 경로 정책 적용 중..."`
-- `"statusMessage": "E2E 테스트 가이드 로딩 중..."`
-- SessionEnd의 `pgrep -f '@anthropic-ai/claude-code'` 커맨드 항목
+Open `~/.claude/settings.json` and delete hooks with these `statusMessage` values:
+- `"세션 기본 규칙 로딩 중..."`
+- `"cc-baseline 경로 정책 적용 중..."`
+- `"E2E 테스트 가이드 로딩 중..."`
+- The SessionEnd entry containing `pgrep -f '@anthropic-ai/claude-code'`
 
-**5. MCP 서버 제거 (선택)**
+**5. Remove MCP servers (optional)**
 
-`~/.claude.json`의 `mcpServers`에서 `playwright-test-1` ~ `playwright-test-5` 키를 삭제합니다.
+Delete `playwright-test-1` through `playwright-test-5` from `mcpServers` in `~/.claude.json`.
 
 ---
 
-## 템플릿 업데이트 워크플로우
-
-본인 머신의 설정이 변경되어 번들을 갱신하려면:
+## Updating Templates
 
 ```bash
-# 1. 리포 클론 또는 이동
 cd /path/to/cc-baseline
 
-# 2. templates/ 내 해당 파일 직접 수정
-#    (또는 ~/.claude/에서 복사 후 {{HOME}} 플레이스홀더 치환)
+# Edit files under templates/
+# Use {{HOME}} as a placeholder for $HOME
 
-# 3. 민감 정보 스캔
+# Scan for sensitive data before committing
 grep -rE "$(whoami)|/Users/|/home/" templates/
 
-# 4. 커밋 & 푸시
 git add templates/ && git commit -m "feat: update harness templates"
 git push
 ```
 
-> ⚠️ 커밋 전 반드시 실제 사용자명·경로가 없는지 확인하세요.
+---
+
+## Audit Report Storage
+
+`security-auditor` and `code-reviewer` write reports to:
+
+```
+<project-root>/.cc-audits/<plan-slug>/iter-<n>.{md,json}
+<project-root>/.cc-audits/<plan-slug>/code-review-iter-<n>.{md,json}
+```
+
+- Outside `~/.claude/` — no Claude Code path-protection prompts
+- The PreToolUse hook auto-approves Write/Edit to any `/.cc-audits/` path
+- When a scan loop finishes, generate an HTML report: `node ~/.claude/scripts/audit-report.js <audit-dir>`
+
+**Recommended:** add `.cc-audits/` to your project's `.gitignore`.
 
 ---
 
-## 트러블슈팅
+## Security Policy: No `permissions` Key Distribution
 
-### Windows에서 실행하려면
+cc-baseline never reads or writes the `permissions` key in `~/.claude/settings.json`:
 
-cc-baseline은 hooks와 `/clean` 커맨드가 bash·`pgrep` 등 Unix 명령어를 사용하므로 **Windows 네이티브 환경(cmd, PowerShell)에서는 동작하지 않습니다.**
+- `permissions.allow` rules bypass Claude Code's user-consent prompts (e.g., `Bash(*)` silently allows all shell commands)
+- Distributing permission rules as part of a baseline is a supply-chain risk
+- Rules like `Edit(~/.claude/**)` would also bypass Claude Code's built-in `.claude/` path protection
 
-WSL(Windows Subsystem for Linux)을 사용하면 정상 동작합니다:
+**Principle:** permission rules must be added by each user for their own environment. The installer never creates or modifies them.
+
+---
+
+## Security & Privacy Notes
+
+- `templates/` contains no usernames, passwords, API keys, or connection strings
+- All paths in hook commands are stored as `{{HOME}}` and substituted at install time
+- Install logs (`~/.claude/.cc-baseline-install.log`), backups, and audit reports (`.cc-audits/`) are listed in `.gitignore`
+- Only `playwright-test-1~5` in `~/.claude.json` are read/written; all other keys are left untouched
+
+---
+
+## Tech Stack & Structure
+
+- **Runtime:** Node.js 18+ (zero external dependencies — built-in modules only)
+- **Distribution:** public GitHub repo → `npx github:fffight88/cc-baseline`
+
+```
+cc-baseline/
+├── bin/cli.js              # CLI entry point (shebang + arg parsing)
+├── src/
+│   ├── install.js          # Install orchestration
+│   ├── paths.js            # {{HOME}} ↔ $HOME substitution
+│   ├── backup.js           # Timestamped backup
+│   ├── prompt.js           # readline Y/n prompt
+│   ├── conflict-checker.js # Hook conflict detection (4 rules)
+│   └── merge/
+│       ├── markdown.js        # Marker-block merge
+│       ├── settings-hooks.js  # hooks statusMessage dedup merge
+│       └── mcp-servers.js     # mcpServers key merge
+└── templates/              # Bundle files ({{HOME}} placeholders)
+    ├── CLAUDE.md
+    ├── memory/             # MEMORY.md + 10 rule files
+    ├── agents/             # e2e-tester.md, security-auditor.md, code-reviewer.md
+    ├── commands/           # plan.md, clean.md
+    ├── scripts/            # audit-report.js
+    ├── settings-hooks.json # hooks section only
+    └── mcp-servers.json    # playwright-test-1~5 only
+```
+
+---
+
+## Troubleshooting
+
+### Windows
+
+cc-baseline hooks and the `/clean` skill use bash, `pgrep`, and other Unix commands. **Windows native (cmd, PowerShell) is not supported.** Use WSL:
 
 ```bash
-# WSL 터미널에서 실행
 npx github:fffight88/cc-baseline
 ```
 
-WSL 설치: [Microsoft 공식 가이드](https://learn.microsoft.com/ko-kr/windows/wsl/install)
-
----
-
-### Node 버전 오류
+### Node version error
 
 ```
 error: The engine "node" is incompatible with this module.
 ```
 
-→ Node.js 18 이상으로 업그레이드하세요. `node --version`으로 현재 버전 확인.
+Upgrade to Node.js 18+. Check with `node --version`.
 
-### 권한 오류
+### Permission error
 
 ```
 EACCES: permission denied, open '~/.claude/settings.json'
 ```
 
-→ `~/.claude/` 폴더 소유자 확인: `ls -la ~/.claude/`. `sudo chown -R $(whoami) ~/.claude/`로 복구.
+Fix ownership: `sudo chown -R $(whoami) ~/.claude/`
 
-### JSON 파싱 에러
+### JSON parse error
 
 ```
 SyntaxError: Unexpected token ...
 ```
 
-→ 기존 `settings.json` 또는 `.claude.json`이 손상되었습니다. 백업 파일로 복구하거나 해당 파일을 JSON 검증기로 확인하세요.
+Your `settings.json` or `.claude.json` is malformed. Restore from backup or validate with a JSON linter.
 
-### `npx github:` 실행 시 캐시 문제 (오래된 버전 실행)
+### Stale npx cache
 
 ```bash
-# npx 캐시 삭제 후 재실행
 npx --yes github:fffight88/cc-baseline
-```
-
-또는 특정 커밋/태그를 지정:
-
-```bash
+# or pin a specific commit/tag:
 npx github:fffight88/cc-baseline#v1.0.0
 ```
 
-### playwright-test MCP가 동작하지 않음 ("Failed to reconnect")
+### Playwright MCP not connecting ("Failed to reconnect")
 
-**1. 바이너리 존재 확인:**
+**Check the binary exists:**
 
 ```bash
 ls ~/.npm-global/bin/playwright-mcp
 ```
 
-없으면 수동 설치:
+If missing, install manually:
 
 ```bash
 npm install -g @playwright/mcp --prefix ~/.npm-global
 ```
 
-**2. `.claude.json` command 경로 확인:**
+**Check the command path in `.claude.json`:**
 
 ```bash
 cat ~/.claude.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('mcpServers',{}).get('playwright-test-1',{}).get('command'))"
 ```
 
-`~/.npm-global/bin/playwright-mcp` 절대경로가 표시되어야 합니다. `npx`로 표시되면 `npx github:fffight88/cc-baseline --yes`를 재실행하면 자동으로 교체됩니다.
+Should print `~/.npm-global/bin/playwright-mcp`. If it shows `npx`, re-run `npx github:fffight88/cc-baseline --yes` to fix it automatically.
 
-**3. Claude Code 재시작:** 경로가 올바르게 설정된 후 Claude Code를 재시작하면 5개 서버 모두 연결됩니다.
-
----
-
-## 보안감사 리포트 저장 경로
-
-`security-auditor` 에이전트는 감사 리포트를 `<프로젝트 루트>/.cc-audits/<플랜 슬러그>/iter-<n>.{md,json}`에 저장합니다.
-
-- `.claude/` 밖에 저장하므로 Claude Code 내장 보호 프롬프트가 발생하지 않습니다
-- cc-baseline이 설치한 PreToolUse hook이 `/.cc-audits/` 경로 Write/Edit를 자동 승인합니다 (settings.json `permissions` 키 사용 안 함)
-- 자동 승인 범위: `Write|Edit` 도구 + `/.cc-audits/`를 포함하는 file_path만
-
-**권장:** 각 프로젝트의 `.gitignore`에 `.cc-audits/` 한 줄을 추가하세요. 리포트는 로컬에서만 보관하는 것이 일반적입니다.
-
----
-
-## 보안 정책: settings.json `permissions` 키 배포 금지
-
-cc-baseline은 사용자 `~/.claude/settings.json`의 `permissions` 키를 **읽지도 쓰지도 않습니다**. 이유:
-
-- `permissions.allow` 룰은 Claude Code의 사용자 동의 프롬프트를 우회합니다 (예: `Bash(*)` 자동 허용 → 모든 셸 명령 무프롬프트 실행)
-- 베이스라인 배포로 사용자가 명시 동의하지 않은 권한이 부여되는 것은 supply-chain 리스크입니다
-- `Edit(~/.claude/**)` 같은 허용 룰을 배포하면 Claude Code 내장 `.claude/` 경로 보호도 우회됩니다
-
-**원칙:** 권한 룰은 각 사용자가 자신의 환경에서 직접 추가해야 하며, 베이스라인 인스톨러는 절대 자동으로 생성·수정하지 않습니다.
-
-**`.claude/` 수정 시 매번 뜨는 퍼미션 프롬프트는 Claude Code 런타임 내장 보호입니다.** `settings.json`의 `permissions` 키와 무관하며, 우회보다는 cc-baseline `templates/` → installer 워크플로우를 사용하는 것이 정상 패턴입니다.
-
----
-
-## 보안·프라이버시 노트
-
-- 이 리포지토리의 `templates/` 폴더에는 **사용자명·비밀번호·API 키·DB 접속 정보가 포함되지 않습니다**.
-- `settings.json`의 훅 커맨드 내 경로는 `{{HOME}}` 플레이스홀더로 저장되며, 설치 시점에 해당 머신의 `$HOME` 경로로 치환됩니다.
-- 설치 로그(`~/.claude/.cc-baseline-install.log`)와 백업 폴더(`~/.claude/.cc-baseline-backup/`), 보안감사 리포트(`.cc-audits/`)는 `.gitignore`에 포함되어 Git에 커밋되지 않습니다.
-- `~/.claude.json`에서는 MCP 서버 설정(`playwright-test-1~5`)만 읽고 씁니다. 개인 사용 통계·UI 상태 등 다른 키는 일절 수정하지 않습니다.
-
----
-
-## 기술 스택 & 구조
-
-- **런타임:** Node.js 18+ (외부 의존성 0 — 내장 모듈만 사용)
-- **배포:** 공개 GitHub 레포 → `npx github:fffight88/cc-baseline`
-
-```
-cc-baseline/
-├── bin/cli.js              # CLI 진입점 (shebang + arg parsing)
-├── src/
-│   ├── install.js          # 설치 오케스트레이션
-│   ├── paths.js            # {{HOME}} ↔ $HOME 치환
-│   ├── backup.js           # 타임스탬프 백업
-│   ├── prompt.js           # readline 대화형 Y/n
-│   ├── conflict-checker.js # 훅 충돌 감지 (4개 규칙)
-│   └── merge/
-│       ├── markdown.js     # 마커 블록 머지
-│       ├── settings-hooks.js  # hooks statusMessage 기준 머지
-│       └── mcp-servers.js  # mcpServers 키 머지
-└── templates/              # 번들 파일 ({{HOME}} 플레이스홀더 포함)
-    ├── CLAUDE.md
-    ├── memory/             # 10개 memory 파일 (MEMORY.md + 9개 개별 규칙)
-    ├── agents/             # e2e-tester.md, security-auditor.md, code-reviewer.md
-    ├── commands/           # plan.md, clean.md
-    ├── settings-hooks.json # hooks 섹션만
-    └── mcp-servers.json    # playwright-test-1~5만
-```
+**Restart Claude Code** after confirming the path is correct.
