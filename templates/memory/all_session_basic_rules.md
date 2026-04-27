@@ -79,12 +79,20 @@ type: feedback
 
 ---
 
-## 9. 보안감사 인터뷰 알림
+## 9. 보안감사·코드리뷰 인터뷰 알림
 
-security-auditor 리포트에 `decision_type: design` 또는 `business` 이슈가 1건 이상 있고, 본체가 AskUserQuestion으로 인터뷰를 시작하기 직전에 아래 Bash 명령으로 알림 발송:
+security-auditor 또는 code-reviewer 리포트에 `decision_type: design` 또는 `business` 이슈가 1건 이상 있고, 본체가 AskUserQuestion으로 인터뷰를 시작하기 직전에 아래 Bash 명령으로 알림 발송:
 
 ```bash
-osascript -e 'display notification "보안감사: 사용자 결정 필요 (N건)" with title "Claude Code" sound name "Glass"'
+MSG="보안감사: 사용자 결정 필요 (N건)"  # N에 실제 design+business 건수 대입
+if command -v terminal-notifier >/dev/null 2>&1; then
+  terminal-notifier -title "Claude Code" -message "$MSG" -sound Glass
+elif [ "$(uname)" = "Darwin" ]; then
+  osascript -e "display notification \"$MSG\" with title \"Claude Code\" sound name \"Glass\"" \
+    || osascript -e "display dialog \"$MSG\" with title \"Claude Code\" buttons {\"확인\"} default button \"확인\""
+elif command -v notify-send >/dev/null 2>&1; then
+  notify-send "Claude Code" "$MSG"
+fi
 ```
 
 - ✅ DO: `design` / `business` 이슈가 있을 때 인터뷰 직전에만 발동

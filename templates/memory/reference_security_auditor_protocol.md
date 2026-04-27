@@ -65,10 +65,16 @@ project_type_hint: <선택, 본체 추정 유형>
 `design` 또는 `business` 이슈가 1건 이상 있고, AskUserQuestion 직전에 반드시 실행:
 
 ```bash
-osascript -e 'display notification "보안감사: 사용자 결정 필요 (N건)" with title "Claude Code" sound name "Glass"'
+MSG="보안감사: 사용자 결정 필요 (N건)"  # N에 실제 design+business 건수 대입
+if command -v terminal-notifier >/dev/null 2>&1; then
+  terminal-notifier -title "Claude Code" -message "$MSG" -sound Glass
+elif [ "$(uname)" = "Darwin" ]; then
+  osascript -e "display notification \"$MSG\" with title \"Claude Code\" sound name \"Glass\"" \
+    || osascript -e "display dialog \"$MSG\" with title \"Claude Code\" buttons {\"확인\"} default button \"확인\""
+elif command -v notify-send >/dev/null 2>&1; then
+  notify-send "Claude Code" "$MSG"
+fi
 ```
-
-N에는 실제 design+business 이슈 건수를 대입.
 
 ## 6. 리포트 경로 규칙
 
@@ -78,3 +84,20 @@ N에는 실제 design+business 이슈 건수를 대입.
 ```
 
 `plan-slug`는 플랜 파일명(확장자 제외). 예: `iridescent-swinging-wave`
+
+## 7. 감사 종료 후 HTML 리포트
+
+루프가 `done`(critical=0/high=0) 또는 한계(3회)에 도달해 종료될 때 본체가 실행:
+
+```bash
+AUDIT_DIR="<target_dir>/.cc-audits/<plan-slug>"
+node ~/.claude/scripts/audit-report.js "$AUDIT_DIR"
+# macOS:
+open "$AUDIT_DIR/report.html"
+# Linux:
+# xdg-open "$AUDIT_DIR/report.html"
+```
+
+- ✅ DO: 루프 종료 시점에 단 한 번 자동 오픈
+- ✅ DO: security-auditor와 code-reviewer를 병렬 호출한 경우, **두 에이전트 모두 종료된 뒤 본체가 1회 실행**
+- ❌ DON'T: 매 iteration마다 자동 오픈 금지 (수정 작업 흐름 방해)

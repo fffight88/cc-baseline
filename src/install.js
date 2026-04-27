@@ -41,6 +41,25 @@ async function installScanners(dryRun) {
   }
 }
 
+async function installNotifier(dryRun) {
+  if (process.platform !== 'darwin') return;
+  if (checkCmd('terminal-notifier')) {
+    console.log('\n🔔 알림: terminal-notifier 감지됨, 설치 생략');
+    return;
+  }
+  console.log('\n🔔 terminal-notifier 설치 중 (알림 신뢰성 강화)');
+  if (dryRun) {
+    console.log('[DRY RUN] terminal-notifier 설치를 건너뜁니다.');
+    return;
+  }
+  try {
+    execSync('brew install terminal-notifier', { stdio: 'inherit' });
+    console.log('  ✅ terminal-notifier 설치 완료');
+  } catch (e) {
+    console.log(`  ⚠️  terminal-notifier 자동 설치 실패 (osascript로 폴백): ${e.message}`);
+  }
+}
+
 async function installPlaywrightMcp(dryRun) {
   if (fs.existsSync(PLAYWRIGHT_MCP_BIN)) {
     console.log('\n🎭 Playwright MCP: ~/.npm-global/bin/playwright-mcp 감지됨, 설치 생략');
@@ -180,6 +199,7 @@ async function install(opts = {}) {
     path.join(CLAUDE_DIR, 'agents', 'code-reviewer.md'),
     path.join(CLAUDE_DIR, 'commands', 'plan.md'),
     path.join(CLAUDE_DIR, 'commands', 'clean.md'),
+    path.join(CLAUDE_DIR, 'scripts', 'audit-report.js'),
     settingsPath,
     path.join(HOME, '.claude.json'),
   ];
@@ -240,6 +260,11 @@ async function install(opts = {}) {
     changes.push({ label: `memory/${f}`, path: dest, content: readTemplate(`memory/${f}`) });
     console.log(`  ✅ memory/${f} — 덮어쓰기`);
   }
+
+  // ── 5-1. scripts/audit-report.js ──────────────────────────────────────────
+  const scriptPath = path.join(CLAUDE_DIR, 'scripts', 'audit-report.js');
+  changes.push({ label: 'scripts/audit-report.js', path: scriptPath, content: readTemplate('scripts/audit-report.js') });
+  console.log(`  ✅ scripts/audit-report.js — 덮어쓰기`);
 
   // ── 6. agents/e2e-tester.md ──────────────────────────────────────────────
   const agentPath = path.join(CLAUDE_DIR, 'agents', 'e2e-tester.md');
@@ -342,6 +367,9 @@ async function install(opts = {}) {
 
   // ── 11. 보안 스캐너 자동 설치 (semgrep, gitleaks, trivy) ──────────────────
   await installScanners(dryRun);
+
+  // ── 11-1. terminal-notifier 자동 설치 (macOS 알림 신뢰성) ─────────────────
+  await installNotifier(dryRun);
 
   // ── 12. Playwright MCP 바이너리 자동 설치 ─────────────────────────────────
   await installPlaywrightMcp(dryRun);
