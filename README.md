@@ -1,6 +1,6 @@
 # cc-baseline
 
-One-command installer that wires up a full Claude Code harness — behavior rules, custom skills, autonomous agents, and hooks — across any new machine.
+One-command installer that wires up a full Claude Code harness — behavior rules, custom skills, autonomous agents, and hooks — across any machine.
 
 ---
 
