@@ -64,11 +64,23 @@ project_type_hint: <본체 추정 유형, 선택>
 
 ### Step 2: 스캐너 가용성 확인
 
+**반드시 Bash 도구로 아래 명령을 개별 실행한 뒤 결과로 판정한다.** 자연어 추측으로 "not installed" 처리 금지.
+
 ```bash
-which semgrep gitleaks trivy 2>/dev/null
+# 각 도구를 개별 변수에 저장 — 비어 있으면 미설치
+SEMGREP=$(command -v semgrep 2>/dev/null)
+GITLEAKS=$(command -v gitleaks 2>/dev/null)
+TRIVY=$(command -v trivy 2>/dev/null)
+BANDIT=$(command -v bandit 2>/dev/null)
+PIP_AUDIT=$(command -v pip-audit 2>/dev/null)
+NPM=$(command -v npm 2>/dev/null)
 ```
 
-설치되어 있으면 사용, 없으면 수동 코드 리뷰로 폴백:
+채움 규칙 (JSON 메타 필드):
+- `[ -n "$VAR" ]` (절대경로 출력 있음) → `scanners_used`에 추가
+- `[ -z "$VAR" ]` (출력 없음) → `scanners_skipped`에 `"<tool> (not installed)"` 추가
+
+폴백 매핑 (미설치 시 대체):
 
 | 카테고리 | 자동 도구 | 폴백 |
 |----------|-----------|------|

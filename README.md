@@ -14,6 +14,7 @@ Claude Code 하네스 번들 인스톨러 — 행동 규칙·커스텀 스킬·E
 | 커스텀 스킬 (`/plan`, `/clean`) | 플랜 모드 진입 스킬, 고아 프로세스 정리 스킬 |
 | E2E 테스터 에이전트 (`e2e-tester`) | Playwright MCP 기반 브라우저 E2E 테스트 실행 에이전트 |
 | 보안 감사 에이전트 (`security-auditor`) | 독립 감사자 관점의 SAST·SCA·시크릿 스캔 + 구조화 리포트 생성 |
+| 코드 리뷰 에이전트 (`code-reviewer`) | 독립 코드 품질 리뷰어 — 논리오류·엣지케이스·CLAUDE.md 위반·컨벤션 점검, 보안 영역은 security-auditor에 위임 |
 | 훅 설정 (`settings.json hooks`) | SessionStart 메모리 로드, PreToolUse E2E 가이드 로드 · cc-baseline 경로 보호, SessionEnd 프로세스 정리 |
 | MCP 서버 (`~/.claude.json`) | `playwright-test-1~5` 전역 MCP 서버 설정 |
 
@@ -85,8 +86,10 @@ npx github:fffight88/cc-baseline --dry-run
 | `memory/reference_doc_writing_style.md` | 〃 | 덮어쓰기 |
 | `memory/feedback_skill_description_budget.md` | 〃 | 덮어쓰기 |
 | `memory/reference_security_auditor_protocol.md` | 〃 | 덮어쓰기 |
+| `memory/reference_code_reviewer_protocol.md` | 〃 | 덮어쓰기 |
 | `agents/e2e-tester.md` | `~/.claude/agents/e2e-tester.md` | 덮어쓰기 |
 | `agents/security-auditor.md` | `~/.claude/agents/security-auditor.md` | 덮어쓰기 |
+| `agents/code-reviewer.md` | `~/.claude/agents/code-reviewer.md` | 덮어쓰기 |
 | `commands/plan.md` | `~/.claude/commands/plan.md` | 덮어쓰기 |
 | `commands/clean.md` | `~/.claude/commands/clean.md` | 덮어쓰기 |
 
@@ -305,6 +308,7 @@ rm ~/.claude/memory/reference_security_auditor_protocol.md
 ```bash
 rm ~/.claude/agents/e2e-tester.md
 rm ~/.claude/agents/security-auditor.md
+rm ~/.claude/agents/code-reviewer.md
 rm ~/.claude/commands/plan.md
 rm ~/.claude/commands/clean.md
 ```
@@ -482,7 +486,7 @@ cc-baseline/
 └── templates/              # 번들 파일 ({{HOME}} 플레이스홀더 포함)
     ├── CLAUDE.md
     ├── memory/             # 10개 memory 파일 (MEMORY.md + 9개 개별 규칙)
-    ├── agents/             # e2e-tester.md, security-auditor.md
+    ├── agents/             # e2e-tester.md, security-auditor.md, code-reviewer.md
     ├── commands/           # plan.md, clean.md
     ├── settings-hooks.json # hooks 섹션만
     └── mcp-servers.json    # playwright-test-1~5만
