@@ -230,6 +230,7 @@ async function uninstall(opts = {}) {
   const failures = [];
 
   // ── 6. 권한 복구 (chmod 755) ──────────────────────────────────────────────
+  // 레거시: 이전 cc-baseline이 chmod 555로 잠갔던 디렉토리 복구. 신규 버전부터는 잠금 미적용.
   try {
     const memoryDir = path.join(CLAUDE_DIR, 'memory');
     if (fs.existsSync(memoryDir)) {

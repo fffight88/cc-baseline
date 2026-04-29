@@ -134,6 +134,10 @@ function readJson(filePath) {
 function writeFile(filePath, content, dryRun) {
   if (dryRun) return;
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  // 이전 설치에서 read-only(444 등)로 남은 파일도 덮어쓸 수 있도록 권한 보정
+  if (fs.existsSync(filePath)) {
+    try { fs.chmodSync(filePath, 0o644); } catch {}
+  }
   fs.writeFileSync(filePath, content, 'utf8');
 }
 
@@ -312,11 +316,9 @@ async function install(opts = {}) {
   }
   const existingClaudeJson = (existingClaudeJsonRaw && !existingClaudeJsonRaw.__parseError) ? existingClaudeJsonRaw : {};
   const incomingMcp = JSON.parse(readTemplate('mcp-servers.json'));
-  const { result: mergedMcp, added, overwritten } = await mergeMcpServers(
+  const { result: mergedMcp, added, overwritten } = mergeMcpServers(
     existingClaudeJson.mcpServers || {},
-    incomingMcp,
-    confirm,
-    autoYes
+    incomingMcp
   );
   if (added.length > 0 || overwritten.length > 0) {
     const newClaudeJson = Object.assign({}, existingClaudeJson, { mcpServers: mergedMcp });
@@ -342,23 +344,20 @@ async function install(opts = {}) {
     return;
   }
 
-  // memory/ 디렉토리 쓰기 잠금 해제 (이전 설치 시 555로 잠겼을 수 있음)
-  try {
-    fs.chmodSync(path.join(CLAUDE_DIR, 'memory'), 0o755);
-    appendLog('CHMOD 755: memory/ (unlock for write)');
-  } catch {}
+  // 이전 설치 잠금(chmod 555) 마이그레이션: 레거시 잠금이 남아있을 수 있어 한 번 풀어줌
+  // 신규 버전부터는 chmod 555 잠금 미적용 — 보호는 PreToolUse hook이 담당
+  const memoryDir = path.join(CLAUDE_DIR, 'memory');
+  if (fs.existsSync(memoryDir)) {
+    try {
+      fs.chmodSync(memoryDir, 0o755);
+      appendLog('MIGRATE CHMOD 755: memory/ (legacy lock removal)');
+    } catch {}
+  }
 
   for (const change of changes) {
     writeFile(change.path, change.content, false);
     appendLog(`WRITE: ${change.path}`);
   }
-
-  // memory/ 디렉토리를 읽기 전용으로 잠금 (cc-baseline 경로 보호)
-  // chmod 555: 새 파일 추가·수정 모두 차단. 수정 시엔 chmod 755 후 작업.
-  try {
-    fs.chmodSync(path.join(CLAUDE_DIR, 'memory'), 0o555);
-    appendLog('CHMOD 555: memory/');
-  } catch {}
 
   // bin/cli.js 실행 권한 보장
   try {

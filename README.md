@@ -35,6 +35,14 @@ Setting up Claude Code consistently across machines is tedious. cc-baseline solv
 npx github:fffight88/cc-baseline
 ```
 
+Non-interactive (CI / re-install):
+
+```bash
+npx --yes github:fffight88/cc-baseline --yes
+```
+
+> `--yes` before the package name tells **npx** to skip its own "Ok to proceed?" prompt. `--yes` after the package name tells **cc-baseline** to auto-approve its prompts.
+
 Preview changes before applying:
 
 ```bash
@@ -129,7 +137,7 @@ The five `playwright-test-*` MCP server entries in `~/.claude.json` point to the
 | Flag | Description |
 |---|---|
 | `--dry-run` | Print planned changes without writing any files |
-| `--yes`, `-y` | Auto-approve all prompts (useful in CI) |
+| `--yes`, `-y` | Auto-approve all cc-baseline prompts. For fully non-interactive install, also pass `--yes` to npx itself: `npx --yes github:fffight88/cc-baseline --yes` |
 | `--help`, `-h` | Show help |
 
 ---
@@ -178,19 +186,11 @@ Low conflict risk — both hooks run together. No action required.
 
 ## Editing memory/ Files After Install
 
-`~/.claude/memory/` is locked **read-only (chmod 555)** after install to prevent auto-memory from polluting cc-baseline paths. To edit:
+`~/.claude/memory/` is protected by a `PreToolUse` hook that **denies Claude's `Write`/`Edit` tool** from modifying this path (so auto-memory writes go to `~/.claude/projects/...` instead). The directory itself uses normal permissions (755), so **you can edit files manually** with any editor.
 
-```bash
-# 1. Unlock
-chmod 755 ~/.claude/memory/
+> **Note:** Manual edits are overwritten on the next `cc-baseline` install. To customize, fork the repo and modify `templates/memory/`.
 
-# 2. Edit the file
-
-# 3. Re-lock
-chmod 555 ~/.claude/memory/
-```
-
-> **Note:** Leave it unlocked only while editing. Claude Code auto-memory may write to this path if it stays writable.
+> **Migrating from older versions (≤ v1.0.x):** Earlier releases locked this directory with `chmod 555`. Re-running the installer automatically restores normal permissions.
 
 ---
 
@@ -402,6 +402,20 @@ EACCES: permission denied, open '~/.claude/settings.json'
 ```
 
 Fix ownership: `sudo chown -R $(whoami) ~/.claude/`
+
+### Permission error on memory/ (WSL2/Linux)
+
+```
+EACCES: permission denied, open '~/.claude/memory/MEMORY.md'
+```
+
+Legacy `chmod 555` lock from an older install. The new installer auto-recovers, but if it fails manually:
+
+```bash
+chmod 755 ~/.claude/memory
+chmod 644 ~/.claude/memory/*.md
+npx github:fffight88/cc-baseline --yes
+```
 
 ### JSON parse error
 

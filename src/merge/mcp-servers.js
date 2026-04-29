@@ -1,32 +1,16 @@
 'use strict';
 
-async function mergeMcpServers(existing, incoming, confirmFn, autoYes) {
+// cc-baseline이 관리하는 MCP 서버 키는 항상 silent overwrite.
+// 사용자 커스텀 키와 이름이 겹칠 가능성이 없도록 cc-baseline은 고유 키명(playwright-test-N)을 사용.
+function mergeMcpServers(existing, incoming) {
   const result = Object.assign({}, existing);
   const added = [];
   const overwritten = [];
 
   for (const [key, val] of Object.entries(incoming)) {
     if (result[key]) {
-      const prev = result[key] || {};
-      const isLegacyHarness =
-        prev.command === 'npx' &&
-        Array.isArray(prev.args) &&
-        prev.args[0] === '@playwright/mcp';
-
-      if (isLegacyHarness) {
-        result[key] = val;
-        overwritten.push(key);
-        continue;
-      }
-
-      const ok = await confirmFn(
-        `[mcpServers] "${key}"가 이미 존재합니다. 덮어쓰겠습니까?`,
-        autoYes
-      );
-      if (ok) {
-        result[key] = val;
-        overwritten.push(key);
-      }
+      result[key] = val;
+      overwritten.push(key);
     } else {
       result[key] = val;
       added.push(key);
