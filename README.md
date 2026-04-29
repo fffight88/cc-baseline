@@ -94,7 +94,7 @@ npx github:fffight88/cc-baseline --dry-run
 | Target | Method |
 |---|---|
 | `hooks` key in `~/.claude/settings.json` | Deduplicates by `statusMessage`; replaces only harness hooks, leaves user hooks intact |
-| `mcpServers` key in `~/.claude.json` | Adds `playwright-test-1~5`; prompts before overwriting an existing key with the same name |
+| `mcpServers` key in `~/.claude.json` | Adds `playwright-test-1~5`; always silently overwrites existing entries with the same key (cc-baseline managed) |
 
 > **Never touched:** `settings.json` fields like `env`, `model`, `effortLevel`; usage stats and UI state in `~/.claude.json`
 
@@ -428,7 +428,7 @@ Your `settings.json` or `.claude.json` is malformed. Restore from backup or vali
 ### Stale npx cache
 
 ```bash
-npx --yes github:fffight88/cc-baseline
+npx --yes github:fffight88/cc-baseline --yes
 # or pin a specific commit/tag:
 npx github:fffight88/cc-baseline#v1.0.0
 ```
@@ -453,6 +453,6 @@ npm install -g @playwright/mcp --prefix ~/.npm-global
 cat ~/.claude.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('mcpServers',{}).get('playwright-test-1',{}).get('command'))"
 ```
 
-Should print `~/.npm-global/bin/playwright-mcp`. If it shows `npx`, re-run `npx github:fffight88/cc-baseline --yes` to fix it automatically.
+Should print `~/.npm-global/bin/playwright-mcp`. If it shows `npx`, re-run `npx --yes github:fffight88/cc-baseline --yes` to fix it automatically.
 
 **Restart Claude Code** after confirming the path is correct.
