@@ -19,25 +19,110 @@ async function installScanners(dryRun) {
     console.log('[DRY RUN] 스캐너 설치를 건너뜁니다.');
     return;
   }
-  const platform = process.platform;
+  if (process.platform === 'darwin') {
+    installScannersMac(missing);
+  } else {
+    installScannersLinux(missing);
+  }
+}
+
+function installScannersMac(missing) {
   try {
-    if (platform === 'darwin') {
-      execSync(`brew install ${missing.join(' ')}`, { stdio: 'inherit' });
-    } else {
-      // Linux/WSL
-      for (const s of missing) {
-        if (s === 'semgrep') {
-          execSync('pipx install semgrep || pip install semgrep', { stdio: 'inherit', shell: true });
-        } else if (s === 'gitleaks') {
-          execSync('curl -sSfL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_linux_amd64.tar.gz | tar -xz -C /usr/local/bin gitleaks', { stdio: 'inherit', shell: true });
-        } else if (s === 'trivy') {
-          execSync('curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin', { stdio: 'inherit', shell: true });
-        }
-      }
-    }
+    execSync(`brew install ${missing.join(' ')}`, { stdio: 'inherit' });
     console.log('  ✅ 스캐너 설치 완료');
   } catch (e) {
-    console.log(`  ⚠️  스캐너 자동 설치 실패 (수동 설치 필요): ${e.message}`);
+    console.log(`  ⚠️  brew 설치 실패: ${e.message}`);
+    console.log(`     수동: brew install ${missing.join(' ')}`);
+  }
+}
+
+function installScannersLinux(missing) {
+  const localBin = path.join(HOME, '.local', 'bin');
+  fs.mkdirSync(localBin, { recursive: true });
+
+  const failures = [];
+  for (const s of missing) {
+    try {
+      if (s === 'semgrep') installSemgrepLinux(localBin);
+      else if (s === 'gitleaks') installGitleaksLinux(localBin);
+      else if (s === 'trivy') installTrivyLinux(localBin);
+      console.log(`  ✅ ${s} 설치 완료`);
+    } catch (e) {
+      const errMsg = (e && e.message) ? e.message.split('\n')[0] : String(e);
+      console.log(`  ⚠️  ${s} 설치 실패: ${errMsg}`);
+      failures.push(s);
+    }
+  }
+
+  warnPathIfMissing(localBin);
+  if (failures.length > 0) printManualScannerCommands(failures, localBin);
+}
+
+function installSemgrepLinux(localBin) {
+  if (!checkCmd('python3')) {
+    throw new Error('python3 미설치 (sudo apt install python3 python3-venv 필요)');
+  }
+  if (checkCmd('pipx')) {
+    execSync('pipx install semgrep', { stdio: 'inherit' });
+    return;
+  }
+  // venv 격리 설치 — Ubuntu 24.04 PEP 668 우회, sudo 불필요
+  const venvDir = path.join(HOME, '.local', 'share', 'cc-baseline', 'semgrep-venv');
+  fs.mkdirSync(path.dirname(venvDir), { recursive: true });
+  execSync(`python3 -m venv "${venvDir}"`, { stdio: 'inherit' });
+  execSync(`"${venvDir}/bin/pip" install --quiet --upgrade pip`, { stdio: 'inherit' });
+  execSync(`"${venvDir}/bin/pip" install --quiet semgrep`, { stdio: 'inherit' });
+  const target = path.join(localBin, 'semgrep');
+  try { fs.unlinkSync(target); } catch {}
+  fs.symlinkSync(path.join(venvDir, 'bin', 'semgrep'), target);
+}
+
+function installGitleaksLinux(localBin) {
+  const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
+  const apiUrl = 'https://api.github.com/repos/gitleaks/gitleaks/releases/latest';
+  const tagJson = execSync(`curl -sSfL "${apiUrl}"`, { encoding: 'utf8' });
+  const tag = JSON.parse(tagJson).tag_name;
+  if (!/^v\d+\.\d+\.\d+$/.test(tag)) {
+    throw new Error(`gitleaks 최신 tag 파싱 실패: ${tag}`);
+  }
+  const ver = tag.slice(1);
+  const url = `https://github.com/gitleaks/gitleaks/releases/download/${tag}/gitleaks_${ver}_linux_${arch}.tar.gz`;
+  const tmpFile = `/tmp/gitleaks-${process.pid}.tar.gz`;
+  try {
+    execSync(`curl -sSfL "${url}" -o "${tmpFile}"`, { stdio: 'inherit' });
+    execSync(`tar -xzf "${tmpFile}" -C "${localBin}" gitleaks`, { stdio: 'inherit' });
+    fs.chmodSync(path.join(localBin, 'gitleaks'), 0o755);
+  } finally {
+    try { fs.unlinkSync(tmpFile); } catch {}
+  }
+}
+
+function installTrivyLinux(localBin) {
+  execSync(
+    `curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b "${localBin}"`,
+    { stdio: 'inherit' }
+  );
+}
+
+function warnPathIfMissing(localBin) {
+  const pathEntries = (process.env.PATH || '').split(path.delimiter);
+  if (!pathEntries.includes(localBin)) {
+    console.log(`\n  ℹ️  PATH 확인: ${localBin} 이(가) PATH에 없습니다.`);
+    console.log(`     셸 rc에 추가하세요: export PATH="$HOME/.local/bin:$PATH"`);
+  }
+}
+
+function printManualScannerCommands(failures, localBin) {
+  console.log('\n  ⚠️  자동 설치에 실패한 스캐너의 수동 설치 명령:');
+  for (const s of failures) {
+    if (s === 'semgrep') {
+      console.log('     - semgrep: sudo apt install -y python3-venv pipx && pipx install semgrep');
+    } else if (s === 'gitleaks') {
+      console.log(`     - gitleaks: GitHub Releases에서 linux 바이너리 다운로드 → ${localBin}/`);
+      console.log('               https://github.com/gitleaks/gitleaks/releases/latest');
+    } else if (s === 'trivy') {
+      console.log(`     - trivy: curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b "${localBin}"`);
+    }
   }
 }
 

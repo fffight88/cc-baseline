@@ -107,9 +107,17 @@ npx github:fffight88/cc-baseline --dry-run
 `semgrep`, `gitleaks`, and `trivy` are installed automatically:
 
 - **macOS**: `brew install semgrep gitleaks trivy`
-- **Linux/WSL**: pipx (semgrep) + official binaries (gitleaks, trivy)
+- **Linux/WSL**: installed to `~/.local/bin` (no sudo required)
+  - `semgrep` → isolated venv at `~/.local/share/cc-baseline/semgrep-venv`, symlinked into `~/.local/bin` (PEP 668 bypass for Ubuntu 24.04+)
+  - `gitleaks` → latest GitHub release binary, architecture auto-detected (x64/arm64)
+  - `trivy` → official `install.sh` with `-b ~/.local/bin`
 
-Already installed? Skipped silently. If auto-install fails, cc-baseline still completes and prints a warning. The `security-auditor` agent falls back to manual code review when scanners are absent.
+> **PATH:** ensure `~/.local/bin` is in your `$PATH`. cc-baseline prints a warning if not. Add to your shell rc:
+> ```bash
+> export PATH="$HOME/.local/bin:$PATH"
+> ```
+
+Already installed? Skipped silently. If a scanner's auto-install fails, cc-baseline prints a manual command and proceeds — `security-auditor` falls back to manual code review when scanners are absent.
 
 ### terminal-notifier (macOS)
 
@@ -415,6 +423,29 @@ Legacy `chmod 555` lock from an older install. The new installer auto-recovers, 
 chmod 755 ~/.claude/memory
 chmod 644 ~/.claude/memory/*.md
 npx github:fffight88/cc-baseline --yes
+```
+
+### Scanner install failed (Linux/WSL)
+
+If `semgrep`, `gitleaks`, or `trivy` failed to install automatically, cc-baseline prints the manual command. Or run these yourself:
+
+```bash
+# semgrep (Ubuntu 24.04+)
+sudo apt install -y python3-venv pipx
+pipx install semgrep
+
+# gitleaks — download latest linux binary from:
+# https://github.com/gitleaks/gitleaks/releases/latest
+# then: mv gitleaks ~/.local/bin/ && chmod 755 ~/.local/bin/gitleaks
+
+# trivy
+curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b ~/.local/bin
+```
+
+Add `~/.local/bin` to PATH if not already:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"  # add to ~/.bashrc or ~/.zshrc
 ```
 
 ### JSON parse error
