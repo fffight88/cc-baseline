@@ -438,8 +438,9 @@ pipx install semgrep
 # https://github.com/gitleaks/gitleaks/releases/latest
 # then: mv gitleaks ~/.local/bin/ && chmod 755 ~/.local/bin/gitleaks
 
-# trivy
-curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b ~/.local/bin
+# trivy — download latest linux binary from:
+# https://github.com/aquasecurity/trivy/releases/latest
+# then: tar -xzf trivy_*_Linux-64bit.tar.gz trivy && mv trivy ~/.local/bin/ && chmod 755 ~/.local/bin/trivy
 ```
 
 Add `~/.local/bin` to PATH if not already:

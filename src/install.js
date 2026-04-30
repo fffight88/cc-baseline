@@ -1,10 +1,14 @@
 'use strict';
 
-const { execSync } = require('child_process');
+const { execSync, spawnSync } = require('child_process');
 const fs = require('fs');
+const os = require('os');
+const { createHash } = require('crypto');
+const path = require('path');
+const { HOME, applyHome, NPM_GLOBAL_PREFIX, PLAYWRIGHT_MCP_BIN } = require('./paths');
 
 function checkCmd(cmd) {
-  try { execSync(`which ${cmd}`, { stdio: 'ignore' }); return true; } catch { return false; }
+  return spawnSync('which', [cmd], { stdio: 'ignore' }).status === 0;
 }
 
 async function installScanners(dryRun) {
@@ -69,39 +73,94 @@ function installSemgrepLinux(localBin) {
   // venv 격리 설치 — Ubuntu 24.04 PEP 668 우회, sudo 불필요
   const venvDir = path.join(HOME, '.local', 'share', 'cc-baseline', 'semgrep-venv');
   fs.mkdirSync(path.dirname(venvDir), { recursive: true });
-  execSync(`python3 -m venv "${venvDir}"`, { stdio: 'inherit' });
-  execSync(`"${venvDir}/bin/pip" install --quiet --upgrade pip`, { stdio: 'inherit' });
-  execSync(`"${venvDir}/bin/pip" install --quiet semgrep`, { stdio: 'inherit' });
+  spawnSync('python3', ['-m', 'venv', venvDir], { stdio: 'inherit' });
+  spawnSync(`${venvDir}/bin/pip`, ['install', '--quiet', '--upgrade', 'pip'], { stdio: 'inherit' });
+  spawnSync(`${venvDir}/bin/pip`, ['install', '--quiet', 'semgrep'], { stdio: 'inherit' });
   const target = path.join(localBin, 'semgrep');
-  try { fs.unlinkSync(target); } catch {}
+  try {
+    fs.unlinkSync(target);
+  } catch (unlinkErr) {
+    if (unlinkErr.code !== 'ENOENT') {
+      throw new Error(`semgrep 심볼릭 링크 교체 실패 (기존 파일 삭제 불가): ${unlinkErr.message}`);
+    }
+  }
   fs.symlinkSync(path.join(venvDir, 'bin', 'semgrep'), target);
 }
 
 function installGitleaksLinux(localBin) {
-  const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
+  const ARCH_MAP = { arm64: 'arm64', x64: 'x64' };
+  const arch = ARCH_MAP[process.arch];
+  if (!arch) throw new Error(`gitleaks: 지원되지 않는 아키텍처 ${process.arch} (지원: arm64, x64)`);
   const apiUrl = 'https://api.github.com/repos/gitleaks/gitleaks/releases/latest';
   const tagJson = execSync(`curl -sSfL "${apiUrl}"`, { encoding: 'utf8' });
-  const tag = JSON.parse(tagJson).tag_name;
+  let parsed;
+  try { parsed = JSON.parse(tagJson); } catch {
+    throw new Error('GitHub API 응답 JSON 파싱 실패 (rate limit 또는 네트워크 오류일 수 있음)');
+  }
+  const tag = parsed.tag_name;
   if (!/^v\d+\.\d+\.\d+$/.test(tag)) {
     throw new Error(`gitleaks 최신 tag 파싱 실패: ${tag}`);
   }
   const ver = tag.slice(1);
-  const url = `https://github.com/gitleaks/gitleaks/releases/download/${tag}/gitleaks_${ver}_linux_${arch}.tar.gz`;
-  const tmpFile = `/tmp/gitleaks-${process.pid}.tar.gz`;
+  const tarName = `gitleaks_${ver}_linux_${arch}.tar.gz`;
+  const url = `https://github.com/gitleaks/gitleaks/releases/download/${tag}/${tarName}`;
+  const checksumUrl = `https://github.com/gitleaks/gitleaks/releases/download/${tag}/checksums.txt`;
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gitleaks-'));
   try {
+    const tmpFile = path.join(tmpDir, 'gitleaks.tar.gz');
+    const tmpChecksums = path.join(tmpDir, 'checksums.txt');
+    execSync(`curl -sSfL "${checksumUrl}" -o "${tmpChecksums}"`, { stdio: 'inherit' });
     execSync(`curl -sSfL "${url}" -o "${tmpFile}"`, { stdio: 'inherit' });
+    const checksumLine = fs.readFileSync(tmpChecksums, 'utf8')
+      .split('\n').find(l => l.includes(tarName));
+    if (!checksumLine) throw new Error('checksums.txt에서 해당 파일 항목을 찾을 수 없음');
+    const expected = checksumLine.split(/\s+/)[0];
+    const actual = createHash('sha256').update(fs.readFileSync(tmpFile)).digest('hex');
+    if (actual !== expected) throw new Error(`체크섬 불일치: expected=${expected} actual=${actual}`);
     execSync(`tar -xzf "${tmpFile}" -C "${localBin}" gitleaks`, { stdio: 'inherit' });
     fs.chmodSync(path.join(localBin, 'gitleaks'), 0o755);
   } finally {
-    try { fs.unlinkSync(tmpFile); } catch {}
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 }
 
 function installTrivyLinux(localBin) {
-  execSync(
-    `curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b "${localBin}"`,
-    { stdio: 'inherit' }
-  );
+  const ARCH_MAP = { arm64: 'ARM64', x64: '64bit' };
+  const archSuffix = ARCH_MAP[process.arch];
+  if (!archSuffix) throw new Error(`trivy: 지원되지 않는 아키텍처 ${process.arch} (지원: arm64, x64)`);
+  const apiUrl = 'https://api.github.com/repos/aquasecurity/trivy/releases/latest';
+  const tagJson = execSync(`curl -sSfL "${apiUrl}"`, { encoding: 'utf8' });
+  let parsed;
+  try { parsed = JSON.parse(tagJson); } catch {
+    throw new Error('GitHub API 응답 JSON 파싱 실패 (rate limit 또는 네트워크 오류일 수 있음)');
+  }
+  const tag = parsed.tag_name;
+  if (!/^v\d+\.\d+\.\d+$/.test(tag)) {
+    throw new Error(`trivy 최신 tag 파싱 실패: ${tag}`);
+  }
+  const ver = tag.slice(1);
+  const tarName = `trivy_${ver}_Linux-${archSuffix}.tar.gz`;
+  const url = `https://github.com/aquasecurity/trivy/releases/download/${tag}/${tarName}`;
+  const checksumUrl = `https://github.com/aquasecurity/trivy/releases/download/${tag}/trivy_${ver}_checksums.txt`;
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'trivy-'));
+  try {
+    const tmpFile = path.join(tmpDir, 'trivy.tar.gz');
+    const tmpChecksums = path.join(tmpDir, 'checksums.txt');
+    execSync(`curl -sSfL "${checksumUrl}" -o "${tmpChecksums}"`, { stdio: 'inherit' });
+    execSync(`curl -sSfL "${url}" -o "${tmpFile}"`, { stdio: 'inherit' });
+    const checksumLine = fs.readFileSync(tmpChecksums, 'utf8')
+      .split('\n').find(l => l.includes(tarName));
+    if (!checksumLine) throw new Error('checksums.txt에서 해당 파일 항목을 찾을 수 없음');
+    const expected = checksumLine.split(/\s+/)[0];
+    const actual = createHash('sha256').update(fs.readFileSync(tmpFile)).digest('hex');
+    if (actual !== expected) throw new Error(`체크섬 불일치: expected=${expected} actual=${actual}`);
+    execSync(`tar -xzf "${tmpFile}" -C "${localBin}" trivy`, { stdio: 'inherit' });
+    fs.chmodSync(path.join(localBin, 'trivy'), 0o755);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 }
 
 function warnPathIfMissing(localBin) {
@@ -121,7 +180,8 @@ function printManualScannerCommands(failures, localBin) {
       console.log(`     - gitleaks: GitHub Releases에서 linux 바이너리 다운로드 → ${localBin}/`);
       console.log('               https://github.com/gitleaks/gitleaks/releases/latest');
     } else if (s === 'trivy') {
-      console.log(`     - trivy: curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b "${localBin}"`);
+      console.log(`     - trivy: GitHub Releases에서 linux 바이너리 다운로드 → ${localBin}/`);
+      console.log('               https://github.com/aquasecurity/trivy/releases/latest');
     }
   }
 }
@@ -177,9 +237,6 @@ async function installPlaywrightMcp(dryRun) {
   }
 }
 
-const path = require('path');
-
-const { HOME, applyHome, NPM_GLOBAL_PREFIX, PLAYWRIGHT_MCP_BIN } = require('./paths');
 const { createBackup } = require('./backup');
 const { confirm } = require('./prompt');
 const { checkConflicts } = require('./conflict-checker');
