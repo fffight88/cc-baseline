@@ -3,9 +3,9 @@
 const { isHarnessHook } = require('../conflict-checker');
 
 const HARNESS_STATUS_MESSAGES_ALL = [
-  '세션 기본 규칙 로딩 중...',
-  'E2E 테스트 가이드 로딩 중...',
-  'cc-baseline 경로 정책 적용 중...',
+  'Loading session rules...',
+  'Loading E2E test guide...',
+  'Applying cc-baseline path policy...',
 ];
 const HARNESS_SESSION_END_COMMAND_PREFIX = "pgrep -f '@anthropic-ai/claude-code'";
 
@@ -50,7 +50,7 @@ function mergeHooks(existingHooks, harnessHooks) {
       for (const harnessHook of harnessEntry.hooks) {
         let replaced = false;
 
-        // 동일 statusMessage를 가진 기존 하네스 훅 교체
+        // replace existing harness hook with the same statusMessage
         for (const existingEntry of result[event]) {
           const idx = (existingEntry.hooks || []).findIndex(
             h => h.statusMessage && h.statusMessage === harnessHook.statusMessage
@@ -63,7 +63,7 @@ function mergeHooks(existingHooks, harnessHooks) {
         }
 
         if (!replaced) {
-          // 동일 matcher를 가진 entry에 추가, 없으면 새 entry 생성
+          // append to entry with the same matcher, or create new entry if none exists
           const matcherTarget = harnessEntry.matcher;
           const matchEntry = result[event].find(e => e.matcher === matcherTarget);
           if (matchEntry) {

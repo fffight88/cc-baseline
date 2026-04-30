@@ -9,11 +9,11 @@ function mergeMarkerBlock(existing, blockContent) {
   const endIdx = existing.indexOf(END);
 
   if (beginIdx !== -1 && endIdx !== -1 && endIdx > beginIdx) {
-    // 기존 마커 블록 교체
+    // replace existing marker block
     return existing.slice(0, beginIdx) + block + existing.slice(endIdx + END.length);
   }
 
-  // 기존 블록 없으면 파일 끝에 append
+  // no existing block — append to end of file
   const sep = existing.length > 0 ? (existing.endsWith('\n') ? '\n' : '\n\n') : '';
   return existing + sep + block + '\n';
 }

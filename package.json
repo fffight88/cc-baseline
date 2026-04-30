@@ -1,7 +1,7 @@
 {
   "name": "cc-baseline",
   "version": "1.0.0",
-  "description": "Claude Code 하네스 번들 인스톨러 — 행동 규칙·커스텀 스킬·E2E 에이전트·훅 설정을 새 머신에 한 줄로 설치",
+  "description": "Claude Code harness bundle installer — wires up behavior rules, custom skills, E2E agents, and hook config in a single command",
   "license": "MIT",
   "engines": {
     "node": ">=18"

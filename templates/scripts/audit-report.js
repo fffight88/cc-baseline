@@ -2,22 +2,22 @@
 'use strict';
 
 /**
- * audit-report.js — cc-baseline 감사·리뷰 결과 HTML 리포트 생성기
+ * audit-report.js — cc-baseline audit & review HTML report generator
  *
- * 사용법:
+ * Usage:
  *   node ~/.claude/scripts/audit-report.js <audit-dir>
  *
- * <audit-dir> 예시:
+ * <audit-dir> example:
  *   /path/to/project/.cc-audits/my-plan-slug
  *
- * 출력:
- *   <audit-dir>/report.html  (기존 파일 덮어쓰기)
+ * Output:
+ *   <audit-dir>/report.html  (overwrites existing file)
  */
 
 const fs = require('fs');
 const path = require('path');
 
-// ── HTML 이스케이프 ────────────────────────────────────────────────────────
+// ── HTML escape ────────────────────────────────────────────────────────────
 function esc(str) {
   if (str == null) return '';
   return String(str)
@@ -28,17 +28,17 @@ function esc(str) {
     .replace(/'/g, '&#39;');
 }
 
-// ── JSON 파일 로드 ─────────────────────────────────────────────────────────
+// ── Load JSON files ────────────────────────────────────────────────────────
 function loadJson(filePath) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch (e) {
-    console.warn(`[warn] ${filePath} 읽기 실패: ${e.message}`);
+    console.warn(`[warn] Failed to read ${filePath}: ${e.message}`);
     return null;
   }
 }
 
-// ── 파일 수집 ──────────────────────────────────────────────────────────────
+// ── Collect report files ───────────────────────────────────────────────────
 function collectReports(auditDir) {
   const files = fs.readdirSync(auditDir).filter(f => f.endsWith('.json'));
 
@@ -58,7 +58,7 @@ function collectReports(auditDir) {
   return { secIters, codeIters };
 }
 
-// ── severity 색상 ──────────────────────────────────────────────────────────
+// ── Severity colors ────────────────────────────────────────────────────────
 const SEV_COLOR = {
   CRITICAL: '#dc2626',
   HIGH:     '#ea580c',
@@ -79,7 +79,7 @@ function sevBadge(sev) {
   return `<span style="background:${bg};color:${color};padding:2px 8px;border-radius:4px;font-size:12px;font-weight:700">${esc(s)}</span>`;
 }
 
-// ── decision_type 배지 ─────────────────────────────────────────────────────
+// ── decision_type badges ───────────────────────────────────────────────────
 const DT_COLOR = { auto: '#1d4ed8', design: '#7c3aed', business: '#15803d' };
 const DT_BG    = { auto: '#dbeafe', design: '#ede9fe', business: '#dcfce7' };
 
@@ -90,7 +90,7 @@ function dtBadge(dt) {
   return `<span style="background:${bg};color:${color};padding:2px 8px;border-radius:4px;font-size:11px">${esc(dt)}</span>`;
 }
 
-// ── 요약 카드 ──────────────────────────────────────────────────────────────
+// ── Summary cards ──────────────────────────────────────────────────────────
 function summaryCard(label, summary) {
   if (!summary) return '';
   const { critical = 0, high = 0, medium = 0, low = 0 } = summary;
@@ -113,11 +113,11 @@ function summaryCard(label, summary) {
     </div>`;
 }
 
-// ── 이슈 테이블 ────────────────────────────────────────────────────────────
+// ── Issues table ───────────────────────────────────────────────────────────
 const SEV_ORDER = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
 
 function issuesTable(issues, title) {
-  if (!issues || issues.length === 0) return `<p style="color:#6b7280;font-style:italic">이슈 없음</p>`;
+  if (!issues || issues.length === 0) return `<p style="color:#6b7280;font-style:italic">No issues</p>`;
 
   const sorted = [...issues].sort((a, b) =>
     (SEV_ORDER[(a.severity || '').toUpperCase()] ?? 9) -
@@ -167,7 +167,7 @@ function issuesTable(issues, title) {
     </div>`;
 }
 
-// ── passed_checks 섹션 ─────────────────────────────────────────────────────
+// ── passed_checks section ──────────────────────────────────────────────────
 function passedSection(checks) {
   if (!checks || checks.length === 0) return '';
   const items = checks.map(c =>
@@ -176,7 +176,7 @@ function passedSection(checks) {
   return `<ul style="margin:0;padding-left:20px;list-style:none">${items}</ul>`;
 }
 
-// ── intentional_residuals 섹션 ─────────────────────────────────────────────
+// ── intentional_residuals section ─────────────────────────────────────────
 function residualsSection(residuals) {
   if (!residuals || residuals.length === 0) return '';
   const items = residuals.map(r =>
@@ -185,7 +185,7 @@ function residualsSection(residuals) {
   return `<ul style="margin:0;padding-left:20px;list-style:none">${items}</ul>`;
 }
 
-// ── verification 섹션 (security-auditor) ──────────────────────────────────
+// ── verification section (security-auditor) ───────────────────────────────
 function verificationSection(verification) {
   if (!verification || Object.keys(verification).length === 0) return '';
   const items = Object.entries(verification).map(([id, status]) => {
@@ -196,11 +196,11 @@ function verificationSection(verification) {
   return `<ul style="margin:0;padding-left:20px;list-style:none">${items}</ul>`;
 }
 
-// ── 이전 iter 요약 (collapsible) ──────────────────────────────────────────
+// ── Previous iter summary (collapsible) ───────────────────────────────────
 function prevIterSummary(iters, label) {
   if (iters.length === 0) return '';
   const rows = iters.map(({ n, data }) => {
-    if (!data) return `<tr><td colspan="5" style="padding:6px">iter-${n}: 파싱 실패</td></tr>`;
+    if (!data) return `<tr><td colspan="5" style="padding:6px">iter-${n}: parse error</td></tr>`;
     const s = data.summary || {};
     const term = data.termination || {};
     const ts = (data.scan_metadata || {}).timestamp || '';
@@ -211,26 +211,25 @@ function prevIterSummary(iters, label) {
       <td style="padding:6px">${esc(term.next_action)}</td>
     </tr>`;
   });
-  const id = `prev-${label.replace(/\s/g, '-')}`;
   return `
     <details style="margin-top:16px;border:1px solid #e5e7eb;border-radius:6px;padding:8px">
-      <summary style="cursor:pointer;font-weight:600;color:#374151">이전 ${esc(label)} 이력 (${iters.length}개)</summary>
+      <summary style="cursor:pointer;font-weight:600;color:#374151">Previous ${esc(label)} history (${iters.length})</summary>
       <table style="border-collapse:collapse;width:100%;font-size:12px;margin-top:8px">
         <thead><tr style="background:#f9fafb">
           <th style="padding:6px;text-align:left">Iter</th>
-          <th style="padding:6px;text-align:left">날짜</th>
-          <th style="padding:6px;text-align:left">요약</th>
-          <th style="padding:6px;text-align:left">다음 액션</th>
+          <th style="padding:6px;text-align:left">Date</th>
+          <th style="padding:6px;text-align:left">Summary</th>
+          <th style="padding:6px;text-align:left">Next action</th>
         </tr></thead>
         <tbody>${rows.join('')}</tbody>
       </table>
     </details>`;
 }
 
-// ── 메인 HTML 렌더링 ───────────────────────────────────────────────────────
+// ── Main HTML render ───────────────────────────────────────────────────────
 function renderHtml({ auditDir, secIters, codeIters }) {
   const planSlug = path.basename(auditDir);
-  const generatedAt = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+  const generatedAt = new Date().toLocaleString('en-US');
 
   const latestSec = secIters.length > 0 ? loadJson(secIters[secIters.length - 1].file) : null;
   const latestCode = codeIters.length > 0 ? loadJson(codeIters[codeIters.length - 1].file) : null;
@@ -238,22 +237,22 @@ function renderHtml({ auditDir, secIters, codeIters }) {
   const secMeta = (latestSec || {}).scan_metadata || {};
   const targetDir = secMeta.target_dir || (latestCode || {}).scan_metadata?.target_dir || auditDir;
 
-  // 이전 iter (마지막 제외)
+  // previous iters (exclude last)
   const prevSecIters = secIters.slice(0, -1).map(({ n, file }) => ({ n, data: loadJson(file) }));
   const prevCodeIters = codeIters.slice(0, -1).map(({ n, file }) => ({ n, data: loadJson(file) }));
 
-  // termination 배지
+  // termination badges
   const secTerm = (latestSec || {}).termination || {};
   const codeTerm = (latestCode || {}).termination || {};
   const termColor = (reason) => reason === 'critical_high_zero' ? '#15803d' : '#ca8a04';
-  const termText = (reason) => reason === 'critical_high_zero' ? '✅ 완료 (C/H=0)' : reason === 'limit_reached' ? '⚠️ 한계 도달' : reason || '-';
+  const termText = (reason) => reason === 'critical_high_zero' ? '✅ Done (C/H=0)' : reason === 'limit_reached' ? '⚠️ Limit reached' : reason || '-';
 
   return `<!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>감사 리포트 — ${esc(planSlug)}</title>
+  <title>Audit Report — ${esc(planSlug)}</title>
   <style>
     * { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; background: #f9fafb; color: #111827; }
@@ -271,7 +270,7 @@ function renderHtml({ auditDir, secIters, codeIters }) {
 <body>
 
 <div class="header">
-  <h1>🔍 감사·리뷰 리포트</h1>
+  <h1>🔍 Audit &amp; Review Report</h1>
   <div class="meta">
     <strong>Plan:</strong> ${esc(planSlug)} &nbsp;|&nbsp;
     <strong>Target:</strong> ${esc(targetDir)} &nbsp;|&nbsp;
@@ -281,83 +280,83 @@ function renderHtml({ auditDir, secIters, codeIters }) {
 
 <div class="content">
 
-  <!-- ── 요약 카드 ────────────────── -->
+  <!-- ── Summary cards ────────────────── -->
   <div class="section">
-    <h2>요약</h2>
+    <h2>Summary</h2>
     <div style="display:flex;gap:32px;flex-wrap:wrap">
       ${summaryCard('Security Audit (iter-' + (secIters.length > 0 ? secIters[secIters.length-1].n : '-') + ')', (latestSec || {}).summary)}
       ${summaryCard('Code Review (iter-' + (codeIters.length > 0 ? codeIters[codeIters.length-1].n : '-') + ')', (latestCode || {}).summary)}
     </div>
     <div style="margin-top:12px;display:flex;gap:24px;font-size:13px;flex-wrap:wrap">
-      ${latestSec ? `<span>Security 종료: <strong style="color:${termColor(secTerm.reason)}">${termText(secTerm.reason)}</strong></span>` : ''}
-      ${latestCode ? `<span>Code Review 종료: <strong style="color:${termColor(codeTerm.reason)}">${termText(codeTerm.reason)}</strong></span>` : ''}
+      ${latestSec ? `<span>Security termination: <strong style="color:${termColor(secTerm.reason)}">${termText(secTerm.reason)}</strong></span>` : ''}
+      ${latestCode ? `<span>Code Review termination: <strong style="color:${termColor(codeTerm.reason)}">${termText(codeTerm.reason)}</strong></span>` : ''}
     </div>
   </div>
 
-  <!-- ── Security 이슈 ─────────────── -->
+  <!-- ── Security issues ─────────────── -->
   ${latestSec ? `
   <div class="section">
-    <h2>Security Audit 이슈 (iter-${secIters[secIters.length-1].n})</h2>
+    <h2>Security Audit Issues (iter-${secIters[secIters.length-1].n})</h2>
     ${issuesTable((latestSec || {}).issues || [], 'Issues')}
 
     ${(latestSec || {}).verification ? `
-    <h3 style="margin:24px 0 8px">수정 검증</h3>
+    <h3 style="margin:24px 0 8px">Fix Verification</h3>
     ${verificationSection(latestSec.verification)}` : ''}
 
     ${(latestSec || {}).passed_checks?.length ? `
-    <h3 style="margin:24px 0 8px">통과 항목</h3>
+    <h3 style="margin:24px 0 8px">Passed Checks</h3>
     ${passedSection(latestSec.passed_checks)}` : ''}
 
     ${(latestSec || {}).intentional_residuals?.length ? `
-    <h3 style="margin:24px 0 8px">의도적 잔존 (사용자 결정)</h3>
+    <h3 style="margin:24px 0 8px">Intentional Residuals (user decision)</h3>
     ${residualsSection(latestSec.intentional_residuals)}` : ''}
 
-    ${prevSecIters.length ? prevIterSummary(prevSecIters, 'Security 감사') : ''}
-  </div>` : '<div class="section"><h2>Security Audit</h2><p style="color:#6b7280">리포트 없음</p></div>'}
+    ${prevSecIters.length ? prevIterSummary(prevSecIters, 'Security Audit') : ''}
+  </div>` : '<div class="section"><h2>Security Audit</h2><p style="color:#6b7280">No report</p></div>'}
 
-  <!-- ── Code Review 이슈 ──────────── -->
+  <!-- ── Code Review issues ──────────── -->
   ${latestCode ? `
   <div class="section">
-    <h2>Code Review 이슈 (iter-${codeIters[codeIters.length-1].n})</h2>
+    <h2>Code Review Issues (iter-${codeIters[codeIters.length-1].n})</h2>
     ${(latestCode || {}).scan_metadata?.changed_files?.length ? `
-    <p style="font-size:12px;color:#6b7280">변경 파일: ${((latestCode.scan_metadata || {}).changed_files || []).map(esc).join(', ')}</p>` : ''}
+    <p style="font-size:12px;color:#6b7280">Changed files: ${((latestCode.scan_metadata || {}).changed_files || []).map(esc).join(', ')}</p>` : ''}
 
     ${issuesTable((latestCode || {}).issues || [], 'Issues')}
 
     ${(latestCode || {}).passed_checks?.length ? `
-    <h3 style="margin:24px 0 8px">통과 항목</h3>
+    <h3 style="margin:24px 0 8px">Passed Checks</h3>
     ${passedSection(latestCode.passed_checks)}` : ''}
 
     ${prevCodeIters.length ? prevIterSummary(prevCodeIters, 'Code Review') : ''}
-  </div>` : '<div class="section"><h2>Code Review</h2><p style="color:#6b7280">리포트 없음</p></div>'}
+  </div>` : '<div class="section"><h2>Code Review</h2><p style="color:#6b7280">No report</p></div>'}
 
 </div>
 </body>
 </html>`;
 }
 
-// ── 진입점 ─────────────────────────────────────────────────────────────────
+// ── Entry point ────────────────────────────────────────────────────────────
 function main() {
   const auditDir = process.argv[2];
   if (!auditDir) {
-    console.error('사용법: node audit-report.js <audit-dir>');
+    console.error('Usage: node audit-report.js <audit-dir>');
     process.exit(1);
   }
   if (!fs.existsSync(auditDir)) {
-    console.error(`디렉토리 없음: ${auditDir}`);
+    console.error(`Directory not found: ${auditDir}`);
     process.exit(1);
   }
 
   const { secIters, codeIters } = collectReports(auditDir);
   if (secIters.length === 0 && codeIters.length === 0) {
-    console.error('JSON 리포트 파일이 없습니다 (iter-*.json / code-review-iter-*.json)');
+    console.error('No JSON report files found (iter-*.json / code-review-iter-*.json)');
     process.exit(1);
   }
 
   const html = renderHtml({ auditDir, secIters, codeIters });
   const outPath = path.join(auditDir, 'report.html');
   fs.writeFileSync(outPath, html, 'utf8');
-  console.log(`✅ 리포트 생성: ${outPath}`);
+  console.log(`✅ Report generated: ${outPath}`);
 }
 
 main();

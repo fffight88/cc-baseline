@@ -289,9 +289,9 @@ rm ~/.claude/scripts/audit-report.js
 **4. Remove hooks from settings.json**
 
 Open `~/.claude/settings.json` and delete hooks with these `statusMessage` values:
-- `"세션 기본 규칙 로딩 중..."`
-- `"cc-baseline 경로 정책 적용 중..."`
-- `"E2E 테스트 가이드 로딩 중..."`
+- `"Loading session rules..."`
+- `"Applying cc-baseline path policy..."`
+- `"Loading E2E test guide..."`
 - The SessionEnd entry containing `pgrep -f '@anthropic-ai/claude-code'`
 
 **5. Remove MCP servers (optional)**

@@ -5,7 +5,7 @@
         {
           "type": "command",
           "command": "python3 -c \"\nimport json, sys\nsys.stdin.read()\nmemory = open('{{HOME}}/.claude/memory/MEMORY.md').read()\nrules = open('{{HOME}}/.claude/memory/all_session_basic_rules.md').read()\ncontext = '# MEMORY.md\\n' + memory + '\\n\\n# all_session_basic_rules.md\\n' + rules\nprint(json.dumps({'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': context}}))\n\"",
-          "statusMessage": "세션 기본 규칙 로딩 중..."
+          "statusMessage": "Loading session rules..."
         }
       ]
     }
@@ -16,8 +16,8 @@
       "hooks": [
         {
           "type": "command",
-          "command": "python3 -c \"\nimport json, sys, os\ndata = json.load(sys.stdin)\nfile_path = data.get('tool_input', {}).get('file_path', '')\ntry:\n    real_path = os.path.realpath(file_path) if file_path else ''\nexcept Exception:\n    real_path = ''\nprotected = os.path.realpath(os.path.expanduser('~/.claude/memory/'))\nif real_path.startswith(protected + os.sep) or real_path == protected:\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'deny', 'permissionDecisionReason': 'cc-baseline 경로 보호: ~/.claude/memory/ 는 수동 관리 전용입니다. auto-memory는 ~/.claude/projects/로 시작하는 경로에 저장하세요.'}}))\n    sys.exit(2)\nif '/.cc-audits/' in real_path:\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'allow', 'permissionDecisionReason': 'cc-baseline: .cc-audits/ 보안감사 리포트 경로 자동 승인'}}))\n    sys.exit(0)\n\"",
-          "statusMessage": "cc-baseline 경로 정책 적용 중..."
+          "command": "python3 -c \"\nimport json, sys, os\ndata = json.load(sys.stdin)\nfile_path = data.get('tool_input', {}).get('file_path', '')\ntry:\n    real_path = os.path.realpath(file_path) if file_path else ''\nexcept Exception:\n    real_path = ''\nprotected = os.path.realpath(os.path.expanduser('~/.claude/memory/'))\nif real_path.startswith(protected + os.sep) or real_path == protected:\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'deny', 'permissionDecisionReason': 'cc-baseline path protection: ~/.claude/memory/ is managed by cc-baseline only. Save auto-memory to a path starting with ~/.claude/projects/ instead.'}}))\n    sys.exit(2)\nif '/.cc-audits/' in real_path:\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'allow', 'permissionDecisionReason': 'cc-baseline: .cc-audits/ audit report path auto-approved'}}))\n    sys.exit(0)\n\"",
+          "statusMessage": "Applying cc-baseline path policy..."
         }
       ]
     },
@@ -27,7 +27,7 @@
         {
           "type": "command",
           "command": "python3 -c \"\nimport json, sys\nsys.stdin.read()\nboundary = open('{{HOME}}/.claude/memory/reference_subagent_boundary.md').read()\nguide = open('{{HOME}}/.claude/memory/reference_e2e_manager_guide.md').read()\ncontext = '# reference_subagent_boundary.md\\n' + boundary + '\\n\\n# reference_e2e_manager_guide.md\\n' + guide\nprint(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'additionalContext': context}}))\n\"",
-          "statusMessage": "E2E 테스트 가이드 로딩 중...",
+          "statusMessage": "Loading E2E test guide...",
           "once": true
         }
       ]

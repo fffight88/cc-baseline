@@ -1,89 +1,89 @@
 ---
-name: 서브에이전트 경계 및 반환 형식 가이드
-description: Agent/서브에이전트 호출 전 반드시 참조 — 역할 경계, 출력 제약, 작업 유형별 반환 형식 템플릿
+name: Sub-agent Boundary and Return Format Guide
+description: Read before calling Agent/sub-agents — role boundaries, output constraints, return format templates by task type
 type: reference
 ---
 
-**트리거:** Agent 도구(서브에이전트) 호출 직전 반드시 이 문서를 읽고, 아래 규칙을 프롬프트에 포함시킬 것.
+**Trigger:** Always read this document immediately before calling an Agent tool (sub-agent), and include the rules below in the prompt.
 
-**Why:** 서브에이전트의 중간 로그·파일 전문·장황한 과정 서술이 본체 컨텍스트로 유입되면, 무관한 정보가 본체 판단을 오염시키고 컨텍스트 예산을 낭비함.
+**Why:** When a sub-agent's intermediate logs, full file content, or verbose process narration flows into the orchestrator's context, irrelevant information pollutes the orchestrator's judgment and wastes context budget.
 
 ---
 
-## 1. 공통 경계 조항 (모든 서브에이전트 프롬프트에 고정 포함)
+## 1. Common Boundary Clause (include in every sub-agent prompt)
 
-서브에이전트 프롬프트 끝에 아래 블록을 반드시 붙여넣을 것:
+Always append the following block at the end of every sub-agent prompt:
 
 ```markdown
-## 출력 제약 (반드시 준수)
-- ❌ 파일 전문, 명령 출력 원본, 중간 로그 붙여넣기 금지
-- ❌ "~을 탐색했고 ~을 발견했고 ~을 확인했습니다" 같은 과정 서술 금지
-- ❌ 역할 범위 이탈 금지 (프로덕션 코드 수정, 서버 재시작, 다른 파일 임의 변경 등)
-- ✅ 아래 지정된 반환 형식 필드만 채워서 반환
-- ✅ 추가 정보가 필요하면 임의 확장하지 말고 본체에 질문할 것
-- 길이 상한: 500자 이내 (초과 시 핵심만 추려서 재작성)
+## Output Constraints (strictly enforced)
+- ❌ No pasting full file content, raw command output, or intermediate logs
+- ❌ No process narration ("I searched X and found Y and confirmed Z")
+- ❌ No role scope violations (modifying production code, restarting servers, changing other files)
+- ✅ Fill in only the designated return format fields below
+- ✅ If additional information is needed, ask the orchestrator instead of expanding arbitrarily
+- Length limit: under 500 characters (trim to essentials if exceeded)
 ```
 
 ---
 
-## 2. 작업 유형별 반환 형식 템플릿
+## 2. Return Format Templates by Task Type
 
-서브에이전트 호출 시 아래 템플릿 중 하나를 **"반환 형식"** 으로 명시적 지정.
+When calling a sub-agent, explicitly specify one of the templates below as the **"return format"**.
 
-### 🔍 탐색/조사 (Explore)
+### 🔍 Exploration / Research (Explore)
 ```
-반환 형식:
-- 파일 경로: <path>
-- 줄 번호: <line>
-- 핵심 발췌: <20자 이내 한 줄>
-- 추가 탐색 필요 여부: Y/N
+Return format:
+- File path: <path>
+- Line number: <line>
+- Key excerpt: <one line, under 20 words>
+- Further exploration needed: Y/N
 ```
-결과 5건 이내로 제한.
+Limit results to 5 or fewer.
 
-### 🛠 구현 (Implementation)
+### 🛠 Implementation
 ```
-반환 형식:
-- 수정 파일 목록: <path 나열>
-- 각 파일별 변경 요약: <한 줄씩>
-- 빌드/테스트 결과: 성공/실패 + 에러 메시지 1줄
-- 미해결 이슈: 있음/없음
+Return format:
+- Modified file list: <paths listed>
+- Per-file change summary: <one line each>
+- Build/test result: success/failure + 1-line error message
+- Unresolved issues: present/none
 ```
-코드 전문·diff 붙여넣기 금지 (본체가 직접 확인).
+No pasting full code or diffs (orchestrator reads directly).
 
-### ✅ 검증 (Verification)
+### ✅ Verification
 ```
-반환 형식:
-- 검증 항목별 결과: [항목명] PASS/FAIL
-- 실패 시 원인: <한 줄>
-- 종합 판정: PASS/FAIL
+Return format:
+- Result per verification item: [item name] PASS/FAIL
+- On failure, cause: <one line>
+- Overall verdict: PASS/FAIL
 ```
-중간 로그·명령 출력 원본 금지.
+No intermediate logs or raw command output.
 
-### 📊 분석 (Analysis)
+### 📊 Analysis
 ```
-반환 형식:
-- 결론: <2줄 이내>
-- 근거: <불릿 3개 이내>
-- 신뢰도: 높음/중간/낮음 + 사유 한 줄
+Return format:
+- Conclusion: <under 2 lines>
+- Rationale: <up to 3 bullets>
+- Confidence: high/medium/low + one-line reason
 ```
 
 ---
 
-## 3. 권한 경계 명시 (프롬프트에 함께 적을 것)
+## 3. Explicit Permission Scope (include in prompt)
 
-서브에이전트 프롬프트 시작부에 아래를 명시:
+State the following at the beginning of the sub-agent prompt:
 
 ```markdown
-## 역할 범위
-- 허용: <구체적으로 나열 — 파일 읽기, grep, 특정 디렉토리 탐색 등>
-- 금지: <구체적으로 나열 — 프로덕션 코드 수정, 서버 재시작, 외부 API 호출, 커밋 등>
+## Role Scope
+- Allowed: <list specifically — file reading, grep, specific directory exploration, etc.>
+- Forbidden: <list specifically — modifying production code, restarting servers, external API calls, commits, etc.>
 ```
 
 ---
 
-## 4. 정리: 서브에이전트 호출 전 체크리스트
+## 4. Summary: Pre-call Checklist
 
-- [ ] 역할 범위(허용/금지) 명시했는가
-- [ ] 작업 유형에 맞는 반환 형식 템플릿 지정했는가
-- [ ] 공통 경계 조항(출력 제약 블록) 프롬프트 끝에 포함했는가
-- [ ] 길이 상한 명시했는가
+- [ ] Did you specify role scope (allowed/forbidden)?
+- [ ] Did you designate a return format template matching the task type?
+- [ ] Did you include the common boundary clause (output constraints block) at the end of the prompt?
+- [ ] Did you state the length limit?

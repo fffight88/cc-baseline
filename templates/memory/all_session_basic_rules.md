@@ -1,118 +1,118 @@
 ---
-name: 모든 세션 기본 적용 규칙
-description: 프로젝트 불문 매 세션마다 반드시 적용할 핵심 행동 규칙 모음
+name: Core Rules for Every Session
+description: Essential behavior rules that must be applied every session regardless of project
 type: feedback
 ---
 
-## 1. 응답 언어
+## 1. Response Language
 
-항상 한국어(한글)로 응답. 클래스명·메서드명·라이브러리명 등 기술 용어는 영문 허용.
-
----
-
-## 2. 불확실성 명시 의무
-
-확인/검증할 수 없는 사항은 반드시 명시적으로 표현할 것.
-
-- ✅ DO: "확인할 수 없습니다", "추측입니다" 등 불확실성 명시
-- ✅ DO: 작업 완료 보고 시 **변경 파일 목록 + 위험 요소** 함께 명시
-- ✅ DO: 빌드·테스트 등 검증 게이트 미통과 시 "완료"로 보고 금지
-- ❌ DON'T: 추측·가정·유추를 확정 사실처럼 표현(긴 문장으로도, 짧은 문장으로도, 산문형태로도) 금지. 
+Always respond in the same language the user uses. Technical terms such as class names, method names, and library names may remain in their original form.
 
 ---
 
-## 3. 병렬 읽기 우선
+## 2. Obligation to Disclose Uncertainty
 
-여러 파일이 필요한 작업은 읽기를 먼저 모두 병렬로 수행한 뒤 쓰기/실행을 진행.
+Always explicitly express anything that cannot be confirmed or verified.
 
-- ✅ DO: 단일 메시지에 여러 Read를 동시에 호출하여 한 번에 수집
-- ❌ DON'T: 읽기→쓰기→읽기→쓰기 직렬 반복 패턴 금지
-
----
-
-## 4. 최소 수정 원칙
-
-요청 범위 외의 코드 변경은 절대 하지 말 것.
-
-- ✅ DO: 요청된 기능/버그픽스에만 집중
-- ❌ DON'T: 리팩토링, 네이밍 통일, import 재정렬, "더 나은 방법"으로 임의 교체 금지
-- 단, 요청 범위 내에서 발견한 명백한 버그는 사용자에게 알리고 수정 여부를 물어볼 것
+- ✅ DO: State uncertainty explicitly — "I cannot confirm this", "This is my assumption", etc.
+- ✅ DO: When reporting task completion, always include **list of changed files + risk factors**
+- ✅ DO: Never report "complete" if build, test, or other verification gates have not passed
+- ❌ DON'T: Never present guesses, assumptions, or inferences as confirmed facts — in long or short sentences, or in prose form
 
 ---
 
-## 5. 기존 코드 패턴·스타일 준수
+## 3. Parallel Reads First
 
-동일 모듈(패키지, 디렉토리) 내 기존 패턴과 스타일을 그대로 따를 것.
+When a task requires multiple files, perform all reads in parallel before any writes or executions.
 
-- ✅ DO: 새 코드 작성 전 같은 디렉토리의 유사 파일 1~2개를 읽고 패턴 파악
-- ✅ DO: 네이밍 규칙, 에러 처리 방식, 로깅 방식, 반환 타입 구조 등 기존 방식 유지
-- ❌ DON'T: "더 나은 방법", "최신 관례"로 임의 변경 금지
+- ✅ DO: Issue multiple Read calls simultaneously in a single message to collect all at once
+- ❌ DON'T: No serial read→write→read→write patterns
 
 ---
 
-## 6. .claude/ 폴더 Git 커밋 금지
+## 4. Minimal Edit Principle
 
-`.claude/` 폴더는 어떤 프로젝트에서도 절대 Git에 커밋하지 않음.
+Never make code changes outside the requested scope.
+
+- ✅ DO: Focus only on the requested feature/bugfix
+- ❌ DON'T: No refactoring, naming unification, import reordering, or arbitrary replacement with "a better way"
+- Exception: if you find an obvious bug within the requested scope, notify the user and ask whether to fix it
+
+---
+
+## 5. Follow Existing Code Patterns and Style
+
+Follow the existing patterns and style within the same module (package, directory).
+
+- ✅ DO: Read 1–2 similar files in the same directory before writing new code to understand patterns
+- ✅ DO: Preserve existing naming conventions, error handling style, logging style, and return type structures
+- ❌ DON'T: No arbitrary changes in the name of "a better way" or "modern convention"
+
+---
+
+## 6. Never Commit .claude/ to Git
+
+The `.claude/` folder must never be committed to git in any project.
 
 - ✅ DO: `git add --all -- ':!.claude'`
-- ❌ DON'T: `git add -A`, `git add .`, `git add .claude/` 금지
-- 검증: commit 전 `git status`로 `.claude/` 파일이 staged 되어있지 않은지 확인
+- ❌ DON'T: `git add -A`, `git add .`, `git add .claude/` are forbidden
+- Verify: before committing, run `git status` and confirm no `.claude/` files are staged
 
 ---
 
-## 7. 서버 작업 완료 후 종료
+## 7. Stop Server After Task Completion
 
-서버를 시작했으면 작업 완료 시 반드시 종료할 것.
+If you started a server, always stop it when the task is done.
 
-- ✅ DO: 작업 완료 후 `/clean` 명령 실행 (고아 프로세스 일괄 정리)
-- ❌ DON'T: `/clean` 없이 "서버 종료했습니다" 보고 금지
-- ❌ DON'T: "서버를 켜두겠습니다"라고 임의로 유지 금지
-
----
-
-## 8. 수정 전 git log 최근 변경 확인
-
-공통 모듈·설정 파일·핵심 로직 파일 수정 전 `git log -3 -- <파일경로>`로 최근 변경 이력 확인.
-
-- ✅ DO: 최근 타인 커밋이 있으면 사용자에게 알리고 의도 확인 후 진행
-- ❌ DON'T: 확인 없이 공유 파일 바로 수정 금지
+- ✅ DO: Run `/clean` after task completion (bulk cleanup of orphan processes)
+- ❌ DON'T: Never report "server stopped" without running `/clean`
+- ❌ DON'T: Never leave a server running without explicit instruction ("I'll leave the server running")
 
 ---
 
-## 9. 보안감사·코드리뷰 인터뷰 알림
+## 8. Check Recent Git Log Before Editing
 
-security-auditor 또는 code-reviewer 리포트에 `decision_type: design` 또는 `business` 이슈가 1건 이상 있고, 본체가 AskUserQuestion으로 인터뷰를 시작하기 직전에 아래 Bash 명령으로 알림 발송:
+Before modifying shared modules, config files, or core logic files, run `git log -3 -- <filepath>` to review recent change history.
+
+- ✅ DO: If there is a recent commit by someone else, notify the user and confirm intent before proceeding
+- ❌ DON'T: Never edit a shared file without checking history first
+
+---
+
+## 9. Notify Before Security Audit / Code Review Interview
+
+When a security-auditor or code-reviewer report contains 1 or more issues with `decision_type: design` or `business`, and just before the orchestrator starts an interview via AskUserQuestion, send a notification using the Bash command below:
 
 ```bash
-MSG="보안감사: 사용자 결정 필요 (N건)"  # N에 실제 design+business 건수 대입
+MSG="Security audit: user decision required (N issues)"  # replace N with actual design+business count
 if command -v terminal-notifier >/dev/null 2>&1; then
   terminal-notifier -title "Claude Code" -message "$MSG" -sound Glass
 elif [ "$(uname)" = "Darwin" ]; then
   osascript -e "display notification \"$MSG\" with title \"Claude Code\" sound name \"Glass\"" \
-    || osascript -e "display dialog \"$MSG\" with title \"Claude Code\" buttons {\"확인\"} default button \"확인\""
+    || osascript -e "display dialog \"$MSG\" with title \"Claude Code\" buttons {\"OK\"} default button \"OK\""
 elif command -v notify-send >/dev/null 2>&1; then
   notify-send "Claude Code" "$MSG"
 fi
 ```
 
-- ✅ DO: `design` / `business` 이슈가 있을 때 인터뷰 직전에만 발동
-- ❌ DON'T: 감사 시작·완료 시점에 알림 발동 금지
-- ❌ DON'T: `auto` 이슈만 있는 경우 알림 발동 금지
+- ✅ DO: Trigger only immediately before the interview when `design` / `business` issues are present
+- ❌ DON'T: Never trigger at audit start or audit completion
+- ❌ DON'T: Never trigger when only `auto` issues are present
 
 ---
 
-## 10. 메모리 경로 구분 (글로벌 vs 프로젝트)
+## 10. Memory Path Distinction (Global vs Project)
 
-- ✅ DO: 프로젝트별 진행 상태·결정 이력은 시스템 프롬프트의 auto-memory 경로(`~/.claude/projects/<project-slug>/memory/`)에 저장
-- ✅ DO: 모든 프로젝트 공통 룰·reference만 `~/.claude/memory/`에 유지
-- ❌ DON'T: `project_*.md` 같은 프로젝트 한정 메모리를 `~/.claude/memory/`에 저장 금지
-- 검증: 글로벌 `MEMORY.md`에 `project_*` 항목이 있으면 잘못된 위치
+- ✅ DO: Save project-specific progress and decision history to the auto-memory path in the system prompt (`~/.claude/projects/<project-slug>/memory/`)
+- ✅ DO: Keep only cross-project common rules and references in `~/.claude/memory/`
+- ❌ DON'T: Never save project-scoped memory like `project_*.md` to `~/.claude/memory/`
+- Verify: if `project_*` entries appear in global `MEMORY.md`, that is the wrong location
 
 ---
 
-## 11. 글로벌 메모리 수정은 cc-baseline templates 경유
+## 11. Global Memory Changes Must Go Through cc-baseline Templates
 
-- ✅ DO: `~/.claude/memory/*.md` 변경이 필요하면 cc-baseline `templates/memory/*.md` 수정 → `node bin/cli.js --yes` 재실행으로 propagate
-- ❌ DON'T: PreToolUse hook을 Bash `cat >>`/`sed -i`/`chmod 755 후 직접 편집`으로 우회 금지
-- Why: hook 우회로 변경한 내용은 cc-baseline 다음 설치 시 templates로 덮어써져 손실됨
-- 예외: cc-baseline 자체 디렉토리(`templates/`, `src/` 등) 직접 편집은 정상 (hook 대상 아님)
+- ✅ DO: To change `~/.claude/memory/*.md`, edit `templates/memory/*.md` in cc-baseline → re-run `node bin/cli.js --yes` to propagate
+- ❌ DON'T: Never bypass the PreToolUse hook via Bash `cat >>`, `sed -i`, or direct edit after `chmod 755`
+- Why: changes made by bypassing the hook will be overwritten the next time cc-baseline is installed from templates
+- Exception: direct edits to cc-baseline's own directory (`templates/`, `src/`, etc.) are normal (not hook targets)

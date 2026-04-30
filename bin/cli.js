@@ -16,27 +16,27 @@ const opts = {
 
 if (opts.help) {
   console.log(`
-cc-baseline — Claude Code 하네스 인스톨러
+cc-baseline — Claude Code harness installer
 
-사용법:
-  cc-baseline [옵션]
+Usage:
+  cc-baseline [options]
 
-설치 옵션:
-  --dry-run             변경 없이 설치 예정 항목만 출력
-  --yes, -y             충돌 경고 자동 승인 (비대화형 모드)
-  --help, -h            이 도움말 출력
+Install options:
+  --dry-run             Print planned changes without writing files
+  --yes, -y             Auto-approve conflict warnings (non-interactive mode)
+  --help, -h            Show this help
 
-제거 옵션:
-  --uninstall           설치된 cc-baseline 항목 제거
-  --purge               --uninstall과 함께: 백업 디렉토리까지 제거
-  --remove-scanners     --uninstall과 함께: 외부 스캐너(semgrep/gitleaks/trivy) 제거
+Uninstall options:
+  --uninstall           Remove installed cc-baseline files
+  --purge               With --uninstall: also delete backup directory
+  --remove-scanners     With --uninstall: uninstall external scanners (semgrep/gitleaks/trivy)
 
-설치 예시:
+Install examples:
   npx github:fffight88/cc-baseline
   npx github:fffight88/cc-baseline --dry-run
   npx github:fffight88/cc-baseline --yes
 
-제거 예시:
+Uninstall examples:
   npx github:fffight88/cc-baseline --uninstall --dry-run
   npx github:fffight88/cc-baseline --uninstall --yes
   npx github:fffight88/cc-baseline --uninstall --yes --purge --remove-scanners
@@ -47,12 +47,12 @@ cc-baseline — Claude Code 하네스 인스톨러
 if (opts.uninstall) {
   const { uninstall } = require('../src/uninstall');
   uninstall(opts).catch(err => {
-    console.error('\n❌ 제거 실패:', err.message);
+    console.error('\n❌ Uninstall failed:', err.message);
     process.exit(1);
   });
 } else {
   install(opts).catch(err => {
-    console.error('\n❌ 설치 실패:', err.message);
+    console.error('\n❌ Install failed:', err.message);
     process.exit(1);
   });
 }

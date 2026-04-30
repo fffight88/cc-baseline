@@ -1,7 +1,7 @@
 'use strict';
 
-// cc-baseline이 관리하는 MCP 서버 키는 항상 silent overwrite.
-// 사용자 커스텀 키와 이름이 겹칠 가능성이 없도록 cc-baseline은 고유 키명(playwright-test-N)을 사용.
+// cc-baseline-managed MCP server keys are always silently overwritten.
+// cc-baseline uses unique key names (playwright-test-N) to avoid collisions with user-defined keys.
 function mergeMcpServers(existing, incoming) {
   const result = Object.assign({}, existing);
   const added = [];

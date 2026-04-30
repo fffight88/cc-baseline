@@ -1,21 +1,21 @@
 ---
-name: 참조 문서 작성 스타일 가이드
-description: CLAUDE.md·MEMORY.md·참조 문서 작성/수정 시 따를 구조 원칙 (비용 티어, 병렬 읽기, 7기법)
+name: Reference Document Writing Style Guide
+description: Structure principles to follow when writing/editing CLAUDE.md, MEMORY.md, and reference documents (cost tiers, parallel reads, 7-technique guide)
 type: feedback
 ---
 
-전역·프로젝트 CLAUDE.md와 그 참조 문서를 작성/수정할 때 반드시 다음 원칙을 따를 것.
+Follow these principles when writing or editing global/project CLAUDE.md and their reference documents.
 
-**Why:** 2026-04-08 allviacl 프로젝트에서 7가지 프롬프트 엔지니어링 기법을 17개 참조 문서에 적용한 결과, 자동 로드 파일에만 비용 힌트를 심어야 실효성이 있다는 결론. 이 원칙을 전역에도 확산해 일관성 유지.
+**Why:** In the allviacl project (2026-04-08), applying 7 prompt engineering techniques across 17 reference documents confirmed that cost hints are only effective when embedded in auto-loaded files. Extending this principle globally for consistency.
 
 **How to apply:**
 
-**비용 인식 원칙 (CLAUDE.md·MEMORY.md 작성 시)**
-- ✅ DO: 트리거 표에 **규모·비용 티어** 컬럼 포함 (🟢 저/<150줄 | 🟡 중/150~350줄 | 🔴 고/>350줄)
-- ✅ DO: 🔴 고비용 문서는 부분 읽기(`offset/limit`) 전략 명시
-- ✅ DO: 함께 읽는 문서 조합은 "단일 메시지에 여러 Read 동시 호출" 예시로 명시
-- ❌ DON'T: 참조 문서 내부에 비용 힌트 넣지 말 것 (순환 논리 — 열어야 보이므로 의미 없음)
-- ❌ DON'T: MEMORY.md 본문에 긴 가이드 직접 쓰지 말 것 (자동 로드로 매 대화 비용 증가)
+**Cost-awareness Principles (when writing CLAUDE.md · MEMORY.md)**
+- ✅ DO: Include a **scale/cost tier** column in trigger tables (🟢 low/<150 lines | 🟡 medium/150–350 lines | 🔴 high/>350 lines)
+- ✅ DO: For 🔴 high-cost documents, explicitly state a partial-read strategy (`offset/limit`)
+- ✅ DO: For documents commonly read together, explicitly show a "multiple Read calls simultaneously in a single message" example
+- ❌ DON'T: Never put cost hints inside reference documents (circular logic — you'd have to open it to see them)
+- ❌ DON'T: Never write long guides directly in MEMORY.md body (auto-loaded, so it increases cost every conversation)
 
-**주의**
-- ❌ DON'T: CoT 스트리핑을 정적 문서에 적용한다고 주장 말 것 (AI 응답 생성 시점 기법이지 문서 구조 기법이 아님)
+**Notes**
+- ❌ DON'T: Never claim to apply CoT stripping to static documents (it is an AI response generation technique, not a document structure technique)

@@ -1,93 +1,93 @@
 ---
-name: 보안감사 에이전트 운용 프로토콜
-description: security-auditor 에이전트 자동 트리거 조건, 호출 프로토콜, 루프 관리, decision_type별 후속 처리 가이드
+name: Security Auditor Agent Protocol
+description: security-auditor agent auto-trigger conditions, call protocol, loop management, decision_type follow-up handling guide
 type: reference
 ---
 
-## 1. 자동 트리거 조건
+## 1. Auto-trigger Conditions
 
-플랜 파일 상단 `## 메타` 블록의 `Security Impact` 필드 기준:
+Based on the `Security Impact` field in the `## Meta` block at the top of a plan file:
 
-- `Yes` 또는 `Unknown` → 해당 플랜 완료 후 security-auditor 자동 호출
-- `No` → 감사 생략
-- 필드 없음 → `Unknown`으로 간주하여 자동 호출
+- `Yes` or `Unknown` → auto-call security-auditor after that plan completes
+- `No` → skip audit
+- Field missing → treat as `Unknown` and auto-call
 
-**명시적 요청:** 사용자가 "보안점검/보안감사" 명시 시 즉시 호출.
+**Explicit request:** call immediately when the user explicitly says "security check / security audit".
 
-## 2. 호출 프로토콜
+## 2. Call Protocol
 
-본체가 security-auditor를 Agent 도구로 호출할 때 프롬프트 구조:
+Prompt structure when the orchestrator calls security-auditor via Agent tool:
 
 ```
 plan_paths:
   - <absolute path 1>
-target_dir: <감사 대상 프로젝트 루트 절대 경로>
+target_dir: <absolute path to project root under audit>
 iteration: 1
-previous_report_path: null  # 재감사 시 직전 리포트 경로
-project_type_hint: <선택, 본체 추정 유형>
+previous_report_path: null  # path to previous report on re-audit
+project_type_hint: <optional, orchestrator's estimated type>
 
-## 출력 제약 (반드시 준수)
-- ❌ 파일 전문, 명령 출력 원본, 중간 로그 붙여넣기 금지
-- ❌ 과정 서술 금지
-- ❌ 역할 범위 이탈 금지
-- ✅ 아래 반환 형식 필드만 채워서 반환
-- 길이 상한: 500자 이내
+## Output Constraints (strictly enforced)
+- ❌ No pasting full file content, raw command output, or intermediate logs
+- ❌ No process narration
+- ❌ No role scope violations
+- ✅ Fill in only the return format fields below
+- Length limit: under 500 characters
 
-반환 형식:
-- 리포트 경로 (md): <abs path>
-- 리포트 경로 (json): <abs path>
+Return format:
+- Report path (md): <abs path>
+- Report path (json): <abs path>
 - Summary: critical=N / high=N / medium=N / low=N
 - next_action: done | self_fix | user_interview
 ```
 
-## 3. 루프 관리
+## 3. Loop Management
 
-- **종료 A (성공)**: CRITICAL·HIGH = 0 → 즉시 종료. MEDIUM/LOW는 최종 보고에 포함.
-- **종료 B (한계 도달)**: 3회 수행 → 잔존 이슈와 함께 사용자 보고 후 중단.
-- 매 루프마다 플랜 파일 하단 `## 감사 이력` 섹션에 iteration 카운트 기록.
+- **Termination A (success)**: CRITICAL·HIGH = 0 → terminate immediately. MEDIUM/LOW included in final report.
+- **Termination B (limit reached)**: 3 iterations → report remaining issues to user and stop.
+- Record iteration count in a `## Audit History` section at the bottom of the plan file each loop.
 
 ```markdown
-## 감사 이력
+## Audit History
 - iter-1: 2026-04-22 / critical=0 high=2 medium=3 / next_action=self_fix
 - iter-2: 2026-04-22 / critical=0 high=0 medium=2 / next_action=done
 ```
 
-## 4. decision_type별 후속 처리
+## 4. Follow-up by decision_type
 
-| decision_type | 후속 처리 |
+| decision_type | Follow-up |
 |---------------|-----------|
-| `auto` | 본체가 코드 수정 후 재감사 요청 |
-| `design` | 사용자 인터뷰 (AskUserQuestion) 후 설계 변경 |
-| `business` | 사용자 인터뷰 (AskUserQuestion) 후 정책 결정 |
+| `auto` | orchestrator fixes code and requests re-audit |
+| `design` | user interview (AskUserQuestion) then design change |
+| `business` | user interview (AskUserQuestion) then policy decision |
 
-## 5. 인터뷰 직전 알림
+## 5. Notification Before Interview
 
-`design` 또는 `business` 이슈가 1건 이상 있고, AskUserQuestion 직전에 반드시 실행:
+When 1 or more `design` or `business` issues exist, always run this before AskUserQuestion:
 
 ```bash
-MSG="보안감사: 사용자 결정 필요 (N건)"  # N에 실제 design+business 건수 대입
+MSG="Security audit: user decision required (N issues)"  # replace N with actual design+business count
 if command -v terminal-notifier >/dev/null 2>&1; then
   terminal-notifier -title "Claude Code" -message "$MSG" -sound Glass
 elif [ "$(uname)" = "Darwin" ]; then
   osascript -e "display notification \"$MSG\" with title \"Claude Code\" sound name \"Glass\"" \
-    || osascript -e "display dialog \"$MSG\" with title \"Claude Code\" buttons {\"확인\"} default button \"확인\""
+    || osascript -e "display dialog \"$MSG\" with title \"Claude Code\" buttons {\"OK\"} default button \"OK\""
 elif command -v notify-send >/dev/null 2>&1; then
   notify-send "Claude Code" "$MSG"
 fi
 ```
 
-## 6. 리포트 경로 규칙
+## 6. Report Path Rules
 
 ```
 <target_dir>/.cc-audits/<plan-slug>/iter-<n>.md
 <target_dir>/.cc-audits/<plan-slug>/iter-<n>.json
 ```
 
-`plan-slug`는 플랜 파일명(확장자 제외). 예: `iridescent-swinging-wave`
+`plan-slug` is the plan filename without extension. Example: `iridescent-swinging-wave`
 
-## 7. 감사 종료 후 HTML 리포트
+## 7. HTML Report After Audit Completes
 
-루프가 `done`(critical=0/high=0) 또는 한계(3회)에 도달해 종료될 때 본체가 실행:
+When the loop reaches `done` (critical=0/high=0) or the limit (3 iterations), the orchestrator runs:
 
 ```bash
 AUDIT_DIR="<target_dir>/.cc-audits/<plan-slug>"
@@ -98,6 +98,6 @@ open "$AUDIT_DIR/report.html"
 # xdg-open "$AUDIT_DIR/report.html"
 ```
 
-- ✅ DO: 루프 종료 시점에 단 한 번 자동 오픈
-- ✅ DO: security-auditor와 code-reviewer를 병렬 호출한 경우, **두 에이전트 모두 종료된 뒤 본체가 1회 실행**
-- ❌ DON'T: 매 iteration마다 자동 오픈 금지 (수정 작업 흐름 방해)
+- ✅ DO: Auto-open once at loop termination
+- ✅ DO: When security-auditor and code-reviewer are called in parallel, **the orchestrator runs this once after both agents complete**
+- ❌ DON'T: Never auto-open on every iteration (disrupts the fix workflow)

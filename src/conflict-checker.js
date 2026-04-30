@@ -1,8 +1,8 @@
 'use strict';
 
 const HARNESS_STATUS_MESSAGES = [
-  '세션 기본 규칙 로딩 중...',
-  'E2E 테스트 가이드 로딩 중...',
+  'Loading session rules...',
+  'Loading E2E test guide...',
 ];
 
 function isHarnessHook(hook) {
@@ -12,7 +12,7 @@ function isHarnessHook(hook) {
 function checkConflicts(existingHooks) {
   const warnings = [];
 
-  // Rule 1: SessionStart에 하네스 이외의 훅 존재
+  // Rule 1: Non-harness hook exists in SessionStart
   const sessionStarts = existingHooks?.SessionStart ?? [];
   for (const entry of sessionStarts) {
     for (const hook of (entry.hooks ?? [])) {
@@ -21,19 +21,19 @@ function checkConflicts(existingHooks) {
           severity: 'WARN',
           rule: 1,
           event: 'SessionStart',
-          message: 'SessionStart 이벤트에 기존 훅이 있습니다.',
+          message: 'Existing hook detected in SessionStart event.',
           reason:
-            'cc-baseline도 SessionStart에서 메모리 컨텍스트를 주입합니다. ' +
-            '기존 훅과 동시에 실행되므로 상충되는 지시가 있으면 Claude 동작이 예상과 달라질 수 있습니다.',
+            'cc-baseline also injects memory context in SessionStart. ' +
+            'Both hooks run simultaneously, so conflicting instructions may cause unexpected Claude behavior.',
           action:
-            '설치 후 ~/.claude/settings.json의 SessionStart hooks를 검토하고 필요 시 통합하세요.',
+            'After install, review SessionStart hooks in ~/.claude/settings.json and merge if needed.',
         });
         break;
       }
     }
   }
 
-  // Rule 2: PreToolUse 매처가 playwright-test와 겹치거나 .* 포괄
+  // Rule 2: PreToolUse matcher overlaps with playwright-test or covers .*
   const preToolUses = existingHooks?.PreToolUse ?? [];
   for (const entry of preToolUses) {
     const matcher = entry.matcher ?? '';
@@ -44,15 +44,15 @@ function checkConflicts(existingHooks) {
         rule: 2,
         event: 'PreToolUse',
         matcher,
-        message: `PreToolUse matcher "${matcher}"가 playwright-test MCP와 겹칩니다.`,
+        message: `PreToolUse matcher "${matcher}" overlaps with playwright-test MCP.`,
         reason:
-          'E2E 가이드 주입 훅과 이중 실행되거나, playwright MCP 호출 자체가 차단될 수 있습니다.',
-        action: '해당 훅의 matcher를 구체화하거나 cc-baseline 훅과 통합하세요.',
+          'May double-fire with the E2E guide injection hook, or block playwright MCP calls entirely.',
+        action: 'Narrow the matcher or merge it with the cc-baseline hook.',
       });
     }
   }
 
-  // Rule 3: decision:block/deny 정적 감지 (SessionStart, PreToolUse)
+  // Rule 3: Static detection of decision:block/deny (SessionStart, PreToolUse)
   const criticalEvents = [
     ...(existingHooks?.SessionStart ?? []),
     ...(existingHooks?.PreToolUse ?? []),
@@ -71,17 +71,17 @@ function checkConflicts(existingHooks) {
           severity: 'HIGH',
           rule: 3,
           event: entry.matcher ? 'PreToolUse' : 'SessionStart',
-          message: '세션 또는 도구를 차단하는 훅이 감지됩니다.',
+          message: 'A hook that blocks session or tool execution detected.',
           reason:
-            '이 훅이 실행되면 cc-baseline 부트업 또는 MCP 호출 자체가 막힐 수 있습니다.',
+            'This hook may prevent cc-baseline boot or block MCP calls entirely.',
           action:
-            '해당 훅을 제거하거나 cc-baseline 설치 전 수동으로 검토하세요.',
+            'Remove this hook or manually review it before installing cc-baseline.',
         });
       }
     }
   }
 
-  // Rule 4: SessionEnd 기존 훅 (정보성)
+  // Rule 4: Existing SessionEnd hook (informational)
   const sessionEnds = existingHooks?.SessionEnd ?? [];
   for (const entry of sessionEnds) {
     for (const hook of (entry.hooks ?? [])) {
@@ -90,10 +90,10 @@ function checkConflicts(existingHooks) {
           severity: 'INFO',
           rule: 4,
           event: 'SessionEnd',
-          message: 'SessionEnd에 기존 훅이 있습니다.',
+          message: 'Existing hook detected in SessionEnd event.',
           reason:
-            'cc-baseline의 SessionEnd 훅(고아 claude 프로세스 정리)과 함께 실행됩니다. 충돌 위험은 낮습니다.',
-          action: '특별한 조치 없음. 두 훅이 함께 실행됩니다.',
+            "Runs alongside cc-baseline's SessionEnd hook (orphan claude process cleanup). Low conflict risk.",
+          action: 'No action required. Both hooks run together.',
         });
         break;
       }

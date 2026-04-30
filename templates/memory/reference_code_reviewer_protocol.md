@@ -1,105 +1,105 @@
 ---
-name: 코드 리뷰 에이전트 운용 프로토콜
-description: code-reviewer 에이전트 자동 트리거 조건, 호출 프로토콜, 루프 관리, decision_type별 후속 처리 가이드
+name: Code Reviewer Agent Protocol
+description: code-reviewer agent auto-trigger conditions, call protocol, loop management, decision_type follow-up handling guide
 type: reference
 ---
 
-## ⚡ 핵심 규칙 요약
+## ⚡ Key Rules Summary
 
-- ✅ DO: `Code Quality Impact: Yes/Unknown` → 플랜 완료 후 code-reviewer 자동 호출
-- ✅ DO: `Security Impact: Yes/Unknown`도 동시에 충족 시 security-auditor와 **단일 메시지에서 병렬 호출**
-- ✅ DO: `regenerate_profile: true`는 key_files 대규모 변경 후에만 사용
-- ❌ DON'T: 감사 시작·완료 시점에 알림 발동 금지 (design/business 이슈 인터뷰 직전에만)
-- ❌ DON'T: code-reviewer에 보안 취약점·시크릿 점검 요청 금지 (security-auditor 영역)
-
----
-
-## 1. 자동 트리거 조건
-
-플랜 파일 상단 `## 메타` 블록의 `Code Quality Impact` 필드 기준:
-
-- `Yes` 또는 `Unknown` → 해당 플랜 완료 후 code-reviewer 자동 호출
-- `No` → 리뷰 생략
-- 필드 없음 → `Unknown`으로 간주하여 자동 호출
-
-**명시적 요청:** 사용자가 "코드리뷰/품질점검" 명시 시 즉시 호출.
+- ✅ DO: `Code Quality Impact: Yes/Unknown` → auto-call code-reviewer after plan completion
+- ✅ DO: If `Security Impact: Yes/Unknown` is also met, **call in parallel with security-auditor in a single message**
+- ✅ DO: Use `regenerate_profile: true` only after large-scale changes to key_files
+- ❌ DON'T: Never trigger notifications at audit start or completion (only immediately before design/business issue interview)
+- ❌ DON'T: Never ask code-reviewer to check security vulnerabilities or secrets (security-auditor territory)
 
 ---
 
-## 2. 호출 프로토콜
+## 1. Auto-trigger Conditions
 
-본체가 code-reviewer를 Agent 도구로 호출할 때 프롬프트 구조:
+Based on the `Code Quality Impact` field in the `## Meta` block at the top of a plan file:
+
+- `Yes` or `Unknown` → auto-call code-reviewer after that plan completes
+- `No` → skip review
+- Field missing → treat as `Unknown` and auto-call
+
+**Explicit request:** call immediately when the user explicitly says "code review / quality check".
+
+---
+
+## 2. Call Protocol
+
+Prompt structure when the orchestrator calls code-reviewer via Agent tool:
 
 ```
 plan_paths:
   - <absolute path 1>
-target_dir: <리뷰 대상 프로젝트 루트 절대 경로>
+target_dir: <absolute path to project root under review>
 iteration: 1
-previous_report_path: null  # 재검토 시 직전 리포트 경로
-regenerate_profile: false   # key_files 대규모 변경 후에만 true
+previous_report_path: null  # path to previous report on re-review
+regenerate_profile: false   # true only after large-scale key_files changes
 
-## 출력 제약 (반드시 준수)
-- ❌ 파일 전문, 명령 출력 원본, 중간 로그 붙여넣기 금지
-- ❌ 과정 서술 금지
-- ❌ 역할 범위 이탈 금지
-- ✅ 아래 반환 형식 필드만 채워서 반환
-- 길이 상한: 500자 이내
+## Output Constraints (strictly enforced)
+- ❌ No pasting full file content, raw command output, or intermediate logs
+- ❌ No process narration
+- ❌ No role scope violations
+- ✅ Fill in only the return format fields below
+- Length limit: under 500 characters
 
-반환 형식:
-- 리포트 경로 (md): <abs path>
-- 리포트 경로 (json): <abs path>
+Return format:
+- Report path (md): <abs path>
+- Report path (json): <abs path>
 - Summary: critical=N / high=N / medium=N / low=N
 - profile_status: generated | cached | regenerated
 - next_action: done | self_fix | user_interview
 ```
 
-### 병렬 호출 (security-auditor와 동시)
+### Parallel Call (simultaneous with security-auditor)
 
-`Security Impact: Yes/Unknown` + `Code Quality Impact: Yes/Unknown` 모두 해당 시:
+When both `Security Impact: Yes/Unknown` and `Code Quality Impact: Yes/Unknown` apply:
 
 ```
-# 단일 메시지에서 두 에이전트 동시 호출 (리포트 파일명 충돌 없음)
+# call both agents simultaneously in a single message (no report filename collision)
 # security-auditor → .cc-audits/<slug>/iter-<n>.md
 # code-reviewer    → .cc-audits/<slug>/code-review-iter-<n>.md
 ```
 
 ---
 
-## 3. 루프 관리
+## 3. Loop Management
 
-- **종료 A (성공)**: CRITICAL·HIGH = 0 → 즉시 종료. MEDIUM/LOW는 최종 보고에 포함.
-- **종료 B (한계 도달)**: 3회 수행 → 잔존 이슈와 함께 사용자 보고 후 중단.
-- 매 루프마다 플랜 파일 하단 `## 코드 리뷰 이력` 섹션에 iteration 카운트 기록.
+- **Termination A (success)**: CRITICAL·HIGH = 0 → terminate immediately. MEDIUM/LOW included in final report.
+- **Termination B (limit reached)**: 3 iterations → report remaining issues to user and stop.
+- Record iteration count in a `## Code Review History` section at the bottom of the plan file each loop.
 
 ```markdown
-## 코드 리뷰 이력
+## Code Review History
 - code-review-iter-1: 2026-04-27 / critical=0 high=2 medium=1 / profile_status=generated / next_action=self_fix
 - code-review-iter-2: 2026-04-27 / critical=0 high=0 medium=1 / profile_status=cached / next_action=done
 ```
 
 ---
 
-## 4. decision_type별 후속 처리
+## 4. Follow-up by decision_type
 
-| decision_type | 후속 처리 |
+| decision_type | Follow-up |
 |---------------|-----------|
-| `auto` | 본체가 코드 수정 후 재검토 요청 |
-| `design` | 사용자 인터뷰 (AskUserQuestion) 후 설계 변경 |
-| `business` | 사용자 인터뷰 (AskUserQuestion) 후 정책 결정 |
+| `auto` | orchestrator fixes code and requests re-review |
+| `design` | user interview (AskUserQuestion) then design change |
+| `business` | user interview (AskUserQuestion) then policy decision |
 
 ---
 
-## 5. 인터뷰 직전 알림
+## 5. Notification Before Interview
 
-`design` 또는 `business` 이슈가 1건 이상 있고, AskUserQuestion 직전에 반드시 실행:
+When 1 or more `design` or `business` issues exist, always run this before AskUserQuestion:
 
 ```bash
-MSG="코드리뷰: 사용자 결정 필요 (N건)"  # N에 실제 design+business 건수 대입
+MSG="Code review: user decision required (N issues)"  # replace N with actual design+business count
 if command -v terminal-notifier >/dev/null 2>&1; then
   terminal-notifier -title "Claude Code" -message "$MSG" -sound Glass
 elif [ "$(uname)" = "Darwin" ]; then
   osascript -e "display notification \"$MSG\" with title \"Claude Code\" sound name \"Glass\"" \
-    || osascript -e "display dialog \"$MSG\" with title \"Claude Code\" buttons {\"확인\"} default button \"확인\""
+    || osascript -e "display dialog \"$MSG\" with title \"Claude Code\" buttons {\"OK\"} default button \"OK\""
 elif command -v notify-send >/dev/null 2>&1; then
   notify-send "Claude Code" "$MSG"
 fi
@@ -107,21 +107,21 @@ fi
 
 ---
 
-## 6. 리포트 경로 규칙
+## 6. Report Path Rules
 
 ```
 <target_dir>/.cc-audits/<plan-slug>/code-review-iter-<n>.md
 <target_dir>/.cc-audits/<plan-slug>/code-review-iter-<n>.json
-<target_dir>/.cc-audits/project-patterns.md   # 공통 프로파일 (여러 플랜 간 공유)
+<target_dir>/.cc-audits/project-patterns.md   # shared profile (reused across plans)
 ```
 
-`plan-slug`는 플랜 파일명(확장자 제외). 예: `wondrous-bubbling-newell`
+`plan-slug` is the plan filename without extension. Example: `wondrous-bubbling-newell`
 
 ---
 
-## 8. 감사 종료 후 HTML 리포트
+## 8. HTML Report After Audit Completes
 
-루프가 `done`(critical=0/high=0) 또는 한계(3회)에 도달해 종료될 때 본체가 실행:
+When the loop reaches `done` (critical=0/high=0) or the limit (3 iterations), the orchestrator runs:
 
 ```bash
 AUDIT_DIR="<target_dir>/.cc-audits/<plan-slug>"
@@ -132,17 +132,17 @@ open "$AUDIT_DIR/report.html"
 # xdg-open "$AUDIT_DIR/report.html"
 ```
 
-- ✅ DO: 루프 종료 시점에 단 한 번 자동 오픈
-- ✅ DO: security-auditor와 병렬 호출한 경우, **두 에이전트 모두 종료된 뒤 본체가 1회 실행** (같은 AUDIT_DIR에 두 리포트가 합쳐져 단일 HTML로 표시됨)
-- ❌ DON'T: 매 iteration마다 자동 오픈 금지 (수정 작업 흐름 방해)
+- ✅ DO: Auto-open once at loop termination
+- ✅ DO: When called in parallel with security-auditor, **the orchestrator runs this once after both agents complete** (both reports in the same AUDIT_DIR combine into a single HTML)
+- ❌ DON'T: Never auto-open on every iteration (disrupts the fix workflow)
 
 ---
 
-## 7. 프로파일 캐시 관리
+## 7. Profile Cache Management
 
-| 상황 | `regenerate_profile` 값 | 이유 |
-|------|------------------------|------|
-| 일반 실행 | `false` (기본) | 해시 기반 자동 감지로 충분 |
-| 패키지 대규모 업그레이드 | `true` | key_files 해시 변경 전 강제 갱신 |
-| 아키텍처 리팩토링 후 | `true` | 컨벤션 전면 변경 반영 |
-| `project-patterns.md` 손상·삭제 | `true` | 재생성 강제 |
+| Situation | `regenerate_profile` value | Reason |
+|-----------|--------------------------|--------|
+| Normal run | `false` (default) | hash-based auto-detection is sufficient |
+| Large-scale package upgrade | `true` | force refresh before key_files hash changes |
+| After architecture refactor | `true` | reflect full convention change |
+| `project-patterns.md` corrupted or deleted | `true` | force regeneration |

@@ -1,126 +1,126 @@
 ---
-name: E2E 테스트 매니저 운용 가이드
-description: 매니저(Claude 본체)가 e2e-tester 서브에이전트를 호출·운용할 때 참조 — MCP 서버 관리, 시나리오 작성, 병렬 실행, 결과 취합, 파일 정리
+name: E2E Test Manager Guide
+description: Reference for the manager (Claude orchestrator) when calling and operating e2e-tester sub-agents — MCP server management, scenario writing, parallel execution, result aggregation, file cleanup
 type: reference
 ---
 
-## 요약
+## Summary
 
-매니저는 E2E 테스트 전체를 총괄한다. 시나리오 설계, 서브에이전트 호출, 결과 취합, 파일 정리까지 모두 매니저 책임이다. 테스터 에이전트(`e2e-tester`)는 주어진 시나리오를 실행하고 결과만 보고한다.
-
----
-
-## 1. MCP 서버
-
-- `playwright-test-1` ~ `playwright-test-5` 최대 5개 사용 가능
-- 병렬 테스트 시 서브에이전트 수만큼 1:1 배정
+The manager oversees the entire E2E test process. The manager is responsible for scenario design, sub-agent calls, result aggregation, and file cleanup. The tester agent (`e2e-tester`) only executes the given scenario and reports results.
 
 ---
 
-## 2. 시나리오 작성 원칙
+## 1. MCP Servers
 
-- 매니저가 직접 시나리오를 작성하여 테스터에게 전달
-- 테스터는 시나리오를 임의로 변경하지 않음
-- 전달 형식:
+- Up to 5 available: `playwright-test-1` through `playwright-test-5`
+- Assign 1:1 per sub-agent for parallel tests
+
+---
+
+## 2. Scenario Writing Principles
+
+- The manager writes scenarios directly and delivers them to the tester
+- The tester does not modify scenarios arbitrarily
+- Delivery format:
 
 ```
 mcp_server: playwright-test-{N}
-base_url: <테스트 대상 URL>
+base_url: <target URL>
 scenario:
-  name: <시나리오 이름>
+  name: <scenario name>
   steps:
-    - <스텝 1>
-    - <스텝 2>
+    - <step 1>
+    - <step 2>
     ...
 screenshot_mode: on_failure_only | always | on_request
 ```
 
 ---
 
-## 3. 병렬 실행 방법
+## 3. How to Run in Parallel
 
-- 에이전트 정의 파일은 1개(`e2e-tester`), 인스턴스를 N개 병렬 호출
-- 단일 메시지에서 Agent 도구를 여러 번 동시 호출하여 병렬 처리
-- 각 인스턴스에 서로 다른 `mcp_server` 번호 할당
+- There is one agent definition file (`e2e-tester`); call N instances in parallel
+- Call the Agent tool multiple times simultaneously in a single message for parallel processing
+- Assign a different `mcp_server` number to each instance
 
 ```
-Agent(e2e-tester, { mcp_server: playwright-test-1, scenario: 로그인 })
-Agent(e2e-tester, { mcp_server: playwright-test-2, scenario: 결제 })
-Agent(e2e-tester, { mcp_server: playwright-test-3, scenario: 회원가입 })
+Agent(e2e-tester, { mcp_server: playwright-test-1, scenario: login })
+Agent(e2e-tester, { mcp_server: playwright-test-2, scenario: checkout })
+Agent(e2e-tester, { mcp_server: playwright-test-3, scenario: signup })
 ```
 
 ---
 
-## 4. 실패 처리 흐름
+## 4. Failure Handling Flow
 
-1. 테스터가 실패 보고 → 매니저가 원인 분석
-2. 매니저 판단에 따라: 재시도 / 스텝 스킵 / 전체 중단 중 하나를 테스터에게 지시
-3. 재시도 지시 시 동일 시나리오 재전달 또는 수정된 시나리오 전달
-
----
-
-## 5. 스크린샷 정책
-
-- 테스터는 아래 경우에 자동 캡처:
-  - 테스트 실패 시
-  - 예상치 못한 오류 발생 시
-  - `screenshot_mode: always`로 지정된 경우
-- 매니저가 필요하다고 판단할 때 `screenshot_mode: on_request`로 명시적 요청
+1. Tester reports failure → manager analyzes cause
+2. Manager instructs tester with one of: retry / skip step / abort entirely
+3. On retry instruction, re-deliver same scenario or deliver modified scenario
 
 ---
 
-## 6. 테스트 완료 후 파일 정리
+## 5. Screenshot Policy
 
-커밋 완료 즉시 `.playwright-mcp/` 폴더 내 Claude가 생성한 파일 전부 삭제.
-
-- ✅ 커밋 후 `.playwright-mcp/` 내 `.png`, `.yml`, `.log` 파일 즉시 삭제
-- ❌ 해당 파일이 staged된 상태로 커밋 금지
-- **검증:** 커밋 후 `ls .playwright-mcp/`로 잔존 파일 없는지 확인
-
----
-
-## 7. 결과 취합 및 사용자 보고
-
-- 테스터 보고는 영어로 수신
-- 매니저가 한국어로 정리하여 사용자에게 전달
-- 모든 테스트 완료 후 반드시 HTML 리포트 생성 → 웹 서버로 즉시 오픈 (아래 8번 참조)
+- Tester auto-captures in these cases:
+  - On test failure
+  - On unexpected error
+  - When `screenshot_mode: always` is specified
+- Manager explicitly requests with `screenshot_mode: on_request` when needed
 
 ---
 
-## 8. HTML 리포트 생성 및 웹 오픈
+## 6. File Cleanup After Tests
 
-모든 테스트가 완료되면 결과를 HTML 파일로 만들어 로컬 웹 서버로 띄운다.
+Immediately after commit, delete all Claude-generated files in the `.playwright-mcp/` folder.
 
-### 리포트 파일 위치
-- 저장 경로: `.playwright-mcp/report.html`
-- 커밋하지 않음 (`.playwright-mcp/` 전체가 정리 대상)
+- ✅ Delete `.png`, `.yml`, `.log` files in `.playwright-mcp/` immediately after commit
+- ❌ Never commit with those files staged
+- **Verify:** after commit, run `ls .playwright-mcp/` to confirm no leftover files
 
-### HTML 리포트 필수 포함 항목
-- 테스트 실행 일시
-- 전체 결과 요약 (PASS/FAIL 수, 소요 시간)
-- 시나리오별 결과 테이블 (시나리오명, 결과, 실패 스텝, 원인)
-- 실패 시 스크린샷 인라인 표시 (base64 임베드 또는 상대 경로)
-- 색상 구분: PASS → 초록, FAIL → 빨강
+---
 
-### 웹 서버 실행
+## 7. Result Aggregation and User Report
+
+- Receive tester reports in English
+- Manager summarizes and delivers to user in the user's language
+- After all tests complete, always generate an HTML report → open immediately via web server (see section 8 below)
+
+---
+
+## 8. HTML Report Generation and Web Open
+
+When all tests are complete, create an HTML file with results and serve it via a local web server.
+
+### Report File Location
+- Save path: `.playwright-mcp/report.html`
+- Do not commit (entire `.playwright-mcp/` is cleanup target)
+
+### Required HTML Report Content
+- Test execution date/time
+- Overall result summary (PASS/FAIL count, elapsed time)
+- Per-scenario result table (scenario name, result, failed step, cause)
+- Inline screenshot on failure (base64 embed or relative path)
+- Color coding: PASS → green, FAIL → red
+
+### Web Server Execution
 ```bash
-# Python 내장 서버 사용 (별도 설치 불필요)
+# Use Python built-in server (no extra install required)
 cd .playwright-mcp && python3 -m http.server 7777
 ```
-- 포트: `7777` 고정
-- 실행 후 Playwright MCP로 `http://localhost:7777/report.html` 열어서 사용자에게 확인시킬 것
+- Port: `7777` (fixed)
+- After launch, open `http://localhost:7777/report.html` via Playwright MCP and show to user for confirmation
 
-### 서버 종료
-- 사용자가 확인 완료 후 `/clean` 실행하여 서버 종료
+### Server Shutdown
+- After user confirms, run `/clean` to stop the server
 
 ---
 
-## 체크리스트
+## Checklist
 
-- [ ] 테스트 전 MCP 서버 활성화 수 확인
-- [ ] 시나리오 작성 완료 후 테스터 호출
-- [ ] 병렬 호출 시 MCP 서버 번호 중복 없는지 확인
-- [ ] 테스트 완료 후 HTML 리포트 생성 (`.playwright-mcp/report.html`)
-- [ ] 웹 서버 실행 후 브라우저로 리포트 오픈
-- [ ] 사용자 확인 완료 후 `/clean` 으로 서버 종료
-- [ ] 커밋 전 `.playwright-mcp/` 파일 정리 완료
+- [ ] Confirm number of active MCP servers before testing
+- [ ] Call tester after scenario writing is complete
+- [ ] On parallel call, confirm no duplicate MCP server numbers
+- [ ] After all tests complete, generate HTML report (`.playwright-mcp/report.html`)
+- [ ] Launch web server and open report in browser
+- [ ] Run `/clean` to stop server after user confirms
+- [ ] Clean up `.playwright-mcp/` files before commit
