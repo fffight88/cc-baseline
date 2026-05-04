@@ -51,15 +51,49 @@ Agent(e2e-tester, { mcp_server: playwright-test-3, scenario: signup })
 
 ---
 
-## 4. Failure Handling Flow
+## 4. No Mock Data Policy
 
-1. Tester reports failure → manager analyzes cause
-2. Manager instructs tester with one of: retry / skip step / abort entirely
-3. On retry instruction, re-deliver same scenario or deliver modified scenario
+- ❌ Under no circumstances use JS mocks (function overrides, fake return value injection) to conduct tests
+- ❌ Mock-based tests only verify "code structure" — they are not E2E validation and must never be reported as PASS
+- ✅ Must verify actual server API calls, actual DB/Redis state, and actual browser behavior
+- ✅ Repeat modify-test-modify-test cycles until the intended behavior is actually verified
 
 ---
 
-## 5. Screenshot Policy
+## 5. Unverifiable Scenario Handling Flow
+
+Decision tree for situations where a scenario cannot actually be verified.
+
+### 1-1. When test can proceed with code modification
+
+e.g. masterSeq missing on page load prevents pending check → add URL parameter support then test
+
+1. Modify **only the minimum code** needed to proceed with testing
+2. Run test → confirm pass/fail
+3. **Revert** the modified code
+4. Note in the report: "tested after temporary code modification, reverted after completion"
+
+### 1-2. When test is impossible even with code modification
+
+e.g. external infrastructure not set up, test environment missing
+
+1. Abort the scenario test
+2. **Send notification to user** (notify-send / PushNotification)
+3. Propose alternatives + proceed only after receiving user approval
+4. No alternative (including mock) may be applied without user approval
+
+### 1-3. When a specific user action is required to proceed
+
+e.g. upload must be in a paused state to test resume, user must directly select a specific file
+
+1. Hold only that scenario, continue other scenarios
+2. **Send notification to user** + provide detailed instructions on required preparation
+3. Resume the scenario only after user signals "ready"
+4. No arbitrary progression (including mock) before ready signal
+
+---
+
+## 6. Screenshot Policy
 
 - Tester auto-captures in these cases:
   - On test failure
@@ -69,7 +103,7 @@ Agent(e2e-tester, { mcp_server: playwright-test-3, scenario: signup })
 
 ---
 
-## 6. File Cleanup After Tests
+## 7. File Cleanup After Tests
 
 Immediately after commit, delete all Claude-generated files in the `.playwright-mcp/` folder.
 
@@ -79,15 +113,15 @@ Immediately after commit, delete all Claude-generated files in the `.playwright-
 
 ---
 
-## 7. Result Aggregation and User Report
+## 8. Result Aggregation and User Report
 
 - Receive tester reports in English
 - Manager summarizes and delivers to user in the user's language
-- After all tests complete, always generate an HTML report → open immediately via web server (see section 8 below)
+- After all tests complete, always generate an HTML report → open immediately via web server (see section 9 below)
 
 ---
 
-## 8. HTML Report Generation and Web Open
+## 9. HTML Report Generation and Web Open
 
 When all tests are complete, create an HTML file with results and serve it via a local web server.
 
