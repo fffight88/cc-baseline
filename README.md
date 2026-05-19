@@ -4,6 +4,29 @@ One-command installer that wires up a full Claude Code harness — behavior rule
 
 ---
 
+## Table of Contents
+
+- [Why cc-baseline?](#why-cc-baseline)
+- [Requirements](#requirements)
+- [Quick Start](#quick-start)
+- [What Gets Installed](#what-gets-installed)
+- [Auto-installed Tools](#auto-installed-tools)
+- [Options](#options)
+- [Hooks Installed](#hooks-installed)
+- [Hook Conflict Warning Guide](#hook-conflict-warning-guide)
+- [Editing memory/ Files After Install](#editing-memory-files-after-install)
+- [Backup & Recovery](#backup--recovery)
+- [Uninstall](#uninstall)
+- [Updating Templates](#updating-templates)
+- [Manual Testing with Playwright](#manual-testing-with-playwright)
+- [Audit Report Storage](#audit-report-storage)
+- [Security Policy: No `permissions` Key Distribution](#security-policy-no-permissions-key-distribution)
+- [Security & Privacy Notes](#security--privacy-notes)
+- [Tech Stack & Structure](#tech-stack--structure)
+- [Troubleshooting](#troubleshooting)
+
+---
+
 ## Why cc-baseline?
 
 Setting up Claude Code consistently across machines is tedious. cc-baseline solves this by bundling everything into a single `npx` command that merges cleanly into your existing `~/.claude/` config without overwriting anything you already have.
