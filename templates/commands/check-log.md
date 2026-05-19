@@ -17,8 +17,9 @@ Collect browser diagnostics and server log after a user-reported failure in a ma
    - `browser_network_requests` — all network requests including method, URL, status code, request headers, request body, response headers, response body
 
 3. **Read server log**
-   - Read the last 200 lines of the server log file (`tail -n 200 <server-log-path>`)
-   - Also grep for ERROR and WARN: `grep -E "ERROR|WARN|error|warn" <server-log-path> | tail -n 50`
+   - First check if the file exists: `[ -f "<server-log-path>" ]`
+   - If the file does not exist → skip this section; note "server log not available" in the report
+   - If it exists → read the last 200 lines (`tail -n 200 <server-log-path>`) and grep for errors (`grep -E "ERROR|WARN|error|warn" <server-log-path> | tail -n 50`)
 
 4. **Evaluate severity**
    - If there are NO console errors AND NO server errors AND the user did not explicitly say something failed → report "No issues detected" and stop (do not write a file)

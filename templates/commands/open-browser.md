@@ -21,6 +21,7 @@ Open a Playwright-controlled browser for manual testing. The user can then inter
 
 ## Notes
 
-- `playwright-test-1` is reserved for `/open-browser` sessions — the manager must not assign this server to e2e-tester agents while a manual session may be active
+- `playwright-test-1` is intentionally hardcoded (not a variable) — it is the only server reserved for manual sessions; `check-log.md` reads the server number dynamically from `browser-session.json` to allow future changes without modifying both files
+- The manager must not assign `playwright-test-1` to e2e-tester agents while a manual session may be active
 - The browser session persists until the user closes it or `/clean` is run
 - `/clean` deletes `.claude/browser-session.json`, effectively closing the session reference

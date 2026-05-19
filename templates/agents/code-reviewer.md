@@ -65,12 +65,13 @@ Profile path: `<target_dir>/.cc-audits/project-patterns.md`
 
 1. Check if profile file exists (attempt Read)
 2. File missing → **auto-generate** (run "Profile Generation Procedure" below, `profile_generated_reason: initial`)
-3. File exists + `regenerate_profile: true` → **force regenerate** (`profile_generated_reason: forced`)
-4. **[Integrity check]** File exists → verify `profile_body_hash`:
+3. **[Integrity check — always runs before any other branch]** File exists → verify `profile_body_hash`:
    - Read `profile_body_hash` from frontmatter
    - Recompute body hash: `awk '/^---/{n++; if(n==2){found=1; next}} found' <profile_file> | sha256sum | awk '{print $1}'`
-   - Hash mismatch → generate `QA-PROFILE-TAMPER` issue (MEDIUM, category: `logic-error`, decision_type: `design`) and **force regenerate** (`profile_generated_reason: tampered`)
-5. File exists → extract `key_files_hash` and `key_files` list from frontmatter
+   - Hash mismatch → generate `QA-PROFILE-TAMPER` issue (MEDIUM, category: `profile-tamper`, decision_type: `design`) and set `tamper_detected = true`
+   - This step runs regardless of `regenerate_profile` flag so tampering is always recorded
+4. `regenerate_profile: true` OR `tamper_detected = true` → **force regenerate** (`profile_generated_reason: forced` or `tampered` respectively)
+5. File exists (no regeneration triggered) → extract `key_files_hash` and `key_files` list from frontmatter
 6. Recompute hash from current content of key_files (see "Hash Computation" below)
 7. Hash matches → **cache hit** (load profile only, skip full scan)
 8. Hash mismatch → **stale warning + auto-regenerate** (`profile_generated_reason: stale`)
@@ -167,15 +168,22 @@ profile_body_hash: <sha256 of profile body (everything after the closing ---)>
 
 #### Profile Body Hash (Integrity)
 
-After generating all profile body content (the markdown sections below the closing `---`), compute the body hash and include it in the frontmatter before writing:
+After generating all profile body content (the markdown sections below the closing `---`), compute the body hash before writing the final file:
 
-```bash
-HASH_CMD=$(which shasum 2>/dev/null && echo "shasum -a 256" || echo "sha256sum")
-# Hash the generated body content (all text after the closing --- of frontmatter)
-BODY_HASH=$(echo "<generated_body_content>" | $HASH_CMD | awk '{print $1}')
-```
+1. Write only the body (everything after the closing `---`) to a temp file:
+   ```bash
+   TMPFILE=$(mktemp)
+   # write the generated body content to $TMPFILE using a heredoc or Write tool
+   ```
+2. Hash the temp file:
+   ```bash
+   HASH_CMD=$(which shasum 2>/dev/null && echo "shasum -a 256" || echo "sha256sum")
+   BODY_HASH=$(eval "$HASH_CMD '$TMPFILE'" | awk '{print $1}')
+   rm -f "$TMPFILE"
+   ```
+3. Include `profile_body_hash: <BODY_HASH>` in the frontmatter of the final file write.
 
-Add `profile_body_hash: <BODY_HASH>` to the frontmatter. This allows future loads to detect tampering.
+> The body is not yet on disk when computing the hash, so it must be written to a temp file first, hashed, then the complete file (frontmatter + body) is written in a single Write tool call.
 
 **Call ExitPlanMode** — return to Sonnet and write the profile file using the Write tool.
 
@@ -215,6 +223,7 @@ git -C <target_dir> diff HEAD~1 HEAD 2>/dev/null
    grep -r "<symbol_name>" <target_dir> \
      --include="*.ts" --include="*.tsx" --include="*.js" \
      --include="*.py" --include="*.go" \
+     --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.cc-audits \
      -l 2>/dev/null | head -5
    ```
 
@@ -262,7 +271,7 @@ Compare profile (`.cc-audits/project-patterns.md`) against code in diff:
 | CLAUDE.md violations | load project CLAUDE.md, compare rules against diff |
 | Local dead code | new exports/functions/classes in diff with no reference in same diff |
 | Type safety gaps | `any`, `// @ts-ignore`, `as unknown` pattern grep + LLM interpretation |
-| Async/Promise errors | `await` missing on Promise-returning calls inside `async` functions; unhandled rejections (no `.catch()` or `try/catch`); `Promise.all` vs `Promise.allSettled` misuse where partial failure handling is ambiguous; `await` used outside `async` function |
+| Async/Promise errors | `await` missing on Promise-returning calls inside `async` functions; unhandled rejections (no `.catch()` or `try/catch`); `Promise.all` vs `Promise.allSettled` misuse where partial failure handling is ambiguous (Note: `await` outside `async` is a compile-time syntax error — skip, already caught by compiler) |
 
 **Call ExitPlanMode** — return to Sonnet after analysis.
 
@@ -277,7 +286,8 @@ For each new exported symbol added in the diff (use Step 1.5 export extraction p
 1. **Find test files** in `<target_dir>`:
 
    ```bash
-   find <target_dir> \( -name "*.test.*" -o -name "*.spec.*" -o -name "test_*.py" -o -name "*_test.go" \) 2>/dev/null
+   find <target_dir> \( -name "*.test.*" -o -name "*.spec.*" -o -name "test_*.py" -o -name "*_test.go" \) \
+     -not -path "*/node_modules/*" -not -path "*/dist/*" -not -path "*/.cc-audits/*" 2>/dev/null
    ```
 
 2. **Search for symbol name** in found test files:
@@ -335,7 +345,7 @@ Report path: `<target_dir>/.cc-audits/<plan-slug>/code-review-iter-<n>.md` + `.j
     {
       "id": "QA-001",
       "severity": "CRITICAL | HIGH | MEDIUM | LOW",
-      "category": "logic-error | edge-case | claude-md-violation | convention-violation | dead-code | type-safety | cross-file-impact | async-error | test-coverage",
+      "category": "logic-error | edge-case | claude-md-violation | convention-violation | dead-code | type-safety | cross-file-impact | async-error | test-coverage | profile-tamper",
       "title": "<title>",
       "description": "<description>",
       "evidence": {

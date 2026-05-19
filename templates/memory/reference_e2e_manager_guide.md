@@ -120,7 +120,8 @@ e2e-results/fail-{N}-{YYYYMMDD-HHmmss}.md
 
 ### MCP server reservation
 - `playwright-test-1` is reserved for `/open-browser` manual sessions
-- Do not assign `playwright-test-1` to e2e-tester agents unless no manual session is active
+- Before assigning `playwright-test-1`, check for `.claude/browser-session.json` in the project directory. If the file exists, treat `playwright-test-1` as reserved and use `playwright-test-2` through `playwright-test-5` instead
+- If no session file exists, `playwright-test-1` may be assigned to an e2e-tester agent
 
 ### Cleanup
 - Run `/clean` to delete all `e2e-results/fail-*.md` files and `.claude/browser-session.json`

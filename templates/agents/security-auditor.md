@@ -49,7 +49,7 @@ Auto-detect using the priority order below. If the orchestrator's hint conflicts
 
 | Priority | Detection Signal | Type |
 |----------|-----------------|------|
-| 1 | `~/.claude/` or `.claude/agents/`, `.claude/hooks/` dominant | `claude-config` |
+| 1 | `.claude/agents/` or `.claude/hooks/` present relative to `<target_dir>` | `claude-config` |
 | 2 | `package.json` + `index.html` / `src/App.tsx` etc. | `web-frontend` |
 | 3 | `package.json` + Express/Fastify/Next.js API routes | `web-backend` |
 | 4 | `package.json` + `bin` field / CLI parsing library | `cli` |
@@ -116,6 +116,8 @@ Issue fields for each missing scanner:
 - `decision_type`: `auto`
 - `fix_suggestion`: exact install command (e.g., `brew install semgrep`, `pip install bandit`, `npm install -g npm`)
 
+> **ID namespace:** `SEC-TOOL-XXX` IDs are a separate namespace from main finding IDs (`SEC-001`, `SEC-002`, …). Both appear in the same `issues[]` array. Consumers should treat `SEC-TOOL-*` as infrastructure advisory items, not code vulnerabilities.
+
 > Note: For `rust`, `go`, `ruby`, `java` — language-specific tools (govulncheck, bundler-audit, etc.) are outside cc-baseline install scope. Record in `scanners_skipped` only; do not generate `SEC-TOOL-XXX` issues.
 
 ---
@@ -147,14 +149,15 @@ Scan the following paths for injection patterns:
 ```bash
 # Classic instruction override patterns
 grep -ri "ignore.*previous.*instruction\|forget.*your.*role\|you are now\|disregard.*above\|new persona\|pretend you are" \
-  .claude/agents/ .claude/commands/ CLAUDE.md 2>/dev/null
+  <target_dir>/.claude/agents/ <target_dir>/.claude/commands/ <target_dir>/CLAUDE.md 2>/dev/null
 
 # Base64 blobs > 80 chars (encoded payloads)
-grep -rE "[A-Za-z0-9+/]{80,}={0,2}" .claude/agents/ .claude/commands/ 2>/dev/null
+grep -rE "[A-Za-z0-9+/]{80,}={0,2}" \
+  <target_dir>/.claude/agents/ <target_dir>/.claude/commands/ 2>/dev/null
 
 # Excessive blank lines pushing content out of view (> 30 consecutive)
 awk 'BEGIN{n=0; f=FILENAME} /^[[:space:]]*$/{n++} !/^[[:space:]]*$/{if(n>30) print f": "n" blank lines"; n=0}' \
-  .claude/agents/*.md .claude/commands/*.md 2>/dev/null
+  <target_dir>/.claude/agents/*.md <target_dir>/.claude/commands/*.md 2>/dev/null
 ```
 
 Also check: if any hook command reads user-controlled files and pipes content directly to stdout without sanitization (e.g., `cat <user_input_file>` in a SessionStart hook) — flag as `hook context injection`.

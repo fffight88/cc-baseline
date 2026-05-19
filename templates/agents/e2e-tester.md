@@ -122,6 +122,7 @@ Collect the following before writing the report:
 
 3. **Write fail artifact file**:
    - Path: `e2e-results/fail-{N}-{YYYYMMDD-HHmmss}.md` where N is the MCP server number
+   - Extract N by stripping the `playwright-test-` prefix from the `mcp_server` input value (e.g., `playwright-test-3` → `3`)
    - Create `e2e-results/` directory if it does not exist
    - Content structure:
 
