@@ -428,7 +428,7 @@ async function install(opts = {}) {
   console.log(`  ✅ agents/code-reviewer.md — overwritten`);
 
   // ── 7. commands/ ─────────────────────────────────────────────────────────
-  for (const f of ['plan.md', 'clean.md']) {
+  for (const f of ['plan.md', 'clean.md', 'check-log.md', 'open-browser.md']) {
     const dest = path.join(CLAUDE_DIR, 'commands', f);
     changes.push({ label: `commands/${f}`, path: dest, content: readTemplate(`commands/${f}`) });
     console.log(`  ✅ commands/${f} — overwritten`);
