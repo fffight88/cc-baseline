@@ -15,7 +15,9 @@ Setting up Claude Code consistently across machines is tedious. cc-baseline solv
 - **Code reviewer agent** that checks logic errors, edge cases, convention violations, and CLAUDE.md compliance independently from the security pass
 - **HTML report generator** (`audit-report.js`) that turns audit JSON into a color-coded, severity-sorted web page — opened automatically when a scan loop completes
 - **Reliable notifications** via `terminal-notifier` (auto-installed on macOS) so you never miss an interview prompt for design/business decisions
-- **E2E tester agent** backed by five parallel Playwright MCP servers, with an HTML report at the end
+- **E2E tester agent** backed by five parallel Playwright MCP servers — automatically collects browser console, network headers/payloads, and server log on failure; writes a structured `e2e-results/fail-{N}-{timestamp}.md` artifact; skips all log collection on pass
+- **`/open-browser` skill** — opens a Playwright-controlled browser (`playwright-test-1`) for manual testing; saves session state so `/check-log` knows which MCP server to query
+- **`/check-log` skill** — after you reproduce a bug in the open browser, one command collects console errors, network request/response details, and server log into `e2e-results/fail-manual-{timestamp}.md` at the same depth as an e2e-tester artifact
 - **Safe merge strategy** — CLAUDE.md and MEMORY.md use marker-block merge; hooks use status-message deduplication. Your personal settings are never touched.
 - **Auto-backup** before every install; one-command uninstall with `--purge` and `--remove-scanners` options
 
@@ -58,13 +60,13 @@ npx github:fffight88/cc-baseline --dry-run
 | Component | Description |
 |---|---|
 | Behavior rules (`CLAUDE.md`, `memory/*.md`) | 11 session rules: response language, uncertainty, parallel reads, minimal edits, git safety, and more |
-| Custom skills (`/plan`, `/clean`) | Plan-mode entry skill; orphan-process cleanup skill |
-| E2E tester agent (`e2e-tester`) | Browser-based E2E test runner using Playwright MCP |
+| Custom skills (`/plan`, `/clean`, `/open-browser`, `/check-log`) | Plan-mode entry; orphan-process + e2e artifact cleanup; Playwright browser for manual testing; fail diagnostics collector |
+| E2E tester agent (`e2e-tester`) | Browser-based E2E test runner — PASS: no log collection; FAIL: console + network + server log → `e2e-results/fail-{N}-{timestamp}.md` |
 | Security auditor agent (`security-auditor`) | SAST · SCA · secret scan with structured per-issue reports |
 | Code reviewer agent (`code-reviewer`) | Logic errors · edge cases · CLAUDE.md violations · convention checks; defers security to security-auditor |
 | HTML report generator (`scripts/audit-report.js`) | Converts audit/review JSON into a severity-colored, decision-badged HTML page. Run with `node ~/.claude/scripts/audit-report.js <audit-dir>` |
 | Hook config (`settings.json hooks`) | SessionStart memory load, PreToolUse E2E guide inject · path guard, SessionEnd process cleanup |
-| MCP servers (`~/.claude.json`) | `playwright-test-1~5` global MCP server entries |
+| MCP servers (`~/.claude.json`) | `playwright-test-1~5` global MCP server entries (`playwright-test-1` reserved for `/open-browser` manual sessions) |
 
 ### File Install Details
 
@@ -87,6 +89,8 @@ npx github:fffight88/cc-baseline --dry-run
 | `agents/code-reviewer.md` | `~/.claude/agents/code-reviewer.md` | Overwrite |
 | `commands/plan.md` | `~/.claude/commands/plan.md` | Overwrite |
 | `commands/clean.md` | `~/.claude/commands/clean.md` | Overwrite |
+| `commands/open-browser.md` | `~/.claude/commands/open-browser.md` | Overwrite |
+| `commands/check-log.md` | `~/.claude/commands/check-log.md` | Overwrite |
 | `scripts/audit-report.js` | `~/.claude/scripts/audit-report.js` | Overwrite |
 
 ### JSON Merge Details
@@ -283,6 +287,8 @@ rm ~/.claude/agents/security-auditor.md
 rm ~/.claude/agents/code-reviewer.md
 rm ~/.claude/commands/plan.md
 rm ~/.claude/commands/clean.md
+rm ~/.claude/commands/open-browser.md
+rm ~/.claude/commands/check-log.md
 rm ~/.claude/scripts/audit-report.js
 ```
 
@@ -314,6 +320,46 @@ grep -rE "$(whoami)|/Users/|/home/" templates/
 git add templates/ && git commit -m "feat: update harness templates"
 git push
 ```
+
+---
+
+## Manual Testing with Playwright
+
+`/open-browser` and `/check-log` let you use the Playwright-controlled browser yourself, with Claude collecting diagnostics on demand.
+
+### Workflow
+
+> **`/check-log` requires `/open-browser` first.** It reads `.claude/browser-session.json` written by `/open-browser` to know which Playwright MCP server to query. Running `/check-log` without an active browser session will prompt you to run `/open-browser <url>` first.
+
+```
+1.  Start your dev server:  npm run dev 2>&1 | tee server.log
+2.  /open-browser http://localhost:3000   →  browser opens (playwright-test-1)
+3.  Reproduce the bug manually in the browser
+4.  /check-log server.log                →  Claude reads console + network + server log
+5.  e2e-results/fail-manual-{timestamp}.md  is written automatically
+6.  Claude analyzes and offers to debug
+7.  /clean                               →  deletes fail-*.md + browser session state
+```
+
+### Fail artifact content (on error)
+
+| Section | Source |
+|---|---|
+| Console Errors | `browser_console_messages` |
+| Network Requests | `browser_network_requests` (method · URL · status) |
+| Failed Requests (4xx/5xx) | headers · request params · response body |
+| Server Log — Errors & Warnings | `grep -E "ERROR\|WARN"` |
+| Server Log — Last 200 Lines | `tail -n 200` |
+
+> **No artifact is written if no errors are detected** — the skill reports "No issues detected" and stops.
+
+### E2E agent fail artifacts
+
+The `e2e-tester` agent follows the same policy automatically:
+- **PASS** → no files written
+- **FAIL** → writes `e2e-results/fail-{N}-{timestamp}.md` (N = MCP server number) and includes the path in the report
+
+`playwright-test-1` is reserved for `/open-browser` manual sessions. The manager assigns `playwright-test-2` through `playwright-test-5` to e2e-tester agents for automated runs.
 
 ---
 
@@ -377,7 +423,7 @@ cc-baseline/
     ├── CLAUDE.md
     ├── memory/             # MEMORY.md + 10 rule files
     ├── agents/             # e2e-tester.md, security-auditor.md, code-reviewer.md
-    ├── commands/           # plan.md, clean.md
+    ├── commands/           # plan.md, clean.md, open-browser.md, check-log.md
     ├── scripts/            # audit-report.js
     ├── settings-hooks.json # hooks section only
     └── mcp-servers.json    # playwright-test-1~5 only

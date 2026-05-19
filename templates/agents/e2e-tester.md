@@ -18,6 +18,7 @@ The manager delivers work in this format:
 ```
 mcp_server: playwright-test-{N}   # assigned MCP server number (1–5)
 base_url: <target URL>
+server_log: <path to server log file>   # e.g. server.log — omit if no server log
 scenario:
   name: <scenario name>
   steps:
@@ -102,6 +103,52 @@ Handling unexpected UI elements (popups, dialogs, error pages):
 
 ---
 
+## Log Collection Policy
+
+### On PASS
+- Do not collect logs or write any files
+- Report only the fields in the PASS format below
+
+### On FAIL or ERROR
+Collect the following before writing the report:
+
+1. **Browser diagnostics** (from the assigned MCP server):
+   - `browser_console_messages` — all console output
+   - `browser_network_requests` — all requests: method, URL, status, request headers, request body, response headers, response body
+
+2. **Server log** (only if `server_log` was provided in input):
+   - Last 200 lines: `tail -n 200 <server_log>`
+   - Errors and warnings: `grep -E "ERROR|WARN|error|warn" <server_log> | tail -n 50`
+
+3. **Write fail artifact file**:
+   - Path: `e2e-results/fail-{N}-{YYYYMMDD-HHmmss}.md` where N is the MCP server number
+   - Create `e2e-results/` directory if it does not exist
+   - Content structure:
+
+```
+# Fail Report — e2e-tester (playwright-test-{N})
+Date: <ISO datetime>
+Scenario: <name>
+Failed Step: <step number> — <step description>
+
+## Console Errors
+<filtered console errors and warnings>
+
+## Network Requests
+<all requests: method + URL + status>
+
+### Failed Requests (4xx / 5xx)
+<for each failed request: headers + request params + response body>
+
+## Server Log — Errors & Warnings
+<grep output>
+
+## Server Log — Last 200 Lines
+<tail output>
+```
+
+---
+
 ## Report Format
 
 ### On success (all steps passed)
@@ -122,6 +169,7 @@ REASON: <cause in one line>
 EXPECTED: <expected result>
 ACTUAL: <actual result>
 SCREENSHOT: <attached / not attached>
+LOG_FILE: e2e-results/fail-{N}-{timestamp}.md
 REMAINING_STEPS: <number of unexecuted steps>
 AWAITING: manager instruction to retry / skip / abort
 ```

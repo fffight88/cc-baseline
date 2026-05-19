@@ -26,6 +26,7 @@ The manager oversees the entire E2E test process. The manager is responsible for
 ```
 mcp_server: playwright-test-{N}
 base_url: <target URL>
+server_log: <path to server log file>   # e.g. server.log — omit if no server log
 scenario:
   name: <scenario name>
   steps:
@@ -103,10 +104,26 @@ e.g. upload must be in a paused state to test resume, user must directly select 
 
 ---
 
-## 7. File Cleanup After Tests
+## 7. Fail Log File Naming and Cleanup
 
-Immediately after commit, delete all Claude-generated files in the `.playwright-mcp/` folder.
+### File naming pattern
+```
+e2e-results/fail-{N}-{YYYYMMDD-HHmmss}.md
+```
+- `N`: MCP server number (1–5) — guarantees uniqueness in parallel runs
+- Timestamp: prevents overwrite when the same server runs multiple times
+- Example: `e2e-results/fail-3-20260519-143022.md`
 
+### Log collection policy
+- **PASS**: no log collection, no file written
+- **FAIL or ERROR**: tester collects browser console + network requests (headers + request/response params) + server log → writes to the file above → includes `LOG_FILE` path in the report
+
+### MCP server reservation
+- `playwright-test-1` is reserved for `/open-browser` manual sessions
+- Do not assign `playwright-test-1` to e2e-tester agents unless no manual session is active
+
+### Cleanup
+- Run `/clean` to delete all `e2e-results/fail-*.md` files and `.claude/browser-session.json`
 - ✅ Delete `.png`, `.yml`, `.log` files in `.playwright-mcp/` immediately after commit
 - ❌ Never commit with those files staged
 - **Verify:** after commit, run `ls .playwright-mcp/` to confirm no leftover files
@@ -152,9 +169,12 @@ cd .playwright-mcp && python3 -m http.server 7777
 ## Checklist
 
 - [ ] Confirm number of active MCP servers before testing
+- [ ] Do not assign `playwright-test-1` if a `/open-browser` manual session may be active
+- [ ] Include `server_log` path in scenario delivery if server log is available
 - [ ] Call tester after scenario writing is complete
 - [ ] On parallel call, confirm no duplicate MCP server numbers
 - [ ] After all tests complete, generate HTML report (`.playwright-mcp/report.html`)
+- [ ] Include `LOG_FILE` paths from FAIL reports in the HTML report for traceability
 - [ ] Launch web server and open report in browser
-- [ ] Run `/clean` to stop server after user confirms
+- [ ] Run `/clean` to stop server after user confirms (also deletes `e2e-results/fail-*.md`)
 - [ ] Clean up `.playwright-mcp/` files before commit
