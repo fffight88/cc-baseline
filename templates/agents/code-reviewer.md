@@ -66,10 +66,14 @@ Profile path: `<target_dir>/.cc-audits/project-patterns.md`
 1. Check if profile file exists (attempt Read)
 2. File missing → **auto-generate** (run "Profile Generation Procedure" below, `profile_generated_reason: initial`)
 3. File exists + `regenerate_profile: true` → **force regenerate** (`profile_generated_reason: forced`)
-4. File exists → extract `key_files_hash` and `key_files` list from frontmatter
-5. Recompute hash from current content of key_files (see "Hash Computation" below)
-6. Hash matches → **cache hit** (load profile only, skip full scan)
-7. Hash mismatch → **stale warning + auto-regenerate** (`profile_generated_reason: stale`)
+4. **[Integrity check]** File exists → verify `profile_body_hash`:
+   - Read `profile_body_hash` from frontmatter
+   - Recompute body hash: `awk '/^---/{n++; if(n==2){found=1; next}} found' <profile_file> | sha256sum | awk '{print $1}'`
+   - Hash mismatch → generate `QA-PROFILE-TAMPER` issue (MEDIUM, category: `logic-error`, decision_type: `design`) and **force regenerate** (`profile_generated_reason: tampered`)
+5. File exists → extract `key_files_hash` and `key_files` list from frontmatter
+6. Recompute hash from current content of key_files (see "Hash Computation" below)
+7. Hash matches → **cache hit** (load profile only, skip full scan)
+8. Hash mismatch → **stale warning + auto-regenerate** (`profile_generated_reason: stale`)
 
 #### Hash Computation
 
@@ -125,7 +129,8 @@ key_files:
   - <file1>
   - <file2>
 detected_stack: [<stack list>]
-profile_generated_reason: initial | stale | forced
+profile_generated_reason: initial | stale | forced | tampered
+profile_body_hash: <sha256 of profile body (everything after the closing ---)>
 ---
 
 ## HTTP / API Calls
@@ -160,6 +165,18 @@ profile_generated_reason: initial | stale | forced
 - Files: <kebab-case, etc.>
 ```
 
+#### Profile Body Hash (Integrity)
+
+After generating all profile body content (the markdown sections below the closing `---`), compute the body hash and include it in the frontmatter before writing:
+
+```bash
+HASH_CMD=$(which shasum 2>/dev/null && echo "shasum -a 256" || echo "sha256sum")
+# Hash the generated body content (all text after the closing --- of frontmatter)
+BODY_HASH=$(echo "<generated_body_content>" | $HASH_CMD | awk '{print $1}')
+```
+
+Add `profile_body_hash: <BODY_HASH>` to the frontmatter. This allows future loads to detect tampering.
+
 **Call ExitPlanMode** — return to Sonnet and write the profile file using the Write tool.
 
 > **Note:** `project-patterns.md` can be committed to git for team sharing. To exclude it, add `.cc-audits/project-patterns.md` to `.gitignore`.
@@ -176,6 +193,45 @@ git -C <target_dir> diff HEAD~1 HEAD 2>/dev/null
 
 - Collect changed file list and diff
 - Identify dependent files via direct import analysis
+
+---
+
+### Step 1.5: Cross-file Impact Analysis
+
+**Call EnterPlanMode** — export symbol extraction and dependency tracing runs in Opus.
+
+1. **Extract changed/removed exported symbols from diff** (lines starting with `-`):
+
+   | Language | Pattern |
+   |----------|---------|
+   | JS/TS | `grep "^-.*export\s\+\(function\|class\|const\|type\|interface\|enum\|default\)"` |
+   | Python | `grep "^-.*\(def \|class \)"` (module-level only) |
+   | Go | `grep "^-.*func [A-Z]"` (capitalized = exported) |
+   | Other | `grep "^-.*\(export\|pub \)"` |
+
+2. **Find dependent files (max 5 per symbol):**
+
+   ```bash
+   grep -r "<symbol_name>" <target_dir> \
+     --include="*.ts" --include="*.tsx" --include="*.js" \
+     --include="*.py" --include="*.go" \
+     -l 2>/dev/null | head -5
+   ```
+
+3. **LLM analysis (Opus):** Read each dependent file (≤ 5) and determine if the change introduces a breaking incompatibility. Consider: type signature change, renamed export, deleted export, added required parameter.
+
+4. **If > 5 dependent files found:** Report a MEDIUM issue without reading individual files: "`<symbol>` is imported by N files — manual verification recommended"
+
+5. **Generate issues by severity:**
+   - Breaking change confirmed → HIGH
+   - Potential breaking (signature mismatch possible) → MEDIUM
+   - No breaking risk → **skip** (do not generate noise)
+
+**Call ExitPlanMode** after analysis.
+
+**New issue category**: `cross-file-impact`
+
+> Note: For languages other than JS/TS/Python/Go, if exported symbols changed, generate one LOW advisory: "Cross-file impact analysis not available for this language — verify manually"
 
 ---
 
@@ -251,7 +307,7 @@ Report path: `<target_dir>/.cc-audits/<plan-slug>/code-review-iter-<n>.md` + `.j
     {
       "id": "QA-001",
       "severity": "CRITICAL | HIGH | MEDIUM | LOW",
-      "category": "logic-error | edge-case | claude-md-violation | convention-violation | dead-code | type-safety",
+      "category": "logic-error | edge-case | claude-md-violation | convention-violation | dead-code | type-safety | cross-file-impact",
       "title": "<title>",
       "description": "<description>",
       "evidence": {

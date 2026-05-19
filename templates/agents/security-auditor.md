@@ -89,13 +89,44 @@ Fallback mapping (when not installed):
 | Secrets | `gitleaks`, `trufflehog` | regex-based manual grep |
 | Headers | WebFetch URL response check | grep header config in source |
 
+#### Scanner Gap Issues
+
+After determining scanner availability, generate a `SEC-TOOL-XXX` issue for each missing scanner based on its importance to the detected project type. Use sequential numbering (SEC-TOOL-001, SEC-TOOL-002, ...).
+
+**Primary/Secondary scanner mapping:**
+
+| Type | PRIMARY (→ HIGH if missing) | SECONDARY (→ MEDIUM if missing) |
+|------|-----------------------------|--------------------------------|
+| `claude-config` | semgrep, gitleaks | trivy |
+| `web-frontend` | semgrep, npm | trivy |
+| `web-backend` | semgrep, npm | trivy |
+| `cli` | semgrep, gitleaks | — |
+| `library` | npm, semgrep | trivy |
+| `python-web` | bandit, pip-audit | semgrep |
+| `python-generic` | bandit, pip-audit | semgrep |
+| `rust` | — (cargo built-in) | — |
+| `go` | — (govulncheck) | — |
+| `ruby` | — (bundler-audit) | — |
+| `java` | — (OWASP DC) | — |
+| `unknown` | gitleaks, semgrep | trivy |
+
+Issue fields for each missing scanner:
+- `id`: `SEC-TOOL-001`, `SEC-TOOL-002`, ... (sequential)
+- `category`: `scanner-gap`
+- `decision_type`: `auto`
+- `fix_suggestion`: exact install command (e.g., `brew install semgrep`, `pip install bandit`, `npm install -g npm`)
+
+> Note: For `rust`, `go`, `ruby`, `java` — language-specific tools (govulncheck, bundler-audit, etc.) are outside cc-baseline install scope. Record in `scanners_skipped` only; do not generate `SEC-TOOL-XXX` issues.
+
+---
+
 ### Step 3: Run Type-specific Checks
 
 **Call EnterPlanMode** — manual code analysis and vulnerability path tracing runs in Opus. (Including interpretation of automated scanner results)
 
 | Type | Checks |
 |------|--------|
-| `claude-config` | hook command permission scope, secret exposure, filesystem access scope, git commit inclusion risk, external command execution path misuse |
+| `claude-config` | hook command permission scope, secret exposure, filesystem access scope, git commit inclusion risk, external command execution path misuse, prompt injection in agent/command definition files, hook context injection via untrusted file reads |
 | `web-frontend` | OWASP Top 10 (XSS/CSRF), security headers (CSP/X-Frame-Options/Referrer-Policy), `dangerouslySetInnerHTML`, secret exposure, dependencies (npm audit) |
 | `web-backend` | auth/authz, input validation, SQL/NoSQL injection, CORS, rate limiting, secrets, session/JWT handling, dependencies, logging PII |
 | `cli` | command injection (shell=True etc.), path traversal, privilege escalation, secrets, dependencies |
@@ -107,6 +138,37 @@ Fallback mapping (when not installed):
 | `ruby` | `bundler-audit`, `brakeman` (Rails only), mass assignment, `eval`/`system` misuse, secrets |
 | `java` | OWASP Dependency-Check, `spotbugs-sec` security rules, XXE, deserialization, secrets |
 | `unknown` | secret scan, git-tracked sensitive files (.env etc.), check dependency manifests |
+
+**Prompt Injection Detection** (claude-config only) — run when project type is `claude-config`:
+
+Scan the following paths for injection patterns:
+- `.claude/agents/*.md`, `.claude/commands/*.md`, `CLAUDE.md`, `.claude/CLAUDE.md`
+
+```bash
+# Classic instruction override patterns
+grep -ri "ignore.*previous.*instruction\|forget.*your.*role\|you are now\|disregard.*above\|new persona\|pretend you are" \
+  .claude/agents/ .claude/commands/ CLAUDE.md 2>/dev/null
+
+# Base64 blobs > 80 chars (encoded payloads)
+grep -rE "[A-Za-z0-9+/]{80,}={0,2}" .claude/agents/ .claude/commands/ 2>/dev/null
+
+# Excessive blank lines pushing content out of view (> 30 consecutive)
+awk 'BEGIN{n=0; f=FILENAME} /^[[:space:]]*$/{n++} !/^[[:space:]]*$/{if(n>30) print f": "n" blank lines"; n=0}' \
+  .claude/agents/*.md .claude/commands/*.md 2>/dev/null
+```
+
+Also check: if any hook command reads user-controlled files and pipes content directly to stdout without sanitization (e.g., `cat <user_input_file>` in a SessionStart hook) — flag as `hook context injection`.
+
+Issue category: `prompt-injection`
+
+| Pattern | Severity | decision_type |
+|---------|----------|---------------|
+| Instruction override keyword found | CRITICAL | `auto` |
+| Base64 blob > 80 chars | HIGH | `auto` |
+| > 30 consecutive blank lines | HIGH | `auto` |
+| Hook reads user-controlled file → stdout | HIGH | `design` |
+
+---
 
 **Additional checks regardless of type** — run if the following files exist:
 

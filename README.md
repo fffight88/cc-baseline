@@ -11,8 +11,8 @@ Setting up Claude Code consistently across machines is tedious. cc-baseline solv
 **What you get out of the box:**
 
 - **11 behavior rules** loaded at session start — response language, uncertainty disclosure, parallel reads, minimal edits, and more
-- **Security auditor agent** that runs real SAST/SCA/secret scans (semgrep, gitleaks, trivy) and produces structured JSON+Markdown reports with per-issue `decision_type` (auto / design / business) so you always know what to fix vs. what to discuss
-- **Code reviewer agent** that checks logic errors, edge cases, convention violations, and CLAUDE.md compliance independently from the security pass
+- **Security auditor agent** that runs real SAST/SCA/secret scans (semgrep, gitleaks, trivy) and produces structured JSON+Markdown reports with per-issue `decision_type` (auto / design / business) so you always know what to fix vs. what to discuss; detects **prompt injection patterns** in agent/command definition files (`claude-config` type); reports missing scanners as explicit **HIGH/MEDIUM `scanner-gap` issues** instead of silent skips
+- **Code reviewer agent** that checks logic errors, edge cases, convention violations, and CLAUDE.md compliance independently from the security pass; performs **cross-file impact analysis** to catch breaking export changes across dependent files (JS/TS/Python/Go); **verifies `project-patterns.md` integrity** on every load via body hash — reports tampering as a `QA-PROFILE-TAMPER` issue
 - **HTML report generator** (`audit-report.js`) that turns audit JSON into a color-coded, severity-sorted web page — opened automatically when a scan loop completes
 - **Reliable notifications** via `terminal-notifier` (auto-installed on macOS) so you never miss an interview prompt for design/business decisions
 - **E2E tester agent** backed by five parallel Playwright MCP servers — automatically collects browser console, network headers/payloads, and server log on failure; writes a structured `e2e-results/fail-{N}-{timestamp}.md` artifact; skips all log collection on pass
@@ -62,8 +62,8 @@ npx github:fffight88/cc-baseline --dry-run
 | Behavior rules (`CLAUDE.md`, `memory/*.md`) | 11 session rules: response language, uncertainty, parallel reads, minimal edits, git safety, and more |
 | Custom skills (`/plan`, `/clean`, `/open-browser`, `/check-log`) | Plan-mode entry; orphan-process + e2e artifact cleanup; Playwright browser for manual testing; fail diagnostics collector |
 | E2E tester agent (`e2e-tester`) | Browser-based E2E test runner — PASS: no log collection; FAIL: console + network + server log → `e2e-results/fail-{N}-{timestamp}.md` |
-| Security auditor agent (`security-auditor`) | SAST · SCA · secret scan with structured per-issue reports |
-| Code reviewer agent (`code-reviewer`) | Logic errors · edge cases · CLAUDE.md violations · convention checks; defers security to security-auditor |
+| Security auditor agent (`security-auditor`) | SAST · SCA · secret scan · prompt injection detection; structured per-issue reports; missing-scanner gap issues (HIGH/MEDIUM) |
+| Code reviewer agent (`code-reviewer`) | Logic errors · edge cases · CLAUDE.md violations · convention checks · cross-file impact analysis; profile integrity check; defers security to security-auditor |
 | HTML report generator (`scripts/audit-report.js`) | Converts audit/review JSON into a severity-colored, decision-badged HTML page. Run with `node ~/.claude/scripts/audit-report.js <audit-dir>` |
 | Hook config (`settings.json hooks`) | SessionStart memory load, PreToolUse E2E guide inject · path guard, SessionEnd process cleanup |
 | MCP servers (`~/.claude.json`) | `playwright-test-1~5` global MCP server entries (`playwright-test-1` reserved for `/open-browser` manual sessions) |
