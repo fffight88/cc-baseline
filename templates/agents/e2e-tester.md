@@ -105,6 +105,8 @@ Handling unexpected UI elements (popups, dialogs, error pages):
 
 ## Log Collection Policy
 
+> ⚠️ **Sensitive content** — fail artifacts may contain request/response bodies and headers. Before writing, **redact** any header whose name (case-insensitive) is `Authorization`, `Cookie`, `Set-Cookie`, `X-API-Key`, `X-Auth-Token`, `Proxy-Authorization`, or matches `/auth|token|secret|api[_-]?key/i`. Replace the value with `[REDACTED]`. `e2e-results/` is gitignored.
+
 ### On PASS
 - Do not collect logs or write any files
 - Report only the fields in the PASS format below
@@ -115,10 +117,13 @@ Collect the following before writing the report:
 1. **Browser diagnostics** (from the assigned MCP server):
    - `browser_console_messages` — all console output
    - `browser_network_requests` — all requests: method, URL, status, request headers, request body, response headers, response body
+   - Apply the redaction rule above to every header map (request + response) before passing data downstream
 
 2. **Server log** (only if `server_log` was provided in input):
-   - Last 200 lines: `tail -n 200 <server_log>`
-   - Errors and warnings: `grep -E "ERROR|WARN|error|warn" <server_log> | tail -n 50`
+   - Reject `server_log` if it contains shell metacharacters (`;`, `&`, `|`, `` ` ``, `$(`, newline) — report ERROR and stop
+   - Bind to quoted variable: `SERVER_LOG="<server_log>"`
+   - Last 200 lines: `tail -n 200 "$SERVER_LOG"`
+   - Errors and warnings: `grep -E "ERROR|WARN|error|warn" "$SERVER_LOG" | tail -n 50`
 
 3. **Write fail artifact file**:
    - Path: `e2e-results/fail-{N}-{YYYYMMDD-HHmmss}.md` where N is the MCP server number

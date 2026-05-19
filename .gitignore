@@ -6,3 +6,4 @@ node_modules/
 .cc-baseline-backup/
 .claude/
 .cc-audits/
+e2e-results/

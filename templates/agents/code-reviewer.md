@@ -67,7 +67,17 @@ Profile path: `<target_dir>/.cc-audits/project-patterns.md`
 2. File missing → **auto-generate** (run "Profile Generation Procedure" below, `profile_generated_reason: initial`)
 3. **[Integrity check — always runs before any other branch]** File exists → verify `profile_body_hash`:
    - Read `profile_body_hash` from frontmatter
-   - Recompute body hash: `awk '/^---/{n++; if(n==2){found=1; next}} found' <profile_file> | sha256sum | awk '{print $1}'`
+   - **If `profile_body_hash` is absent from frontmatter** → skip tamper check (pre-feature profile generated before integrity was added); set `tamper_detected = false` and continue to step 4
+   - Otherwise compute the portable hash command first:
+     ```bash
+     HASH_CMD=$(which shasum 2>/dev/null | head -1)
+     if [ -n "$HASH_CMD" ]; then
+       HASH_CMD="shasum -a 256"
+     else
+       HASH_CMD="sha256sum"
+     fi
+     ```
+   - Recompute body hash: `awk '/^---/{n++; if(n==2){found=1; next}} found' <profile_file> | $HASH_CMD | awk '{print $1}'`
    - Hash mismatch → generate `QA-PROFILE-TAMPER` issue (MEDIUM, category: `profile-tamper`, decision_type: `design`) and set `tamper_detected = true`
    - This step runs regardless of `regenerate_profile` flag so tampering is always recorded
 4. `regenerate_profile: true` OR `tamper_detected = true` → **force regenerate** (`profile_generated_reason: forced` or `tampered` respectively)
@@ -175,10 +185,15 @@ After generating all profile body content (the markdown sections below the closi
    TMPFILE=$(mktemp)
    # write the generated body content to $TMPFILE using a heredoc or Write tool
    ```
-2. Hash the temp file:
+2. Hash the temp file (reuse the portable command pattern from Step 0):
    ```bash
-   HASH_CMD=$(which shasum 2>/dev/null && echo "shasum -a 256" || echo "sha256sum")
-   BODY_HASH=$(eval "$HASH_CMD '$TMPFILE'" | awk '{print $1}')
+   HASH_CMD=$(which shasum 2>/dev/null | head -1)
+   if [ -n "$HASH_CMD" ]; then
+     HASH_CMD="shasum -a 256"
+   else
+     HASH_CMD="sha256sum"
+   fi
+   BODY_HASH=$($HASH_CMD "$TMPFILE" | awk '{print $1}')
    rm -f "$TMPFILE"
    ```
 3. Include `profile_body_hash: <BODY_HASH>` in the frontmatter of the final file write.
