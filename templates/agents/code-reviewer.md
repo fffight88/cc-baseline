@@ -262,10 +262,38 @@ Compare profile (`.cc-audits/project-patterns.md`) against code in diff:
 | CLAUDE.md violations | load project CLAUDE.md, compare rules against diff |
 | Local dead code | new exports/functions/classes in diff with no reference in same diff |
 | Type safety gaps | `any`, `// @ts-ignore`, `as unknown` pattern grep + LLM interpretation |
+| Async/Promise errors | `await` missing on Promise-returning calls inside `async` functions; unhandled rejections (no `.catch()` or `try/catch`); `Promise.all` vs `Promise.allSettled` misuse where partial failure handling is ambiguous; `await` used outside `async` function |
 
 **Call ExitPlanMode** — return to Sonnet after analysis.
 
 **When reporting local dead code issues, always include:** "For project-wide dead code, use a tool like knip or ts-prune"
+
+---
+
+### Step 3.5: Test Coverage Check
+
+For each new exported symbol added in the diff (use Step 1.5 export extraction patterns — lines starting with `+`):
+
+1. **Find test files** in `<target_dir>`:
+
+   ```bash
+   find <target_dir> \( -name "*.test.*" -o -name "*.spec.*" -o -name "test_*.py" -o -name "*_test.go" \) 2>/dev/null
+   ```
+
+2. **Search for symbol name** in found test files:
+
+   ```bash
+   grep -l "<symbol_name>" <test_files> 2>/dev/null
+   ```
+
+3. **Missing test → LOW issue** (`test-coverage`, `decision_type: business`): "New symbol `<name>` has no corresponding test coverage"
+
+4. **Signature changed but test not updated**: if a function/method signature changed in diff (lines with both `-` and `+` for same symbol), check if corresponding test file also changed in diff. If not → LOW issue: "Signature of `<name>` changed but test file not updated"
+
+- Severity: LOW (recommendation, not blocking)
+- Category: `test-coverage`
+- `decision_type: business` (test policy is team-dependent)
+- Skip if no test files exist at all in the project (no test infrastructure → no issue)
 
 ---
 
@@ -307,7 +335,7 @@ Report path: `<target_dir>/.cc-audits/<plan-slug>/code-review-iter-<n>.md` + `.j
     {
       "id": "QA-001",
       "severity": "CRITICAL | HIGH | MEDIUM | LOW",
-      "category": "logic-error | edge-case | claude-md-violation | convention-violation | dead-code | type-safety | cross-file-impact",
+      "category": "logic-error | edge-case | claude-md-violation | convention-violation | dead-code | type-safety | cross-file-impact | async-error | test-coverage",
       "title": "<title>",
       "description": "<description>",
       "evidence": {
