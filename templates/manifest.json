@@ -1,0 +1,26 @@
+{
+  "markerBlock": [
+    "CLAUDE.md",
+    "memory/MEMORY.md"
+  ],
+  "overwrite": [
+    "memory/all_session_basic_rules.md",
+    "memory/doc_structure_rules.md",
+    "memory/phase_start.md",
+    "memory/phase_end.md",
+    "memory/reference_e2e_manager_guide.md",
+    "memory/reference_subagent_boundary.md",
+    "memory/reference_doc_writing_style.md",
+    "memory/feedback_skill_description_budget.md",
+    "memory/reference_security_auditor_protocol.md",
+    "memory/reference_code_reviewer_protocol.md",
+    "scripts/audit-report.js",
+    "agents/e2e-tester.md",
+    "agents/security-auditor.md",
+    "agents/code-reviewer.md",
+    "commands/plan.md",
+    "commands/clean.md",
+    "commands/check-log.md",
+    "commands/open-browser.md"
+  ]
+}

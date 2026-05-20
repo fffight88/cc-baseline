@@ -5,7 +5,8 @@
         {
           "type": "command",
           "command": "python3 -c \"\nimport json, sys\nsys.stdin.read()\nmemory = open('{{HOME}}/.claude/memory/MEMORY.md').read()\nrules = open('{{HOME}}/.claude/memory/all_session_basic_rules.md').read()\ncontext = '# MEMORY.md\\n' + memory + '\\n\\n# all_session_basic_rules.md\\n' + rules\nprint(json.dumps({'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': context}}))\n\"",
-          "statusMessage": "Loading session rules..."
+          "statusMessage": "Loading session rules...",
+          "_ccBaselineId": "session-start-load-rules"
         }
       ]
     }
@@ -17,7 +18,8 @@
         {
           "type": "command",
           "command": "python3 -c \"\nimport json, sys, os\ndata = json.load(sys.stdin)\nfile_path = data.get('tool_input', {}).get('file_path', '')\ntry:\n    real_path = os.path.realpath(file_path) if file_path else ''\nexcept Exception:\n    real_path = ''\nprotected = os.path.realpath(os.path.expanduser('~/.claude/memory/'))\nif real_path.startswith(protected + os.sep) or real_path == protected:\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'deny', 'permissionDecisionReason': 'cc-baseline path protection: ~/.claude/memory/ is managed by cc-baseline only. Save auto-memory to a path starting with ~/.claude/projects/ instead.'}}))\n    sys.exit(2)\nif '/.cc-audits/' in real_path:\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'allow', 'permissionDecisionReason': 'cc-baseline: .cc-audits/ audit report path auto-approved'}}))\n    sys.exit(0)\n\"",
-          "statusMessage": "Applying cc-baseline path policy..."
+          "statusMessage": "Applying cc-baseline path policy...",
+          "_ccBaselineId": "pre-tool-use-path-policy"
         }
       ]
     },
@@ -28,7 +30,8 @@
           "type": "command",
           "command": "python3 -c \"\nimport json, sys\nsys.stdin.read()\nboundary = open('{{HOME}}/.claude/memory/reference_subagent_boundary.md').read()\nguide = open('{{HOME}}/.claude/memory/reference_e2e_manager_guide.md').read()\ncontext = '# reference_subagent_boundary.md\\n' + boundary + '\\n\\n# reference_e2e_manager_guide.md\\n' + guide\nprint(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'additionalContext': context}}))\n\"",
           "statusMessage": "Loading E2E test guide...",
-          "once": true
+          "once": true,
+          "_ccBaselineId": "pre-tool-use-e2e-guide"
         }
       ]
     }
@@ -38,7 +41,8 @@
       "hooks": [
         {
           "type": "command",
-          "command": "pgrep -f '@anthropic-ai/claude-code' | while read pid; do ppid=$(ps -o ppid= -p $pid 2>/dev/null | tr -d ' '); if [[ \"$ppid\" == \"1\" ]]; then kill \"$pid\" 2>/dev/null; fi; done"
+          "command": "pgrep -f '@anthropic-ai/claude-code' | while read pid; do ppid=$(ps -o ppid= -p $pid 2>/dev/null | tr -d ' '); if [[ \"$ppid\" == \"1\" ]]; then kill \"$pid\" 2>/dev/null; fi; done",
+          "_ccBaselineId": "session-end-orphan-cleanup"
         }
       ]
     }

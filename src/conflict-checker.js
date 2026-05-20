@@ -1,13 +1,6 @@
 'use strict';
 
-const HARNESS_STATUS_MESSAGES = [
-  'Loading session rules...',
-  'Loading E2E test guide...',
-];
-
-function isHarnessHook(hook) {
-  return Boolean(hook.statusMessage && HARNESS_STATUS_MESSAGES.includes(hook.statusMessage));
-}
+const { isHarnessHook } = require('./merge/settings-hooks');
 
 function checkConflicts(existingHooks) {
   const warnings = [];
@@ -16,7 +9,7 @@ function checkConflicts(existingHooks) {
   const sessionStarts = existingHooks?.SessionStart ?? [];
   for (const entry of sessionStarts) {
     for (const hook of (entry.hooks ?? [])) {
-      if (!isHarnessHook(hook)) {
+      if (!isHarnessHook(hook, 'SessionStart')) {
         warnings.push({
           severity: 'WARN',
           rule: 1,
@@ -37,7 +30,7 @@ function checkConflicts(existingHooks) {
   const preToolUses = existingHooks?.PreToolUse ?? [];
   for (const entry of preToolUses) {
     const matcher = entry.matcher ?? '';
-    const isHarness = (entry.hooks ?? []).some(isHarnessHook);
+    const isHarness = (entry.hooks ?? []).some(h => isHarnessHook(h, 'PreToolUse'));
     if (!isHarness && (matcher === '.*' || matcher.includes('playwright-test'))) {
       warnings.push({
         severity: 'WARN',
@@ -54,12 +47,12 @@ function checkConflicts(existingHooks) {
 
   // Rule 3: Static detection of decision:block/deny (SessionStart, PreToolUse)
   const criticalEvents = [
-    ...(existingHooks?.SessionStart ?? []),
-    ...(existingHooks?.PreToolUse ?? []),
+    ...(existingHooks?.SessionStart ?? []).map(e => ({ entry: e, event: 'SessionStart' })),
+    ...(existingHooks?.PreToolUse ?? []).map(e => ({ entry: e, event: 'PreToolUse' })),
   ];
-  for (const entry of criticalEvents) {
+  for (const { entry, event } of criticalEvents) {
     for (const hook of (entry.hooks ?? [])) {
-      if (isHarnessHook(hook)) continue;
+      if (isHarnessHook(hook, event)) continue;
       const cmd = typeof hook.command === 'string' ? hook.command : '';
       if (
         cmd.includes('"decision":"block"') ||
@@ -70,7 +63,7 @@ function checkConflicts(existingHooks) {
         warnings.push({
           severity: 'HIGH',
           rule: 3,
-          event: entry.matcher ? 'PreToolUse' : 'SessionStart',
+          event,
           message: 'A hook that blocks session or tool execution detected.',
           reason:
             'This hook may prevent cc-baseline boot or block MCP calls entirely.',
@@ -85,7 +78,7 @@ function checkConflicts(existingHooks) {
   const sessionEnds = existingHooks?.SessionEnd ?? [];
   for (const entry of sessionEnds) {
     for (const hook of (entry.hooks ?? [])) {
-      if (!isHarnessHook(hook)) {
+      if (!isHarnessHook(hook, 'SessionEnd')) {
         warnings.push({
           severity: 'INFO',
           rule: 4,

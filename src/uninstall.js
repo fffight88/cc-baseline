@@ -15,6 +15,7 @@ const { confirm } = require('./prompt');
 const { removeMarkerBlock, hasMarkerBlock } = require('./merge/markdown');
 const { removeHarnessHooks } = require('./merge/settings-hooks');
 const { removeHarnessMcpServers } = require('./merge/mcp-servers');
+const manifest = require('./manifest');
 
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
 const CLAUDE_DIR = path.join(HOME, '.claude');
@@ -22,25 +23,7 @@ const BACKUP_ROOT = path.join(CLAUDE_DIR, '.cc-baseline-backup');
 const UNINSTALL_BACKUP_ROOT = path.join(CLAUDE_DIR, '.cc-baseline-uninstall-backup');
 const LOG_FILE = path.join(CLAUDE_DIR, '.cc-baseline-install.log');
 
-const MEMORY_FILES = [
-  'all_session_basic_rules.md',
-  'doc_structure_rules.md',
-  'phase_start.md',
-  'phase_end.md',
-  'reference_e2e_manager_guide.md',
-  'reference_subagent_boundary.md',
-  'reference_doc_writing_style.md',
-  'feedback_skill_description_budget.md',
-  'reference_security_auditor_protocol.md',
-];
-
-const HARNESS_FILES = [
-  ...MEMORY_FILES.map(f => path.join(CLAUDE_DIR, 'memory', f)),
-  path.join(CLAUDE_DIR, 'agents', 'e2e-tester.md'),
-  path.join(CLAUDE_DIR, 'agents', 'security-auditor.md'),
-  path.join(CLAUDE_DIR, 'commands', 'plan.md'),
-  path.join(CLAUDE_DIR, 'commands', 'clean.md'),
-];
+const HARNESS_FILES = manifest.overwriteFiles().map(f => path.join(CLAUDE_DIR, f));
 
 const CLAUDE_MD_PATH = path.join(CLAUDE_DIR, 'CLAUDE.md');
 const MEMORY_MD_PATH = path.join(CLAUDE_DIR, 'memory', 'MEMORY.md');

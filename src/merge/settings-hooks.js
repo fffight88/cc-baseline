@@ -1,13 +1,36 @@
 'use strict';
 
-const { isHarnessHook } = require('../conflict-checker');
+// Legacy identifiers — used so installs from older cc-baseline versions
+// (which had no _ccBaselineId) can still be recognized and replaced cleanly.
+const LEGACY_STATUS_MESSAGE_TO_ID = {
+  'Loading session rules...': 'session-start-load-rules',
+  'Applying cc-baseline path policy...': 'pre-tool-use-path-policy',
+  'Loading E2E test guide...': 'pre-tool-use-e2e-guide',
+};
+const LEGACY_SESSION_END_COMMAND_PREFIX = "pgrep -f '@anthropic-ai/claude-code'";
 
-const HARNESS_STATUS_MESSAGES_ALL = [
-  'Loading session rules...',
-  'Loading E2E test guide...',
-  'Applying cc-baseline path policy...',
-];
-const HARNESS_SESSION_END_COMMAND_PREFIX = "pgrep -f '@anthropic-ai/claude-code'";
+// Returns the cc-baseline managed-hook ID for a hook entry, or null if it
+// isn't one of ours. Recognizes both the new _ccBaselineId field and the
+// legacy statusMessage / SessionEnd command signatures.
+function harnessIdOf(hook, event) {
+  if (!hook || typeof hook !== 'object') return null;
+  if (typeof hook._ccBaselineId === 'string' && hook._ccBaselineId.length > 0) {
+    return hook._ccBaselineId;
+  }
+  if (typeof hook.statusMessage === 'string' && LEGACY_STATUS_MESSAGE_TO_ID[hook.statusMessage]) {
+    return LEGACY_STATUS_MESSAGE_TO_ID[hook.statusMessage];
+  }
+  if (event === 'SessionEnd' &&
+      typeof hook.command === 'string' &&
+      hook.command.startsWith(LEGACY_SESSION_END_COMMAND_PREFIX)) {
+    return 'session-end-orphan-cleanup';
+  }
+  return null;
+}
+
+function isHarnessHook(hook, event) {
+  return harnessIdOf(hook, event) !== null;
+}
 
 function removeHarnessHooks(existingHooks) {
   const result = JSON.parse(JSON.stringify(existingHooks || {}));
@@ -16,11 +39,7 @@ function removeHarnessHooks(existingHooks) {
   for (const event of Object.keys(result)) {
     result[event] = result[event].map(entry => {
       const filtered = (entry.hooks || []).filter(hook => {
-        const isStatusMsg = hook.statusMessage && HARNESS_STATUS_MESSAGES_ALL.includes(hook.statusMessage);
-        const isSessionEndCmd = event === 'SessionEnd' &&
-          typeof hook.command === 'string' &&
-          hook.command.startsWith(HARNESS_SESSION_END_COMMAND_PREFIX);
-        if (isStatusMsg || isSessionEndCmd) {
+        if (harnessIdOf(hook, event) !== null) {
           removedCount++;
           return false;
         }
@@ -42,23 +61,27 @@ function mergeHooks(existingHooks, harnessHooks) {
 
   for (const [event, harnessEntries] of Object.entries(harnessHooks)) {
     if (!result[event]) {
-      result[event] = harnessEntries;
+      result[event] = JSON.parse(JSON.stringify(harnessEntries));
       continue;
     }
 
     for (const harnessEntry of harnessEntries) {
       for (const harnessHook of harnessEntry.hooks) {
+        const harnessId = harnessIdOf(harnessHook, event);
         let replaced = false;
 
-        // replace existing harness hook with the same statusMessage
-        for (const existingEntry of result[event]) {
-          const idx = (existingEntry.hooks || []).findIndex(
-            h => h.statusMessage && h.statusMessage === harnessHook.statusMessage
-          );
-          if (idx !== -1) {
-            existingEntry.hooks[idx] = harnessHook;
-            replaced = true;
-            break;
+        // replace existing managed hook with the same ID (recognizes legacy
+        // statusMessage-only installs so re-installing doesn't duplicate them)
+        if (harnessId !== null) {
+          for (const existingEntry of result[event]) {
+            const idx = (existingEntry.hooks || []).findIndex(
+              h => harnessIdOf(h, event) === harnessId
+            );
+            if (idx !== -1) {
+              existingEntry.hooks[idx] = harnessHook;
+              replaced = true;
+              break;
+            }
           }
         }
 
@@ -81,4 +104,4 @@ function mergeHooks(existingHooks, harnessHooks) {
   return result;
 }
 
-module.exports = { mergeHooks, removeHarnessHooks };
+module.exports = { mergeHooks, removeHarnessHooks, isHarnessHook, harnessIdOf };

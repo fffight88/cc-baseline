@@ -6,6 +6,7 @@ const os = require('os');
 const { createHash } = require('crypto');
 const path = require('path');
 const { HOME, applyHome, NPM_GLOBAL_PREFIX, PLAYWRIGHT_MCP_BIN } = require('./paths');
+const manifest = require('./manifest');
 
 function checkCmd(cmd) {
   return spawnSync('which', [cmd], { stdio: 'ignore' }).status === 0;
@@ -283,6 +284,18 @@ function writeFile(filePath, content, dryRun) {
   fs.writeFileSync(filePath, content, 'utf8');
 }
 
+// Returns the action label for a proposed write: 'created', 'overwritten', or 'unchanged'.
+function diffAction(filePath, content) {
+  if (!fs.existsSync(filePath)) return 'created';
+  let existing;
+  try {
+    existing = fs.readFileSync(filePath, 'utf8');
+  } catch {
+    return 'overwritten';
+  }
+  return existing === content ? 'unchanged' : 'overwritten';
+}
+
 async function install(opts = {}) {
   const { dryRun = false, yes: autoYes = false } = opts;
 
@@ -324,129 +337,54 @@ async function install(opts = {}) {
     console.log();
   }
 
-  // ── 2. Backup ─────────────────────────────────────────────────────────────
-  const filesToBackup = [
-    path.join(CLAUDE_DIR, 'CLAUDE.md'),
-    path.join(CLAUDE_DIR, 'memory', 'MEMORY.md'),
-    ...[
-      'all_session_basic_rules',
-      'doc_structure_rules',
-      'phase_start',
-      'phase_end',
-      'reference_e2e_manager_guide',
-      'reference_subagent_boundary',
-      'reference_doc_writing_style',
-      'feedback_skill_description_budget',
-      'reference_security_auditor_protocol',
-      'reference_code_reviewer_protocol',
-    ].map(f => path.join(CLAUDE_DIR, 'memory', `${f}.md`)),
-    path.join(CLAUDE_DIR, 'agents', 'e2e-tester.md'),
-    path.join(CLAUDE_DIR, 'agents', 'security-auditor.md'),
-    path.join(CLAUDE_DIR, 'agents', 'code-reviewer.md'),
-    path.join(CLAUDE_DIR, 'commands', 'plan.md'),
-    path.join(CLAUDE_DIR, 'commands', 'clean.md'),
-    path.join(CLAUDE_DIR, 'scripts', 'audit-report.js'),
-    settingsPath,
-    path.join(HOME, '.claude.json'),
-  ];
-
-  if (!dryRun) {
-    const { backupDir, backed } = createBackup(filesToBackup, BACKUP_ROOT);
-    if (backupDir) {
-      console.log(`💾 Backup saved: ${backupDir}\n   (${backed.length} files)\n`);
-      appendLog(`BACKUP: ${backupDir}`);
-    }
-  }
-
   const changes = [];
 
-  // ── 3. CLAUDE.md — marker-block merge ────────────────────────────────────
-  const claudeMdPath = path.join(CLAUDE_DIR, 'CLAUDE.md');
-  const claudeMdTpl = readTemplate('CLAUDE.md');
-  const claudeMdExisting = fs.existsSync(claudeMdPath)
-    ? fs.readFileSync(claudeMdPath, 'utf8')
-    : '';
-  const claudeMdNew = mergeMarkerBlock(claudeMdExisting, claudeMdTpl);
-  if (claudeMdNew !== claudeMdExisting) {
-    changes.push({ label: 'CLAUDE.md', path: claudeMdPath, content: claudeMdNew });
-    console.log(`  ✅ CLAUDE.md — ${claudeMdExisting ? 'marker-block merged' : 'created'}`);
-  } else {
-    console.log(`  ⏭️  CLAUDE.md — no changes (already up to date)`);
+  // ── 2. CLAUDE.md / MEMORY.md — marker-block merge ─────────────────────────
+  for (const relPath of manifest.markerBlockFiles()) {
+    const filePath = path.join(CLAUDE_DIR, relPath);
+    const tpl = readTemplate(relPath);
+    const existing = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : '';
+    const merged = mergeMarkerBlock(existing, tpl);
+    if (merged === existing) {
+      console.log(`  ⏭️  ${relPath} — no changes (already up to date)`);
+      continue;
+    }
+    changes.push({ label: relPath, path: filePath, content: merged });
+    console.log(`  ✅ ${relPath} — ${existing ? 'marker-block merged' : 'created'}`);
   }
 
-  // ── 4. memory/MEMORY.md — marker-block merge ──────────────────────────────
-  const memMdPath = path.join(CLAUDE_DIR, 'memory', 'MEMORY.md');
-  const memMdTpl = readTemplate('memory/MEMORY.md');
-  const memMdExisting = fs.existsSync(memMdPath)
-    ? fs.readFileSync(memMdPath, 'utf8')
-    : '';
-  const memMdNew = mergeMarkerBlock(memMdExisting, memMdTpl);
-  if (memMdNew !== memMdExisting) {
-    changes.push({ label: 'memory/MEMORY.md', path: memMdPath, content: memMdNew });
-    console.log(`  ✅ memory/MEMORY.md — ${memMdExisting ? 'marker-block merged' : 'created'}`);
-  } else {
-    console.log(`  ⏭️  memory/MEMORY.md — no changes (already up to date)`);
+  // ── 3. Overwrite files (memory, scripts, agents, commands) ───────────────
+  for (const relPath of manifest.overwriteFiles()) {
+    const filePath = path.join(CLAUDE_DIR, relPath);
+    const content = readTemplate(relPath);
+    const action = diffAction(filePath, content);
+    if (action === 'unchanged') {
+      console.log(`  ⏭️  ${relPath} — no changes (already up to date)`);
+      continue;
+    }
+    changes.push({ label: relPath, path: filePath, content });
+    console.log(`  ✅ ${relPath} — ${action}`);
   }
 
-  // ── 5. Overwrite individual memory files ──────────────────────────────────
-  const memoryFiles = [
-    'all_session_basic_rules.md',
-    'doc_structure_rules.md',
-    'phase_start.md',
-    'phase_end.md',
-    'reference_e2e_manager_guide.md',
-    'reference_subagent_boundary.md',
-    'reference_doc_writing_style.md',
-    'feedback_skill_description_budget.md',
-    'reference_security_auditor_protocol.md',
-    'reference_code_reviewer_protocol.md',
-  ];
-  for (const f of memoryFiles) {
-    const dest = path.join(CLAUDE_DIR, 'memory', f);
-    changes.push({ label: `memory/${f}`, path: dest, content: readTemplate(`memory/${f}`) });
-    console.log(`  ✅ memory/${f} — overwritten`);
-  }
-
-  // ── 5-1. scripts/audit-report.js ─────────────────────────────────────────
-  const scriptPath = path.join(CLAUDE_DIR, 'scripts', 'audit-report.js');
-  changes.push({ label: 'scripts/audit-report.js', path: scriptPath, content: readTemplate('scripts/audit-report.js') });
-  console.log(`  ✅ scripts/audit-report.js — overwritten`);
-
-  // ── 6. agents/e2e-tester.md ──────────────────────────────────────────────
-  const agentPath = path.join(CLAUDE_DIR, 'agents', 'e2e-tester.md');
-  changes.push({ label: 'agents/e2e-tester.md', path: agentPath, content: readTemplate('agents/e2e-tester.md') });
-  console.log(`  ✅ agents/e2e-tester.md — overwritten`);
-
-  // ── 6-1. agents/security-auditor.md ──────────────────────────────────────
-  const auditorPath = path.join(CLAUDE_DIR, 'agents', 'security-auditor.md');
-  changes.push({ label: 'agents/security-auditor.md', path: auditorPath, content: readTemplate('agents/security-auditor.md') });
-  console.log(`  ✅ agents/security-auditor.md — overwritten`);
-
-  // ── 6-2. agents/code-reviewer.md ─────────────────────────────────────────
-  const codeReviewerPath = path.join(CLAUDE_DIR, 'agents', 'code-reviewer.md');
-  changes.push({ label: 'agents/code-reviewer.md', path: codeReviewerPath, content: readTemplate('agents/code-reviewer.md') });
-  console.log(`  ✅ agents/code-reviewer.md — overwritten`);
-
-  // ── 7. commands/ ─────────────────────────────────────────────────────────
-  for (const f of ['plan.md', 'clean.md', 'check-log.md', 'open-browser.md']) {
-    const dest = path.join(CLAUDE_DIR, 'commands', f);
-    changes.push({ label: `commands/${f}`, path: dest, content: readTemplate(`commands/${f}`) });
-    console.log(`  ✅ commands/${f} — overwritten`);
-  }
-
-  // ── 8. settings.json hooks merge ─────────────────────────────────────────
+  // ── 4. settings.json hooks merge ─────────────────────────────────────────
   const harnessHooks = JSON.parse(readTemplate('settings-hooks.json'));
   const mergedHooks = mergeHooks(existingHooks, harnessHooks);
   // cc-baseline never adds or modifies the permissions key for security reasons; user-set keys are preserved as-is.
   const newSettings = Object.assign({}, existingSettings, { hooks: mergedHooks });
-  changes.push({
-    label: 'settings.json (hooks merge)',
-    path: settingsPath,
-    content: JSON.stringify(newSettings, null, 2),
-  });
-  console.log(`  ✅ settings.json — hooks merged`);
+  const newSettingsStr = JSON.stringify(newSettings, null, 2);
+  const existingSettingsStr = fs.existsSync(settingsPath) ? fs.readFileSync(settingsPath, 'utf8') : '';
+  if (newSettingsStr === existingSettingsStr) {
+    console.log(`  ⏭️  settings.json — no changes (hooks already up to date)`);
+  } else {
+    changes.push({
+      label: 'settings.json (hooks merge)',
+      path: settingsPath,
+      content: newSettingsStr,
+    });
+    console.log(`  ✅ settings.json — hooks merged`);
+  }
 
-  // ── 9. Merge ~/.claude.json mcpServers ────────────────────────────────────
+  // ── 5. ~/.claude.json mcpServers merge ────────────────────────────────────
   const claudeJsonPath = path.join(HOME, '.claude.json');
   const existingClaudeJsonRaw = readJson(claudeJsonPath);
   if (existingClaudeJsonRaw && existingClaudeJsonRaw.__parseError) {
@@ -462,28 +400,41 @@ async function install(opts = {}) {
     existingClaudeJson.mcpServers || {},
     incomingMcp
   );
-  if (added.length > 0 || overwritten.length > 0) {
-    const newClaudeJson = Object.assign({}, existingClaudeJson, { mcpServers: mergedMcp });
+  const newClaudeJson = Object.assign({}, existingClaudeJson, { mcpServers: mergedMcp });
+  const newClaudeJsonStr = JSON.stringify(newClaudeJson, null, 2);
+  const existingClaudeJsonStr = fs.existsSync(claudeJsonPath) ? fs.readFileSync(claudeJsonPath, 'utf8') : '';
+  if (newClaudeJsonStr === existingClaudeJsonStr) {
+    console.log(`  ⏭️  .claude.json — no changes`);
+  } else {
     changes.push({
       label: `.claude.json (mcpServers merge)`,
       path: claudeJsonPath,
-      content: JSON.stringify(newClaudeJson, null, 2),
+      content: newClaudeJsonStr,
     });
     const summary = [
       added.length ? `added: [${added.join(', ')}]` : '',
       overwritten.length ? `replaced: [${overwritten.join(', ')}]` : '',
     ].filter(Boolean).join(' / ');
-    console.log(`  ✅ .claude.json — mcpServers ${summary}`);
-  } else {
-    console.log(`  ⏭️  .claude.json — no changes`);
+    const tail = summary || 'json reformatted';
+    console.log(`  ✅ .claude.json — mcpServers ${tail}`);
   }
 
-  // ── 10. Summary & write ───────────────────────────────────────────────────
-  console.log(`\n📊 ${changes.length} items to be changed\n`);
+  // ── 6. Summary & write ────────────────────────────────────────────────────
+  console.log(`\n📊 ${changes.length} item(s) to be changed\n`);
 
   if (dryRun) {
     console.log('[DRY RUN] No files were modified.');
     return;
+  }
+
+  // ── 7. Backup only files that will actually change ────────────────────────
+  if (changes.length > 0) {
+    const filesToBackup = changes.map(c => c.path);
+    const { backupDir, backed } = createBackup(filesToBackup, BACKUP_ROOT);
+    if (backupDir) {
+      console.log(`💾 Backup saved: ${backupDir}\n   (${backed.length} files)\n`);
+      appendLog(`BACKUP: ${backupDir}`);
+    }
   }
 
   // migration for legacy chmod 555 lock from previous installs: unlock once if still present
@@ -506,13 +457,13 @@ async function install(opts = {}) {
     fs.chmodSync(path.join(__dirname, '..', 'bin', 'cli.js'), 0o755);
   } catch {}
 
-  // ── 11. Auto-install security scanners (semgrep, gitleaks, trivy) ─────────
+  // ── 8. Auto-install security scanners (semgrep, gitleaks, trivy) ──────────
   await installScanners(dryRun);
 
-  // ── 11-1. Auto-install terminal-notifier (macOS notification reliability) ──
+  // ── 8-1. Auto-install terminal-notifier (macOS notification reliability) ──
   await installNotifier(dryRun);
 
-  // ── 12. Auto-install Playwright MCP binary ────────────────────────────────
+  // ── 9. Auto-install Playwright MCP binary ─────────────────────────────────
   await installPlaywrightMcp(dryRun);
 
   console.log('✅ cc-baseline install complete!\n');
