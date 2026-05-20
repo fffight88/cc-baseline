@@ -93,37 +93,9 @@ npx github:fffight88/cc-baseline --dry-run
 
 ### File Install Details
 
-| File | Target path | Method |
-|---|---|---|
-| `CLAUDE.md` | `~/.claude/CLAUDE.md` | Marker-block merge — existing content preserved, only `<!-- BEGIN cc-baseline -->` block added/replaced |
-| `memory/MEMORY.md` | `~/.claude/memory/MEMORY.md` | Marker-block merge |
-| `memory/all_session_basic_rules.md` | `~/.claude/memory/` (same name) | Overwrite (backup taken first) |
-| `memory/doc_structure_rules.md` | 〃 | Overwrite |
-| `memory/phase_start.md` | 〃 | Overwrite |
-| `memory/phase_end.md` | 〃 | Overwrite |
-| `memory/reference_e2e_manager_guide.md` | 〃 | Overwrite |
-| `memory/reference_subagent_boundary.md` | 〃 | Overwrite |
-| `memory/reference_doc_writing_style.md` | 〃 | Overwrite |
-| `memory/feedback_skill_description_budget.md` | 〃 | Overwrite |
-| `memory/reference_security_auditor_protocol.md` | 〃 | Overwrite |
-| `memory/reference_code_reviewer_protocol.md` | 〃 | Overwrite |
-| `agents/e2e-tester.md` | `~/.claude/agents/e2e-tester.md` | Overwrite |
-| `agents/security-auditor.md` | `~/.claude/agents/security-auditor.md` | Overwrite |
-| `agents/code-reviewer.md` | `~/.claude/agents/code-reviewer.md` | Overwrite |
-| `commands/plan.md` | `~/.claude/commands/plan.md` | Overwrite |
-| `commands/clean.md` | `~/.claude/commands/clean.md` | Overwrite |
-| `commands/open-browser.md` | `~/.claude/commands/open-browser.md` | Overwrite |
-| `commands/check-log.md` | `~/.claude/commands/check-log.md` | Overwrite |
-| `scripts/audit-report.js` | `~/.claude/scripts/audit-report.js` | Overwrite |
+File-by-file mapping (templates → target paths, marker-block merge vs overwrite) and JSON merge behavior for `settings.json` hooks and `.claude.json` `mcpServers`.
 
-### JSON Merge Details
-
-| Target | Method |
-|---|---|
-| `hooks` key in `~/.claude/settings.json` | Deduplicates by `statusMessage`; replaces only harness hooks, leaves user hooks intact |
-| `mcpServers` key in `~/.claude.json` | Adds `playwright-test-1~5`; always silently overwrites existing entries with the same key (cc-baseline managed) |
-
-> **Never touched:** `settings.json` fields like `env`, `model`, `effortLevel`; usage stats and UI state in `~/.claude.json`
+**Full details → [docs/install-details.md](docs/install-details.md)**
 
 ---
 
@@ -210,23 +182,9 @@ Both checks normalize paths via `os.path.realpath()` to prevent symlink or `../`
 
 ## Hook Conflict Warning Guide
 
-The installer checks your existing `~/.claude/settings.json` hooks against four rules:
+The installer checks your existing `~/.claude/settings.json` hooks against four rules and prints warnings for SessionStart overlap, broad PreToolUse matchers, blocking hooks, and existing SessionEnd entries.
 
-### `[WARN]` Existing SessionStart hook
-
-cc-baseline also uses SessionStart to inject memory context. Conflicting instructions may produce unexpected behavior. **Action:** review and merge the two SessionStart hooks after installation.
-
-### `[WARN]` PreToolUse matcher overlap
-
-A broad matcher like `".*"` may double-fire with the Playwright E2E guide hook or block MCP calls. **Action:** narrow the matcher or exclude `mcp__playwright-test-.*`.
-
-### `[HIGH]` Blocking hook detected
-
-A hook returning `decision: block` or `decision: deny` may prevent cc-baseline from booting or MCP calls from completing. **Action:** remove or adjust the hook before installing.
-
-### `[INFO]` Existing SessionEnd hook
-
-Low conflict risk — both hooks run together. No action required.
+**Full details → [docs/hook-conflicts.md](docs/hook-conflicts.md)**
 
 ---
 
@@ -290,70 +248,15 @@ A pre-uninstall snapshot is saved to `~/.claude/.cc-baseline-uninstall-backup/<t
 
 ### Manual Removal
 
-**1. Remove the CLAUDE.md marker block**
-
-```bash
-grep -n "cc-baseline" ~/.claude/CLAUDE.md
-# Delete the <!-- BEGIN cc-baseline --> ... <!-- END cc-baseline --> block
-```
-
-**2. Remove memory files**
-
-```bash
-chmod 755 ~/.claude/memory/
-rm ~/.claude/memory/all_session_basic_rules.md
-rm ~/.claude/memory/doc_structure_rules.md
-rm ~/.claude/memory/phase_start.md
-rm ~/.claude/memory/phase_end.md
-rm ~/.claude/memory/reference_e2e_manager_guide.md
-rm ~/.claude/memory/reference_subagent_boundary.md
-rm ~/.claude/memory/reference_doc_writing_style.md
-rm ~/.claude/memory/feedback_skill_description_budget.md
-rm ~/.claude/memory/reference_security_auditor_protocol.md
-rm ~/.claude/memory/reference_code_reviewer_protocol.md
-```
-
-**3. Remove agents, commands, and scripts**
-
-```bash
-rm ~/.claude/agents/e2e-tester.md
-rm ~/.claude/agents/security-auditor.md
-rm ~/.claude/agents/code-reviewer.md
-rm ~/.claude/commands/plan.md
-rm ~/.claude/commands/clean.md
-rm ~/.claude/commands/open-browser.md
-rm ~/.claude/commands/check-log.md
-rm ~/.claude/scripts/audit-report.js
-```
-
-**4. Remove hooks from settings.json**
-
-Open `~/.claude/settings.json` and delete hooks with these `statusMessage` values:
-- `"Loading session rules..."`
-- `"Applying cc-baseline path policy..."`
-- `"Loading E2E test guide..."`
-- The SessionEnd entry containing `pgrep -f '@anthropic-ai/claude-code'`
-
-**5. Remove MCP servers (optional)**
-
-Delete `playwright-test-1` through `playwright-test-5` from `mcpServers` in `~/.claude.json`.
+If the automatic uninstaller is unavailable, see [docs/uninstall-manual.md](docs/uninstall-manual.md) for the step-by-step procedure (marker blocks, memory files, agents, commands, scripts, hooks, MCP servers).
 
 ---
 
 ## Updating Templates
 
-```bash
-cd /path/to/cc-baseline
+To customize and republish: fork the repo, edit `templates/`, use `{{HOME}}` as the `$HOME` placeholder, and scan for sensitive data before committing.
 
-# Edit files under templates/
-# Use {{HOME}} as a placeholder for $HOME
-
-# Scan for sensitive data before committing
-grep -rE "$(whoami)|/Users/|/home/" templates/
-
-git add templates/ && git commit -m "feat: update harness templates"
-git push
-```
+**Full details → [docs/updating-templates.md](docs/updating-templates.md)**
 
 ---
 
@@ -467,104 +370,6 @@ cc-baseline/
 
 ## Troubleshooting
 
-### Windows
+Common issues — Windows/WSL, Node version, permissions on `~/.claude/`, scanner install failures, JSON parse errors, stale npx cache, Playwright MCP connectivity — are documented separately.
 
-cc-baseline hooks and the `/clean` skill use bash, `pgrep`, and other Unix commands. **Windows native (cmd, PowerShell) is not supported.** Use WSL:
-
-```bash
-npx github:fffight88/cc-baseline
-```
-
-### Node version error
-
-```
-error: The engine "node" is incompatible with this module.
-```
-
-Upgrade to Node.js 18+. Check with `node --version`.
-
-### Permission error
-
-```
-EACCES: permission denied, open '~/.claude/settings.json'
-```
-
-Fix ownership: `sudo chown -R $(whoami) ~/.claude/`
-
-### Permission error on memory/ (WSL2/Linux)
-
-```
-EACCES: permission denied, open '~/.claude/memory/MEMORY.md'
-```
-
-Legacy `chmod 555` lock from an older install. The new installer auto-recovers, but if it fails manually:
-
-```bash
-chmod 755 ~/.claude/memory
-chmod 644 ~/.claude/memory/*.md
-npx github:fffight88/cc-baseline --yes
-```
-
-### Scanner install failed (Linux/WSL)
-
-If `semgrep`, `gitleaks`, or `trivy` failed to install automatically, cc-baseline prints the manual command. Or run these yourself:
-
-```bash
-# semgrep (Ubuntu 24.04+)
-sudo apt install -y python3-venv pipx
-pipx install semgrep
-
-# gitleaks — download latest linux binary from:
-# https://github.com/gitleaks/gitleaks/releases/latest
-# then: mv gitleaks ~/.local/bin/ && chmod 755 ~/.local/bin/gitleaks
-
-# trivy — download latest linux binary from:
-# https://github.com/aquasecurity/trivy/releases/latest
-# then: tar -xzf trivy_*_Linux-64bit.tar.gz trivy && mv trivy ~/.local/bin/ && chmod 755 ~/.local/bin/trivy
-```
-
-Add `~/.local/bin` to PATH if not already:
-
-```bash
-export PATH="$HOME/.local/bin:$PATH"  # add to ~/.bashrc or ~/.zshrc
-```
-
-### JSON parse error
-
-```
-SyntaxError: Unexpected token ...
-```
-
-Your `settings.json` or `.claude.json` is malformed. Restore from backup or validate with a JSON linter.
-
-### Stale npx cache
-
-```bash
-npx --yes github:fffight88/cc-baseline --yes
-# or pin a specific commit/tag:
-npx github:fffight88/cc-baseline#v1.0.0
-```
-
-### Playwright MCP not connecting ("Failed to reconnect")
-
-**Check the binary exists:**
-
-```bash
-ls ~/.npm-global/bin/playwright-mcp
-```
-
-If missing, install manually:
-
-```bash
-npm install -g @playwright/mcp --prefix ~/.npm-global
-```
-
-**Check the command path in `.claude.json`:**
-
-```bash
-cat ~/.claude.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('mcpServers',{}).get('playwright-test-1',{}).get('command'))"
-```
-
-Should print `~/.npm-global/bin/playwright-mcp`. If it shows `npx`, re-run `npx --yes github:fffight88/cc-baseline --yes` to fix it automatically.
-
-**Restart Claude Code** after confirming the path is correct.
+**Full details → [docs/troubleshooting.md](docs/troubleshooting.md)**
