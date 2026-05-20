@@ -18,6 +18,12 @@ const EXPECTED_HOOK_IDS = [
   'session-end-orphan-cleanup',
 ];
 
+const PROJECT_EXPECTED_HOOK_IDS = [
+  'project-session-start-load-rules',
+  'project-pre-tool-use-path-policy',
+];
+
+
 function ok(name, detail) { return { name, status: 'ok', detail }; }
 function warn(name, detail, fix) { return { name, status: 'warn', detail, fix }; }
 function fail(name, detail, fix) { return { name, status: 'fail', detail, fix }; }
@@ -31,11 +37,15 @@ function readTemplate(rel) {
   return applyHome(fs.readFileSync(path.join(TEMPLATES_DIR, rel), 'utf8'));
 }
 
-function checkClaudeDir(claudeDir) {
+function checkClaudeDir(claudeDir, target) {
+  const label = target && target.mode === 'project' ? './.claude/ directory' : '~/.claude/ directory';
+  const fix = target && target.mode === 'project'
+    ? 'run `npx --yes github:fffight88/cc-baseline --project --yes`'
+    : 'run `npx --yes github:fffight88/cc-baseline --yes`';
   if (!fs.existsSync(claudeDir)) {
-    return fail('~/.claude/ directory', 'not found', 'run `npx --yes github:fffight88/cc-baseline --yes`');
+    return fail(label, 'not found', fix);
   }
-  return ok('~/.claude/ directory', 'present');
+  return ok(label, 'present');
 }
 
 function checkManifestIntegrity() {
@@ -71,6 +81,10 @@ function checkInstalledFiles(claudeDir) {
   for (const rel of overwriteFiles) {
     const dest = path.join(claudeDir, rel);
     if (!fs.existsSync(dest)) { missing.push(rel); continue; }
+    // Overwrite files are byte-identical between modes — install applies the
+    // same {{HOME}} substitution in both modes, so doctor uses readTemplate()
+    // for both. (Only CLAUDE.md / settings.json / .mcp.json differ between
+    // modes, and those are checked separately, not in this list.)
     const expected = readTemplate(rel);
     const actual = fs.readFileSync(dest, 'utf8');
     if (expected !== actual) drift.push(rel);
@@ -89,14 +103,21 @@ function checkInstalledFiles(claudeDir) {
     're-run install to reset, or fork the repo to persist customizations');
 }
 
-function checkHooks(claudeDir) {
+function checkHooks(claudeDir, target) {
+  const isProject = target && target.mode === 'project';
+  const label = isProject ? 'Hooks (./.claude/settings.json)' : 'Hooks (settings.json)';
+  const expectedIds = isProject ? PROJECT_EXPECTED_HOOK_IDS : EXPECTED_HOOK_IDS;
+  const fixCmd = isProject
+    ? 'run `npx --yes github:fffight88/cc-baseline --project --yes`'
+    : 'run cc-baseline install';
+
   const settingsPath = path.join(claudeDir, 'settings.json');
   if (!fs.existsSync(settingsPath)) {
-    return fail('Hooks (settings.json)', 'settings.json not found', 'run cc-baseline install');
+    return fail(label, 'settings.json not found', fixCmd);
   }
   const data = readJsonSafe(settingsPath);
   if (!data) {
-    return fail('Hooks (settings.json)', 'settings.json could not be parsed', 'restore from ~/.claude/.cc-baseline-backup/');
+    return fail(label, 'settings.json could not be parsed', 'restore from backup');
   }
   const hooks = data.hooks || {};
   const foundIds = new Set();
@@ -108,33 +129,81 @@ function checkHooks(claudeDir) {
       }
     }
   }
-  const missing = EXPECTED_HOOK_IDS.filter(id => !foundIds.has(id));
+  const missing = expectedIds.filter(id => !foundIds.has(id));
   if (missing.length === 0) {
-    return ok('Hooks (settings.json)', `${EXPECTED_HOOK_IDS.length}/${EXPECTED_HOOK_IDS.length} managed hooks registered`);
+    return ok(label, `${expectedIds.length}/${expectedIds.length} managed hooks registered`);
   }
-  return fail('Hooks (settings.json)',
-    `${missing.length} missing: ${missing.join(', ')}`,
-    'run cc-baseline install');
+  return fail(label, `${missing.length} missing: ${missing.join(', ')}`, fixCmd);
 }
 
-function checkMcpServers(mcpJsonPath) {
-  const cjPath = mcpJsonPath;
-  if (!fs.existsSync(cjPath)) {
-    return fail('MCP servers (~/.claude.json)', 'file not found', 'run cc-baseline install');
+function checkMcpServers(mcpJsonPath, target) {
+  const isProject = target && target.mode === 'project';
+  const label = isProject ? 'MCP servers (./.mcp.json)' : 'MCP servers (~/.claude.json)';
+  const fixCmd = isProject
+    ? 'run `npx --yes github:fffight88/cc-baseline --project --yes`'
+    : 'run cc-baseline install';
+  if (!fs.existsSync(mcpJsonPath)) {
+    return fail(label, 'file not found', fixCmd);
   }
-  const data = readJsonSafe(cjPath);
+  const data = readJsonSafe(mcpJsonPath);
   if (!data) {
-    return fail('MCP servers (~/.claude.json)', 'file could not be parsed', 'restore from backup');
+    return fail(label, 'file could not be parsed', 'restore from backup');
   }
   const expected = [1, 2, 3, 4, 5].map(n => `playwright-test-${n}`);
   const mcp = data.mcpServers || {};
   const missing = expected.filter(k => !(k in mcp));
   if (missing.length === 0) {
-    return ok('MCP servers (~/.claude.json)', `${expected.length}/${expected.length} playwright-test-* registered`);
+    return ok(label, `${expected.length}/${expected.length} playwright-test-* registered`);
   }
-  return fail('MCP servers (~/.claude.json)',
-    `missing: ${missing.join(', ')}`,
-    'run cc-baseline install');
+  return fail(label, `missing: ${missing.join(', ')}`, fixCmd);
+}
+
+// Project-mode informational check: reports whether the user also has a
+// global cc-baseline install. Never fails — purely advisory so the user
+// knows whether project + global will both load (overlay) or only project.
+function checkGlobalInstallReference() {
+  const globalDir = path.join(HOME, '.claude');
+  const globalSettings = path.join(globalDir, 'settings.json');
+  if (!fs.existsSync(globalSettings)) {
+    return ok('Global cc-baseline (informational)', 'not installed (project will run standalone)');
+  }
+  const data = readJsonSafe(globalSettings);
+  if (!data || !data.hooks) {
+    return ok('Global cc-baseline (informational)', 'global ~/.claude/ exists but no hooks detected');
+  }
+  let hasGlobal = false;
+  for (const event of Object.keys(data.hooks)) {
+    for (const entry of data.hooks[event] || []) {
+      for (const h of (entry.hooks || [])) {
+        const id = harnessIdOf(h, event);
+        if (id && EXPECTED_HOOK_IDS.includes(id)) hasGlobal = true;
+      }
+    }
+  }
+  return ok('Global cc-baseline (informational)',
+    hasGlobal ? 'installed (project hooks layer on top — overlay mode)' : 'not installed (project will run standalone)');
+}
+
+function checkProjectCLAUDE(claudeDir) {
+  const filePath = path.join(claudeDir, 'CLAUDE.md');
+  if (!fs.existsSync(filePath)) {
+    return fail('Project CLAUDE.md', 'not found', 'run `npx --yes github:fffight88/cc-baseline --project --yes`');
+  }
+  if (!hasMarkerBlock(fs.readFileSync(filePath, 'utf8'))) {
+    return fail('Project CLAUDE.md', 'marker block missing', 'run `npx --yes github:fffight88/cc-baseline --project --yes`');
+  }
+  return ok('Project CLAUDE.md', 'marker block present');
+}
+
+function checkProjectMemoryMd(claudeDir) {
+  const filePath = path.join(claudeDir, 'memory', 'MEMORY.md');
+  if (!fs.existsSync(filePath)) {
+    return fail('Project MEMORY.md', 'not found', 'run `npx --yes github:fffight88/cc-baseline --project --yes`');
+  }
+  if (!hasMarkerBlock(fs.readFileSync(filePath, 'utf8'))) {
+    return fail('Project MEMORY.md', 'marker block missing', 'run `npx --yes github:fffight88/cc-baseline --project --yes`');
+  }
+  return ok('Project MEMORY.md', 'marker block present');
 }
 
 function checkScanners() {
@@ -173,13 +242,31 @@ function checkNotifier() {
 
 function runChecks(opts) {
   const target = resolveTarget(opts || {});
+
+  if (target.mode === 'project') {
+    // Project mode: skip scanners/notifier/Playwright MCP binary — those are
+    // machine-global and belong to the global doctor. Add an informational
+    // check that reports whether the global install is also present, so the
+    // user understands overlay vs. standalone behavior.
+    return [
+      checkClaudeDir(target.claudeDir, target),
+      checkManifestIntegrity(),
+      checkProjectCLAUDE(target.claudeDir),
+      checkProjectMemoryMd(target.claudeDir),
+      checkInstalledFiles(target.claudeDir),
+      checkHooks(target.claudeDir, target),
+      checkMcpServers(target.mcpJsonPath, target),
+      checkGlobalInstallReference(),
+    ];
+  }
+
   return [
-    checkClaudeDir(target.claudeDir),
+    checkClaudeDir(target.claudeDir, target),
     checkManifestIntegrity(),
     checkMarkerBlocks(target.claudeDir),
     checkInstalledFiles(target.claudeDir),
-    checkHooks(target.claudeDir),
-    checkMcpServers(target.mcpJsonPath),
+    checkHooks(target.claudeDir, target),
+    checkMcpServers(target.mcpJsonPath, target),
     checkScanners(),
     checkPlaywrightMcp(),
     checkNotifier(),
@@ -187,7 +274,11 @@ function runChecks(opts) {
 }
 
 function doctor(opts) {
-  console.log('\n🩺 cc-baseline doctor\n');
+  const target = resolveTarget(opts || {});
+  const header = target.mode === 'project'
+    ? `\n🩺 cc-baseline doctor (project mode — ${target.basePath})\n`
+    : '\n🩺 cc-baseline doctor\n';
+  console.log(header);
   const results = runChecks(opts);
   let okCount = 0, warnCount = 0, failCount = 0;
   for (const r of results) {

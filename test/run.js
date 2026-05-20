@@ -526,6 +526,33 @@ t('project install: .mcp.json is { mcpServers: {...} } with all 5 playwright ser
   });
 });
 
+t('project doctor: runChecks returns 8 results with project labels', async () => {
+  await withTempProject(async (tmp) => {
+    const origLog = console.log;
+    console.log = () => {};
+    try {
+      await install({ project: true, yes: true, skipScanners: true });
+    } finally {
+      console.log = origLog;
+    }
+    const results = runChecks({ project: true });
+    assert.equal(results.length, 8, `expected 8 project-doctor checks, got ${results.length}`);
+    const names = results.map(r => r.name);
+    assert.ok(names.includes('./.claude/ directory'));
+    assert.ok(names.includes('Project CLAUDE.md'));
+    assert.ok(names.includes('Project MEMORY.md'));
+    assert.ok(names.includes('Hooks (./.claude/settings.json)'));
+    assert.ok(names.includes('MCP servers (./.mcp.json)'));
+    assert.ok(names.includes('Global cc-baseline (informational)'));
+    // scanners/notifier/playwright-mcp must be excluded from project mode
+    assert.ok(!names.includes('Security scanners'));
+    assert.ok(!names.includes('Playwright MCP binary'));
+    // every check should pass on a freshly installed project
+    const failed = results.filter(r => r.status === 'fail');
+    assert.equal(failed.length, 0, `unexpected failures: ${failed.map(f => f.name + ':' + f.detail).join('; ')}`);
+  });
+});
+
 t('project install + uninstall round-trip: removes everything installed', async () => {
   await withTempProject(async (tmp) => {
     const origLog = console.log;
