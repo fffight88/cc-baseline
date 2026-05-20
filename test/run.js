@@ -434,13 +434,35 @@ t('project settings-hooks.json: every hook has _ccBaselineId with project- prefi
   assert.equal(new Set(ids).size, ids.length);
 });
 
-t('project mcp-servers.json: uses npx for portability (no absolute paths)', () => {
+t('project mcp-servers.json: uses npx with a pinned @playwright/mcp version (no @latest)', () => {
   const tpl = JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', 'mcp-servers.project.json'), 'utf8'));
+  const pinPattern = /^@playwright\/mcp@\d+\.\d+\.\d+$/;
   for (const [name, server] of Object.entries(tpl)) {
     assert.equal(server.command, 'npx', `${name} should use npx, got ${server.command}`);
-    assert.ok(Array.isArray(server.args) && server.args.includes('@playwright/mcp@latest'),
-      `${name} args should reference @playwright/mcp@latest`);
+    assert.ok(Array.isArray(server.args), `${name} args missing`);
+    const pkgArg = server.args.find(a => typeof a === 'string' && a.startsWith('@playwright/mcp@'));
+    assert.ok(pkgArg, `${name} args missing @playwright/mcp reference`);
+    assert.ok(pinPattern.test(pkgArg),
+      `${name} package arg must be pinned to a specific version (got "${pkgArg}"); @latest is forbidden`);
   }
+});
+
+t('project SessionStart hook: validates MEMORY.md marker block + applies length cap', () => {
+  const tpl = JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', 'settings-hooks.project.json'), 'utf8'));
+  const cmd = tpl.SessionStart[0].hooks[0].command;
+  assert.ok(cmd.includes('<!-- BEGIN cc-baseline -->'),
+    'SessionStart hook must check for cc-baseline marker block in MEMORY.md');
+  assert.ok(cmd.includes('Core Rules for Every Session'),
+    'SessionStart hook must check for the rules-file signature');
+  assert.ok(cmd.includes('64 * 1024') || cmd.includes('65536'),
+    'SessionStart hook must apply a 64KB length cap');
+});
+
+t('project PreToolUse hook: validates CLAUDE_PROJECT_DIR against realpath(cwd)', () => {
+  const tpl = JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', 'settings-hooks.project.json'), 'utf8'));
+  const cmd = tpl.PreToolUse[0].hooks[0].command;
+  assert.ok(cmd.includes('realpath(env_proj) == cwd_real') || cmd.includes('realpath(env_proj) == os.path.realpath'),
+    'PreToolUse hook must compare realpath(CLAUDE_PROJECT_DIR) against realpath(cwd) to defeat env poisoning');
 });
 
 t('project CLAUDE.md template: uses relative paths, no {{HOME}}', () => {

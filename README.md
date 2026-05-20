@@ -138,6 +138,14 @@ You can run **both** global and project installs at once. Claude Code merges glo
 
 > First-run trust prompt: Claude Code asks the user to approve the project's `.mcp.json` the first time it's detected. This is expected — accept the prompt to enable the five `playwright-test-*` servers.
 
+### Security notes (project mode)
+
+Because `./.claude/memory/` and `./.mcp.json` are committable and run on every team member's machine, treat them like any other executable artifact:
+
+- **Review changes to `.claude/memory/MEMORY.md` and `.claude/memory/all_session_basic_rules.md`** in PRs. The project SessionStart hook validates that each file contains the expected cc-baseline signature (marker block on MEMORY.md, frontmatter `name:` line on the rules file) and caps each at 64 KB; if either check fails, context injection is skipped and a warning is surfaced instead.
+- **`@playwright/mcp` is pinned** (currently `@0.0.75`) in `templates/mcp-servers.project.json` to avoid silent supply-chain pulls of `@latest`. To upgrade: `npm view @playwright/mcp version` → edit the template → re-run `--project --yes`. Review the diff and the package's changelog before bumping.
+- **`CLAUDE_PROJECT_DIR` is not trusted blindly.** The project PreToolUse path-policy hook only honors it when `realpath(CLAUDE_PROJECT_DIR) == realpath(cwd)`; otherwise it falls back to `cwd` so a poisoned env var can't move the protected boundary off `./.claude/memory/`.
+
 ---
 
 ## What Gets Installed

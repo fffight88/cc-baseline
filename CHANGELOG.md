@@ -24,6 +24,12 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 - `src/backup.js` — `createBackup()` gains an optional `basePath` argument (defaults to `$HOME`) so project-mode backups land at sensible relative paths inside the backup dir.
 - External tools (semgrep / gitleaks / trivy / `@playwright/mcp` / terminal-notifier) are still installed in project mode (skip if already present) — they're machine-global anyway, and the agents wouldn't run without them.
 
+### Security
+- Project SessionStart hook now validates `MEMORY.md` (cc-baseline marker block) and `all_session_basic_rules.md` (`Core Rules for Every Session` signature) before injecting them into context, and caps each file at 64 KB. If validation fails the hook surfaces a warning and skips injection (no silent context pollution).
+- Project PreToolUse path-policy hook now only trusts `CLAUDE_PROJECT_DIR` when `realpath(env) == realpath(cwd)`, defeating env-var poisoning that could move the protected `./.claude/memory/` boundary.
+- `mcp-servers.project.json` pins `@playwright/mcp@0.0.75` instead of `@latest` so cloning the repo doesn't silently pull a future `@latest` release; README documents the upgrade procedure.
+- `src/uninstall.js` mcpServers cleanup now uses `shortPath()` for the label (correctly shows `.mcp.json` vs `.claude.json` per mode) and matches install.js's trailing-newline convention so re-installs after a partial uninstall stay idempotent.
+
 ### Notes
 - Project install and global install can coexist; their hooks layer on top of each other (overlay mode). The project doctor reports this explicitly.
 - `.mcp.json` is auto-detected by Claude Code at project root and prompts the user for trust on first run — expected behavior, not a bug.

@@ -190,16 +190,12 @@ async function install(opts = {}) {
   const incomingMcp = JSON.parse(readTemplate(templateNameFor('mcp-servers.json', target)));
 
   if (target.mode === 'project') {
-    // .mcp.json is dedicated to mcpServers — its top-level shape is { mcpServers: {...} }.
-    // Merge into existing user entries to preserve anything the team already added.
-    const existingMcpServers = (existingClaudeJson && typeof existingClaudeJson === 'object' && existingClaudeJson.mcpServers)
-      ? existingClaudeJson.mcpServers
-      : (existingClaudeJson && typeof existingClaudeJson === 'object' && !existingClaudeJson.__parseError ? existingClaudeJson : {});
-    const isAlreadyWrappedShape = existingClaudeJson && typeof existingClaudeJson === 'object' && 'mcpServers' in existingClaudeJson;
-    const { result: mergedMcp, added, overwritten } = mergeMcpServers(
-      isAlreadyWrappedShape ? existingMcpServers : {},
-      incomingMcp
-    );
+    // .mcp.json's top-level shape is { mcpServers: {...} } — the only Claude
+    // Code-recognized format. Bare-format files (mcpServers as the root object
+    // itself, no wrapper) are not supported by Claude Code, so we don't try to
+    // preserve them; user-added entries inside the wrapped shape are merged.
+    const existingMcpServers = (existingClaudeJson && existingClaudeJson.mcpServers) || {};
+    const { result: mergedMcp, added, overwritten } = mergeMcpServers(existingMcpServers, incomingMcp);
     const newMcpJson = { mcpServers: mergedMcp };
     const newMcpJsonStr = JSON.stringify(newMcpJson, null, 2) + '\n';
     const existingMcpStr = fs.existsSync(claudeJsonPath) ? fs.readFileSync(claudeJsonPath, 'utf8') : '';

@@ -307,29 +307,33 @@ async function uninstall(opts = {}) {
     failures.push(`settings.json: ${e.message}`);
   }
 
-  // ── 10. Clean up .claude.json mcpServers ──────────────────────────────────
+  // ── 10. Clean up mcpServers (global ~/.claude.json or project ./.mcp.json) ─
   try {
+    const mcpLabel = shortPath(CLAUDE_JSON_PATH, target);
     const raw = readJson(CLAUDE_JSON_PATH);
     if (!raw || raw.__parseError) {
-      console.log(`  ⏭️  .claude.json — missing or parse error, skipping`);
+      console.log(`  ⏭️  ${mcpLabel} — missing or parse error, skipping`);
       skipCount++;
     } else {
       const harnessKeys = Object.keys(require(path.join(TEMPLATES_DIR, target.mode === 'project' ? 'mcp-servers.project.json' : 'mcp-servers.json')));
       const { result: newMcp, removed, isEmpty } = removeHarnessMcpServers(raw.mcpServers || {}, harnessKeys);
       if (removed.length === 0) {
-        console.log(`  ⏭️  .claude.json — no harness mcpServers found`);
+        console.log(`  ⏭️  ${mcpLabel} — no harness mcpServers found`);
         skipCount++;
       } else {
         const next = Object.assign({}, raw);
         if (isEmpty) delete next.mcpServers;
         else next.mcpServers = newMcp;
-        fs.writeFileSync(CLAUDE_JSON_PATH, JSON.stringify(next, null, 2), 'utf8');
-        console.log(`  ✅ .claude.json — ${removed.length} mcpServer(s) removed (${removed.join(', ')})`);
+        // Project install writes .mcp.json with a trailing newline so byte-equality
+        // skips re-writes on idempotent installs; uninstall must match that shape.
+        const writeSuffix = target.mode === 'project' ? '\n' : '';
+        fs.writeFileSync(CLAUDE_JSON_PATH, JSON.stringify(next, null, 2) + writeSuffix, 'utf8');
+        console.log(`  ✅ ${mcpLabel} — ${removed.length} mcpServer(s) removed (${removed.join(', ')})`);
         successCount++;
       }
     }
   } catch (e) {
-    failures.push(`.claude.json: ${e.message}`);
+    failures.push(`mcpServers cleanup: ${e.message}`);
   }
 
   // ── 11. Clean up meta files ────────────────────────────────────────────────

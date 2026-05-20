@@ -138,6 +138,14 @@ npx github:fffight88/cc-baseline --project --uninstall --yes
 
 > 첫 실행 신뢰 프롬프트: Claude Code는 프로젝트의 `.mcp.json`을 처음 감지할 때 사용자에게 승인을 요청합니다. 정상 동작이며, 승인하면 5개의 `playwright-test-*` 서버가 활성화됩니다.
 
+### 보안 주의사항 (프로젝트 모드)
+
+`./.claude/memory/`와 `./.mcp.json`은 커밋되어 모든 팀원의 머신에서 실행되므로 다른 실행 가능 산출물과 동일하게 다뤄야 합니다:
+
+- **`.claude/memory/MEMORY.md`와 `.claude/memory/all_session_basic_rules.md`의 변경은 PR에서 리뷰하세요.** 프로젝트 SessionStart 훅은 각 파일이 cc-baseline 시그니처(MEMORY.md는 마커 블록, rules는 frontmatter `name:` 라인)를 포함하는지 검증하고 각각 64KB로 길이를 캡합니다. 검증 실패 시 컨텍스트 주입은 건너뛰고 경고가 표시됩니다.
+- **`@playwright/mcp`은 버전 핀** (현재 `@0.0.75`) — `templates/mcp-servers.project.json`에서 `@latest`의 silent supply-chain pull 위험을 차단. 업그레이드: `npm view @playwright/mcp version` → 템플릿 편집 → `--project --yes` 재실행. bump 전 변경 사항과 패키지 changelog 확인.
+- **`CLAUDE_PROJECT_DIR`은 무조건 신뢰하지 않음** — 프로젝트 PreToolUse 경로 정책 훅은 `realpath(CLAUDE_PROJECT_DIR) == realpath(cwd)`일 때만 사용하고, 다르면 cwd로 폴백. 환경변수 조작으로 보호 경계를 `./.claude/memory/` 밖으로 옮길 수 없음.
+
 ---
 
 ## 설치 항목
