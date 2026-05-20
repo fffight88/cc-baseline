@@ -5,6 +5,29 @@ All notable changes to cc-baseline are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] — 2026-05-20
+
+### Added
+- `--project` flag — installs cc-baseline into the current project's `./.claude/` and `./.mcp.json` instead of the global `~/.claude/` home. Lets teams check the harness into a repo so anyone who clones it inherits the same behavior rules, agents, and skills automatically.
+- Three new project-mode templates:
+  - `templates/project-CLAUDE.md` — relative paths, no `{{HOME}}` substitution.
+  - `templates/settings-hooks.project.json` — SessionStart + PreToolUse hooks scoped to the project, with `_ccBaselineId` values prefixed `project-` so they coexist with global IDs (Claude Code merges global + project settings.json at runtime). Hooks resolve the project root via `$CLAUDE_PROJECT_DIR` with `os.getcwd()` fallback, and use `os.path.realpath()` to defeat symlink/traversal bypasses.
+  - `templates/mcp-servers.project.json` — uses `npx -y @playwright/mcp@latest` for portability across machines (no absolute paths).
+- `--project --doctor` — 8 checks specific to project installs: `./.claude/` exists, manifest integrity, project CLAUDE.md marker block, project MEMORY.md marker block, 18 overwrite files, project hook IDs, `./.mcp.json` MCP servers, and an informational check that reports whether the global cc-baseline is also installed (overlay vs. standalone).
+- `--project --uninstall` — removes the project install while leaving the global install untouched. `.mcp.json` cleanup preserves any non-harness `mcpServers` entries the team added.
+- README split — Troubleshooting, Hook Conflict Warning Guide, Uninstall Manual Removal, Updating Templates, and File Install Details are now in `docs/` (English) and `docs/ko/` (Korean), shortening the main READMEs from ~570 lines to ~375 and improving discoverability.
+- `docs/plans/v1.2-plan.md` — design plan for this release (Meta block, interview decisions, execution order, checklist).
+- 11 new tests (50 total) covering `resolveTarget()`, project template structure, install round-trip, hook ID prefixing, `.mcp.json` shape, and the 8-check project doctor.
+
+### Changed
+- `src/install.js` / `src/uninstall.js` / `src/doctor.js` — module-level `CLAUDE_DIR` / `BACKUP_ROOT` / `LOG_FILE` constants replaced by a single `resolveTarget(opts)` helper in `src/paths.js`. Global mode is unchanged; project mode is the new branch.
+- `src/backup.js` — `createBackup()` gains an optional `basePath` argument (defaults to `$HOME`) so project-mode backups land at sensible relative paths inside the backup dir.
+- External tools (semgrep / gitleaks / trivy / `@playwright/mcp` / terminal-notifier) are still installed in project mode (skip if already present) — they're machine-global anyway, and the agents wouldn't run without them.
+
+### Notes
+- Project install and global install can coexist; their hooks layer on top of each other (overlay mode). The project doctor reports this explicitly.
+- `.mcp.json` is auto-detected by Claude Code at project root and prompts the user for trust on first run — expected behavior, not a bug.
+
 ## [1.1.0] — 2026-05-20
 
 ### Added

@@ -35,3 +35,24 @@
 | `mcpServers` key in `~/.claude.json` | Adds `playwright-test-1~5`; always silently overwrites existing entries with the same key (cc-baseline managed) |
 
 > **Never touched:** `settings.json` fields like `env`, `model`, `effortLevel`; usage stats and UI state in `~/.claude.json`
+
+## Project mode (`--project`)
+
+When the installer is run with `--project`, every path in the table above shifts from `~/.claude/...` to `./.claude/...`, and three templates are swapped for project-specific variants:
+
+| Template (global mode) | Template (project mode) | Notes |
+|---|---|---|
+| `templates/CLAUDE.md` | `templates/project-CLAUDE.md` | Relative paths, no `{{HOME}}` substitution |
+| `templates/settings-hooks.json` | `templates/settings-hooks.project.json` | `_ccBaselineId` values prefixed with `project-` so they coexist with global IDs; SessionStart + PreToolUse path-policy hooks scoped to project memory |
+| `templates/mcp-servers.json` | `templates/mcp-servers.project.json` | `npx -y @playwright/mcp@latest` (portable across machines) |
+
+The 18 overwrite files (memory/, agents/, commands/, scripts/audit-report.js) are byte-identical between modes.
+
+### JSON merge / write targets — project mode
+
+| Target | Method |
+|---|---|
+| `./.claude/settings.json` hooks | Same hook merge logic as global; project IDs use `project-` prefix |
+| `./.mcp.json` | Whole-file `{ mcpServers: {...} }` shape; preserves any non-harness `mcpServers` entries already present |
+
+> **External binaries** (`semgrep`, `gitleaks`, `trivy`, `@playwright/mcp`, `terminal-notifier`) are installed in project mode as well — they're machine-global, and the agents won't run without them. Pass `--skip-scanners` to bypass.

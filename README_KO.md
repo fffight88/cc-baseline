@@ -9,6 +9,7 @@
 - [왜 cc-baseline인가?](#왜-cc-baseline인가)
 - [요구사항](#요구사항)
 - [빠른 시작](#빠른-시작)
+- [프로젝트 로컬 설치](#프로젝트-로컬-설치)
 - [설치 항목](#설치-항목)
 - [자동 설치 도구](#자동-설치-도구)
 - [옵션](#옵션)
@@ -73,6 +74,69 @@ npx --yes github:fffight88/cc-baseline --yes
 ```bash
 npx github:fffight88/cc-baseline --dry-run
 ```
+
+---
+
+## 프로젝트 로컬 설치
+
+기본적으로 cc-baseline은 글로벌 `~/.claude/`에 설치됩니다. `--project` 플래그를 전달하면 **현재 디렉토리의 `./.claude/`와 `./.mcp.json`에** 설치합니다. 레포에 하네스를 함께 커밋하여 팀원이 클론만 해도 동일한 행동 규칙·에이전트·스킬을 자동으로 상속받도록 하고 싶을 때 사용하세요.
+
+```bash
+# 미리보기
+npx github:fffight88/cc-baseline --project --dry-run
+
+# ./.claude/ + ./.mcp.json에 설치
+npx github:fffight88/cc-baseline --project --yes
+
+# 검진
+npx github:fffight88/cc-baseline --project --doctor
+
+# 언인스톨 (프로젝트만 — 글로벌 설치는 건드리지 않음)
+npx github:fffight88/cc-baseline --project --uninstall --yes
+```
+
+### 글로벌 모드와의 차이점
+
+| | 글로벌 모드 | 프로젝트 모드 (`--project`) |
+|---|---|---|
+| 대상 디렉토리 | `~/.claude/` | `./.claude/` |
+| MCP 설정 | `~/.claude.json` (병합) | `./.mcp.json` (Claude Code가 자동 감지) |
+| `CLAUDE.md` 내용 | `{{HOME}}` 치환 절대경로 | 상대경로, 치환 없음 |
+| Hook `_ccBaselineId` | `session-start-load-rules` 등 | `project-session-start-load-rules` 등 (prefix로 글로벌 ID와 공존) |
+| Playwright MCP 명령어 | `~/.npm-global/bin/playwright-mcp` 절대경로 | `npx -y @playwright/mcp@latest` (휴대성) |
+| 외부 바이너리 (semgrep/gitleaks/trivy 등) | 없으면 설치 | **동일** — 어차피 머신 글로벌 도구 |
+
+### 오버레이 vs 단독 모드
+
+글로벌 설치와 프로젝트 설치를 **동시에** 사용할 수 있습니다. Claude Code는 글로벌 + 프로젝트 settings.json을 머지하며, 프로젝트 hook ID의 `project-` prefix 덕분에 둘이 서로 dedup하지 않습니다. 프로젝트 doctor가 이를 명시적으로 보고합니다:
+
+```
+✅ Global cc-baseline (informational)
+   installed (project hooks layer on top — overlay mode)
+```
+
+### 프로젝트 설치 커밋하기
+
+`./.claude/`와 `./.mcp.json`은 커밋 가능합니다. 일반적인 gitignore 항목:
+
+```
+# 보통 커밋 (팀 공유):
+.claude/CLAUDE.md
+.claude/memory/
+.claude/agents/
+.claude/commands/
+.claude/scripts/
+.claude/settings.json
+.mcp.json
+
+# 보통 무시:
+.claude/.cc-baseline-backup/
+.claude/.cc-baseline-uninstall-backup/
+.claude/.cc-baseline-install.log
+.cc-audits/
+```
+
+> 첫 실행 신뢰 프롬프트: Claude Code는 프로젝트의 `.mcp.json`을 처음 감지할 때 사용자에게 승인을 요청합니다. 정상 동작이며, 승인하면 5개의 `playwright-test-*` 서버가 활성화됩니다.
 
 ---
 

@@ -35,3 +35,24 @@
 | `~/.claude.json`의 `mcpServers` 키 | `playwright-test-1~5` 추가; 동일 키의 기존 항목은 조용히 덮어씀 (cc-baseline 관리 항목) |
 
 > **절대 건드리지 않는 것:** `settings.json`의 `env`, `model`, `effortLevel` 필드; `~/.claude.json`의 사용 통계 및 UI 상태
+
+## 프로젝트 모드 (`--project`)
+
+`--project` 플래그로 실행하면 위 표의 모든 경로가 `~/.claude/...` → `./.claude/...`로 바뀌고, 3개 템플릿이 프로젝트 전용 변형으로 교체됩니다:
+
+| 템플릿 (글로벌 모드) | 템플릿 (프로젝트 모드) | 비고 |
+|---|---|---|
+| `templates/CLAUDE.md` | `templates/project-CLAUDE.md` | 상대경로, `{{HOME}}` 치환 없음 |
+| `templates/settings-hooks.json` | `templates/settings-hooks.project.json` | `_ccBaselineId`가 `project-` prefix로 글로벌 ID와 공존; 프로젝트 메모리 대상 SessionStart + PreToolUse 경로 정책 훅 |
+| `templates/mcp-servers.json` | `templates/mcp-servers.project.json` | `npx -y @playwright/mcp@latest` (머신 간 휴대성) |
+
+18개 overwrite 파일 (memory/, agents/, commands/, scripts/audit-report.js)은 두 모드 간 바이트 단위 동일.
+
+### JSON 병합 / 쓰기 대상 — 프로젝트 모드
+
+| 대상 | 방식 |
+|---|---|
+| `./.claude/settings.json` hooks | 글로벌과 동일한 hook 병합 로직; 프로젝트 ID는 `project-` prefix 사용 |
+| `./.mcp.json` | 파일 전체가 `{ mcpServers: {...} }` 형태; 기존의 비-하네스 `mcpServers` 항목은 보존 |
+
+> **외부 바이너리** (`semgrep`, `gitleaks`, `trivy`, `@playwright/mcp`, `terminal-notifier`)는 프로젝트 모드에서도 설치 — 머신 글로벌 도구이며 에이전트가 이들 없이는 동작하지 않음. `--skip-scanners`로 건너뛰기 가능.

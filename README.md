@@ -9,6 +9,7 @@ One-command installer that wires up a full Claude Code harness — behavior rule
 - [Why cc-baseline?](#why-cc-baseline)
 - [Requirements](#requirements)
 - [Quick Start](#quick-start)
+- [Project-local Install](#project-local-install)
 - [What Gets Installed](#what-gets-installed)
 - [Auto-installed Tools](#auto-installed-tools)
 - [Options](#options)
@@ -73,6 +74,69 @@ Preview changes before applying:
 ```bash
 npx github:fffight88/cc-baseline --dry-run
 ```
+
+---
+
+## Project-local Install
+
+By default cc-baseline installs into your global `~/.claude/`. Pass `--project` to install into the **current directory's `./.claude/` and `./.mcp.json`** instead. Use this when you want a shared harness inside a repo — anyone who clones it inherits the same behavior rules, agents, and skills without running cc-baseline themselves.
+
+```bash
+# Preview
+npx github:fffight88/cc-baseline --project --dry-run
+
+# Install into ./.claude/ + ./.mcp.json
+npx github:fffight88/cc-baseline --project --yes
+
+# Health check
+npx github:fffight88/cc-baseline --project --doctor
+
+# Uninstall (project only — global install is left alone)
+npx github:fffight88/cc-baseline --project --uninstall --yes
+```
+
+### What's different from global mode
+
+| | Global mode | Project mode (`--project`) |
+|---|---|---|
+| Target dir | `~/.claude/` | `./.claude/` |
+| MCP config | `~/.claude.json` (merged) | `./.mcp.json` (project-local, auto-detected by Claude Code) |
+| `CLAUDE.md` content | absolute paths with `{{HOME}}` | relative paths, no substitution |
+| Hook `_ccBaselineId` | `session-start-load-rules`, etc. | `project-session-start-load-rules`, etc. (prefix so global + project IDs coexist) |
+| Playwright MCP command | absolute path to `~/.npm-global/bin/playwright-mcp` | `npx -y @playwright/mcp@latest` (portable) |
+| External binaries (semgrep/gitleaks/trivy/etc.) | installed if missing | **same** — they're machine-global anyway |
+
+### Overlay vs. standalone
+
+You can run **both** global and project installs at once. Claude Code merges global + project settings.json, and the `project-` prefix on project hook IDs ensures the two don't dedup each other. The project doctor reports this explicitly:
+
+```
+✅ Global cc-baseline (informational)
+   installed (project hooks layer on top — overlay mode)
+```
+
+### Committing the project install
+
+`./.claude/` and `./.mcp.json` are safe to commit. Common gitignore entries:
+
+```
+# typically committed (team-shared):
+.claude/CLAUDE.md
+.claude/memory/
+.claude/agents/
+.claude/commands/
+.claude/scripts/
+.claude/settings.json
+.mcp.json
+
+# typically ignored:
+.claude/.cc-baseline-backup/
+.claude/.cc-baseline-uninstall-backup/
+.claude/.cc-baseline-install.log
+.cc-audits/
+```
+
+> First-run trust prompt: Claude Code asks the user to approve the project's `.mcp.json` the first time it's detected. This is expected — accept the prompt to enable the five `playwright-test-*` servers.
 
 ---
 
