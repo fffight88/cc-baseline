@@ -19,6 +19,7 @@ const {
 const { applyHome, toPlaceholder, HOME, PLACEHOLDER } = require(path.join(ROOT, 'src', 'paths'));
 const manifest = require(path.join(ROOT, 'src', 'manifest'));
 const { checkConflicts } = require(path.join(ROOT, 'src', 'conflict-checker'));
+const { runChecks } = require(path.join(ROOT, 'src', 'doctor'));
 
 const tests = [];
 function t(name, fn) { tests.push({ name, fn }); }
@@ -356,6 +357,29 @@ t('checkConflicts: hook with decision:block → HIGH rule 3', () => {
     }],
   });
   assert.ok(warnings.some(w => w.rule === 3 && w.severity === 'HIGH'));
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// doctor.js — structural smoke tests
+// ──────────────────────────────────────────────────────────────────────────
+
+t('doctor.runChecks: returns an array of result objects with status field', () => {
+  const results = runChecks();
+  assert.ok(Array.isArray(results));
+  assert.ok(results.length >= 7, `expected ≥7 checks, got ${results.length}`);
+  for (const r of results) {
+    assert.ok(typeof r.name === 'string' && r.name.length > 0);
+    assert.ok(['ok', 'warn', 'fail'].includes(r.status), `bad status: ${r.status}`);
+    assert.ok(typeof r.detail === 'string');
+  }
+});
+
+t('doctor.runChecks: package manifest check passes (template files all exist)', () => {
+  const results = runChecks();
+  const manifestCheck = results.find(r => r.name === 'Package manifest');
+  assert.ok(manifestCheck, 'Package manifest check not found');
+  assert.equal(manifestCheck.status, 'ok',
+    `manifest integrity failed: ${manifestCheck.detail}`);
 });
 
 // ──────────────────────────────────────────────────────────────────────────

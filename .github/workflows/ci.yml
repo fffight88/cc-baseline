@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: ${{ matrix.os }} · Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node: [18, 20]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Smoke install in isolated HOME
+        shell: bash
+        run: |
+          set -euo pipefail
+          TMPHOME="$(mktemp -d)"
+          mkdir -p "$TMPHOME/.claude"
+          export HOME="$TMPHOME"
+
+          echo "── dry-run ────────────────────────────────────────────"
+          node bin/cli.js --dry-run --yes
+
+          echo "── real install (skipping external tools) ─────────────"
+          node bin/cli.js --yes --skip-scanners
+
+          echo "── re-install must be a no-op (idempotency) ───────────"
+          out="$(node bin/cli.js --yes --skip-scanners 2>&1)"
+          echo "$out"
+          if echo "$out" | grep -E "^📊 0 item\(s\) to be changed" >/dev/null; then
+            echo "✅ idempotent"
+          else
+            echo "❌ re-install reported non-zero changes" >&2
+            exit 1
+          fi
+
+          echo "── doctor must report no failures ─────────────────────"
+          # doctor exits 1 if any check fails; warns on missing scanners are OK
+          node bin/cli.js --doctor
+
+          echo "── uninstall ──────────────────────────────────────────"
+          node bin/cli.js --uninstall --yes

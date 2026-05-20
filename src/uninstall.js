@@ -186,12 +186,16 @@ async function uninstall(opts = {}) {
     return;
   }
 
-  // ── 4. Confirm scanner removal (only interactive when --remove-scanners not passed) ─
+  // ── 4. Confirm scanner removal ──────────────────────────────────────────
+  // Scanner removal affects other projects, so:
+  //   - explicit --remove-scanners → yes
+  //   - --yes (non-interactive) without --remove-scanners → no (safer default, won't hang CI)
+  //   - interactive without --remove-scanners → ask
   let doRemoveScanners = removeScanners;
-  if (!removeScanners) {
+  if (!removeScanners && !autoYes) {
     doRemoveScanners = await confirm(
       'Also remove external scanners (semgrep/gitleaks/trivy)? This may affect other projects.',
-      false  // independent of --yes flag, requires explicit answer
+      false
     );
   }
 
