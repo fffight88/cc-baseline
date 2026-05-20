@@ -13,6 +13,7 @@ const opts = {
   purge: args.includes('--purge'),
   removeScanners: args.includes('--remove-scanners'),
   skipScanners: args.includes('--skip-scanners'),
+  project: args.includes('--project'),
 };
 
 if (opts.version) {
@@ -33,6 +34,9 @@ Install options:
   --yes, -y             Auto-approve conflict warnings (non-interactive mode)
   --skip-scanners       Skip auto-install of semgrep/gitleaks/trivy + Playwright MCP
                         (useful in CI or restricted-network environments)
+  --project             Install into the current project (./.claude/ + ./.mcp.json)
+                        instead of the global ~/.claude/ home. Use this in a repo
+                        you want to share with your team.
   --version, -v         Print version
   --help, -h            Show this help
 
@@ -50,14 +54,18 @@ Install examples:
   npx github:fffight88/cc-baseline --dry-run
   npx github:fffight88/cc-baseline --yes
   npx github:fffight88/cc-baseline --yes --skip-scanners
+  npx github:fffight88/cc-baseline --project --dry-run    # preview project install
+  npx github:fffight88/cc-baseline --project --yes        # install into ./.claude/
 
 Diagnostic examples:
   npx github:fffight88/cc-baseline --doctor
+  npx github:fffight88/cc-baseline --project --doctor
 
 Uninstall examples:
   npx github:fffight88/cc-baseline --uninstall --dry-run
   npx github:fffight88/cc-baseline --uninstall --yes
   npx github:fffight88/cc-baseline --uninstall --yes --purge --remove-scanners
+  npx github:fffight88/cc-baseline --project --uninstall  # remove from ./.claude/
 `);
   process.exit(0);
 }

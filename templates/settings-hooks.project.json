@@ -1,0 +1,27 @@
+{
+  "SessionStart": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 -c \"\nimport json, sys, os\nsys.stdin.read()\nproj = os.environ.get('CLAUDE_PROJECT_DIR') or os.getcwd()\nmemory = open(os.path.join(proj, '.claude/memory/MEMORY.md')).read()\nrules = open(os.path.join(proj, '.claude/memory/all_session_basic_rules.md')).read()\ncontext = '# Project MEMORY.md\\n' + memory + '\\n\\n# Project all_session_basic_rules.md\\n' + rules\nprint(json.dumps({'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': context}}))\n\"",
+          "statusMessage": "Loading project session rules...",
+          "_ccBaselineId": "project-session-start-load-rules"
+        }
+      ]
+    }
+  ],
+  "PreToolUse": [
+    {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 -c \"\nimport json, sys, os\ndata = json.load(sys.stdin)\nfile_path = data.get('tool_input', {}).get('file_path', '')\ntry:\n    real_path = os.path.realpath(file_path) if file_path else ''\nexcept Exception:\n    real_path = ''\nproj = os.environ.get('CLAUDE_PROJECT_DIR') or os.getcwd()\nprotected = os.path.realpath(os.path.join(proj, '.claude', 'memory'))\nif real_path == protected or real_path.startswith(protected + os.sep):\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'deny', 'permissionDecisionReason': 'cc-baseline path protection: ./.claude/memory/ is managed by cc-baseline only. Save auto-memory elsewhere.'}}))\n    sys.exit(2)\n\"",
+          "statusMessage": "Applying cc-baseline project path policy...",
+          "_ccBaselineId": "project-pre-tool-use-path-policy"
+        }
+      ]
+    }
+  ]
+}

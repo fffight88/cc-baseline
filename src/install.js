@@ -31,6 +31,24 @@ function readTemplate(relPath) {
   return applyHome(raw);
 }
 
+// Project mode swaps three templates that need different content from
+// global mode: CLAUDE.md (relative paths, no {{HOME}}), settings-hooks
+// (project- prefixed IDs + cwd-relative hooks), mcp-servers (npx-based
+// command for portability across machines). All other 19 manifest files
+// are byte-identical between modes.
+const PROJECT_TEMPLATE_OVERRIDES = {
+  'CLAUDE.md': 'project-CLAUDE.md',
+  'settings-hooks.json': 'settings-hooks.project.json',
+  'mcp-servers.json': 'mcp-servers.project.json',
+};
+
+function templateNameFor(relPath, target) {
+  if (target.mode === 'project' && PROJECT_TEMPLATE_OVERRIDES[relPath]) {
+    return PROJECT_TEMPLATE_OVERRIDES[relPath];
+  }
+  return relPath;
+}
+
 function readJson(filePath) {
   if (!fs.existsSync(filePath)) return null;
   try {
@@ -113,7 +131,7 @@ async function install(opts = {}) {
   // ── 2. CLAUDE.md / MEMORY.md — marker-block merge ─────────────────────────
   for (const relPath of manifest.markerBlockFiles()) {
     const filePath = path.join(CLAUDE_DIR, relPath);
-    const tpl = readTemplate(relPath);
+    const tpl = readTemplate(templateNameFor(relPath, target));
     const existing = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : '';
     const merged = mergeMarkerBlock(existing, tpl);
     if (merged === existing) {
@@ -138,7 +156,7 @@ async function install(opts = {}) {
   }
 
   // ── 4. settings.json hooks merge ─────────────────────────────────────────
-  const harnessHooks = JSON.parse(readTemplate('settings-hooks.json'));
+  const harnessHooks = JSON.parse(readTemplate(templateNameFor('settings-hooks.json', target)));
   const mergedHooks = mergeHooks(existingHooks, harnessHooks);
   // cc-baseline never adds or modifies the permissions key for security reasons; user-set keys are preserved as-is.
   const newSettings = Object.assign({}, existingSettings, { hooks: mergedHooks });
@@ -155,7 +173,10 @@ async function install(opts = {}) {
     console.log(`  ✅ settings.json — hooks merged`);
   }
 
-  // ── 5. mcpServers merge (global: ~/.claude.json) ──────────────────────────
+  // ── 5. MCP server registration ────────────────────────────────────────────
+  //   Global mode: merge mcpServers key in ~/.claude.json
+  //   Project mode: write whole-file .mcp.json (Claude Code auto-detects this
+  //     file at project root and prompts the user for trust on first run)
   const claudeJsonPath = target.mcpJsonPath;
   const existingClaudeJsonRaw = readJson(claudeJsonPath);
   if (existingClaudeJsonRaw && existingClaudeJsonRaw.__parseError) {
@@ -166,28 +187,60 @@ async function install(opts = {}) {
     if (!proceed) { console.log('\nInstall cancelled.'); return; }
   }
   const existingClaudeJson = (existingClaudeJsonRaw && !existingClaudeJsonRaw.__parseError) ? existingClaudeJsonRaw : {};
-  const incomingMcp = JSON.parse(readTemplate('mcp-servers.json'));
-  const { result: mergedMcp, added, overwritten } = mergeMcpServers(
-    existingClaudeJson.mcpServers || {},
-    incomingMcp
-  );
-  const newClaudeJson = Object.assign({}, existingClaudeJson, { mcpServers: mergedMcp });
-  const newClaudeJsonStr = JSON.stringify(newClaudeJson, null, 2);
-  const existingClaudeJsonStr = fs.existsSync(claudeJsonPath) ? fs.readFileSync(claudeJsonPath, 'utf8') : '';
-  if (newClaudeJsonStr === existingClaudeJsonStr) {
-    console.log(`  ⏭️  .claude.json — no changes`);
+  const incomingMcp = JSON.parse(readTemplate(templateNameFor('mcp-servers.json', target)));
+
+  if (target.mode === 'project') {
+    // .mcp.json is dedicated to mcpServers — its top-level shape is { mcpServers: {...} }.
+    // Merge into existing user entries to preserve anything the team already added.
+    const existingMcpServers = (existingClaudeJson && typeof existingClaudeJson === 'object' && existingClaudeJson.mcpServers)
+      ? existingClaudeJson.mcpServers
+      : (existingClaudeJson && typeof existingClaudeJson === 'object' && !existingClaudeJson.__parseError ? existingClaudeJson : {});
+    const isAlreadyWrappedShape = existingClaudeJson && typeof existingClaudeJson === 'object' && 'mcpServers' in existingClaudeJson;
+    const { result: mergedMcp, added, overwritten } = mergeMcpServers(
+      isAlreadyWrappedShape ? existingMcpServers : {},
+      incomingMcp
+    );
+    const newMcpJson = { mcpServers: mergedMcp };
+    const newMcpJsonStr = JSON.stringify(newMcpJson, null, 2) + '\n';
+    const existingMcpStr = fs.existsSync(claudeJsonPath) ? fs.readFileSync(claudeJsonPath, 'utf8') : '';
+    if (newMcpJsonStr === existingMcpStr) {
+      console.log(`  ⏭️  .mcp.json — no changes`);
+    } else {
+      changes.push({
+        label: '.mcp.json (project MCP servers)',
+        path: claudeJsonPath,
+        content: newMcpJsonStr,
+      });
+      const summary = [
+        added.length ? `added: [${added.join(', ')}]` : '',
+        overwritten.length ? `replaced: [${overwritten.join(', ')}]` : '',
+      ].filter(Boolean).join(' / ');
+      const tail = summary || 'json reformatted';
+      console.log(`  ✅ .mcp.json — mcpServers ${tail}`);
+    }
   } else {
-    changes.push({
-      label: `.claude.json (mcpServers merge)`,
-      path: claudeJsonPath,
-      content: newClaudeJsonStr,
-    });
-    const summary = [
-      added.length ? `added: [${added.join(', ')}]` : '',
-      overwritten.length ? `replaced: [${overwritten.join(', ')}]` : '',
-    ].filter(Boolean).join(' / ');
-    const tail = summary || 'json reformatted';
-    console.log(`  ✅ .claude.json — mcpServers ${tail}`);
+    const { result: mergedMcp, added, overwritten } = mergeMcpServers(
+      existingClaudeJson.mcpServers || {},
+      incomingMcp
+    );
+    const newClaudeJson = Object.assign({}, existingClaudeJson, { mcpServers: mergedMcp });
+    const newClaudeJsonStr = JSON.stringify(newClaudeJson, null, 2);
+    const existingClaudeJsonStr = fs.existsSync(claudeJsonPath) ? fs.readFileSync(claudeJsonPath, 'utf8') : '';
+    if (newClaudeJsonStr === existingClaudeJsonStr) {
+      console.log(`  ⏭️  .claude.json — no changes`);
+    } else {
+      changes.push({
+        label: `.claude.json (mcpServers merge)`,
+        path: claudeJsonPath,
+        content: newClaudeJsonStr,
+      });
+      const summary = [
+        added.length ? `added: [${added.join(', ')}]` : '',
+        overwritten.length ? `replaced: [${overwritten.join(', ')}]` : '',
+      ].filter(Boolean).join(' / ');
+      const tail = summary || 'json reformatted';
+      console.log(`  ✅ .claude.json — mcpServers ${tail}`);
+    }
   }
 
   // ── 6. Summary & write ────────────────────────────────────────────────────

@@ -98,7 +98,7 @@ function buildSummary(layout) {
 
   const claudeJsonRaw = readJson(CLAUDE_JSON_PATH);
   if (claudeJsonRaw && !claudeJsonRaw.__parseError) {
-    const harnessKeys = Object.keys(require(path.join(TEMPLATES_DIR, 'mcp-servers.json')));
+    const harnessKeys = Object.keys(require(path.join(TEMPLATES_DIR, target.mode === 'project' ? 'mcp-servers.project.json' : 'mcp-servers.json')));
     const { removed } = removeHarnessMcpServers(claudeJsonRaw.mcpServers || {}, harnessKeys);
     if (removed.length > 0) lines.push(`  🗑️  ${shortPath(CLAUDE_JSON_PATH, target)} (${removed.length} mcpServer(s) removed: ${removed.join(', ')})`);
   }
@@ -314,7 +314,7 @@ async function uninstall(opts = {}) {
       console.log(`  ⏭️  .claude.json — missing or parse error, skipping`);
       skipCount++;
     } else {
-      const harnessKeys = Object.keys(require(path.join(TEMPLATES_DIR, 'mcp-servers.json')));
+      const harnessKeys = Object.keys(require(path.join(TEMPLATES_DIR, target.mode === 'project' ? 'mcp-servers.project.json' : 'mcp-servers.json')));
       const { result: newMcp, removed, isEmpty } = removeHarnessMcpServers(raw.mcpServers || {}, harnessKeys);
       if (removed.length === 0) {
         console.log(`  ⏭️  .claude.json — no harness mcpServers found`);

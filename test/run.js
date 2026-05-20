@@ -16,10 +16,12 @@ const {
   mergeMcpServers,
   removeHarnessMcpServers,
 } = require(path.join(ROOT, 'src', 'merge', 'mcp-servers'));
-const { applyHome, toPlaceholder, HOME, PLACEHOLDER } = require(path.join(ROOT, 'src', 'paths'));
+const { applyHome, toPlaceholder, HOME, PLACEHOLDER, resolveTarget } = require(path.join(ROOT, 'src', 'paths'));
 const manifest = require(path.join(ROOT, 'src', 'manifest'));
 const { checkConflicts } = require(path.join(ROOT, 'src', 'conflict-checker'));
 const { runChecks } = require(path.join(ROOT, 'src', 'doctor'));
+const { install } = require(path.join(ROOT, 'src', 'install'));
+const { uninstall } = require(path.join(ROOT, 'src', 'uninstall'));
 
 const tests = [];
 function t(name, fn) { tests.push({ name, fn }); }
@@ -380,6 +382,172 @@ t('doctor.runChecks: package manifest check passes (template files all exist)', 
   assert.ok(manifestCheck, 'Package manifest check not found');
   assert.equal(manifestCheck.status, 'ok',
     `manifest integrity failed: ${manifestCheck.detail}`);
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// paths.js — resolveTarget (Phase 2A)
+// ──────────────────────────────────────────────────────────────────────────
+
+t('resolveTarget: default (no opts) → global mode targeting $HOME', () => {
+  const t1 = resolveTarget({});
+  assert.equal(t1.mode, 'global');
+  assert.equal(t1.basePath, HOME);
+  assert.ok(t1.claudeDir.startsWith(HOME));
+  assert.ok(t1.claudeDir.endsWith('/.claude'));
+  assert.equal(t1.mcpJsonPath, path.join(HOME, '.claude.json'));
+});
+
+t('resolveTarget: opts.project=true → project mode targeting cwd', () => {
+  const cwd = process.cwd();
+  const t2 = resolveTarget({ project: true });
+  assert.equal(t2.mode, 'project');
+  assert.equal(t2.basePath, cwd);
+  assert.equal(t2.claudeDir, path.join(cwd, '.claude'));
+  assert.equal(t2.mcpJsonPath, path.join(cwd, '.mcp.json'));
+  assert.ok(t2.backupRoot.includes('.cc-baseline-backup'));
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// Project-mode templates exist (Phase 2B)
+// ──────────────────────────────────────────────────────────────────────────
+
+t('project templates: project-CLAUDE.md, settings-hooks.project.json, mcp-servers.project.json all present', () => {
+  for (const name of ['project-CLAUDE.md', 'settings-hooks.project.json', 'mcp-servers.project.json']) {
+    assert.ok(fs.existsSync(path.join(ROOT, 'templates', name)), `missing template: ${name}`);
+  }
+});
+
+t('project settings-hooks.json: every hook has _ccBaselineId with project- prefix', () => {
+  const tpl = JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', 'settings-hooks.project.json'), 'utf8'));
+  const ids = [];
+  for (const event of Object.keys(tpl)) {
+    for (const entry of tpl[event]) {
+      for (const h of entry.hooks) {
+        assert.ok(h._ccBaselineId, `${event} hook missing _ccBaselineId`);
+        assert.ok(h._ccBaselineId.startsWith('project-'),
+          `${event} hook _ccBaselineId "${h._ccBaselineId}" must start with project-`);
+        ids.push(h._ccBaselineId);
+      }
+    }
+  }
+  // no duplicates
+  assert.equal(new Set(ids).size, ids.length);
+});
+
+t('project mcp-servers.json: uses npx for portability (no absolute paths)', () => {
+  const tpl = JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', 'mcp-servers.project.json'), 'utf8'));
+  for (const [name, server] of Object.entries(tpl)) {
+    assert.equal(server.command, 'npx', `${name} should use npx, got ${server.command}`);
+    assert.ok(Array.isArray(server.args) && server.args.includes('@playwright/mcp@latest'),
+      `${name} args should reference @playwright/mcp@latest`);
+  }
+});
+
+t('project CLAUDE.md template: uses relative paths, no {{HOME}}', () => {
+  const raw = fs.readFileSync(path.join(ROOT, 'templates', 'project-CLAUDE.md'), 'utf8');
+  assert.ok(!raw.includes('{{HOME}}'), 'project-CLAUDE.md should not contain {{HOME}} placeholder');
+  assert.ok(raw.includes('./.claude/memory/'), 'project-CLAUDE.md should reference ./.claude/memory/');
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// Project install/uninstall round-trip (integration, Phase 2B)
+// ──────────────────────────────────────────────────────────────────────────
+
+async function withTempProject(fn) {
+  const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'cc-baseline-test-'));
+  const prevCwd = process.cwd();
+  process.chdir(tmp);
+  try {
+    await fn(tmp);
+  } finally {
+    process.chdir(prevCwd);
+    try { fs.rmSync(tmp, { recursive: true, force: true }); } catch {}
+  }
+}
+
+t('project install: creates ./.claude/ tree and ./.mcp.json in cwd', async () => {
+  await withTempProject(async (tmp) => {
+    // silence install output
+    const origLog = console.log;
+    console.log = () => {};
+    try {
+      await install({ project: true, yes: true, skipScanners: true });
+    } finally {
+      console.log = origLog;
+    }
+    assert.ok(fs.existsSync(path.join(tmp, '.claude', 'CLAUDE.md')), '.claude/CLAUDE.md missing');
+    assert.ok(fs.existsSync(path.join(tmp, '.claude', 'memory', 'MEMORY.md')), 'memory/MEMORY.md missing');
+    assert.ok(fs.existsSync(path.join(tmp, '.claude', 'settings.json')), '.claude/settings.json missing');
+    assert.ok(fs.existsSync(path.join(tmp, '.mcp.json')), '.mcp.json missing');
+    assert.ok(fs.existsSync(path.join(tmp, '.claude', 'agents', 'e2e-tester.md')), 'agents/e2e-tester.md missing');
+  });
+});
+
+t('project install: hook IDs in ./.claude/settings.json have project- prefix', async () => {
+  await withTempProject(async (tmp) => {
+    const origLog = console.log;
+    console.log = () => {};
+    try {
+      await install({ project: true, yes: true, skipScanners: true });
+    } finally {
+      console.log = origLog;
+    }
+    const settings = JSON.parse(fs.readFileSync(path.join(tmp, '.claude', 'settings.json'), 'utf8'));
+    const allHooks = [];
+    for (const event of Object.keys(settings.hooks)) {
+      for (const entry of settings.hooks[event]) {
+        for (const h of entry.hooks) allHooks.push(h);
+      }
+    }
+    assert.ok(allHooks.length > 0, 'expected at least one hook installed');
+    for (const h of allHooks) {
+      assert.ok(h._ccBaselineId && h._ccBaselineId.startsWith('project-'),
+        `project hook missing project- prefix: ${h._ccBaselineId}`);
+    }
+  });
+});
+
+t('project install: .mcp.json is { mcpServers: {...} } with all 5 playwright servers using npx', async () => {
+  await withTempProject(async (tmp) => {
+    const origLog = console.log;
+    console.log = () => {};
+    try {
+      await install({ project: true, yes: true, skipScanners: true });
+    } finally {
+      console.log = origLog;
+    }
+    const mcp = JSON.parse(fs.readFileSync(path.join(tmp, '.mcp.json'), 'utf8'));
+    assert.ok(mcp.mcpServers, '.mcp.json top-level should have mcpServers key');
+    for (let n = 1; n <= 5; n++) {
+      const key = `playwright-test-${n}`;
+      assert.ok(mcp.mcpServers[key], `${key} missing from .mcp.json`);
+      assert.equal(mcp.mcpServers[key].command, 'npx');
+    }
+  });
+});
+
+t('project install + uninstall round-trip: removes everything installed', async () => {
+  await withTempProject(async (tmp) => {
+    const origLog = console.log;
+    console.log = () => {};
+    try {
+      await install({ project: true, yes: true, skipScanners: true });
+      await uninstall({ project: true, yes: true });
+    } finally {
+      console.log = origLog;
+    }
+    // harness files gone
+    assert.ok(!fs.existsSync(path.join(tmp, '.claude', 'agents', 'e2e-tester.md')));
+    assert.ok(!fs.existsSync(path.join(tmp, '.claude', 'memory', 'all_session_basic_rules.md')));
+    // CLAUDE.md / MEMORY.md were "empty after removal" → deleted
+    assert.ok(!fs.existsSync(path.join(tmp, '.claude', 'CLAUDE.md')));
+    // .mcp.json still exists (we don't delete it, just clear mcpServers — preserves user entries)
+    if (fs.existsSync(path.join(tmp, '.mcp.json'))) {
+      const mcp = JSON.parse(fs.readFileSync(path.join(tmp, '.mcp.json'), 'utf8'));
+      // playwright keys removed
+      assert.ok(!mcp.mcpServers || !mcp.mcpServers['playwright-test-1']);
+    }
+  });
 });
 
 // ──────────────────────────────────────────────────────────────────────────
