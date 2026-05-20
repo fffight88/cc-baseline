@@ -3,14 +3,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const { HOME, applyHome, PLAYWRIGHT_MCP_BIN } = require('./paths');
+const { HOME, applyHome, PLAYWRIGHT_MCP_BIN, resolveTarget } = require('./paths');
 const manifest = require('./manifest');
 const { harnessIdOf } = require('./merge/settings-hooks');
 const { hasMarkerBlock } = require('./merge/markdown');
 const { checkCmd } = require('./installers/_util');
 
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
-const CLAUDE_DIR = path.join(HOME, '.claude');
 
 const EXPECTED_HOOK_IDS = [
   'session-start-load-rules',
@@ -32,8 +31,8 @@ function readTemplate(rel) {
   return applyHome(fs.readFileSync(path.join(TEMPLATES_DIR, rel), 'utf8'));
 }
 
-function checkClaudeDir() {
-  if (!fs.existsSync(CLAUDE_DIR)) {
+function checkClaudeDir(claudeDir) {
+  if (!fs.existsSync(claudeDir)) {
     return fail('~/.claude/ directory', 'not found', 'run `npx --yes github:fffight88/cc-baseline --yes`');
   }
   return ok('~/.claude/ directory', 'present');
@@ -50,10 +49,10 @@ function checkManifestIntegrity() {
     'reinstall the cc-baseline package');
 }
 
-function checkMarkerBlocks() {
+function checkMarkerBlocks(claudeDir) {
   const missing = [];
   for (const rel of manifest.markerBlockFiles()) {
-    const dest = path.join(CLAUDE_DIR, rel);
+    const dest = path.join(claudeDir, rel);
     if (!fs.existsSync(dest)) { missing.push(rel); continue; }
     if (!hasMarkerBlock(fs.readFileSync(dest, 'utf8'))) missing.push(rel);
   }
@@ -65,12 +64,12 @@ function checkMarkerBlocks() {
     'run `npx --yes github:fffight88/cc-baseline --yes`');
 }
 
-function checkInstalledFiles() {
+function checkInstalledFiles(claudeDir) {
   const overwriteFiles = manifest.overwriteFiles();
   const missing = [];
   const drift = [];
   for (const rel of overwriteFiles) {
-    const dest = path.join(CLAUDE_DIR, rel);
+    const dest = path.join(claudeDir, rel);
     if (!fs.existsSync(dest)) { missing.push(rel); continue; }
     const expected = readTemplate(rel);
     const actual = fs.readFileSync(dest, 'utf8');
@@ -90,8 +89,8 @@ function checkInstalledFiles() {
     're-run install to reset, or fork the repo to persist customizations');
 }
 
-function checkHooks() {
-  const settingsPath = path.join(CLAUDE_DIR, 'settings.json');
+function checkHooks(claudeDir) {
+  const settingsPath = path.join(claudeDir, 'settings.json');
   if (!fs.existsSync(settingsPath)) {
     return fail('Hooks (settings.json)', 'settings.json not found', 'run cc-baseline install');
   }
@@ -118,8 +117,8 @@ function checkHooks() {
     'run cc-baseline install');
 }
 
-function checkMcpServers() {
-  const cjPath = path.join(HOME, '.claude.json');
+function checkMcpServers(mcpJsonPath) {
+  const cjPath = mcpJsonPath;
   if (!fs.existsSync(cjPath)) {
     return fail('MCP servers (~/.claude.json)', 'file not found', 'run cc-baseline install');
   }
@@ -172,23 +171,24 @@ function checkNotifier() {
     'apt install libnotify-bin (notifications will be silent without it)');
 }
 
-function runChecks() {
+function runChecks(opts) {
+  const target = resolveTarget(opts || {});
   return [
-    checkClaudeDir(),
+    checkClaudeDir(target.claudeDir),
     checkManifestIntegrity(),
-    checkMarkerBlocks(),
-    checkInstalledFiles(),
-    checkHooks(),
-    checkMcpServers(),
+    checkMarkerBlocks(target.claudeDir),
+    checkInstalledFiles(target.claudeDir),
+    checkHooks(target.claudeDir),
+    checkMcpServers(target.mcpJsonPath),
     checkScanners(),
     checkPlaywrightMcp(),
     checkNotifier(),
   ];
 }
 
-function doctor() {
+function doctor(opts) {
   console.log('\n🩺 cc-baseline doctor\n');
-  const results = runChecks();
+  const results = runChecks(opts);
   let okCount = 0, warnCount = 0, failCount = 0;
   for (const r of results) {
     const icon = r.status === 'ok' ? '✅' : r.status === 'warn' ? '⚠️ ' : '❌';

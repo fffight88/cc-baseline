@@ -65,7 +65,7 @@ Uninstall examples:
 if (opts.doctor) {
   const { doctor } = require('../src/doctor');
   try {
-    process.exit(doctor());
+    process.exit(doctor(opts));
   } catch (err) {
     console.error('\n❌ Doctor crashed:', err.message);
     process.exit(2);

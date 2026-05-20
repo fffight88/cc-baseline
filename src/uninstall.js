@@ -9,7 +9,7 @@ function checkCmd(cmd) {
 const fs = require('fs');
 const path = require('path');
 
-const { HOME, NPM_GLOBAL_PREFIX, PLAYWRIGHT_MCP_BIN } = require('./paths');
+const { HOME, NPM_GLOBAL_PREFIX, PLAYWRIGHT_MCP_BIN, resolveTarget } = require('./paths');
 const { createBackup } = require('./backup');
 const { confirm } = require('./prompt');
 const { removeMarkerBlock, hasMarkerBlock } = require('./merge/markdown');
@@ -18,17 +18,21 @@ const { removeHarnessMcpServers } = require('./merge/mcp-servers');
 const manifest = require('./manifest');
 
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
-const CLAUDE_DIR = path.join(HOME, '.claude');
-const BACKUP_ROOT = path.join(CLAUDE_DIR, '.cc-baseline-backup');
-const UNINSTALL_BACKUP_ROOT = path.join(CLAUDE_DIR, '.cc-baseline-uninstall-backup');
-const LOG_FILE = path.join(CLAUDE_DIR, '.cc-baseline-install.log');
 
-const HARNESS_FILES = manifest.overwriteFiles().map(f => path.join(CLAUDE_DIR, f));
-
-const CLAUDE_MD_PATH = path.join(CLAUDE_DIR, 'CLAUDE.md');
-const MEMORY_MD_PATH = path.join(CLAUDE_DIR, 'memory', 'MEMORY.md');
-const SETTINGS_PATH = path.join(CLAUDE_DIR, 'settings.json');
-const CLAUDE_JSON_PATH = path.join(HOME, '.claude.json');
+function buildLayout(target) {
+  return {
+    target,
+    CLAUDE_DIR: target.claudeDir,
+    BACKUP_ROOT: target.backupRoot,
+    UNINSTALL_BACKUP_ROOT: target.uninstallBackupRoot,
+    LOG_FILE: target.installLog,
+    HARNESS_FILES: manifest.overwriteFiles().map(f => path.join(target.claudeDir, f)),
+    CLAUDE_MD_PATH: path.join(target.claudeDir, 'CLAUDE.md'),
+    MEMORY_MD_PATH: path.join(target.claudeDir, 'memory', 'MEMORY.md'),
+    SETTINGS_PATH: path.join(target.claudeDir, 'settings.json'),
+    CLAUDE_JSON_PATH: target.mcpJsonPath,
+  };
+}
 
 function readJson(filePath) {
   if (!fs.existsSync(filePath)) return null;
@@ -40,7 +44,9 @@ function readJson(filePath) {
   }
 }
 
-function detectInstallation() {
+function detectInstallation(opts) {
+  const layout = buildLayout(resolveTarget(opts || {}));
+  const { LOG_FILE, CLAUDE_MD_PATH, MEMORY_MD_PATH, HARNESS_FILES, SETTINGS_PATH, CLAUDE_JSON_PATH } = layout;
   const signals = [];
 
   if (fs.existsSync(LOG_FILE)) signals.push('install.log');
@@ -63,36 +69,44 @@ function detectInstallation() {
   return { detected: signals.length > 0, signals };
 }
 
-function buildSummary() {
+function shortPath(p, target) {
+  if (target.mode === 'global') return p.replace(HOME, '~');
+  return path.relative(target.basePath, p);
+}
+
+function buildSummary(layout) {
+  const { target, HARNESS_FILES, CLAUDE_MD_PATH, MEMORY_MD_PATH, SETTINGS_PATH, CLAUDE_JSON_PATH, LOG_FILE } = layout;
   const lines = [];
 
   for (const f of HARNESS_FILES) {
     if (fs.existsSync(f)) {
-      lines.push(`  🗑️  ${f.replace(HOME, '~')}`);
+      lines.push(`  🗑️  ${shortPath(f, target)}`);
     }
   }
 
   for (const p of [CLAUDE_MD_PATH, MEMORY_MD_PATH]) {
     if (fs.existsSync(p) && hasMarkerBlock(fs.readFileSync(p, 'utf8'))) {
-      lines.push(`  🗑️  ${p.replace(HOME, '~')} (marker block removed)`);
+      lines.push(`  🗑️  ${shortPath(p, target)} (marker block removed)`);
     }
   }
 
   const settingsRaw = readJson(SETTINGS_PATH);
   if (settingsRaw && !settingsRaw.__parseError && settingsRaw.hooks) {
     const { removedCount } = removeHarnessHooks(settingsRaw.hooks);
-    if (removedCount > 0) lines.push(`  🗑️  ~/.claude/settings.json (${removedCount} hook(s) removed)`);
+    if (removedCount > 0) lines.push(`  🗑️  ${shortPath(SETTINGS_PATH, target)} (${removedCount} hook(s) removed)`);
   }
 
   const claudeJsonRaw = readJson(CLAUDE_JSON_PATH);
   if (claudeJsonRaw && !claudeJsonRaw.__parseError) {
     const harnessKeys = Object.keys(require(path.join(TEMPLATES_DIR, 'mcp-servers.json')));
     const { removed } = removeHarnessMcpServers(claudeJsonRaw.mcpServers || {}, harnessKeys);
-    if (removed.length > 0) lines.push(`  🗑️  ~/.claude.json (${removed.length} mcpServer(s) removed: ${removed.join(', ')})`);
+    if (removed.length > 0) lines.push(`  🗑️  ${shortPath(CLAUDE_JSON_PATH, target)} (${removed.length} mcpServer(s) removed: ${removed.join(', ')})`);
   }
 
-  if (fs.existsSync(LOG_FILE)) lines.push(`  🗑️  ~/.claude/.cc-baseline-install.log`);
-  if (fs.existsSync(PLAYWRIGHT_MCP_BIN)) lines.push(`  🗑️  ~/.npm-global/bin/playwright-mcp (with --remove-scanners)`);
+  if (fs.existsSync(LOG_FILE)) lines.push(`  🗑️  ${shortPath(LOG_FILE, target)}`);
+  if (target.mode === 'global' && fs.existsSync(PLAYWRIGHT_MCP_BIN)) {
+    lines.push(`  🗑️  ~/.npm-global/bin/playwright-mcp (with --remove-scanners)`);
+  }
 
   return lines;
 }
@@ -154,6 +168,12 @@ async function uninstallScanners(dryRun) {
 
 async function uninstall(opts = {}) {
   const { dryRun = false, yes: autoYes = false, purge = false, removeScanners = false } = opts;
+  const target = resolveTarget(opts);
+  const layout = buildLayout(target);
+  const {
+    CLAUDE_DIR, BACKUP_ROOT, UNINSTALL_BACKUP_ROOT, LOG_FILE,
+    HARNESS_FILES, CLAUDE_MD_PATH, MEMORY_MD_PATH, SETTINGS_PATH, CLAUDE_JSON_PATH,
+  } = layout;
 
   console.log('\n🔧 cc-baseline — Uninstall\n');
   if (dryRun) {
@@ -161,7 +181,7 @@ async function uninstall(opts = {}) {
   }
 
   // ── 1. Detect installation ────────────────────────────────────────────────
-  const { detected, signals } = detectInstallation();
+  const { detected, signals } = detectInstallation(opts);
   if (!detected) {
     console.log('✅ No installed cc-baseline items detected. Nothing to remove.');
     return;
@@ -169,7 +189,7 @@ async function uninstall(opts = {}) {
   console.log(`📦 Detected install signals: ${signals.join(', ')}\n`);
 
   // ── 2. Removal summary ────────────────────────────────────────────────────
-  const summaryLines = buildSummary();
+  const summaryLines = buildSummary(layout);
   console.log(`📊 Items to be removed (${summaryLines.length}):`);
   for (const line of summaryLines) console.log(line);
   console.log();
@@ -207,7 +227,7 @@ async function uninstall(opts = {}) {
     SETTINGS_PATH,
     CLAUDE_JSON_PATH,
   ];
-  const { backupDir, backed } = createBackup(filesToBackup, UNINSTALL_BACKUP_ROOT);
+  const { backupDir, backed } = createBackup(filesToBackup, UNINSTALL_BACKUP_ROOT, target.basePath);
   if (backupDir) {
     console.log(`\n💾 Pre-uninstall backup saved: ${backupDir}\n   (${backed.length} files)\n`);
   }
@@ -233,13 +253,13 @@ async function uninstall(opts = {}) {
     try {
       if (fs.existsSync(f)) {
         fs.unlinkSync(f);
-        console.log(`  ✅ Deleted: ${f.replace(HOME, '~')}`);
+        console.log(`  ✅ Deleted: ${shortPath(f, target)}`);
         successCount++;
       } else {
         skipCount++;
       }
     } catch (e) {
-      failures.push(`${f.replace(HOME, '~')}: ${e.message}`);
+      failures.push(`${shortPath(f, target)}: ${e.message}`);
     }
   }
 
@@ -252,14 +272,14 @@ async function uninstall(opts = {}) {
       if (!removed) { skipCount++; continue; }
       if (isEmpty) {
         fs.unlinkSync(filePath);
-        console.log(`  ✅ Deleted: ${filePath.replace(HOME, '~')} (empty after removal)`);
+        console.log(`  ✅ Deleted: ${shortPath(filePath, target)} (empty after removal)`);
       } else {
         fs.writeFileSync(filePath, content, 'utf8');
-        console.log(`  ✅ Marker block removed: ${filePath.replace(HOME, '~')}`);
+        console.log(`  ✅ Marker block removed: ${shortPath(filePath, target)}`);
       }
       successCount++;
     } catch (e) {
-      failures.push(`${filePath.replace(HOME, '~')}: ${e.message}`);
+      failures.push(`${shortPath(filePath, target)}: ${e.message}`);
     }
   }
 
@@ -316,7 +336,7 @@ async function uninstall(opts = {}) {
   try {
     if (fs.existsSync(LOG_FILE)) {
       fs.unlinkSync(LOG_FILE);
-      console.log(`  ✅ Deleted: ~/.claude/.cc-baseline-install.log`);
+      console.log(`  ✅ Deleted: ${shortPath(LOG_FILE, target)}`);
       successCount++;
     } else {
       skipCount++;
@@ -329,7 +349,7 @@ async function uninstall(opts = {}) {
     try {
       if (fs.existsSync(BACKUP_ROOT)) {
         fs.rmSync(BACKUP_ROOT, { recursive: true, force: true });
-        console.log(`  ✅ Deleted: ~/.claude/.cc-baseline-backup/ (--purge)`);
+        console.log(`  ✅ Deleted: ${shortPath(BACKUP_ROOT, target)} (--purge)`);
         successCount++;
       }
     } catch (e) {
@@ -347,7 +367,7 @@ async function uninstall(opts = {}) {
   console.log(`✅ Uninstall complete — succeeded: ${successCount} / skipped: ${skipCount} / failed: ${failures.length}`);
   if (backupDir) {
     console.log(`💾 Pre-uninstall backup: ${backupDir}`);
-    console.log(`   Restore: cp -r ${backupDir}/. ${HOME}/`);
+    console.log(`   Restore: cp -r ${backupDir}/. ${target.basePath}/`);
   }
   if (failures.length > 0) {
     console.log('\n⚠️  Failed items (manual action required):');

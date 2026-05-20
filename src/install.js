@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { HOME, applyHome } = require('./paths');
+const { applyHome, resolveTarget } = require('./paths');
 
 const manifest = require('./manifest');
 const { createBackup } = require('./backup');
@@ -16,16 +16,13 @@ const { installNotifier } = require('./installers/notifier');
 const { installPlaywrightMcp } = require('./installers/playwright-mcp');
 
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
-const CLAUDE_DIR = path.join(HOME, '.claude');
-const BACKUP_ROOT = path.join(CLAUDE_DIR, '.cc-baseline-backup');
-const LOG_FILE = path.join(CLAUDE_DIR, '.cc-baseline-install.log');
 
-function appendLog(msg) {
+function appendLog(logFile, msg) {
   try {
-    fs.mkdirSync(path.dirname(LOG_FILE), { recursive: true });
-    const isNew = !fs.existsSync(LOG_FILE);
-    fs.appendFileSync(LOG_FILE, `[${new Date().toISOString()}] ${msg}\n`);
-    if (isNew) fs.chmodSync(LOG_FILE, 0o600);
+    fs.mkdirSync(path.dirname(logFile), { recursive: true });
+    const isNew = !fs.existsSync(logFile);
+    fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`);
+    if (isNew) fs.chmodSync(logFile, 0o600);
   } catch {}
 }
 
@@ -68,6 +65,10 @@ function diffAction(filePath, content) {
 
 async function install(opts = {}) {
   const { dryRun = false, yes: autoYes = false, skipScanners = false } = opts;
+  const target = resolveTarget(opts);
+  const CLAUDE_DIR = target.claudeDir;
+  const BACKUP_ROOT = target.backupRoot;
+  const LOG_FILE = target.installLog;
 
   console.log('\n🔧 cc-baseline — Claude Code harness installer\n');
   if (dryRun) {
@@ -154,8 +155,8 @@ async function install(opts = {}) {
     console.log(`  ✅ settings.json — hooks merged`);
   }
 
-  // ── 5. ~/.claude.json mcpServers merge ────────────────────────────────────
-  const claudeJsonPath = path.join(HOME, '.claude.json');
+  // ── 5. mcpServers merge (global: ~/.claude.json) ──────────────────────────
+  const claudeJsonPath = target.mcpJsonPath;
   const existingClaudeJsonRaw = readJson(claudeJsonPath);
   if (existingClaudeJsonRaw && existingClaudeJsonRaw.__parseError) {
     const proceed = await confirm(
@@ -200,10 +201,10 @@ async function install(opts = {}) {
   // ── 7. Backup only files that will actually change ────────────────────────
   if (changes.length > 0) {
     const filesToBackup = changes.map(c => c.path);
-    const { backupDir, backed } = createBackup(filesToBackup, BACKUP_ROOT);
+    const { backupDir, backed } = createBackup(filesToBackup, BACKUP_ROOT, target.basePath);
     if (backupDir) {
       console.log(`💾 Backup saved: ${backupDir}\n   (${backed.length} files)\n`);
-      appendLog(`BACKUP: ${backupDir}`);
+      appendLog(LOG_FILE, `BACKUP: ${backupDir}`);
     }
   }
 
@@ -213,13 +214,13 @@ async function install(opts = {}) {
   if (fs.existsSync(memoryDir)) {
     try {
       fs.chmodSync(memoryDir, 0o755);
-      appendLog('MIGRATE CHMOD 755: memory/ (legacy lock removal)');
+      appendLog(LOG_FILE, 'MIGRATE CHMOD 755: memory/ (legacy lock removal)');
     } catch {}
   }
 
   for (const change of changes) {
     writeFile(change.path, change.content, false);
-    appendLog(`WRITE: ${change.path}`);
+    appendLog(LOG_FILE, `WRITE: ${change.path}`);
   }
 
   // ensure bin/cli.js is executable
@@ -239,7 +240,7 @@ async function install(opts = {}) {
   console.log('✅ cc-baseline install complete!\n');
   console.log(`📝 Install log: ${LOG_FILE}`);
   console.log(`💾 Backup location: ${BACKUP_ROOT}\n`);
-  appendLog('INSTALL COMPLETE');
+  appendLog(LOG_FILE, 'INSTALL COMPLETE');
 }
 
 module.exports = { install };
