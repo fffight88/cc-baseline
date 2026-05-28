@@ -167,6 +167,69 @@ cd .playwright-mcp && python3 -m http.server 7777
 
 ---
 
+## 10. File Download Test Pattern (avoid Playwright MCP hang)
+
+`browser_click` on a download-triggering element **hangs** with @playwright/mcp
+(>= 0.0.19, incl. 0.0.71): a download response (`Content-Disposition: attachment`)
+is not a navigation, so the load/navigation event the click waits for never fires
+(playwright-mcp #355 / #154). Never use `browser_click` to trigger a download.
+
+### Positive download TC (verify wiring + status + headers + data)
+
+Use `browser_run_code`. Its `code` is invoked as `async (page) => {...}` with `page`
+injected as the argument. Capture the response (headers/status) and the download (file)
+in a single `Promise.all` triggered by the real click — this proves the button→API
+wiring AND avoids the hang:
+
+```js
+async (page) => {
+  const [resp, download] = await Promise.all([
+    page.waitForResponse(r => r.url().includes('/your/download/url')), // headers + status
+    page.waitForEvent('download'),                                     // actual file
+    page.locator('#yourDownloadBtn').click(),                          // wiring
+  ]);
+  return {
+    status: resp.status(),
+    content_type: resp.headers()['content-type'],
+    content_disposition: resp.headers()['content-disposition'],
+    suggested_filename: download.suggestedFilename(),
+    saved_path: await download.path(),
+  };
+}
+```
+
+- The `run_code` sandbox is ESM: `require`/`fs` are NOT available. Do not read file
+  bytes inside the block. Return `download.path()` (or use the auto-saved
+  `.playwright-mcp/<filename>`) and parse the file outside the block via Bash/Read
+  (e.g. unzip+parse an xlsx, count columns).
+- Get HTTP headers from `resp` (the `Download` object does not expose response headers).
+
+### Negative / permission TC (must NOT trigger a download)
+
+Use `browser_evaluate` + `fetch` to hit the endpoint directly and assert rejection,
+without invoking the browser download flow:
+
+```js
+async () => {
+  const res = await fetch('/your/download/url', { credentials: 'same-origin' });
+  return { status: res.status }; // expect 400/403
+}
+```
+
+`credentials: 'same-origin'` rides the session cookie so admin endpoints return the
+authenticated result (not a login redirect). Same-origin means all headers
+(incl. `Content-Disposition`) are readable.
+
+### Tool selection summary
+
+| TC type | Tool | What it proves |
+|---|---|---|
+| Normal download (wiring + headers + data) | `browser_run_code` (waitForResponse + waitForEvent + click) | full server output + click wiring, no hang |
+| Permission / negative (no download) | `browser_evaluate` + `fetch` | endpoint rejects (400/403) |
+| ❌ Any download trigger | `browser_click` | forbidden — hangs |
+
+---
+
 ## Checklist
 
 - [ ] Confirm number of active MCP servers before testing
@@ -179,3 +242,6 @@ cd .playwright-mcp && python3 -m http.server 7777
 - [ ] Launch web server and open report in browser
 - [ ] Run `/clean` to stop server after user confirms (also deletes `e2e-results/fail-*.md`)
 - [ ] Clean up `.playwright-mcp/` files before commit
+- [ ] For download TCs: never use `browser_click` to trigger a download — use `browser_run_code` with `Promise.all(waitForResponse, waitForEvent('download'), click)`
+- [ ] For negative/permission download TCs: use `browser_evaluate` + `fetch` with `credentials: 'same-origin'`
+- [ ] Parse downloaded file bytes outside the `run_code` block (sandbox is ESM, no `require`/`fs`)
