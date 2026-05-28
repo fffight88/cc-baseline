@@ -5,6 +5,11 @@ All notable changes to cc-baseline are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `templates/memory/reference_e2e_manager_guide.md` §10 — File Download Test Pattern. Documents the `browser_click`-on-download hang in @playwright/mcp (>= 0.0.19, incl. 0.0.71; refs playwright-mcp #355 / #154), and the verified workaround: `browser_run_code` with `Promise.all(waitForResponse, waitForEvent('download'), click)`. Also covers the ESM sandbox caveat (no `require`/`fs` — parse file bytes outside the block) and a negative/permission TC pattern via `browser_evaluate` + `fetch` with `credentials: 'same-origin'`. Tracked in Jira CB-9.
+
 ## [1.2.0] — 2026-05-20
 
 ### Added
