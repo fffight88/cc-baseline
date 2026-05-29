@@ -10,3 +10,4 @@
 - [phase_end.md](phase_end.md) — Phase end checklist: repeat incomplete tasks until all tasks are done
 - [reference_security_auditor_protocol.md](reference_security_auditor_protocol.md) — security-auditor auto-trigger, call protocol, loop management, decision_type follow-up, notification rules
 - [reference_code_reviewer_protocol.md](reference_code_reviewer_protocol.md) — code-reviewer auto-trigger, call protocol, loop management, decision_type follow-up, profile cache management
+- [reference_publisher_protocol.md](reference_publisher_protocol.md) — publisher auto-trigger, call protocol, self-fix loop, decision_type follow-up, and post-publish handoff to e2e-tester

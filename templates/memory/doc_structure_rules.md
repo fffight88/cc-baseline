@@ -18,11 +18,13 @@ When writing a Plan that includes implementation changes, always include a meta 
 ## Meta
 - Security Impact: Yes | No | Unknown
 - Code Quality Impact: Yes | No | Unknown
+- UI Impact: Yes | No | Unknown
 - Reason: <1 line — which areas are affected if Yes/Unknown>
 ```
 
 - ✅ DO: If `Security Impact: Yes` or `Unknown`, auto-trigger security-auditor after plan completion
 - ✅ DO: If `Code Quality Impact: Yes` or `Unknown`, auto-trigger code-reviewer after plan completion
-- ✅ DO: If both fields are Yes/Unknown, call both agents in parallel in a single message
-- ✅ DO: If `Security Impact: No` / `Code Quality Impact: No`, skip the corresponding audit
-- ❌ DON'T: Never submit an implementation plan without the `Security Impact` or `Code Quality Impact` fields
+- ✅ DO: If `UI Impact: Yes` or `Unknown`, delegate the markup/CSS/component work to the publisher agent (see `reference_publisher_protocol.md`)
+- ✅ DO: If both audit fields are Yes/Unknown, call both agents in parallel in a single message
+- ✅ DO: If `Security Impact: No` / `Code Quality Impact: No` / `UI Impact: No`, skip the corresponding agent
+- ❌ DON'T: Never submit an implementation plan without the `Security Impact`, `Code Quality Impact`, or `UI Impact` fields

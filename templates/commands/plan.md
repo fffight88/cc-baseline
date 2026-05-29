@@ -11,5 +11,7 @@ When the plan includes implementation changes, always include the following `## 
 ```markdown
 ## Meta
 - Security Impact: Yes | No | Unknown
+- Code Quality Impact: Yes | No | Unknown
+- UI Impact: Yes | No | Unknown
 - Reason: <1 line — which areas are affected if Yes/Unknown>
 ```
