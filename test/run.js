@@ -603,6 +603,35 @@ t('project install + uninstall round-trip: removes everything installed', async 
 // Runner
 // ──────────────────────────────────────────────────────────────────────────
 
+// ──────────────────────────────────────────────────────────────────────────
+// README.md / README_KO.md — section structure stays in sync
+// ──────────────────────────────────────────────────────────────────────────
+
+function headerLevels(file) {
+  const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
+  const levels = [];
+  let inFence = false;
+  for (const line of src.split('\n')) {
+    if (/^\s*```/.test(line)) { inFence = !inFence; continue; }
+    if (inFence) continue;
+    const m = line.match(/^(#{1,6}) \S/);
+    if (m) levels.push(m[1].length);
+  }
+  return levels;
+}
+
+t('README.md and README_KO.md have identical section structure', () => {
+  const en = headerLevels('README.md');
+  const ko = headerLevels('README_KO.md');
+  assert.ok(en.length > 0, 'README.md has no headers — header parser may be broken');
+  assert.deepEqual(
+    ko,
+    en,
+    `README header structure drifted: README.md has ${en.length} headers, README_KO.md has ${ko.length}. ` +
+    'Keep both READMEs structurally in sync — same heading levels in the same order (translate, do not drop sections).'
+  );
+});
+
 async function run() {
   let pass = 0, fail = 0;
   const failures = [];
