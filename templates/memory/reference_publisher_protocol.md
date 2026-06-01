@@ -36,6 +36,23 @@ Skip when: backend-only / logic-only work, or `UI Impact: No`.
 
 ## 2. Call Protocol
 
+### 2.1 Pre-call Briefing Checklist (do this BEFORE invoking)
+
+The orchestrator **briefs**, it does not raw-forward the spec. Resolve these before calling — publisher works better and cheaper when they are supplied (each maps to an Input Contract field):
+
+- [ ] **Scope this call** → `screen_brief`: the single screen/route, its concrete `elements`, the `required_states` mandatory for *this* screen, and `out_of_scope`. Distill from the plan — do not dump the whole spec.
+- [ ] **Where it goes** → `screen_brief.target_file` + `registration`: the file to write and how screens register (routing/page convention). publisher writes production files; it must not guess the location.
+- [ ] **Data structure (read-only)** → `data_shape`: columns/fields the screen renders, so static markup is correct (not data binding).
+- [ ] **Tone & manner basis** → `reference_screens` + `reference_notes`: which existing screen is the canonical example, and *what to mirror vs. skip*. A bare path is not enough.
+- [ ] **Reuse anchors** → `reuse_anchors`: existing components you already know should be preferred, to prevent wrong new-class creation.
+- [ ] **Reachability for visual verify** → `base_url` + `auth_note`: admin screens sit behind login; without `auth_note`, visual verification hits the login wall. State the authenticated route or a bypass.
+- [ ] **Quality scope (decide, don't defer)** → `quality_flags`: set `i18n` / `responsive` / `dark_mode` from the project reality (e.g., i18n true if the project uses i18n everywhere). publisher must not guess these.
+- [ ] **Profile freshness** → `regenerate_profile: true` only if the design system materially changed since the cached `design-profile.md`.
+
+> a11y + all UI states are always enforced by publisher — they are not flags and need no briefing.
+
+### 2.2 Prompt Template
+
 Prompt structure when the orchestrator calls publisher via the Agent tool:
 
 ```
@@ -43,10 +60,23 @@ plan_paths:
   - <absolute path 1>
 spec_assets:                     # optional design inputs (md/image/pdf/html)
   - <path>
+screen_brief:                    # scoped target for THIS call (distilled, not the whole spec)
+  screen: <screen / route>
+  target_file: <file to write, e.g. src/pages/users/UserList.tsx>
+  registration: <how screens register, e.g. route already at /admin/users>
+  elements: [<FilterBar, DataTable(7 cols), Pagination, ...>]
+  required_states: [<empty(0 results), loading skeleton, load error>]
+  out_of_scope: [<detail modal, ...>]
+data_shape:                      # read-only field/column shape (NOT binding)
+  - <User = { name, email, joinedAt, status, role, lastSeenAt }>
+reuse_anchors:                   # known existing components to prefer
+  - <DataTable, FilterBar, Pagination, StatusBadge>
 target_dir: <absolute path to project root>
 reference_screens:               # optional; publisher auto-selects if empty
   - <screen path or route>
+reference_notes: <what to mirror vs. skip, e.g. "copy OrderList padding/row height/empty copy; skip its old paginator">
 base_url: <running dev-server URL>   # omit to skip visual verification
+auth_note: <how to reach the screen — e.g. "session already logged in as admin@test"; omit only for public screens>
 mcp_server: playwright-test-1    # optional, default
 quality_flags:
   responsive: false              # set true only when required
@@ -170,6 +200,7 @@ publisher covers **visual tone & manner + runtime a11y**. It does **not** test f
 ## ✅ Checklist
 
 - [ ] Triggered only on UI/publishing work (`UI Impact` / explicit request / UI-natured task)
+- [ ] Pre-call briefing done (§2.1): `screen_brief` scoped, `data_shape`, `reuse_anchors`, `reference_notes`, `auth_note`, `quality_flags` resolved
 - [ ] `base_url` provided when visual verification is wanted; `quality_flags` set per requirement
 - [ ] Self-fix loop terminated on clean or 3-iteration limit; `## Publish History` updated
 - [ ] design/business items → notify then interview

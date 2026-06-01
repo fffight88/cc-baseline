@@ -47,10 +47,23 @@ plan_paths:
   - <absolute plan file path 1>          # the plan describing the screen(s) to build
 spec_assets:                             # optional design inputs (multimodal)
   - <path to .md / .png / .jpg / .pdf / .html>
+screen_brief:                            # the SCOPED target for THIS call (orchestrator-distilled — do not re-derive the whole spec)
+  screen: <which screen / route this invocation builds>
+  target_file: <where to write the markup, e.g. src/pages/users/UserList.tsx>
+  registration: <how screens register here, e.g. route already at /admin/users in src/router.tsx>
+  elements: [<concrete element list, e.g. FilterBar, DataTable(7 cols), Pagination, "Add user" button>]
+  required_states: [<states mandatory for THIS screen, e.g. empty(0 results), loading skeleton, load error>]
+  out_of_scope: [<what NOT to build this call, e.g. detail modal>]
+data_shape:                              # read-only field/column shape the screen renders (informs static markup, NOT data binding)
+  - <e.g. User = { name, email, joinedAt, status: active|dormant|banned, role, lastSeenAt }>
+reuse_anchors:                           # existing components/classes the orchestrator already knows to prefer
+  - <e.g. <DataTable>, <FilterBar>, <Pagination>, <StatusBadge>>
 target_dir: <absolute path to project root>
 reference_screens:                       # optional; auto-select if empty (see Step 2)
   - <existing screen file path or route>
+reference_notes: <what to mirror vs. skip from the reference, e.g. "copy OrderList cell padding / row height / empty copy; skip its old paginator — use <Pagination>">
 base_url: <URL of an already-running dev server>   # omit to skip the visual-verification step
+auth_note: <how to reach the screen under base_url — e.g. "session already logged in as admin@test", or login-bypass steps. Admin screens sit behind auth; without this, visual verification hits the login wall>
 mcp_server: playwright-test-1            # optional; default playwright-test-1
 quality_flags:
   responsive: true | false               # default false
@@ -63,6 +76,7 @@ regenerate_profile: <true | false, default false>
 
 > **Always enforced regardless of flags:** all UI states + a11y. `quality_flags` only gate responsive / i18n / dark-mode.
 > **Server policy:** I never start a server. If `base_url` is given I assume it is already running; if it is absent or unreachable I skip visual verification and record `visual_status: skipped`.
+> **Briefing fields are recommended, not required.** If `screen_brief` / `data_shape` / `reuse_anchors` / `reference_notes` / `auth_note` are absent I fall back to deriving them from `plan_paths` + `spec_assets` + the design profile — but quality and token cost are better when the orchestrator supplies them (see `reference_publisher_protocol.md` §2 pre-call checklist).
 
 ---
 
@@ -166,7 +180,9 @@ profile_generated_reason: initial | stale | forced
 
 ### Step 1: Analyze Spec Assets
 
-Read `plan_paths` and every `spec_assets` entry. `Read` renders images and PDFs visually — extract intended layout, colors, spacing, and components from design mockups.
+- If `screen_brief` is provided, **treat it as the scoped target** — build exactly its `elements` + `required_states` for the named `screen`/`target_file`, and respect `out_of_scope`. Do not re-distill the entire spec; use `spec_assets` only to fill in visual detail.
+- If `screen_brief` is absent, read `plan_paths` + every `spec_assets` entry and derive the scope yourself. `Read` renders images and PDFs visually — extract intended layout, colors, spacing, and components from design mockups.
+- Use `data_shape` (when given) to structure tables/forms with the correct columns/fields instead of guessing.
 
 Produce an internal **required-pattern list**: the discrete UI patterns the screen needs (e.g., "list table with row actions", "filter bar", "empty state", "confirmation modal").
 
@@ -174,7 +190,7 @@ Produce an internal **required-pattern list**: the discrete UI patterns the scre
 
 ### Step 2: Reference Screen Selection & Tone-and-Manner Analysis
 
-1. If `reference_screens` is provided → use those.
+1. If `reference_screens` is provided → use those. If `reference_notes` is also given, **honor it**: mirror the called-out aspects (cell padding, row height, empty copy, etc.) and skip the called-out exceptions.
 2. If empty → **auto-select**: pick 1–3 representative existing screens (most recently modified and/or structurally closest to the target via git log + directory proximity).
 
 **Call EnterPlanMode** — tone & manner analysis runs in Opus. From the reference screens extract: spacing rhythm, component composition habits, color usage, density, interaction affordances. **Call ExitPlanMode**.
@@ -187,6 +203,7 @@ If no completed screens exist at all → record `reference_basis: spec-only` and
 
 For each required pattern:
 
+0. If `reuse_anchors` names a component that fits the pattern, **prefer it first** before searching broadly.
 1. Search the component inventory + codebase (`Grep`/`Glob`) for an existing class/component that satisfies it.
 2. **Match found → reuse it.** Record in `reused[]`.
 3. **No match → create new**, strictly obeying profile tokens + naming conventions. Record in `created[]` with a one-line justification of why no existing match worked.
@@ -227,7 +244,7 @@ Any violation → fix before reporting (this is a self-fix, not a finding for th
 
 Using the assigned MCP server (`mcp__{mcp_server}__*`, default `playwright-test-1`):
 
-1. Navigate to the new screen under `base_url`.
+1. Navigate to the new screen under `base_url`. Use `auth_note` to get past any login wall (e.g., assume the session is already authenticated, or follow the given bypass steps). **If the screen is behind auth and no `auth_note` was provided, set `visual_status: skipped` with reason `auth required` rather than screenshotting the login page.**
 2. **Render compare**: screenshot the screen; screenshot reference screens; compare tone & manner (spacing, color, density). Flag visible breakage or mismatch.
 3. **a11y runtime scan (axe-core)**: inject and run axe-core via `browser_evaluate`, e.g.:
    ```js
