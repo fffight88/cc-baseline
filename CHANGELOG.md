@@ -10,6 +10,9 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 ### Added
 - README / README_KO — "Pinning a version" section in Quick Start. Documents that unpinned `npx github:` installs from `main` (released only), and how to pin a release (`#v1.3.0`) or track the in-development integration branch (`#develop`). Reflects the develop+main release-branch model adopted in v1.3.0. Tracked in Jira CB-12.
 
+### Fixed
+- README_KO — restored sync with README: added the missing Options rows (`--skip-scanners`, `--doctor`, `--version`) and the `설치 확인` (Verifying your install) subsection. Both READMEs now have identical section structure (39 headers).
+
 ## [1.3.0] — 2026-06-01
 
 ### Added

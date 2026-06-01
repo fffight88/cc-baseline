@@ -233,7 +233,18 @@ npm install -g @playwright/mcp --prefix ~/.npm-global
 |---|---|
 | `--dry-run` | 파일을 쓰지 않고 예정된 변경사항만 출력 |
 | `--yes`, `-y` | cc-baseline 프롬프트 전체 자동 승인. 완전 비대화형 설치는 npx에도 `--yes` 추가: `npx --yes github:fffight88/cc-baseline --yes` |
+| `--skip-scanners` | `semgrep`/`gitleaks`/`trivy`와 Playwright MCP 자동 설치 건너뜀. CI나 제한된 네트워크 환경에 유용 |
+| `--doctor` | 설치 상태 검증(파일·훅·MCP 서버·스캐너·드리프트). 모든 검사 통과 시 0, 아니면 1로 종료 |
+| `--version`, `-v` | 버전 출력 |
 | `--help`, `-h` | 도움말 표시 |
+
+### 설치 확인
+
+```bash
+npx github:fffight88/cc-baseline --doctor
+```
+
+9개 검사 수행: `~/.claude/` 존재, manifest 무결성, 마커 블록, 파일 드리프트, 관리되는 훅 4개 전부, MCP 서버, 보안 스캐너, Playwright MCP 바이너리, notifier.
 
 ---
 
