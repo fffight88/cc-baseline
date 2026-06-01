@@ -15,6 +15,7 @@
     "memory/reference_security_auditor_protocol.md",
     "memory/reference_code_reviewer_protocol.md",
     "memory/reference_publisher_protocol.md",
+    "memory/reference_agent_pipeline.md",
     "scripts/audit-report.js",
     "agents/e2e-tester.md",
     "agents/security-auditor.md",

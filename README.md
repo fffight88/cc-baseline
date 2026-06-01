@@ -434,7 +434,7 @@ cc-baseline/
 │       └── mcp-servers.js     # mcpServers key merge
 └── templates/              # Bundle files ({{HOME}} placeholders)
     ├── CLAUDE.md
-    ├── memory/             # MEMORY.md + 11 rule files
+    ├── memory/             # MEMORY.md + 12 rule files
     ├── agents/             # e2e-tester.md, security-auditor.md, code-reviewer.md, publisher.md
     ├── commands/           # plan.md, clean.md, open-browser.md, check-log.md
     ├── scripts/            # audit-report.js

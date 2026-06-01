@@ -423,7 +423,7 @@ cc-baseline/
 │       └── mcp-servers.js     # mcpServers 키 병합
 └── templates/              # 번들 파일 ({{HOME}} 플레이스홀더)
     ├── CLAUDE.md
-    ├── memory/             # MEMORY.md + 11개 규칙 파일
+    ├── memory/             # MEMORY.md + 12개 규칙 파일
     ├── agents/             # e2e-tester.md, security-auditor.md, code-reviewer.md, publisher.md
     ├── commands/           # plan.md, clean.md, open-browser.md, check-log.md
     ├── scripts/            # audit-report.js

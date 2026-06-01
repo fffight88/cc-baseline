@@ -18,6 +18,8 @@ type: reference
 
 ## 1. Auto-trigger Conditions
 
+> **Pipeline position:** publisher is the **build** stage — it runs *during* execution, **before** the security-auditor / code-reviewer audit gates and the e2e-tester. For the full four-agent order and de-duplication matrix see `reference_agent_pipeline.md`.
+
 publisher is a **builder** (it produces UI), so it is delegated **as the UI portion of a plan is executed**, not after the plan completes.
 
 Trigger when **any** of:
