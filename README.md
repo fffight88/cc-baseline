@@ -37,6 +37,7 @@ Setting up Claude Code consistently across machines is tedious. cc-baseline solv
 - **11 behavior rules** loaded at session start — response language, uncertainty disclosure, parallel reads, minimal edits, and more
 - **Security auditor agent** that runs real SAST/SCA/secret scans (semgrep, gitleaks, trivy) and produces structured JSON+Markdown reports with per-issue `decision_type` (auto / design / business) so you always know what to fix vs. what to discuss; detects **prompt injection patterns** in agent/command definition files (`claude-config` type); reports missing scanners as explicit **HIGH/MEDIUM `scanner-gap` issues** instead of silent skips
 - **Code reviewer agent** that checks logic errors, edge cases, convention violations, and CLAUDE.md compliance independently from the security pass; performs **cross-file impact analysis** to catch breaking export changes across dependent files (JS/TS/Python/Go); detects **async/Promise pattern errors** (missing `await`, unhandled rejections, `Promise.all` misuse); checks **test coverage gaps** (new exports with no corresponding test, changed signatures with stale tests); **verifies `project-patterns.md` integrity** on every load via body hash — reports tampering as a `QA-PROFILE-TAMPER` issue
+- **Publisher agent** for structured/admin-style UI work — caches a **design-system profile** (`design-profile.md`: auto-detected stack, design tokens, component inventory) like code-reviewer caches its profile; analyzes spec assets (md/image/pdf/html), matches the **tone & manner** of reference screens, and authors markup + CSS + static components **reuse-first** (new classes only when no existing match, token/naming-compliant) covering all UI states with **a11y enforced**; self-verifies via render compare + **axe-core a11y runtime scan** over Playwright MCP. Scope stays in markup/CSS only — no data binding, API, state, or event logic. Auto-triggered by the `UI Impact` plan-meta field; hands off **functional** verification to the e2e-tester
 - **HTML report generator** (`audit-report.js`) that turns audit JSON into a color-coded, severity-sorted web page — opened automatically when a scan loop completes
 - **Reliable notifications** via `terminal-notifier` (auto-installed on macOS) so you never miss an interview prompt for design/business decisions
 - **E2E tester agent** backed by five parallel Playwright MCP servers — automatically collects browser console, network headers/payloads, and server log on failure; writes a structured `e2e-results/fail-{N}-{timestamp}.md` artifact; skips all log collection on pass
@@ -159,6 +160,7 @@ Because `./.claude/memory/` and `./.mcp.json` are committable and run on every t
 | E2E tester agent (`e2e-tester`) | Browser-based E2E test runner — PASS: no log collection; FAIL: console + network + server log → `e2e-results/fail-{N}-{timestamp}.md` |
 | Security auditor agent (`security-auditor`) | SAST · SCA · secret scan · prompt injection detection; structured per-issue reports; missing-scanner gap issues (HIGH/MEDIUM) |
 | Code reviewer agent (`code-reviewer`) | Logic errors · edge cases · CLAUDE.md violations · convention checks · cross-file impact analysis · async/Promise errors · test coverage gaps; profile integrity check; defers security to security-auditor |
+| Publisher agent (`publisher`) | UI publishing for admin-style projects — design-profile cache (stack/tokens/components) · spec-asset analysis (md/image/pdf/html) · tone-and-manner match · reuse-first markup + CSS + static components · all UI states + a11y · render compare + axe-core scan via Playwright MCP; markup/CSS only (no logic/binding); hands functional checks to e2e-tester |
 | HTML report generator (`scripts/audit-report.js`) | Converts audit/review JSON into a severity-colored, decision-badged HTML page. Run with `node ~/.claude/scripts/audit-report.js <audit-dir>` |
 | Hook config (`settings.json hooks`) | SessionStart memory load, PreToolUse E2E guide inject · path guard, SessionEnd process cleanup |
 | MCP servers (`~/.claude.json`) | `playwright-test-1~5` global MCP server entries (`playwright-test-1` reserved for `/open-browser` manual sessions) |
@@ -374,11 +376,13 @@ The `e2e-tester` agent follows the same policy automatically:
 
 ## Audit Report Storage
 
-`security-auditor` and `code-reviewer` write reports to:
+`security-auditor`, `code-reviewer`, and `publisher` write reports to:
 
 ```
 <project-root>/.cc-audits/<plan-slug>/iter-<n>.{md,json}
 <project-root>/.cc-audits/<plan-slug>/code-review-iter-<n>.{md,json}
+<project-root>/.cc-audits/<plan-slug>/publish-iter-<n>.{md,json}
+<project-root>/.cc-audits/design-profile.md   # shared design-system profile (publisher)
 ```
 
 - Outside `~/.claude/` — no Claude Code path-protection prompts
@@ -430,8 +434,8 @@ cc-baseline/
 │       └── mcp-servers.js     # mcpServers key merge
 └── templates/              # Bundle files ({{HOME}} placeholders)
     ├── CLAUDE.md
-    ├── memory/             # MEMORY.md + 10 rule files
-    ├── agents/             # e2e-tester.md, security-auditor.md, code-reviewer.md
+    ├── memory/             # MEMORY.md + 11 rule files
+    ├── agents/             # e2e-tester.md, security-auditor.md, code-reviewer.md, publisher.md
     ├── commands/           # plan.md, clean.md, open-browser.md, check-log.md
     ├── scripts/            # audit-report.js
     ├── settings-hooks.json # hooks section only

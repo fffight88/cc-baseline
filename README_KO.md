@@ -37,6 +37,7 @@
 - **11가지 행동 규칙** — 세션 시작 시 로드: 응답 언어, 불확실성 공개, 병렬 읽기, 최소 수정 등
 - **Security Auditor 에이전트** — semgrep/gitleaks/trivy로 실제 SAST·SCA·시크릿 스캔 수행. 이슈별 `decision_type`(auto / design / business)이 포함된 구조화된 JSON+Markdown 리포트 생성; `claude-config` 타입에서 에이전트/커맨드 정의 파일의 **프롬프트 인젝션 패턴** 탐지; 스캐너 미설치 시 silent skip 대신 **HIGH/MEDIUM `scanner-gap` 이슈**로 명시적 보고
 - **Code Reviewer 에이전트** — 보안 패스와 독립적으로 로직 오류, 엣지 케이스, 컨벤션 위반, CLAUDE.md 준수 여부 검사; **크로스파일 영향 분석**으로 export 변경이 의존 파일에 미치는 breaking change 탐지 (JS/TS/Python/Go); **async/Promise 패턴 오류** 탐지 (`await` 누락, unhandled rejection, `Promise.all` 오용); **테스트 커버리지 갭** 확인 (테스트 없는 새 export, 시그니처 변경 후 미업데이트 테스트); 매 로드 시 body hash로 **`project-patterns.md` 무결성 검증** — 변조 감지 시 `QA-PROFILE-TAMPER` 이슈 생성
+- **Publisher 에이전트** — 관리자페이지 같은 구조화·심플 디자인 프로젝트의 UI 퍼블리싱 전담. code-reviewer가 프로필을 캐싱하듯 **디자인 시스템 프로파일**(`design-profile.md`: 자동 감지된 스택·디자인 토큰·컴포넌트 인벤토리) 캐싱; 기획서(md/이미지/pdf/html) 분석, 기준 화면의 **톤앤매너** 반영, **재사용 우선**으로 마크업 + CSS + 정적 컴포넌트 작성(기존 매칭 실패 시에만 토큰/네이밍 준수 신규 생성), 모든 UI 상태 + **a11y 강제**; Playwright MCP로 렌더 비교 + **axe-core 런타임 a11y 스캔** 자가검증. 범위는 마크업/CSS만 — 데이터 바인딩·API·상태·이벤트 로직 제외. `UI Impact` 플랜 메타 필드로 자동 트리거; **기능** 검증은 e2e-tester에 핸드오프
 - **HTML 리포트 생성기** (`audit-report.js`) — 감사 JSON을 색상 코딩된 심각도 정렬 웹 페이지로 변환. 스캔 루프 완료 시 자동으로 열림
 - **안정적인 알림** — macOS에서 `terminal-notifier` 자동 설치. design/business 결정 인터뷰 프롬프트를 놓치지 않도록 보장
 - **E2E 테스터 에이전트** — 5개 병렬 Playwright MCP 서버 기반. FAIL 시 브라우저 콘솔·네트워크 헤더/페이로드·서버 로그 자동 수집 → `e2e-results/fail-{N}-{timestamp}.md` 저장. PASS 시 로그 수집 없음
@@ -159,6 +160,7 @@ npx github:fffight88/cc-baseline --project --uninstall --yes
 | E2E 테스터 에이전트 (`e2e-tester`) | 브라우저 기반 E2E 테스트 러너 — PASS: 로그 수집 없음; FAIL: 콘솔 + 네트워크 + 서버 로그 → `e2e-results/fail-{N}-{timestamp}.md` |
 | Security Auditor 에이전트 (`security-auditor`) | SAST · SCA · 시크릿 스캔 · 프롬프트 인젝션 탐지; 이슈별 구조화된 리포트; 스캐너 미설치 gap 이슈 (HIGH/MEDIUM) |
 | Code Reviewer 에이전트 (`code-reviewer`) | 로직 오류 · 엣지 케이스 · CLAUDE.md 위반 · 컨벤션 검사 · 크로스파일 영향 분석 · async/Promise 오류 · 테스트 커버리지 갭; 프로필 무결성 검증; 보안은 security-auditor에 위임 |
+| Publisher 에이전트 (`publisher`) | 관리자형 프로젝트 UI 퍼블리싱 — 디자인 프로파일 캐싱(스택/토큰/컴포넌트) · 기획서 분석(md/이미지/pdf/html) · 톤앤매너 반영 · 재사용 우선 마크업 + CSS + 정적 컴포넌트 · 모든 UI 상태 + a11y · Playwright MCP 렌더 비교 + axe-core 스캔; 마크업/CSS만(로직/바인딩 제외); 기능 검증은 e2e-tester에 핸드오프 |
 | HTML 리포트 생성기 (`scripts/audit-report.js`) | 감사/리뷰 JSON을 심각도 색상 코딩된 HTML로 변환. `node ~/.claude/scripts/audit-report.js <audit-dir>` |
 | 훅 설정 (`settings.json hooks`) | SessionStart 메모리 로드, PreToolUse E2E 가이드 주입 · 경로 가드, SessionEnd 프로세스 정리 |
 | MCP 서버 (`~/.claude.json`) | `playwright-test-1~5` 전역 MCP 서버 엔트리 (`playwright-test-1`은 `/open-browser` 수동 세션용 예약) |
@@ -363,11 +365,13 @@ npx github:fffight88/cc-baseline --uninstall --yes --purge --remove-scanners
 
 ## 감사 리포트 저장 위치
 
-`security-auditor`와 `code-reviewer`는 리포트를 여기에 씁니다:
+`security-auditor`, `code-reviewer`, `publisher`는 리포트를 여기에 씁니다:
 
 ```
 <project-root>/.cc-audits/<plan-slug>/iter-<n>.{md,json}
 <project-root>/.cc-audits/<plan-slug>/code-review-iter-<n>.{md,json}
+<project-root>/.cc-audits/<plan-slug>/publish-iter-<n>.{md,json}
+<project-root>/.cc-audits/design-profile.md   # 공유 디자인 시스템 프로파일 (publisher)
 ```
 
 - `~/.claude/` 외부 — Claude Code 경로 보호 프롬프트 없음
@@ -419,8 +423,8 @@ cc-baseline/
 │       └── mcp-servers.js     # mcpServers 키 병합
 └── templates/              # 번들 파일 ({{HOME}} 플레이스홀더)
     ├── CLAUDE.md
-    ├── memory/             # MEMORY.md + 10개 규칙 파일
-    ├── agents/             # e2e-tester.md, security-auditor.md, code-reviewer.md
+    ├── memory/             # MEMORY.md + 11개 규칙 파일
+    ├── agents/             # e2e-tester.md, security-auditor.md, code-reviewer.md, publisher.md
     ├── commands/           # plan.md, clean.md, open-browser.md, check-log.md
     ├── scripts/            # audit-report.js
     ├── settings-hooks.json # hooks 섹션만
