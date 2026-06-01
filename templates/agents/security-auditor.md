@@ -184,6 +184,47 @@ Issue category: `prompt-injection`
 | `.github/workflows/*.yml` | dangerous `pull_request_target` patterns, `${{ secrets.* }}` injection in untrusted context |
 | `.env.*`, `credentials.json` and other sensitive files | git-tracked status, `.gitignore` missing |
 
+**Supply Chain Hardening Detection** — run when CI workflow files or dependency manifests exist (any project type):
+
+Motivated by recent supply-chain incidents (compromised npm/PyPI packages, mutable GitHub Action tags, poisoned Docker images). These are **preventive structural checks**, not CVE-version matching — leave known-CVE/version detection to SCA scanners (`npm audit` / `pip-audit` / `trivy`).
+
+1. **GitHub Actions pinning** — third-party actions must be pinned to a full 40-char commit SHA, not a mutable tag/branch.
+
+```bash
+# third-party `uses:` not pinned to a 40-hex SHA (local ./ actions are exempt)
+grep -rnE "uses:[[:space:]]*[^.#[:space:]].*@(v?[0-9]|main|master|latest)" \
+  <target_dir>/.github/workflows/ 2>/dev/null
+```
+
+2. **Workflow token permissions** — workflow missing a top-level least-privilege `permissions:` block defaults to broad write scope, widening blast radius if a token is stolen.
+
+```bash
+# workflow files that never declare `permissions:`
+for f in <target_dir>/.github/workflows/*.yml <target_dir>/.github/workflows/*.yaml; do
+  [ -f "$f" ] && ! grep -q "permissions:" "$f" && echo "no permissions block: $f"
+done 2>/dev/null
+```
+
+3. **Dependency pinning / lockfile integrity** — floating ranges and mutable image tags let a poisoned version flow in silently.
+   - `package.json`: deps using `^` / `~` / `*` / `latest`; lockfile (`package-lock.json` / `pnpm-lock.yaml` / `yarn.lock`) present
+   - `requirements.txt` / `pyproject.toml`: unpinned (`pkg` or `pkg>=x`) instead of `pkg==x`; prefer hash-pinned
+   - `Dockerfile`: `FROM image:latest` / untagged / not digest-pinned (`@sha256:`)
+
+4. **Install-time script execution** — npm `pre/post-install` scripts are a common supply-chain payload trigger.
+
+```bash
+grep -rnE "\"(pre|post)?install\"[[:space:]]*:" <target_dir>/package.json 2>/dev/null
+```
+
+Issue category: `supply-chain`
+
+| Pattern | Severity | decision_type |
+|---------|----------|---------------|
+| Third-party Action on mutable tag (not SHA-pinned) | HIGH | `auto` |
+| Workflow missing least-privilege `permissions:` | MEDIUM | `auto` |
+| Floating dependency range / mutable image tag / missing lockfile | MEDIUM | `auto` |
+| Unexpected `pre/post-install` script in `package.json` | HIGH | `design` |
+
 **Call ExitPlanMode** — return to Sonnet after checks complete.
 
 ### Step 4: Assign Decision Type per Issue
