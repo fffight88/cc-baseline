@@ -76,6 +76,20 @@ npx --yes github:fffight88/cc-baseline --yes
 npx github:fffight88/cc-baseline --dry-run
 ```
 
+### 버전 고정
+
+`npx github:`는 레포의 기본 브랜치(`main`)에서 설치하며, `main`에는 **릴리즈된** 상태만 올라가므로 위의 미고정 명령은 항상 최신 릴리즈를 받습니다. 특정 릴리즈에 고정하거나 개발 중인 작업을 시험하려면 git ref를 뒤에 붙이세요:
+
+```bash
+# 특정 릴리즈 고정 (재현 가능한 설치 / CI에 권장)
+npx github:fffight88/cc-baseline#v1.3.0
+
+# 최신 개발본 — 통합 브랜치 (불안정할 수 있음)
+npx github:fffight88/cc-baseline#develop
+```
+
+> 릴리즈는 `vX.Y.Z` 태그로 끊으며 [CHANGELOG.md](CHANGELOG.md)에 정리됩니다. `main` = 최신 릴리즈, `develop` = 미릴리즈 작업 진행 중.
+
 ---
 
 ## 프로젝트 로컬 설치

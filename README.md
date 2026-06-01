@@ -76,6 +76,20 @@ Preview changes before applying:
 npx github:fffight88/cc-baseline --dry-run
 ```
 
+### Pinning a version
+
+`npx github:` installs from the repo's default branch (`main`), which only ever holds **released** states — so the unpinned command above always gives you the latest release. To lock to a specific release, or to try in-development work, append a git ref:
+
+```bash
+# Pin a specific release (recommended for reproducible / CI installs)
+npx github:fffight88/cc-baseline#v1.3.0
+
+# Bleeding edge — the in-development integration branch (may be unstable)
+npx github:fffight88/cc-baseline#develop
+```
+
+> Releases are tagged `vX.Y.Z` and listed in [CHANGELOG.md](CHANGELOG.md). `main` = latest release, `develop` = unreleased work in progress.
+
 ---
 
 ## Project-local Install
