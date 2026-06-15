@@ -7,6 +7,8 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.3.1] — 2026-06-15
+
 ### Added
 - README / README_KO — "Pinning a version" section in Quick Start. Documents that unpinned `npx github:` installs from `main` (released only), and how to pin a release (`#v1.3.0`) or track the in-development integration branch (`#develop`). Reflects the develop+main release-branch model adopted in v1.3.0. Tracked in Jira CB-12.
 
