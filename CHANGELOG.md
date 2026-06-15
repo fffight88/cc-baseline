@@ -13,6 +13,7 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 - `test/run.js` — new test asserting `README.md` and `README_KO.md` keep an identical section-header structure (same heading levels in the same order, fenced code blocks ignored). Drift now fails `npm test`, so it cannot survive to a release. (53 tests total.)
 
 ### Fixed
+- `templates/commands/clean.md` — the stale playwright-mcp cleanup now protects the current session's own MCP children. It walks up from the invoking shell (`$$`) to the highest `claude` ancestor, collects that subtree's descendant PIDs, and excludes them from the age-based (`etimes > 21600` = 6h) kill — so running `/clean` in a long-lived session (>6h) no longer disconnects that session's own playwright. Stale MCPs from other/forgotten sessions are still reaped; the 6h threshold is unchanged.
 - README_KO — restored sync with README: added the missing Options rows (`--skip-scanners`, `--doctor`, `--version`) and the `설치 확인` (Verifying your install) subsection. Both READMEs now have identical section structure (39 headers).
 
 ## [1.3.0] — 2026-06-01
