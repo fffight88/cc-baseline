@@ -7,6 +7,8 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-06-25
+
 ### Added
 - QA gate hardening for the runtime/visual defect class (whitelabel/500-on-click, unbound event handlers = `ReferenceError`, visual baseline drift, raw/duplicated values) that was passing all four agents and only getting caught in the final human pass. Three reference templates updated:
   - `templates/memory/reference_e2e_manager_guide.md` — new **§0 MANDATORY Pre-pass: Runtime Invariants + Dead-Control Sweep**, required on every screen separate from happy-path scenarios. (A) global runtime invariants asserted after every nav/click (no whitelabel/`/error`, no 4xx/5xx, zero console errors — `ReferenceError` = unbound-handler signature); (B) dead-control sweep enumerating every clickable element and asserting an observable effect (no-effect / ReferenceError = FAIL; popups actually opened and re-checked); (C) "PASS" redefined to require invariants-held + sweep-clean, not just "scenario ran to the end"; (D) TC evidence principle (executed assert + actual value, never a bare ✓).
