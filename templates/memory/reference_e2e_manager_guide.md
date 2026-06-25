@@ -10,6 +10,34 @@ The manager oversees the entire E2E test process. The manager is responsible for
 
 ---
 
+## 0. MANDATORY Pre-pass — Runtime Invariants + Dead-Control Sweep (always, before AND after scenarios)
+
+> **This is a required gate, separate from happy-path scenarios.** A scenario verifies "the flow ran end to end"; it does NOT verify "every element produced its correct effect / no screen broke". The defects that slip through every other gate (whitelabel/500 on click, unbound event handlers = ReferenceError, visual drift, raw/duplicated values) are caught **only** by mechanically triggering every interactive element and asserting the result. Run this sweep on **every screen**. Any single violation = that screen **FAILs**, independent of whether the scenario passed.
+
+> **Who runs it:** the `e2e-tester` agent runs this sweep **automatically as a built-in protocol** (it is mechanical, not scenario design — see `e2e-tester.md`). The manager does **not** author sweep steps; the manager's job is to **require and read the `INVARIANTS` / `SWEEP` fields** in the tester's report and treat any `violated` / `FAIL: …` as a screen failure (do not mark PASS without them). Destructive controls (delete/logout/pay/…) are skipped by the sweep and reported as `skipped-destructive` — drive those explicitly via scenario steps if they must be tested.
+
+### (A) Global runtime invariants — assert immediately after every navigation and every click
+
+- **No whitelabel / error page**: no "Whitelabel Error Page" text on the page · URL did not fall through to `/error` · HTTP status is not 4xx/5xx.
+- **Zero console errors** (level=error). In particular `ReferenceError` / `is not defined` is the **decisive signature of an unbound event handler** (the click does nothing / throws). Only known-harmless items (e.g. favicon 404) may go on an explicit allowlist — everything else fails.
+- **No unhandled 4xx/5xx network responses** (XHR / fetch / navigation).
+
+### (B) Dead-control sweep — enumerate every clickable element → activate one by one → assert an effect
+
+- **Enumerate**: `button`, `a[href]` (excluding `#` and `javascript:void`), `[onclick]`, `[role=button]`, tab / popup triggers.
+- After clicking each element, **one observable effect** must occur: navigation / new window or popup / network request / DOM change / dialog. **No effect at all OR a ReferenceError = dead/broken control → FAIL.**
+- For controls that open a popup, **actually open it** and apply the (A) invariants to the popup too (this is how the popup's own whitelabel / console error gets caught — an unopened popup hides its defects).
+
+### (C) "PASS" is redefined
+
+Screen e2e PASS = **(a)** the scenario completed with all explicit assertions **∧ (b)** the (A) invariants held across the entire run **∧ (c)** the (B) sweep was clean. **"The scenario ran to the end" alone is NOT a PASS.**
+
+### (D) TC evidence principle
+
+Convert each blocking TC item into an **executable assertion** (selector / action + expected value), run it, and leave the **actual value as evidence**. A markdown check (✓) alone must never be treated as passing — there must be an executed assert plus the real observed value.
+
+---
+
 ## 1. MCP Servers
 
 - Up to 5 available: `playwright-test-1` through `playwright-test-5`
@@ -151,6 +179,7 @@ When all tests are complete, create an HTML file with results and serve it via a
 - Test execution date/time
 - Overall result summary (PASS/FAIL count, elapsed time)
 - Per-scenario result table (scenario name, result, failed step, cause)
+- Per-screen §0 status column: `INVARIANTS` (held/violated) + `SWEEP` (clean N / dead-control) from the tester reports — so a green scenario with a §0 violation is visibly FAIL
 - Inline screenshot on failure (base64 embed or relative path)
 - Color coding: PASS → green, FAIL → red
 
@@ -232,6 +261,10 @@ authenticated result (not a login redirect). Same-origin means all headers
 
 ## Checklist
 
+- [ ] **(§0 mandatory pre-pass)** Ran the runtime-invariant + dead-control sweep on every screen — not just the happy-path scenario
+- [ ] **(§0-A)** Each navigation/click asserted: no whitelabel/`/error`, no 4xx/5xx, zero console errors (ReferenceError = unbound handler = FAIL)
+- [ ] **(§0-B)** Enumerated every clickable element and confirmed an observable effect for each (no-effect / ReferenceError = dead control = FAIL); popups actually opened and re-checked under (A)
+- [ ] **(§0-C/D)** PASS granted only with executed asserts + actual-value evidence — never on a markdown ✓ alone
 - [ ] Confirm number of active MCP servers before testing
 - [ ] Do not assign `playwright-test-1` if a `/open-browser` manual session may be active
 - [ ] Include `server_log` path in scenario delivery if server log is available
