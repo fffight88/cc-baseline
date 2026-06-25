@@ -7,6 +7,15 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- QA gate hardening for the runtime/visual defect class (whitelabel/500-on-click, unbound event handlers = `ReferenceError`, visual baseline drift, raw/duplicated values) that was passing all four agents and only getting caught in the final human pass. Three reference templates updated:
+  - `templates/memory/reference_e2e_manager_guide.md` — new **§0 MANDATORY Pre-pass: Runtime Invariants + Dead-Control Sweep**, required on every screen separate from happy-path scenarios. (A) global runtime invariants asserted after every nav/click (no whitelabel/`/error`, no 4xx/5xx, zero console errors — `ReferenceError` = unbound-handler signature); (B) dead-control sweep enumerating every clickable element and asserting an observable effect (no-effect / ReferenceError = FAIL; popups actually opened and re-checked); (C) "PASS" redefined to require invariants-held + sweep-clean, not just "scenario ran to the end"; (D) TC evidence principle (executed assert + actual value, never a bare ✓).
+  - `templates/memory/reference_publisher_protocol.md` — new **§9 Visual Verification Thoroughness & Runtime Invariants**: render-compare must cover thead **and** tbody and all key states (empty form + populated edit form + popups), assert each visual contract as PASS/FAIL + measured computed value, and assert the §0 runtime invariants on every rendered screen.
+  - `templates/memory/reference_agent_pipeline.md` — new **§3.1 Gate Responsibility Boundary** + two de-dup matrix rows: runtime invariants / dead-control sweep / visual thoroughness are owned **only** by e2e-tester (§0) + publisher (§9); source-based security-auditor / code-reviewer structurally cannot detect this class and must not be assumed to cover it.
+  - `templates/agents/e2e-tester.md` — the §0 sweep is now a **built-in fixed protocol** the tester runs automatically on every screen (not manager-authored steps): runtime-invariant assertions + a `browser_run_code` dead-control enumeration that clicks each control and asserts an observable effect, with a safety bound that skips destructive controls (delete/logout/pay/…) and reports them as `skipped-destructive`. Report format gained `INVARIANTS` / `SWEEP` fields so a green scenario with a §0 violation surfaces as FAIL.
+  - `templates/agents/publisher.md` — Step 6 render-compare made **exhaustive** (thead **and** tbody, all key states: empty + populated + popups, each visual contract asserted as PASS/FAIL + measured computed value) and gained a **runtime-invariant** sub-step (no whitelabel / no console error on every rendered screen).
+  - Reconciled the previously-absolute "no modification to e2e-tester.md" wording in `reference_publisher_protocol.md` §6: e2e-tester now carries the §0 sweep as a general built-in capability, while publishing-specific functional scenarios still need no per-publish change.
+
 ## [1.3.1] — 2026-06-15
 
 ### Added

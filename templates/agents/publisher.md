@@ -245,16 +245,20 @@ Any violation → fix before reporting (this is a self-fix, not a finding for th
 Using the assigned MCP server (`mcp__{mcp_server}__*`, default `playwright-test-1`):
 
 1. Navigate to the new screen under `base_url`. Use `auth_note` to get past any login wall (e.g., assume the session is already authenticated, or follow the given bypass steps). **If the screen is behind auth and no `auth_note` was provided, set `visual_status: skipped` with reason `auth required` rather than screenshotting the login page.**
-2. **Render compare**: screenshot the screen; screenshot reference screens; compare tone & manner (spacing, color, density). Flag visible breakage or mismatch.
-3. **a11y runtime scan (axe-core)**: inject and run axe-core via `browser_evaluate`, e.g.:
+2. **Render compare (exhaustive — false-negative prevention)**: screenshot the screen; screenshot reference screens; compare tone & manner (spacing, color, density). Flag visible breakage or mismatch. Be exhaustive:
+   - For tabular screens, compare **both the header (thead `<th>`) and the data cells (tbody `<td>`)** — a styled body with an unstyled/misaligned header is still a mismatch.
+   - Capture **all key states**, not just the default/empty one: empty/new form **and** a form populated with real data **and** any popups/dialogs.
+   - Assert each visual-contract item as **PASS/FAIL + a measured computed value** (e.g. alignment = `getComputedStyle(el).textAlign`), not "looks good". Also flag raw/duplicated value rendering as a mismatch.
+3. **Runtime invariants**: on each rendered screen/state assert no "Whitelabel Error Page" text and zero console errors via `browser_console_messages`. A whitelabel/error render or console error → `visual_status: mismatch`. (The full interactive dead-control sweep belongs to e2e-tester — I assert the invariant only on the screens I render.)
+4. **a11y runtime scan (axe-core)**: inject and run axe-core via `browser_evaluate`, e.g.:
    ```js
    // load axe from CDN if not present, then run
    await import('https://cdn.jsdelivr.net/npm/axe-core@4/axe.min.js');
    return await axe.run();
    ```
    Record violations by impact (critical/serious/moderate/minor).
-4. **Responsive** (if flag on): resize to each breakpoint and screenshot.
-5. If `base_url` is absent/unreachable → set `visual_status: skipped` and proceed (do not start a server).
+5. **Responsive** (if flag on): resize to each breakpoint and screenshot.
+6. If `base_url` is absent/unreachable → set `visual_status: skipped` and proceed (do not start a server).
 
 > Visual verification covers tone & manner + runtime a11y. **Functional interaction testing is out of scope** — that is handed to e2e-tester by the orchestrator (see `reference_publisher_protocol.md`).
 

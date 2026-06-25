@@ -171,10 +171,10 @@ npx github:fffight88/cc-baseline --project --uninstall --yes
 |---|---|
 | 행동 규칙 (`CLAUDE.md`, `memory/*.md`) | 11가지 세션 규칙: 응답 언어, 불확실성, 병렬 읽기, 최소 수정, git 안전성 등 |
 | 커스텀 스킬 (`/plan`, `/clean`, `/open-browser`, `/check-log`) | 플랜 모드 진입; 고아 프로세스 + e2e 아티팩트 정리; 수동 테스트용 Playwright 브라우저; Fail 진단 수집기 |
-| E2E 테스터 에이전트 (`e2e-tester`) | 브라우저 기반 E2E 테스트 러너 — PASS: 로그 수집 없음; FAIL: 콘솔 + 네트워크 + 서버 로그 → `e2e-results/fail-{N}-{timestamp}.md` |
+| E2E 테스터 에이전트 (`e2e-tester`) | 브라우저 기반 E2E 테스트 러너 — 매니저 시나리오에 더해 모든 화면에서 런타임 불변식 + 데드컨트롤 스윕을 내장 실행(화이트라벨/콘솔에러 없음; 모든 클릭요소가 효과를 내야 함, 파괴적 컨트롤은 스킵); PASS: 로그 수집 없음; FAIL: 콘솔 + 네트워크 + 서버 로그 → `e2e-results/fail-{N}-{timestamp}.md` |
 | Security Auditor 에이전트 (`security-auditor`) | SAST · SCA · 시크릿 스캔 · 프롬프트 인젝션 탐지; 이슈별 구조화된 리포트; 스캐너 미설치 gap 이슈 (HIGH/MEDIUM) |
 | Code Reviewer 에이전트 (`code-reviewer`) | 로직 오류 · 엣지 케이스 · CLAUDE.md 위반 · 컨벤션 검사 · 크로스파일 영향 분석 · async/Promise 오류 · 테스트 커버리지 갭; 프로필 무결성 검증; 보안은 security-auditor에 위임 |
-| Publisher 에이전트 (`publisher`) | 관리자형 프로젝트 UI 퍼블리싱 — 디자인 프로파일 캐싱(스택/토큰/컴포넌트) · 기획서 분석(md/이미지/pdf/html) · 톤앤매너 반영 · 재사용 우선 마크업 + CSS + 정적 컴포넌트 · 모든 UI 상태 + a11y · Playwright MCP 렌더 비교 + axe-core 스캔; 마크업/CSS만(로직/바인딩 제외); 기능 검증은 e2e-tester에 핸드오프 |
+| Publisher 에이전트 (`publisher`) | 관리자형 프로젝트 UI 퍼블리싱 — 디자인 프로파일 캐싱(스택/토큰/컴포넌트) · 기획서 분석(md/이미지/pdf/html) · 톤앤매너 반영 · 재사용 우선 마크업 + CSS + 정적 컴포넌트 · 모든 UI 상태 + a11y · Playwright MCP 망라 렌더 비교(thead+tbody, 전 상태) + 런타임 불변식 단언 + axe-core 스캔; 마크업/CSS만(로직/바인딩 제외); 기능 검증은 e2e-tester에 핸드오프 |
 | HTML 리포트 생성기 (`scripts/audit-report.js`) | 감사/리뷰 JSON을 심각도 색상 코딩된 HTML로 변환. `node ~/.claude/scripts/audit-report.js <audit-dir>` |
 | 훅 설정 (`settings.json hooks`) | SessionStart 메모리 로드, PreToolUse E2E 가이드 주입 · 경로 가드, SessionEnd 프로세스 정리 |
 | MCP 서버 (`~/.claude.json`) | `playwright-test-1~5` 전역 MCP 서버 엔트리 (`playwright-test-1`은 `/open-browser` 수동 세션용 예약) |

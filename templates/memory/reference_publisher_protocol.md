@@ -10,6 +10,7 @@ type: reference
 - ✅ DO: After publisher returns `done`, **hand off to e2e-tester for functional verification** (responsive/states/console) — see §6
 - ✅ DO: Provide a running `base_url` so publisher can run render compare + axe-core a11y scan
 - ✅ DO: Pass `quality_flags` (responsive/i18n/dark_mode) only when the user/spec requires them
+- ✅ DO: render-compare exhaustively (thead **and** tbody, all key states) + assert runtime invariants (no whitelabel / no console error) on every rendered screen — see §9
 - ❌ DON'T: Expect publisher to write data binding, API, state, or event logic (out of its role)
 - ❌ DON'T: Duplicate publisher's visual/a11y verification inside e2e-tester — e2e-tester does **functional** checks only
 - ❌ DON'T: Trigger notifications at start/completion (only immediately before a design/business interview)
@@ -170,7 +171,7 @@ publisher covers **visual tone & manner + runtime a11y**. It does **not** test f
 2. Delivering those scenarios to e2e-tester in the standard input format (`mcp_server`, `base_url`, `scenario.steps`, `screenshot_mode`).
 3. If `quality_flags.responsive` was true, include `browser_resize` steps at the profile breakpoints (e2e-tester already supports resize + screenshot — no agent change needed).
 
-> **No modification to `e2e-tester.md` is required.** It already supports navigation, clicks, resize, screenshots, and console/network collection. The publishing-specific knowledge lives here, in the scenarios the orchestrator authors — keeping e2e-tester a pure functional executor.
+> **No *publishing-specific* modification to `e2e-tester.md` is required.** It already supports navigation, clicks, resize, screenshots, and console/network collection, and now carries the built-in §0 runtime-invariant + dead-control sweep (a general capability, not publishing-specific). The publishing-specific knowledge still lives here, in the functional scenarios the orchestrator authors — keeping e2e-tester a fixed-protocol executor.
 
 ---
 
@@ -197,6 +198,17 @@ publisher covers **visual tone & manner + runtime a11y**. It does **not** test f
 
 ---
 
+## 9. Visual Verification Thoroughness & Runtime Invariants (false-negative prevention)
+
+Static visual PASS has been giving false negatives: it renders only some screens/states and misses parts (e.g. the table header `thead`). Tighten render-compare as follows.
+
+- **Be exhaustive across structure**: render-compare must cover **both the header (thead `<th>`) and the data cells (tbody `<td>`)** — not just the body. A passing body with an unstyled/misaligned header is still a FAIL.
+- **Be exhaustive across state**: cover **all key states** — new/empty form **and** an edit form populated with real data **and** any popups. Do **not** grant PASS from the empty/default state alone.
+- **Assert explicitly, not impressionistically**: each visual-contract item is **PASS/FAIL + a measured computed value** (e.g. alignment = `getComputedStyle(el).textAlign`, not "looks good"). Also flag raw/duplicated value rendering as a contract failure.
+- **Runtime invariants too**: publisher already drives a browser, so for every rendered screen also assert the **(A) global runtime invariants** from `reference_e2e_manager_guide.md` §0 — no "Whitelabel Error Page", no console errors. (The full interaction sweep stays with e2e-tester; publisher asserts the invariant only on the screens it renders.)
+
+---
+
 ## ✅ Checklist
 
 - [ ] Triggered only on UI/publishing work (`UI Impact` / explicit request / UI-natured task)
@@ -205,4 +217,6 @@ publisher covers **visual tone & manner + runtime a11y**. It does **not** test f
 - [ ] Self-fix loop terminated on clean or 3-iteration limit; `## Publish History` updated
 - [ ] design/business items → notify then interview
 - [ ] After `done`, handed off to e2e-tester for **functional** verification (no visual/a11y overlap)
-- [ ] e2e-tester.md left unmodified; publishing knowledge kept in orchestrator-authored scenarios
+- [ ] No publishing-specific change to e2e-tester.md needed; publishing knowledge kept in orchestrator-authored functional scenarios (the §0 sweep is e2e-tester's built-in general capability)
+- [ ] (§9) render-compare covered thead **and** tbody, and all key states (empty form + populated edit form + popups) — not the default state alone
+- [ ] (§9) each visual-contract item asserted as PASS/FAIL + measured computed value; runtime invariants (no whitelabel / no console error) asserted on every rendered screen

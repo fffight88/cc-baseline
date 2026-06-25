@@ -12,6 +12,7 @@ type: reference
 - ❌ DON'T: Re-check a11y / design tokens in code-reviewer or e2e-tester — publisher already verified those (its Step 5/6)
 - ❌ DON'T: Start the audit gates before publisher finishes the UI (they would review half-built markup)
 - ❌ DON'T: Run publisher for a non-UI plan (`UI Impact: No`) — the flow reverts to the original flat post-implementation fan-out
+- ❌ DON'T: Expect runtime/visual defects (whitelabel-on-click, dead controls, baseline drift) from source-based sec/code-review — that class is owned **only** by publisher (§9) + e2e-tester (§0), see §3.1
 
 ---
 
@@ -70,8 +71,18 @@ See each agent's protocol: `reference_publisher_protocol.md`, `reference_securit
 | Logic errors, edge cases, CLAUDE.md, conventions, dead code, async | code-reviewer | — |
 | XSS / `innerHTML` / inline secrets / dependency vulns | security-auditor | — |
 | Functional interaction (click→result, nav, form submit, console-clean) | e2e-tester | publisher does not test interaction |
+| **Runtime invariants** (no whitelabel/500 on click, no console error/ReferenceError) + **dead-control sweep** | e2e-tester (§0) | **sec/code-review can't — source-based, out of scope** |
+| **Visual baseline drift / render thoroughness** (thead+tbody, all states, computed values) | publisher (§9) | **sec/code-review can't — source-based, out of scope** |
 
 > publisher-authored markup/CSS **is** reviewed by the audit gates (it is still code — CLAUDE.md conventions, XSS surface, inline secrets, dead CSS apply). The gates simply do not duplicate publisher's a11y / design-token / UI-state checks.
+
+### 3.1 Gate Responsibility Boundary — runtime/visual defects are out of reach for sec/code-review
+
+A whole class of defects (whitelabel/500 on click, unbound event handlers, visual baseline drift, navigation bugs, raw/duplicated values) keeps passing all four gates and getting caught only in the final human pass. Root cause: it was being implicitly expected from the wrong gates.
+
+- **security-auditor and code-reviewer are source-based.** They **structurally cannot detect** runtime-interactive defects (a button that is dead at runtime, a click that 500s, a screen that diverges from the design baseline). Do **not** expect this class from them, and do **not** treat their passing as "all clear" for it.
+- The **only gate for this class = publisher (static visual, exhaustive — §9) + e2e-tester (runtime invariants + dead-control sweep + scenario assertions — §0).** This defect class **must** be covered by these two and **cannot be deferred** to sec/code-review.
+- The de-dup matrix above records this explicitly: *runtime invariants · dead-control sweep · visual thoroughness = e2e/publisher only, NOT in scope for sec/code-review.*
 
 ---
 
@@ -105,3 +116,4 @@ report.html                     # merged audit HTML (security + code-review)
 - [ ] No a11y / design-token / UI-state re-check inside the audit gates or e2e-tester
 - [ ] e2e-tester run last, functional scenarios only, after gates settle
 - [ ] HTML report generated once after both gates complete
+- [ ] (§3.1) Runtime/visual defect class confirmed covered by publisher (§9) + e2e-tester (§0) — **not** assumed handled by source-based sec/code-review
