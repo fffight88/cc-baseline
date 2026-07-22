@@ -7,6 +7,9 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- `templates/commands/clean.md` — the stale playwright-mcp cleanup now works on macOS, not just Linux. Two portability bugs fixed: (1) `ps -eo pid,etimes` used the Linux-only `etimes` keyword, so on macOS the pipeline produced nothing and the age-based kill silently did nothing — replaced with the portable `etime` keyword plus an awk conversion of its `[[dd-]hh:]mm:ss` format to seconds; (2) the protected-PID collection loop relied on word splitting of an unquoted variable (`for _x in $_q`), which zsh (macOS default shell) does not perform — the multi-line pgrep output was treated as one word and the loop never terminated. The list is now expanded via command substitution (`for _x in $(echo "$_q")`, newline→space normalized), which both bash and zsh split. Verified by dry run under both zsh and bash on macOS.
+
 ## [1.4.0] — 2026-06-25
 
 ### Added
