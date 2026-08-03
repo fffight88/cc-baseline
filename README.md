@@ -234,6 +234,7 @@ The five `playwright-test-*` MCP server entries in `~/.claude.json` point to the
 | `--dry-run` | Print planned changes without writing any files |
 | `--yes`, `-y` | Auto-approve all cc-baseline prompts. For fully non-interactive install, also pass `--yes` to npx itself: `npx --yes github:fffight88/cc-baseline --yes` |
 | `--skip-scanners` | Skip auto-install of `semgrep`/`gitleaks`/`trivy` and Playwright MCP. Useful in CI or restricted-network environments |
+| `--dedupe-legacy` | Remove stale pre-marker copies of the cc-baseline block from `CLAUDE.md` / `MEMORY.md`, left behind by installs that predate the marker block. Files are backed up before removal |
 | `--doctor` | Verify installed state (files, hooks, MCP servers, scanners, drift). Exits 0 if all checks pass, 1 otherwise |
 | `--version`, `-v` | Print version |
 | `--help`, `-h` | Show help |

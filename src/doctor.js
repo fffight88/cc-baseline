@@ -6,7 +6,7 @@ const path = require('path');
 const { HOME, applyHome, PLAYWRIGHT_MCP_BIN, resolveTarget } = require('./paths');
 const manifest = require('./manifest');
 const { harnessIdOf } = require('./merge/settings-hooks');
-const { hasMarkerBlock } = require('./merge/markdown');
+const { hasMarkerBlock, stripDuplicatePreamble } = require('./merge/markdown');
 const { checkCmd } = require('./installers/_util');
 
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
@@ -74,6 +74,30 @@ function checkMarkerBlocks(claudeDir) {
     'run `npx --yes github:fffight88/cc-baseline --yes`');
 }
 
+// Installs that predate the marker block appended it instead of replacing the
+// content already in the file, stranding a stale copy above the markers. That
+// copy is loaded every session alongside the current one.
+function checkDuplicatePreamble(claudeDir, target) {
+  const isProject = target && target.mode === 'project';
+  const dupes = [];
+  for (const rel of manifest.markerBlockFiles()) {
+    const dest = path.join(claudeDir, rel);
+    if (!fs.existsSync(dest)) continue;
+    let tplName = rel;
+    if (isProject && rel === 'CLAUDE.md') tplName = 'project-CLAUDE.md';
+    let tpl;
+    try { tpl = readTemplate(tplName); } catch { continue; }
+    const { changed, removed } = stripDuplicatePreamble(fs.readFileSync(dest, 'utf8'), tpl);
+    if (changed) dupes.push(`${rel} ("${removed.join('", "')}")`);
+  }
+  if (dupes.length === 0) {
+    return ok('Duplicate pre-marker content', 'none — marker blocks are the only copy');
+  }
+  return warn('Duplicate pre-marker content',
+    `stale copy above the marker block in: ${dupes.join(', ')} — these instructions load twice every session`,
+    `run \`npx --yes github:fffight88/cc-baseline ${isProject ? '--project ' : ''}--dedupe-legacy --yes\``);
+}
+
 function checkInstalledFiles(claudeDir) {
   const overwriteFiles = manifest.overwriteFiles();
   const missing = [];
@@ -120,20 +144,29 @@ function checkHooks(claudeDir, target) {
     return fail(label, 'settings.json could not be parsed', 'restore from backup');
   }
   const hooks = data.hooks || {};
-  const foundIds = new Set();
+  const counts = new Map();
   for (const event of Object.keys(hooks)) {
     for (const entry of hooks[event] || []) {
       for (const h of (entry.hooks || [])) {
         const id = harnessIdOf(h, event);
-        if (id) foundIds.add(id);
+        if (id) counts.set(id, (counts.get(id) || 0) + 1);
       }
     }
   }
-  const missing = expectedIds.filter(id => !foundIds.has(id));
-  if (missing.length === 0) {
-    return ok(label, `${expectedIds.length}/${expectedIds.length} managed hooks registered`);
+  const missing = expectedIds.filter(id => !counts.has(id));
+  if (missing.length > 0) {
+    return fail(label, `${missing.length} missing: ${missing.join(', ')}`, fixCmd);
   }
-  return fail(label, `${missing.length} missing: ${missing.join(', ')}`, fixCmd);
+  // A managed hook present more than once fires more than once. Older installs
+  // appended instead of replacing, so copies accumulate one per install.
+  const dupes = expectedIds.filter(id => counts.get(id) > 1);
+  if (dupes.length > 0) {
+    return warn(label,
+      `${expectedIds.length}/${expectedIds.length} registered, but duplicated: ` +
+        dupes.map(id => `${id} ×${counts.get(id)}`).join(', '),
+      fixCmd);
+  }
+  return ok(label, `${expectedIds.length}/${expectedIds.length} managed hooks registered`);
 }
 
 function checkMcpServers(mcpJsonPath, target) {
@@ -253,6 +286,7 @@ function runChecks(opts) {
       checkManifestIntegrity(),
       checkProjectCLAUDE(target.claudeDir),
       checkProjectMemoryMd(target.claudeDir),
+      checkDuplicatePreamble(target.claudeDir, target),
       checkInstalledFiles(target.claudeDir),
       checkHooks(target.claudeDir, target),
       checkMcpServers(target.mcpJsonPath, target),
@@ -264,6 +298,7 @@ function runChecks(opts) {
     checkClaudeDir(target.claudeDir, target),
     checkManifestIntegrity(),
     checkMarkerBlocks(target.claudeDir),
+    checkDuplicatePreamble(target.claudeDir, target),
     checkInstalledFiles(target.claudeDir),
     checkHooks(target.claudeDir, target),
     checkMcpServers(target.mcpJsonPath, target),
