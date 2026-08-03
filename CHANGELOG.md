@@ -7,6 +7,8 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-08-03
+
 ### Added
 - `--dedupe-legacy` install flag + a `Duplicate pre-marker content` doctor check. Installs predating the `<!-- BEGIN cc-baseline -->` marker had no block to replace, so `mergeMarkerBlock` appended one — stranding a pre-cc-baseline copy of the same instructions above the markers. That copy never updates again, so `CLAUDE.md` / `MEMORY.md` state every rule twice, once stale and once current, on every session load. `stripDuplicatePreamble()` removes a preamble section only when its `# ` heading is byte-identical to a heading inside the block being installed (fenced code regions excluded); sections under any other heading are preserved. Removal is opt-in via the flag and the affected files are backed up first; doctor reports the condition either way.
 
