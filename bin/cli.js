@@ -14,6 +14,7 @@ const opts = {
   removeScanners: args.includes('--remove-scanners'),
   skipScanners: args.includes('--skip-scanners'),
   project: args.includes('--project'),
+  dedupeLegacy: args.includes('--dedupe-legacy'),
 };
 
 if (opts.version) {
@@ -37,6 +38,9 @@ Install options:
   --project             Install into the current project (./.claude/ + ./.mcp.json)
                         instead of the global ~/.claude/ home. Use this in a repo
                         you want to share with your team.
+  --dedupe-legacy       Remove stale pre-marker copies of the cc-baseline block
+                        from CLAUDE.md / MEMORY.md (left behind by installs that
+                        predate the marker block). Backed up before removal.
   --version, -v         Print version
   --help, -h            Show this help
 

@@ -8,7 +8,7 @@ const manifest = require('./manifest');
 const { createBackup } = require('./backup');
 const { confirm } = require('./prompt');
 const { checkConflicts } = require('./conflict-checker');
-const { mergeMarkerBlock } = require('./merge/markdown');
+const { mergeMarkerBlock, stripDuplicatePreamble } = require('./merge/markdown');
 const { mergeHooks } = require('./merge/settings-hooks');
 const { mergeMcpServers } = require('./merge/mcp-servers');
 const { installScanners } = require('./installers/scanners');
@@ -82,7 +82,12 @@ function diffAction(filePath, content) {
 }
 
 async function install(opts = {}) {
-  const { dryRun = false, yes: autoYes = false, skipScanners = false } = opts;
+  const {
+    dryRun = false,
+    yes: autoYes = false,
+    skipScanners = false,
+    dedupeLegacy = false,
+  } = opts;
   const target = resolveTarget(opts);
   const CLAUDE_DIR = target.claudeDir;
   const BACKUP_ROOT = target.backupRoot;
@@ -129,17 +134,42 @@ async function install(opts = {}) {
   const changes = [];
 
   // ── 2. CLAUDE.md / MEMORY.md — marker-block merge ─────────────────────────
+  const legacyDupes = [];
   for (const relPath of manifest.markerBlockFiles()) {
     const filePath = path.join(CLAUDE_DIR, relPath);
     const tpl = readTemplate(templateNameFor(relPath, target));
     const existing = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : '';
-    const merged = mergeMarkerBlock(existing, tpl);
+    let merged = mergeMarkerBlock(existing, tpl);
+
+    // An install predating the marker block appended instead of replacing, so a
+    // stale copy of these same instructions can sit above the markers and never
+    // update. Removing it is opt-in — it is still the user's file.
+    const dup = stripDuplicatePreamble(merged, tpl);
+    if (dup.changed) {
+      if (dedupeLegacy) {
+        merged = dup.content;
+        console.log(`  🧹 ${relPath} — removed stale pre-marker section(s): ${dup.removed.join(', ')}`);
+      } else {
+        legacyDupes.push({ relPath, titles: dup.removed });
+      }
+    }
+
     if (merged === existing) {
       console.log(`  ⏭️  ${relPath} — no changes (already up to date)`);
       continue;
     }
     changes.push({ label: relPath, path: filePath, content: merged });
     console.log(`  ✅ ${relPath} — ${existing ? 'marker-block merged' : 'created'}`);
+  }
+
+  if (legacyDupes.length > 0) {
+    const flag = target.mode === 'project' ? '--project --dedupe-legacy' : '--dedupe-legacy';
+    console.log('\n⚠️  Duplicate pre-marker content detected:\n');
+    for (const d of legacyDupes) {
+      console.log(`   ${d.relPath} — "${d.titles.join('", "')}" appears both above and inside the cc-baseline block`);
+    }
+    console.log('   Reason: the first install found no marker block to replace, so it appended one.');
+    console.log(`   Action: re-run with \`${flag}\` to remove the stale copy (a backup is written first).\n`);
   }
 
   // ── 3. Overwrite files (memory, scripts, agents, commands) ───────────────

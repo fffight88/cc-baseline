@@ -5,7 +5,12 @@ const path = require('path');
 const fs = require('fs');
 
 const ROOT = path.join(__dirname, '..');
-const { mergeMarkerBlock, removeMarkerBlock, hasMarkerBlock } = require(path.join(ROOT, 'src', 'merge', 'markdown'));
+const {
+  mergeMarkerBlock,
+  removeMarkerBlock,
+  hasMarkerBlock,
+  stripDuplicatePreamble,
+} = require(path.join(ROOT, 'src', 'merge', 'markdown'));
 const {
   mergeHooks,
   removeHarnessHooks,
@@ -75,6 +80,144 @@ t('removeMarkerBlock: isEmpty true when only marker block existed', () => {
   const only = '<!-- BEGIN cc-baseline -->\nX\n<!-- END cc-baseline -->\n';
   const { isEmpty } = removeMarkerBlock(only);
   assert.equal(isEmpty, true);
+});
+
+t('harnessIdOf: recognizes pre-i18n Korean statusMessage values', () => {
+  assert.equal(
+    harnessIdOf({ statusMessage: '세션 기본 규칙 로딩 중...' }, 'SessionStart'),
+    'session-start-load-rules');
+  assert.equal(
+    harnessIdOf({ statusMessage: 'cc-baseline 경로 정책 적용 중...' }, 'PreToolUse'),
+    'pre-tool-use-path-policy');
+  assert.equal(
+    harnessIdOf({ statusMessage: 'E2E 테스트 가이드 로딩 중...' }, 'PreToolUse'),
+    'pre-tool-use-e2e-guide');
+});
+
+t('mergeHooks: pre-i18n hook is replaced, not duplicated', () => {
+  const existing = {
+    SessionStart: [{ hooks: [{ type: 'command', command: 'OLD', statusMessage: '세션 기본 규칙 로딩 중...' }] }],
+  };
+  const harness = {
+    SessionStart: [{ hooks: [{
+      type: 'command', command: 'NEW',
+      statusMessage: 'Loading session rules...',
+      _ccBaselineId: 'session-start-load-rules',
+    }] }],
+  };
+  const all = mergeHooks(existing, harness).SessionStart.flatMap(e => e.hooks);
+  assert.equal(all.length, 1, `expected 1 hook, got ${all.length}`);
+  assert.equal(all[0].command, 'NEW');
+});
+
+t('mergeHooks: collapses accumulated duplicates of the same managed hook', () => {
+  const cmd = "pgrep -f '@anthropic-ai/claude-code' | while read pid; do :; done";
+  const existing = {
+    SessionEnd: [{ hooks: Array.from({ length: 23 }, () => ({ type: 'command', command: cmd })) }],
+  };
+  const harness = {
+    SessionEnd: [{ hooks: [{ type: 'command', command: cmd, _ccBaselineId: 'session-end-orphan-cleanup' }] }],
+  };
+  const merged = mergeHooks(existing, harness);
+  const all = merged.SessionEnd.flatMap(e => e.hooks);
+  assert.equal(all.length, 1, `expected 1 hook after dedupe, got ${all.length}`);
+  assert.equal(all[0]._ccBaselineId, 'session-end-orphan-cleanup');
+});
+
+t('mergeHooks: dedupe preserves unrelated user hooks in the same event', () => {
+  const cmd = "pgrep -f '@anthropic-ai/claude-code' | while read pid; do :; done";
+  const existing = {
+    SessionEnd: [{
+      hooks: [
+        { type: 'command', command: cmd },
+        { type: 'command', command: 'echo mine' },
+        { type: 'command', command: cmd },
+      ],
+    }],
+  };
+  const harness = {
+    SessionEnd: [{ hooks: [{ type: 'command', command: cmd, _ccBaselineId: 'session-end-orphan-cleanup' }] }],
+  };
+  const all = mergeHooks(existing, harness).SessionEnd.flatMap(e => e.hooks);
+  assert.equal(all.length, 2);
+  assert.ok(all.some(h => h.command === 'echo mine'));
+  assert.equal(all.filter(h => h._ccBaselineId === 'session-end-orphan-cleanup').length, 1);
+});
+
+t('mergeHooks: dedupe is idempotent across repeated installs', () => {
+  const cmd = "pgrep -f '@anthropic-ai/claude-code' | while read pid; do :; done";
+  const harness = {
+    SessionEnd: [{ hooks: [{ type: 'command', command: cmd, _ccBaselineId: 'session-end-orphan-cleanup' }] }],
+  };
+  const once = mergeHooks({ SessionEnd: [{ hooks: [{ type: 'command', command: cmd }] }] }, harness);
+  const twice = mergeHooks(once, harness);
+  assert.deepEqual(twice, once);
+  assert.equal(twice.SessionEnd.flatMap(e => e.hooks).length, 1);
+});
+
+t('stripDuplicatePreamble: removes stale pre-marker copy sharing the block H1', () => {
+  const block = '# Global Memory Index\n\n- [a.md](a.md) — current';
+  const existing = mergeMarkerBlock('# Global Memory Index\n\n- [a.md](a.md) — stale\n', block);
+  const { content, removed, changed } = stripDuplicatePreamble(existing, block);
+  assert.equal(changed, true);
+  assert.deepEqual(removed, ['Global Memory Index']);
+  assert.ok(!content.includes('stale'));
+  assert.match(content, /current/);
+  assert.ok(content.startsWith('<!-- BEGIN cc-baseline -->'));
+});
+
+t('stripDuplicatePreamble: keeps user sections under a different H1', () => {
+  const block = '# Global Memory Index\n\n- managed';
+  const existing = mergeMarkerBlock('# My Own Notes\n\nkeep me\n\n# Global Memory Index\n\ndrop me\n', block);
+  const { content, removed, changed } = stripDuplicatePreamble(existing, block);
+  assert.equal(changed, true);
+  assert.deepEqual(removed, ['Global Memory Index']);
+  assert.match(content, /# My Own Notes/);
+  assert.match(content, /keep me/);
+  assert.ok(!content.includes('drop me'));
+});
+
+t('stripDuplicatePreamble: no marker block → untouched', () => {
+  const existing = '# Global Memory Index\n\nplain file\n';
+  const { content, changed } = stripDuplicatePreamble(existing, '# Global Memory Index\n\nx');
+  assert.equal(changed, false);
+  assert.equal(content, existing);
+});
+
+t('stripDuplicatePreamble: unrelated preamble → untouched', () => {
+  const block = '# Global Memory Index\n\n- managed';
+  const existing = mergeMarkerBlock('# Unrelated Doc\n\nmine\n', block);
+  const { content, changed } = stripDuplicatePreamble(existing, block);
+  assert.equal(changed, false);
+  assert.equal(content, existing);
+});
+
+t('stripDuplicatePreamble: ignores H1-looking lines inside fenced code', () => {
+  const block = '# Real Title\n\nbody';
+  const existing = mergeMarkerBlock('# Keep\n\n```sh\n# Real Title\n```\n', block);
+  const { changed } = stripDuplicatePreamble(existing, block);
+  assert.equal(changed, false);
+});
+
+t('stripDuplicatePreamble: idempotent — second pass is a no-op', () => {
+  const block = '# Global Memory Index\n\n- current';
+  const existing = mergeMarkerBlock('# Global Memory Index\n\n- stale\n', block);
+  const once = stripDuplicatePreamble(existing, block).content;
+  const twice = stripDuplicatePreamble(once, block);
+  assert.equal(twice.changed, false);
+  assert.equal(twice.content, once);
+});
+
+t('stripDuplicatePreamble: result survives a later marker-block merge', () => {
+  const block = '# Global Memory Index\n\n- v1';
+  const cleaned = stripDuplicatePreamble(
+    mergeMarkerBlock('# Global Memory Index\n\n- stale\n', block),
+    block
+  ).content;
+  const remerged = mergeMarkerBlock(cleaned, '# Global Memory Index\n\n- v2');
+  assert.match(remerged, /v2/);
+  assert.ok(!remerged.includes('stale'));
+  assert.ok(!remerged.includes('v1'));
 });
 
 t('hasMarkerBlock: true when both markers present', () => {
@@ -548,7 +691,7 @@ t('project install: .mcp.json is { mcpServers: {...} } with all 5 playwright ser
   });
 });
 
-t('project doctor: runChecks returns 8 results with project labels', async () => {
+t('project doctor: runChecks returns 9 results with project labels', async () => {
   await withTempProject(async (tmp) => {
     const origLog = console.log;
     console.log = () => {};
@@ -558,11 +701,12 @@ t('project doctor: runChecks returns 8 results with project labels', async () =>
       console.log = origLog;
     }
     const results = runChecks({ project: true });
-    assert.equal(results.length, 8, `expected 8 project-doctor checks, got ${results.length}`);
+    assert.equal(results.length, 9, `expected 9 project-doctor checks, got ${results.length}`);
     const names = results.map(r => r.name);
     assert.ok(names.includes('./.claude/ directory'));
     assert.ok(names.includes('Project CLAUDE.md'));
     assert.ok(names.includes('Project MEMORY.md'));
+    assert.ok(names.includes('Duplicate pre-marker content'));
     assert.ok(names.includes('Hooks (./.claude/settings.json)'));
     assert.ok(names.includes('MCP servers (./.mcp.json)'));
     assert.ok(names.includes('Global cc-baseline (informational)'));

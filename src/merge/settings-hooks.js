@@ -2,10 +2,19 @@
 
 // Legacy identifiers — used so installs from older cc-baseline versions
 // (which had no _ccBaselineId) can still be recognized and replaced cleanly.
+//
+// statusMessage doubles as a matching key against already-installed hooks, so
+// every value cc-baseline has ever shipped must stay listed here. The pre-i18n
+// Korean strings are the ones installed before fad22c6 (2026-04-30) translated
+// the templates; without them those hooks look foreign and get duplicated on
+// the next install instead of replaced.
 const LEGACY_STATUS_MESSAGE_TO_ID = {
   'Loading session rules...': 'session-start-load-rules',
   'Applying cc-baseline path policy...': 'pre-tool-use-path-policy',
   'Loading E2E test guide...': 'pre-tool-use-e2e-guide',
+  '세션 기본 규칙 로딩 중...': 'session-start-load-rules',
+  'cc-baseline 경로 정책 적용 중...': 'pre-tool-use-path-policy',
+  'E2E 테스트 가이드 로딩 중...': 'pre-tool-use-e2e-guide',
 };
 const LEGACY_SESSION_END_COMMAND_PREFIX = "pgrep -f '@anthropic-ai/claude-code'";
 
@@ -83,6 +92,22 @@ function mergeHooks(existingHooks, harnessHooks) {
               break;
             }
           }
+
+          // Installs predating _ccBaselineId appended a fresh copy on every run,
+          // so the same managed hook can sit in the file many times over.
+          // Replacing the first match leaves the rest behind — they would keep
+          // firing, and doctor would still report the hook as correctly
+          // registered. Collapse every remaining copy of this ID.
+          if (replaced) {
+            let kept = false;
+            for (const existingEntry of result[event]) {
+              existingEntry.hooks = (existingEntry.hooks || []).filter(h => {
+                if (harnessIdOf(h, event) !== harnessId) return true;
+                if (!kept) { kept = true; return true; }
+                return false;
+              });
+            }
+          }
         }
 
         if (!replaced) {
@@ -99,6 +124,9 @@ function mergeHooks(existingHooks, harnessHooks) {
         }
       }
     }
+
+    // dedupe above can empty an entry out
+    result[event] = result[event].filter(e => (e.hooks || []).length > 0);
   }
 
   return result;
