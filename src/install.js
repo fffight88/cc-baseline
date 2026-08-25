@@ -34,7 +34,7 @@ function readTemplate(relPath) {
 // Project mode swaps three templates that need different content from
 // global mode: CLAUDE.md (relative paths, no {{HOME}}), settings-hooks
 // (project- prefixed IDs + cwd-relative hooks), mcp-servers (npx-based
-// command for portability across machines). All other 22 manifest files
+// command for portability across machines). All other 23 manifest files
 // are byte-identical between modes.
 const PROJECT_TEMPLATE_OVERRIDES = {
   'CLAUDE.md': 'project-CLAUDE.md',

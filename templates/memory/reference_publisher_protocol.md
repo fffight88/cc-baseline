@@ -9,6 +9,7 @@ type: reference
 - ✅ DO: `UI Impact: Yes/Unknown` in a plan's `## Meta` block → delegate UI/publishing work to publisher
 - ✅ DO: After publisher returns `done`, **hand off to e2e-tester for functional verification** (responsive/states/console) — see §6
 - ✅ DO: Provide a running `base_url` so publisher can run render compare + axe-core a11y scan
+- ✅ DO: Expect the vendored Web Interface Guidelines check in every publish report's `self_check` — it runs with or without `base_url`
 - ✅ DO: Pass `quality_flags` (responsive/i18n/dark_mode) only when the user/spec requires them
 - ✅ DO: render-compare exhaustively (thead **and** tbody, all key states) + assert runtime invariants (no whitelabel / no console error) on every rendered screen — see §9
 - ❌ DON'T: Expect publisher to write data binding, API, state, or event logic (out of its role)
@@ -163,6 +164,7 @@ publisher covers **visual tone & manner + runtime a11y**. It does **not** test f
 | Tone & manner, render breakage | publisher (Step 6 render compare) |
 | Runtime a11y (axe-core) | publisher (Step 6) |
 | Token/naming/UI-state coverage | publisher (Step 5 self-check) |
+| Static UI rules (focus, forms, animation, perf, i18n — vendored Vercel guidelines) | publisher (Step 5 self-check) |
 | **Functional interaction** (click → expected result, navigation, form submit) | **e2e-tester** |
 | Console-error-free during interaction | e2e-tester (already collects console) |
 | Responsive behavior under interaction | e2e-tester scenario (if `responsive` flag was on) |

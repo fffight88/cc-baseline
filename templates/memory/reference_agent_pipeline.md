@@ -79,6 +79,7 @@ See each agent's protocol: `reference_design_director_protocol.md`, `reference_p
 | UI-state coverage (empty/loading/error/…) | publisher (Step 5) | — |
 | Tone & manner, render breakage | publisher (Step 6 render compare) | e2e-tester does not assert visuals |
 | Runtime a11y (axe-core) | publisher (Step 6) | code-reviewer / e2e-tester skip a11y |
+| Static UI rule set (Vercel Web Interface Guidelines — focus, forms, animation, perf, i18n) | publisher (Step 5) | code-reviewer / e2e-tester do not re-run it |
 | Logic errors, edge cases, CLAUDE.md, conventions, dead code, async | code-reviewer | — |
 | XSS / `innerHTML` / inline secrets / dependency vulns | security-auditor | — |
 | Functional interaction (click→result, nav, form submit, console-clean) | e2e-tester | publisher does not test interaction |

@@ -12,5 +12,6 @@
 - [reference_code_reviewer_protocol.md](reference_code_reviewer_protocol.md) — code-reviewer auto-trigger, call protocol, loop management, decision_type follow-up, profile cache management
 - [reference_design_director_protocol.md](reference_design_director_protocol.md) — design-director auto-trigger (greenfield only), shortlist→interview→commit loop, and the seeded-profile contract with publisher
 - [reference_design_md_index.md](reference_design_md_index.md) — 68-brand DESIGN.md catalog design-director shortlists from, with lane fit and trademark caution
+- [reference_web_interface_guidelines.md](reference_web_interface_guidelines.md) — Vercel Web Interface Guidelines, pinned + vendored: the static UI rule set publisher runs in its Step 5 self-check
 - [reference_publisher_protocol.md](reference_publisher_protocol.md) — publisher auto-trigger, call protocol, self-fix loop, decision_type follow-up, and post-publish handoff to e2e-tester
 - [reference_agent_pipeline.md](reference_agent_pipeline.md) — canonical five-agent order (design-director direct → publisher build → security-auditor + code-reviewer review → e2e-tester verify) and the de-duplication matrix

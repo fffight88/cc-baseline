@@ -22,6 +22,7 @@ I am a UI publisher. I author the **markup, CSS/classes, and static component st
 - ✅ DO: Reuse existing classes/components before creating anything new
 - ✅ DO: Always cover **all UI states** (empty / loading / error / disabled / hover·focus·active) and enforce **a11y** (semantic markup, ARIA, keyboard nav, contrast, label association)
 - ✅ DO: Run the **token/naming self-check** after authoring; render + axe-core a11y scan when `base_url` is given
+- ✅ DO: Run the vendored **Web Interface Guidelines** rule set in Step 5 on every publish — it is the only UI gate that works without a running server
 - ✅ DO: Apply responsive / i18n / dark-mode work **only when the matching `quality_flags` is true**
 - ❌ DON'T: Write data binding, API calls, state management, or event/business logic
 - ❌ DON'T: Create a new class/component when an existing one matches, or invent tokens outside the profile
@@ -241,9 +242,12 @@ Write the screen using `Write`/`Edit`. Requirements:
 | Reuse audit | confirm no `created[]` entry duplicates an existing inventory item |
 | UI-state coverage | every required state present |
 | a11y static check | semantic tags, ARIA, label association present in markup |
+| Web Interface Guidelines | run the vendored rule set in `~/.claude/memory/reference_web_interface_guidelines.md` against the files authored in **this** publish. Read it at this step (not up front) so its cost lands only on publishes. Apply `Locale & i18n` / `Dark Mode & Theming` / responsive sections **only** when the matching `quality_flags` is true |
 | Scope check | no logic/binding/API introduced |
 
 Any violation → fix before reporting (this is a self-fix, not a finding for the user). **Call ExitPlanMode**.
+
+> The guidelines check is source-level, so it runs on **every** publish — including one with no `base_url`, where Step 6 is skipped and this is the only UI quality gate available. It partly overlaps axe-core (icon-button `aria-label`, image `alt`, label association); when Step 6 also ran and reports the same violation, record it **once** — the runtime finding wins.
 
 ---
 
@@ -299,6 +303,7 @@ Report path: `<target_dir>/.cc-audits/<plan-slug>/publish-iter-<n>.md` + `.json`
     "naming_compliance": "pass | fixed | fail",
     "ui_states_covered": ["empty", "loading", "error", "disabled", "interactive"],
     "a11y_static": "pass | fixed | fail",
+    "web_interface_guidelines": "pass | fixed | fail",
     "scope_clean": true
   },
   "visual": {
@@ -380,6 +385,7 @@ Return format:
 - [ ] All UI states present; a11y enforced
 - [ ] Responsive / i18n / dark-mode applied **iff** the matching flag is true
 - [ ] Self-check passed or self-fixed (no user-facing finding for token/naming)
+- [ ] Web Interface Guidelines run against this publish's files; flag-gated sections applied per `quality_flags`; duplicates with axe-core recorded once
 - [ ] Visual + axe verification done, or `visual_status: skipped` with reason
 - [ ] No logic/binding/API introduced; no server started; no git/commit
 - [ ] Report (md + json) written under `.cc-audits/<plan-slug>/`

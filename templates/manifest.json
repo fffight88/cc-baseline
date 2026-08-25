@@ -16,6 +16,7 @@
     "memory/reference_code_reviewer_protocol.md",
     "memory/reference_design_director_protocol.md",
     "memory/reference_design_md_index.md",
+    "memory/reference_web_interface_guidelines.md",
     "memory/reference_publisher_protocol.md",
     "memory/reference_agent_pipeline.md",
     "scripts/audit-report.js",
