@@ -7,6 +7,9 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- `templates/memory/reference_design_md_index.md` — a catalog of the 68 ready-made brand `DESIGN.md` files published at getdesign.md (indexed by [VoltAgent/awesome-claude-design](https://github.com/VoltAgent/awesome-claude-design), MIT), for picking a **greenfield** project's design direction. Each entry carries slug, brand, a one-line character description, and a **Lane** column (`product-ui` / `marketing-web`) — 42 of the 68 are usable for dense product UI; the rest assume large imagery and sparse pacing and are marked marketing-only, because those systems fall apart under a data table. The catalog is a pointer list: cc-baseline vendors none of the files, they are fetched at decision time and their concrete token values copied into the design profile so it stands alone after the URL rots. Includes an explicit trademark / trade-dress section — these are live companies' visual systems, so the system (scale, density, type voice) is fair to learn from while wordmarks, logos, and licensed typeface binaries are not.
+
 ## [1.5.0] — 2026-08-03
 
 ### Added
