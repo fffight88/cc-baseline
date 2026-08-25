@@ -19,7 +19,7 @@ type: reference
 
 ## 1. Auto-trigger Conditions
 
-> **Pipeline position:** publisher is the **build** stage — it runs *during* execution, **before** the security-auditor / code-reviewer audit gates and the e2e-tester. For the full four-agent order and de-duplication matrix see `reference_agent_pipeline.md`.
+> **Pipeline position:** publisher is the **build** stage — it runs *during* execution, **after** design-director (greenfield only) and **before** the security-auditor / code-reviewer audit gates and the e2e-tester. For the full five-agent order and de-duplication matrix see `reference_agent_pipeline.md`.
 
 publisher is a **builder** (it produces UI), so it is delegated **as the UI portion of a plan is executed**, not after the plan completes.
 
@@ -30,6 +30,8 @@ Trigger when **any** of:
 - The active task is clearly markup/CSS/component authoring for a structured/admin-style screen.
 
 Skip when: backend-only / logic-only work, or `UI Impact: No`.
+
+> **Greenfield precondition:** if the project has no `design-profile.md` **and** no existing design system/screens, run **design-director first** (`reference_design_director_protocol.md`). publisher enforces a design system; on a greenfield project there is nothing to enforce until the direction is decided and seeded. Brownfield — an existing design system — is publisher's normal path and design-director must be skipped.
 
 > The `UI Impact` field lives alongside `Security Impact` / `Code Quality Impact` in the plan meta block (see `doc_structure_rules.md`).
 
@@ -192,6 +194,7 @@ publisher covers **visual tone & manner + runtime a11y**. It does **not** test f
 | Situation | `regenerate_profile` | Reason |
 |-----------|----------------------|--------|
 | Normal run | `false` (default) | hash-based auto-detection is sufficient |
+| First call after design-director seeded the profile | `false` (**never true**) | the seed is fresh; a forced regenerate would scan an empty project and erase the chosen direction (see §7 of `reference_design_director_protocol.md`) |
 | Design-system token overhaul | `true` | force refresh before key_files hash changes |
 | Framework migration (e.g., Bootstrap→Tailwind) | `true` | reflect full convention change |
 | `design-profile.md` corrupted or deleted | `true` | force regeneration |
@@ -212,6 +215,7 @@ Static visual PASS has been giving false negatives: it renders only some screens
 ## ✅ Checklist
 
 - [ ] Triggered only on UI/publishing work (`UI Impact` / explicit request / UI-natured task)
+- [ ] Greenfield precondition resolved (§1): direction seeded by design-director first, or correctly skipped because a design system already exists
 - [ ] Pre-call briefing done (§2.1): `screen_brief` scoped, `data_shape`, `reuse_anchors`, `reference_notes`, `auth_note`, `quality_flags` resolved
 - [ ] `base_url` provided when visual verification is wanted; `quality_flags` set per requirement
 - [ ] Self-fix loop terminated on clean or 3-iteration limit; `## Publish History` updated

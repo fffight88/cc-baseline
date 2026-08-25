@@ -18,6 +18,7 @@ I am a UI publisher. I author the **markup, CSS/classes, and static component st
 ## ⚡ Key Rules Summary
 
 - ✅ DO: Run Step 0 design-profile check **first** (cache hit → load profile only; miss/stale → regenerate)
+- ✅ DO: Treat a `profile_origin: seeded` profile with empty `key_files` as a **cache hit** — never hash-check it, never regenerate it away; preserve `## Design Direction` verbatim on any later regeneration
 - ✅ DO: Reuse existing classes/components before creating anything new
 - ✅ DO: Always cover **all UI states** (empty / loading / error / disabled / hover·focus·active) and enforce **a11y** (semantic markup, ARIA, keyboard nav, contrast, label association)
 - ✅ DO: Run the **token/naming self-check** after authoring; render + axe-core a11y scan when `base_url` is given
@@ -91,9 +92,12 @@ Profile path: `<target_dir>/.cc-audits/design-profile.md`
 1. Attempt to Read the profile file.
 2. File missing → **auto-generate** (`profile_generated_reason: initial`).
 3. `regenerate_profile: true` → **force regenerate** (`profile_generated_reason: forced`).
-4. File exists → extract `key_files_hash` + `key_files` from frontmatter, recompute hash from current content.
-5. Hash matches → **cache hit** (load profile only, skip full scan).
-6. Hash mismatch → **stale + auto-regenerate** (`profile_generated_reason: stale`).
+4. `profile_origin: seeded` **and** `key_files` empty → **cache hit, no hash check** (a design-director seed on a greenfield project — the files to hash do not exist yet). Load and use as-is.
+5. File exists → extract `key_files_hash` + `key_files` from frontmatter, recompute hash from current content.
+6. Hash matches → **cache hit** (load profile only, skip full scan).
+7. Hash mismatch → **stale + auto-regenerate** (`profile_generated_reason: stale`).
+
+> **Never hash-check a profile with empty `key_files`.** There is nothing to hash, so the comparison always "mismatches" — which would regenerate the profile from an empty project and silently erase the design direction the user chose. See `reference_design_director_protocol.md` §7.
 
 #### Hash Computation
 
@@ -145,7 +149,8 @@ key_files_hash: <sha256 hash>
 key_files:
   - <file1>
 detected_stack: [<stack list>]
-profile_generated_reason: initial | stale | forced
+profile_generated_reason: initial | stale | forced | seeded
+profile_origin: scanned | seeded
 ---
 
 ## Stack
@@ -174,6 +179,8 @@ profile_generated_reason: initial | stale | forced
 
 **Call ExitPlanMode** — return to Sonnet and write the profile via the Write tool.
 
+> **Preserve the direction on regeneration.** If the profile being replaced has a `## Design Direction` section (written by design-director), copy it through **verbatim** and set `profile_origin: scanned`. A scan can re-derive tokens from code; it cannot re-derive why that direction was chosen or what was rejected.
+
 > **Note:** `design-profile.md` can be committed for team sharing, or added to `.gitignore` to exclude.
 
 ---
@@ -195,7 +202,7 @@ Produce an internal **required-pattern list**: the discrete UI patterns the scre
 
 **Call EnterPlanMode** — tone & manner analysis runs in Opus. From the reference screens extract: spacing rhythm, component composition habits, color usage, density, interaction affordances. **Call ExitPlanMode**.
 
-If no completed screens exist at all → record `reference_basis: spec-only` and rely on spec assets + profile alone.
+If no completed screens exist at all → record `reference_basis: spec-only` and rely on spec assets + profile alone. On a greenfield project the profile's **`## Design Direction`** section is the tone-and-manner basis — treat it as the reference screen would be. This is normal for screen 1; from screen 2 onward auto-selection picks screen 1 up.
 
 ---
 
@@ -368,6 +375,7 @@ Return format:
 ## ✅ Final Checklist (before returning)
 
 - [ ] Design profile loaded or (re)generated; `profile_status` set
+- [ ] Seeded profile (`profile_origin: seeded`, empty `key_files`) used as a cache hit without a hash check; `## Design Direction` preserved through any regeneration
 - [ ] Reuse-first applied; every `created[]` item justified
 - [ ] All UI states present; a11y enforced
 - [ ] Responsive / i18n / dark-mode applied **iff** the matching flag is true

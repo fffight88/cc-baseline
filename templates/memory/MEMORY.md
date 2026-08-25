@@ -10,6 +10,7 @@
 - [phase_end.md](phase_end.md) — Phase end checklist: repeat incomplete tasks until all tasks are done
 - [reference_security_auditor_protocol.md](reference_security_auditor_protocol.md) — security-auditor auto-trigger, call protocol, loop management, decision_type follow-up, notification rules
 - [reference_code_reviewer_protocol.md](reference_code_reviewer_protocol.md) — code-reviewer auto-trigger, call protocol, loop management, decision_type follow-up, profile cache management
-- [reference_design_md_index.md](reference_design_md_index.md) — 68-brand DESIGN.md catalog for choosing a greenfield project's design direction, with lane fit and trademark caution
+- [reference_design_director_protocol.md](reference_design_director_protocol.md) — design-director auto-trigger (greenfield only), shortlist→interview→commit loop, and the seeded-profile contract with publisher
+- [reference_design_md_index.md](reference_design_md_index.md) — 68-brand DESIGN.md catalog design-director shortlists from, with lane fit and trademark caution
 - [reference_publisher_protocol.md](reference_publisher_protocol.md) — publisher auto-trigger, call protocol, self-fix loop, decision_type follow-up, and post-publish handoff to e2e-tester
-- [reference_agent_pipeline.md](reference_agent_pipeline.md) — canonical four-agent order (publisher build → security-auditor + code-reviewer review → e2e-tester verify) and the de-duplication matrix
+- [reference_agent_pipeline.md](reference_agent_pipeline.md) — canonical five-agent order (design-director direct → publisher build → security-auditor + code-reviewer review → e2e-tester verify) and the de-duplication matrix
