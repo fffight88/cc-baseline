@@ -18,6 +18,9 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 - The agent pipeline is now **five** agents, not four: `design-director` (direct, greenfield only) → `publisher` (build) → `security-auditor` + `code-reviewer` (review, parallel) → `e2e-tester` (verify). `reference_agent_pipeline.md`, `reference_publisher_protocol.md`, and `doc_structure_rules.md` updated accordingly, including a de-duplication row placing direction ownership with design-director. Brownfield projects — the common case — are unaffected: design-director is skipped and publisher's own Step 0 scan runs exactly as before.
 - `templates/agents/publisher.md` Step 0 gained the seeded-profile branch (rule 4) and a preserve-on-regeneration rule for `## Design Direction`; Step 2's `reference_basis: spec-only` fallback now names the direction block as the tone-and-manner basis for screen 1 of a greenfield project.
 
+### Notes
+- Bare-harness A/B outcome recorded in `docs/plans/bare-harness-ab-test.md` §9: the always-loaded rule layer is **kept**. The measured runs showed no difference (default: delete), but a real-work trial of the rules-off build produced more wrong, unnecessary, and skipped actions, so the deletion was abandoned and the unmerged `feat/v2-rule-layer-reduction` branch was removed.
+
 ## [1.5.0] — 2026-08-03
 
 ### Added

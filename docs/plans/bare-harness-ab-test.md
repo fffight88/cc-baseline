@@ -2,6 +2,8 @@
 
 Decides, with evidence rather than plausibility, which layers of cc-baseline still earn their cost on Opus 5.
 
+> **Outcome (2026-10-24): rule layer KEPT.** The measured runs gave "no signal" (default: delete), but a real-work trial of Arm B was worse in practice, so the deletion was abandoned. See §9.
+
 ## Meta
 - **Security Impact:** No — no product code changes; the protocol only installs/uninstalls cc-baseline via supported flags and edits two reversible files.
 - **Code Quality Impact:** No — no source changes. Deliverable is a document plus recorded measurements.
@@ -196,6 +198,26 @@ rep 3:  C A B
 
 ---
 
+## 9. Result and decision
+
+**Measured result (2026-08-07).** Two rounds, six runs, T3 verification + T4 implementation. Arms A and B were indistinguishable: same defects found (4/4 each), same acceptance scores (7/7 each), wall time within 1%. Under §7 that is the "no signal" branch, whose default is deletion.
+
+**What followed.** The deletion was implemented on `feat/v2-rule-layer-reduction` (commit `502eca0`, "feat!: reduce the always-loaded rule layer…": 11 → 6 basic rules, `phase_start.md` / `phase_end.md` / `reference_doc_writing_style.md` retired). The branch was never pushed or merged. A pre-deletion snapshot was pushed as `backup/v1.5.0-full-rule-layer`.
+
+**Real-work trial of Arm B.** The rules-off build was installed and used for normal work. Compared with the full rule layer, it more often:
+- did the wrong thing,
+- did unnecessary work,
+- skipped things it should have done.
+
+**Decision: keep the rule layer as is.** The full rule layer stays on `develop` / `main`. The reduction branch was deleted on 2026-10-24 so a rules-off build cannot be installed by mistake (recoverable from `502eca0` while the object survives in the local reflog).
+
+**Why the measurement missed it.** The six runs were short, well-specified tasks graded on output correctness. The failures seen in practice — wrong-path actions, extra work, skipped steps — show up across long, loosely specified sessions, which this protocol did not sample. "No signal" here means *no signal on these tasks*, not *no effect*.
+
+- ✅ DO: Before re-proposing rule-layer deletion, add a task that samples long, open-ended real sessions and scores process errors (wrong / unnecessary / skipped actions), not just final diffs.
+- ❌ DON'T: Re-run this protocol unchanged and read "no signal" as license to delete — that is the result already overruled here.
+
+---
+
 ## ✅ Checklist
 
 **Before run 1**
@@ -218,3 +240,4 @@ rep 3:  C A B
 - [ ] Result matched against §7 — including the "no signal" and "claim refuted" branches
 - [ ] Arms restored (`--yes` reinstall) and `--doctor` back to 10 ok / 0 fail
 - [ ] Findings written up; any deletion raised as a **separate** plan, not executed here
+- [x] Final decision recorded in §9, including real-work evidence that overrode the measured result
