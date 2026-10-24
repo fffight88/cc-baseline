@@ -51,6 +51,7 @@ spec_assets:                             # optional design inputs (multimodal)
   - <path to .md / .png / .jpg / .pdf / .html>
 screen_brief:                            # the SCOPED target for THIS call (orchestrator-distilled — do not re-derive the whole spec)
   screen: <which screen / route this invocation builds>
+  screen_slug: <kebab-case id for this screen, e.g. user-list — names the report file; if omitted, derive it from target_file's basename>
   target_file: <where to write the markup, e.g. src/pages/users/UserList.tsx>
   registration: <how screens register here, e.g. route already at /admin/users in src/router.tsx>
   elements: [<concrete element list, e.g. FilterBar, DataTable(7 cols), Pagination, "Add user" button>]
@@ -256,7 +257,7 @@ Any violation → fix before reporting (this is a self-fix, not a finding for th
 Using the assigned MCP server (`mcp__{mcp_server}__*`, default `playwright-test-1`):
 
 1. Navigate to the new screen under `base_url`. Use `auth_note` to get past any login wall (e.g., assume the session is already authenticated, or follow the given bypass steps). **If the screen is behind auth and no `auth_note` was provided, set `visual_status: skipped` with reason `auth required` rather than screenshotting the login page.**
-2. **Render compare (exhaustive — false-negative prevention)**: screenshot the screen; screenshot reference screens; compare tone & manner (spacing, color, density). Flag visible breakage or mismatch. Be exhaustive:
+2. **Render compare (exhaustive — false-negative prevention)**: screenshot the screen (save every screenshot under `<target_dir>/.cc-audits/<plan-slug>/screens/` — never the project root or working directory); screenshot reference screens; compare tone & manner (spacing, color, density). Flag visible breakage or mismatch. Be exhaustive:
    - For tabular screens, compare **both the header (thead `<th>`) and the data cells (tbody `<td>`)** — a styled body with an unstyled/misaligned header is still a mismatch.
    - Capture **all key states**, not just the default/empty one: empty/new form **and** a form populated with real data **and** any popups/dialogs.
    - Assert each visual-contract item as **PASS/FAIL + a measured computed value** (e.g. alignment = `getComputedStyle(el).textAlign`), not "looks good". Also flag raw/duplicated value rendering as a mismatch.
@@ -277,9 +278,9 @@ Using the assigned MCP server (`mcp__{mcp_server}__*`, default `playwright-test-
 
 ### Step 7: Write Report
 
-Report path: `<target_dir>/.cc-audits/<plan-slug>/publish-iter-<n>.md` + `.json`
+Report path: `<target_dir>/.cc-audits/<plan-slug>/publish-<screen-slug>-iter-<n>.md` + `.json`
 
-`plan-slug` is the plan filename without extension.
+`plan-slug` is the plan filename without extension. `screen-slug` is `screen_brief.screen_slug` (or the target_file basename in kebab-case). It keeps one plan's screens from overwriting each other: screen 1 and screen 2 both start at `iter-1`.
 
 #### JSON Schema
 
@@ -287,6 +288,7 @@ Report path: `<target_dir>/.cc-audits/<plan-slug>/publish-iter-<n>.md` + `.json`
 {
   "scan_metadata": {
     "plan_slug": "<slug>",
+    "screen_slug": "<screen-slug>",
     "iteration": 1,
     "timestamp": "<ISO8601>",
     "target_dir": "<abs path>",
@@ -308,7 +310,7 @@ Report path: `<target_dir>/.cc-audits/<plan-slug>/publish-iter-<n>.md` + `.json`
   },
   "visual": {
     "visual_status": "passed | mismatch | skipped",
-    "screenshots": ["<path>"],
+    "screenshots": ["<target_dir>/.cc-audits/<plan-slug>/screens/<file>.png"],
     "tone_match_notes": "<one line>",
     "axe": { "critical": 0, "serious": 0, "moderate": 0, "minor": 0 }
   },

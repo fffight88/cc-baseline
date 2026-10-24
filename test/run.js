@@ -262,6 +262,95 @@ t('harnessIdOf: matches SessionEnd legacy command prefix only when event=Session
   assert.equal(harnessIdOf(hook, 'PreToolUse'), null);
 });
 
+t('harnessIdOf: recognizes the native-binary SessionEnd command without _ccBaselineId', () => {
+  const hook = { command: "{ pgrep -x claude; pgrep -f '@anthropic-ai/claude-code'; } 2>/dev/null | sort -u | while read pid; do :; done" };
+  assert.equal(harnessIdOf(hook, 'SessionEnd'), 'session-end-orphan-cleanup');
+});
+
+// Regression tests for the harness-smoke findings (docs/plans/harness-smoke-fixes.md)
+const projectHookTemplate = JSON.parse(
+  fs.readFileSync(path.join(ROOT, 'templates', 'settings-hooks.project.json'), 'utf8')
+);
+function templateHook(template, id) {
+  for (const entries of Object.values(template)) {
+    for (const entry of entries) {
+      for (const hook of entry.hooks) if (hook._ccBaselineId === id) return hook;
+    }
+  }
+  return null;
+}
+
+t('B7b: path-policy hooks deny with exit 0, not exit 2', () => {
+  for (const [template, id] of [[harnessTemplate, 'pre-tool-use-path-policy'], [projectHookTemplate, 'project-pre-tool-use-path-policy']]) {
+    const hook = templateHook(template, id);
+    assert.ok(hook, `${id} missing`);
+    assert.match(hook.command, /'permissionDecision': 'deny'/);
+    assert.doesNotMatch(hook.command, /sys\.exit\(2\)/, `${id} still exits 2`);
+  }
+});
+
+t('B3: e2e-guide hook uses a per-session marker instead of the "once" field', () => {
+  const hook = templateHook(harnessTemplate, 'pre-tool-use-e2e-guide');
+  assert.equal(hook.once, undefined, '"once" is not honored in settings.json hooks');
+  assert.match(hook.command, /session_id/);
+  assert.match(hook.command, /O_EXCL/, 'marker must be created exclusively');
+  assert.match(hook.command, /O_NOFOLLOW/, 'marker must not follow symlinks');
+  assert.match(hook.command, /cc-baseline-%d/, 'marker lives in a per-user directory');
+});
+
+t('B3: e2e-guide hook prints the guide once per session id', () => {
+  const { execFileSync } = require('child_process');
+  const os = require('os');
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ccb-home-'));
+  fs.mkdirSync(path.join(home, '.claude', 'memory'), { recursive: true });
+  fs.writeFileSync(path.join(home, '.claude', 'memory', 'reference_subagent_boundary.md'), 'BOUNDARY\nline2');
+  fs.writeFileSync(path.join(home, '.claude', 'memory', 'reference_e2e_manager_guide.md'), 'GUIDE');
+  const command = templateHook(harnessTemplate, 'pre-tool-use-e2e-guide').command.split(PLACEHOLDER).join(home);
+  const sid = `ccb-test-${process.pid}-${Date.now()}`;
+  const marker = path.join(os.tmpdir(), `cc-baseline-${process.getuid()}`, `e2e-guide-${sid}`);
+  const run = (input) => execFileSync('/bin/sh', ['-c', command], { input, encoding: 'utf8', env: { ...process.env, TMPDIR: os.tmpdir() } });
+  try {
+    const first = JSON.parse(run(JSON.stringify({ session_id: sid })));
+    const context = first.hookSpecificOutput.additionalContext;
+    assert.match(context, /# reference_subagent_boundary\.md\nBOUNDARY\nline2/);
+    assert.match(context, /# reference_e2e_manager_guide\.md\nGUIDE/);
+    assert.equal(run(JSON.stringify({ session_id: sid })), '', 'second call in the same session must print nothing');
+    assert.notEqual(run('{}'), '', 'without a session id the guide is still printed');
+  } finally {
+    fs.rmSync(marker, { force: true });
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+t('B8: SessionEnd hook matches the native claude binary and the npm install', () => {
+  const hook = templateHook(harnessTemplate, 'session-end-orphan-cleanup');
+  assert.match(hook.command, /pgrep -u "\$\(id -u\)" -x claude/);
+  assert.match(hook.command, /pgrep -u "\$\(id -u\)" -f '@anthropic-ai\/claude-code'/);
+  assert.match(hook.command, /' -p '\*\|\*' --print '/, 'headless claude -p / --print must be skipped');
+  assert.doesNotMatch(hook.command, /\[\[/, 'use POSIX [ ] so /bin/sh can run it');
+});
+
+t('harnessIdOf: recognizes the user-scoped SessionEnd command without _ccBaselineId', () => {
+  const hook = { command: templateHook(harnessTemplate, 'session-end-orphan-cleanup').command };
+  assert.equal(harnessIdOf(hook, 'SessionEnd'), 'session-end-orphan-cleanup');
+});
+
+t('harness-smoke fixes: retired strings stay out of templates', () => {
+  const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap(e =>
+    e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]);
+  const files = walk(path.join(ROOT, 'templates')).filter(f => /\.(md|json)$/.test(f));
+  const text = files.map(f => fs.readFileSync(f, 'utf8')).join('\n');
+  // B1: only the "do not fetch" warnings may name the getdesign page
+  assert.doesNotMatch(text, /WebFetch https:\/\/getdesign\.md/);
+  assert.doesNotMatch(text, /awesome-design-md\/main\//, 'DESIGN.md source must be pinned to a commit');
+  // B2: per-screen publish reports
+  assert.doesNotMatch(text, /publish-iter-<n>/);
+  // B4: semgrep must never be told to use auto config
+  assert.doesNotMatch(text.replace(/Never run `semgrep --config auto`/g, ''), /semgrep[^\n]*--config auto/);
+  // B7a: the pathspec form that exits 1 when .claude/ is gitignored
+  assert.doesNotMatch(text, /✅ DO: `git add --all -- ':!\.claude'`/);
+});
+
 t('harnessIdOf: unrelated hook returns null', () => {
   assert.equal(harnessIdOf({ command: 'echo hi' }), null);
   assert.equal(harnessIdOf(null), null);

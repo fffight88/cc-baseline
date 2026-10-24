@@ -17,6 +17,14 @@ const LEGACY_STATUS_MESSAGE_TO_ID = {
   'E2E 테스트 가이드 로딩 중...': 'pre-tool-use-e2e-guide',
 };
 const LEGACY_SESSION_END_COMMAND_PREFIX = "pgrep -f '@anthropic-ai/claude-code'";
+// Every SessionEnd command prefix cc-baseline has shipped. The later ones
+// (2026-10-24) also match the native `claude` binary, which the npm-path
+// pattern above no longer finds; the last is scoped to the current user.
+const SESSION_END_COMMAND_PREFIXES = [
+  LEGACY_SESSION_END_COMMAND_PREFIX,
+  '{ pgrep -x claude;',
+  '{ pgrep -u "$(id -u)" -x claude;',
+];
 
 // Returns the cc-baseline managed-hook ID for a hook entry, or null if it
 // isn't one of ours. Recognizes both the new _ccBaselineId field and the
@@ -31,7 +39,7 @@ function harnessIdOf(hook, event) {
   }
   if (event === 'SessionEnd' &&
       typeof hook.command === 'string' &&
-      hook.command.startsWith(LEGACY_SESSION_END_COMMAND_PREFIX)) {
+      SESSION_END_COMMAND_PREFIXES.some(prefix => hook.command.startsWith(prefix))) {
     return 'session-end-orphan-cleanup';
   }
   return null;

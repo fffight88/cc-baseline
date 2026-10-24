@@ -170,7 +170,7 @@ npx github:fffight88/cc-baseline --project --uninstall --yes
 | 컴포넌트 | 설명 |
 |---|---|
 | 행동 규칙 (`CLAUDE.md`, `memory/*.md`) | 11가지 세션 규칙: 응답 언어, 불확실성, 병렬 읽기, 최소 수정, git 안전성 등 |
-| 커스텀 스킬 (`/plan`, `/clean`, `/open-browser`, `/check-log`) | 플랜 모드 진입; 고아 프로세스 + e2e 아티팩트 정리; 수동 테스트용 Playwright 브라우저; Fail 진단 수집기 |
+| 커스텀 스킬 (`/plan`, `/clean`, `/open-browser`, `/check-log`) | 플랜 모드 진입; 고아 프로세스 + 프로젝트 개발 서버 + e2e 아티팩트 정리; 수동 테스트용 Playwright 브라우저; Fail 진단 수집기 |
 | E2E 테스터 에이전트 (`e2e-tester`) | 브라우저 기반 E2E 테스트 러너 — 매니저 시나리오에 더해 모든 화면에서 런타임 불변식 + 데드컨트롤 스윕을 내장 실행(화이트라벨/콘솔에러 없음; 모든 클릭요소가 효과를 내야 함, 파괴적 컨트롤은 스킵); PASS: 로그 수집 없음; FAIL: 콘솔 + 네트워크 + 서버 로그 → `e2e-results/fail-{N}-{timestamp}.md` |
 | Security Auditor 에이전트 (`security-auditor`) | SAST · SCA · 시크릿 스캔 · 프롬프트 인젝션 탐지; 이슈별 구조화된 리포트; 스캐너 미설치 gap 이슈 (HIGH/MEDIUM) |
 | Code Reviewer 에이전트 (`code-reviewer`) | 로직 오류 · 엣지 케이스 · CLAUDE.md 위반 · 컨벤션 검사 · 크로스파일 영향 분석 · async/Promise 오류 · 테스트 커버리지 갭; 프로필 무결성 검증; 보안은 security-auditor에 위임 |
@@ -364,7 +364,7 @@ npx github:fffight88/cc-baseline --uninstall --yes --purge --remove-scanners
 4.  /check-log server.log                →  콘솔 + 네트워크 + 서버 로그 수집
 5.  e2e-results/fail-manual-{timestamp}.md  자동 생성
 6.  Claude가 분석 후 디버깅 진행 여부 확인
-7.  /clean                               →  fail-*.md + 브라우저 세션 상태 삭제
+7.  /clean                               →  프로젝트 개발 서버 정지, fail-* + 브라우저 세션 상태 삭제
 ```
 
 ### Fail 아티팩트 내용 (에러 발생 시)
@@ -396,7 +396,7 @@ npx github:fffight88/cc-baseline --uninstall --yes --purge --remove-scanners
 ```
 <project-root>/.cc-audits/<plan-slug>/iter-<n>.{md,json}
 <project-root>/.cc-audits/<plan-slug>/code-review-iter-<n>.{md,json}
-<project-root>/.cc-audits/<plan-slug>/publish-iter-<n>.{md,json}
+<project-root>/.cc-audits/<plan-slug>/publish-<screen-slug>-iter-<n>.{md,json}
 <project-root>/.cc-audits/design-profile.md   # 공유 디자인 시스템 프로파일 (publisher)
 ```
 

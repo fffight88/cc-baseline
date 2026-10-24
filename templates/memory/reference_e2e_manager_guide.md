@@ -152,7 +152,7 @@ e2e-results/fail-{N}-{YYYYMMDD-HHmmss}.md
 - If no session file exists, `playwright-test-1` may be assigned to an e2e-tester agent
 
 ### Cleanup
-- Run `/clean` to delete all `e2e-results/fail-*.md` files and `.claude/browser-session.json`
+- Run `/clean` to delete all `e2e-results/fail-*` files and `.claude/browser-session.json`
 - ✅ Delete `.png`, `.yml`, `.log` files in `.playwright-mcp/` immediately after commit
 - ❌ Never commit with those files staged
 - **Verify:** after commit, run `ls .playwright-mcp/` to confirm no leftover files
@@ -273,7 +273,7 @@ authenticated result (not a login redirect). Same-origin means all headers
 - [ ] After all tests complete, generate HTML report (`.playwright-mcp/report.html`)
 - [ ] Include `LOG_FILE` paths from FAIL reports in the HTML report for traceability
 - [ ] Launch web server and open report in browser
-- [ ] Run `/clean` to stop server after user confirms (also deletes `e2e-results/fail-*.md`)
+- [ ] Run `/clean` to stop server after user confirms (also deletes `e2e-results/fail-*`)
 - [ ] Clean up `.playwright-mcp/` files before commit
 - [ ] For download TCs: never use `browser_click` to trigger a download — use `browser_run_code` with `Promise.all(waitForResponse, waitForEvent('download'), click)`
 - [ ] For negative/permission download TCs: use `browser_evaluate` + `fetch` with `credentials: 'same-origin'`

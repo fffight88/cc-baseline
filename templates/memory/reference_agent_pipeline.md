@@ -104,7 +104,7 @@ A whole class of defects (whitelabel/500 on click, unbound event handlers, visua
 - publisher and the audit gates are **sequential** (publisher first) — never parallel.
 - security-auditor and code-reviewer run **in parallel with each other** (single message, no report-path collision).
 - e2e-tester runs **after** the audit gates settle, so it tests the post-fix code, not an intermediate state.
-- The HTML report (`audit-report.js`) is generated **once**, after both audit gates complete (it merges `iter-*.json` + `code-review-iter-*.json`; publisher's `publish-iter-*.json` is a separate build record, not part of the audit HTML).
+- The HTML report (`audit-report.js`) is generated **once**, after both audit gates complete (it merges `iter-*.json` + `code-review-iter-*.json`; publisher's `publish-*-iter-*.json` is a separate build record, not part of the audit HTML).
 
 ---
 
@@ -112,7 +112,7 @@ A whole class of defects (whitelabel/500 on click, unbound event handlers, visua
 
 ```
 design-direction-iter-<n>.{md,json}  # design-director decision record (greenfield only)
-publish-iter-<n>.{md,json}      # publisher build record
+publish-<screen-slug>-iter-<n>.{md,json}  # publisher build record, one series per screen
 iter-<n>.{md,json}              # security-auditor
 code-review-iter-<n>.{md,json}  # code-reviewer
 report.html                     # merged audit HTML (security + code-review)

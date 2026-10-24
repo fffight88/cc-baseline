@@ -170,7 +170,7 @@ Because `./.claude/memory/` and `./.mcp.json` are committable and run on every t
 | Component | Description |
 |---|---|
 | Behavior rules (`CLAUDE.md`, `memory/*.md`) | 11 session rules: response language, uncertainty, parallel reads, minimal edits, git safety, and more |
-| Custom skills (`/plan`, `/clean`, `/open-browser`, `/check-log`) | Plan-mode entry; orphan-process + e2e artifact cleanup; Playwright browser for manual testing; fail diagnostics collector |
+| Custom skills (`/plan`, `/clean`, `/open-browser`, `/check-log`) | Plan-mode entry; orphan-process + project dev-server + e2e artifact cleanup; Playwright browser for manual testing; fail diagnostics collector |
 | E2E tester agent (`e2e-tester`) | Browser-based E2E test runner — on top of the manager's scenario, runs a built-in runtime-invariant + dead-control sweep on every screen (no whitelabel/console-error; every clickable control must produce an effect, destructive ones skipped); PASS: no log collection; FAIL: console + network + server log → `e2e-results/fail-{N}-{timestamp}.md` |
 | Security auditor agent (`security-auditor`) | SAST · SCA · secret scan · prompt injection detection; structured per-issue reports; missing-scanner gap issues (HIGH/MEDIUM) |
 | Code reviewer agent (`code-reviewer`) | Logic errors · edge cases · CLAUDE.md violations · convention checks · cross-file impact analysis · async/Promise errors · test coverage gaps; profile integrity check; defers security to security-auditor |
@@ -364,7 +364,7 @@ To customize and republish: fork the repo, edit `templates/`, use `{{HOME}}` as 
 4.  /check-log server.log                →  Claude reads console + network + server log
 5.  e2e-results/fail-manual-{timestamp}.md  is written automatically
 6.  Claude analyzes and offers to debug
-7.  /clean                               →  deletes fail-*.md + browser session state
+7.  /clean                               →  stops project dev servers, deletes fail-* + browser session state
 ```
 
 ### Fail artifact content (on error)
@@ -396,7 +396,7 @@ The `e2e-tester` agent follows the same policy automatically:
 ```
 <project-root>/.cc-audits/<plan-slug>/iter-<n>.{md,json}
 <project-root>/.cc-audits/<plan-slug>/code-review-iter-<n>.{md,json}
-<project-root>/.cc-audits/<plan-slug>/publish-iter-<n>.{md,json}
+<project-root>/.cc-audits/<plan-slug>/publish-<screen-slug>-iter-<n>.{md,json}
 <project-root>/.cc-audits/design-profile.md   # shared design-system profile (publisher)
 ```
 

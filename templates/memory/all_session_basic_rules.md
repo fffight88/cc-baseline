@@ -54,9 +54,11 @@ Follow the existing patterns and style within the same module (package, director
 
 The `.claude/` folder must never be committed to git in any project.
 
-- ✅ DO: `git add --all -- ':!.claude'`
-- ❌ DON'T: `git add -A`, `git add .`, `git add .claude/` are forbidden
-- Verify: before committing, run `git status` and confirm no `.claude/` files are staged
+- ✅ DO: `git add --all && git reset -q -- ':(top,glob)**/.claude/**'` (stage everything, then unstage every `.claude/` in the repo — exit 0 whether or not `.claude/` is gitignored, from any subdirectory, and in a repo with no commits yet)
+- ❌ DON'T: `git add -A`, `git add .`, or `git add --all` **without** the `git reset` that follows it; `git add .claude/` is forbidden
+- ❌ DON'T: `git add --all -- ':!.claude'` — once `.claude/` exists and is gitignored, git exits 1 ("paths are ignored") even though staging succeeded, which breaks `&&` chains
+- ❌ DON'T: `git rm --cached .claude` to unstage — if `.claude/` was ever tracked, that deletes it from the repo on commit
+- Verify: before committing, `git diff --cached --name-only | grep '\.claude/'` must print nothing
 
 ---
 
@@ -64,7 +66,7 @@ The `.claude/` folder must never be committed to git in any project.
 
 If you started a server, always stop it when the task is done.
 
-- ✅ DO: Run `/clean` after task completion (bulk cleanup of orphan processes)
+- ✅ DO: Run `/clean` after task completion (orphan processes + dev servers listening from this project dir)
 - ❌ DON'T: Never report "server stopped" without running `/clean`
 - ❌ DON'T: Never leave a server running without explicit instruction ("I'll leave the server running")
 

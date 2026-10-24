@@ -66,6 +66,7 @@ spec_assets:                     # optional design inputs (md/image/pdf/html)
   - <path>
 screen_brief:                    # scoped target for THIS call (distilled, not the whole spec)
   screen: <screen / route>
+  screen_slug: <kebab-case id, e.g. user-list — names the report file>
   target_file: <file to write, e.g. src/pages/users/UserList.tsx>
   registration: <how screens register, e.g. route already at /admin/users>
   elements: [<FilterBar, DataTable(7 cols), Pagination, ...>]
@@ -119,8 +120,8 @@ publisher self-fixes token/naming/UI-state/a11y-static violations internally (no
 
 ```markdown
 ## Publish History
-- publish-iter-1: 2026-05-29 / reused=6 created=2 / visual=mismatch axe(serious=1) / profile=generated / next_action=self_fix
-- publish-iter-2: 2026-05-29 / reused=6 created=2 / visual=passed axe(0) / profile=cached / next_action=done
+- publish-user-list-iter-1: 2026-05-29 / reused=6 created=2 / visual=mismatch axe(serious=1) / profile=generated / next_action=self_fix
+- publish-user-list-iter-2: 2026-05-29 / reused=6 created=2 / visual=passed axe(0) / profile=cached / next_action=done
 ```
 
 ---
@@ -182,12 +183,13 @@ publisher covers **visual tone & manner + runtime a11y**. It does **not** test f
 ## 7. Report Path Rules
 
 ```
-<target_dir>/.cc-audits/<plan-slug>/publish-iter-<n>.md
-<target_dir>/.cc-audits/<plan-slug>/publish-iter-<n>.json
+<target_dir>/.cc-audits/<plan-slug>/publish-<screen-slug>-iter-<n>.md
+<target_dir>/.cc-audits/<plan-slug>/publish-<screen-slug>-iter-<n>.json
+<target_dir>/.cc-audits/<plan-slug>/screens/*.png   # publisher screenshots
 <target_dir>/.cc-audits/design-profile.md   # shared design profile (reused across plans)
 ```
 
-`plan-slug` is the plan filename without extension.
+`plan-slug` is the plan filename without extension. `screen-slug` comes from `screen_brief.screen_slug` (or the target file's basename), so each screen of a plan keeps its own `iter-1..n` series instead of overwriting the previous screen's report.
 
 ---
 
