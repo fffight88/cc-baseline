@@ -2,7 +2,7 @@
   "playwright-test-1": {
     "type": "stdio",
     "command": "npx",
-    "args": ["-y", "@playwright/mcp@0.0.75", "--headless", "--isolated"],
+    "args": ["-y", "@playwright/mcp@0.0.75", "--isolated"],
     "env": {}
   },
   "playwright-test-2": {

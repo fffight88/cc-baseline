@@ -90,14 +90,27 @@ function mergeHooks(existingHooks, harnessHooks) {
         // replace existing managed hook with the same ID (recognizes legacy
         // statusMessage-only installs so re-installing doesn't duplicate them)
         if (harnessId !== null) {
+          let movedMatcher = false;
           for (const existingEntry of result[event]) {
             const idx = (existingEntry.hooks || []).findIndex(
               h => harnessIdOf(h, event) === harnessId
             );
             if (idx !== -1) {
-              existingEntry.hooks[idx] = harnessHook;
-              replaced = true;
+              if (existingEntry.matcher === harnessEntry.matcher) {
+                existingEntry.hooks[idx] = harnessHook;
+                replaced = true;
+              } else {
+                // the template's matcher changed: replacing in place would keep the old one
+                movedMatcher = true;
+              }
               break;
+            }
+          }
+
+          // drop every installed copy so the hook is re-added under the new matcher below
+          if (movedMatcher) {
+            for (const existingEntry of result[event]) {
+              existingEntry.hooks = (existingEntry.hooks || []).filter(h => harnessIdOf(h, event) !== harnessId);
             }
           }
 

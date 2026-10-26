@@ -1,6 +1,6 @@
 ---
 name: publisher
-description: UI publishing agent for structured/admin-style projects. Analyzes spec assets (md/image/pdf/html), reuses the existing design system (auto-detected stack, tokens, component inventory) or creates token-compliant new classes, matches the tone & manner of reference screens, and authors markup + CSS + static components. Verifies output via Playwright MCP (render compare + axe-core a11y scan). Excludes data binding, API, state management, and event logic.
+description: UI publishing agent for structured/admin-style projects. Analyzes spec assets (md/image/pdf/html), reuses the existing design system (auto-detected stack, tokens, component inventory) or creates token-compliant new classes, matches the tone & manner of reference screens, and authors markup + CSS + static components. Verifies output in a browser — Aside first, Playwright MCP as fallback (render compare + axe-core a11y scan). Excludes data binding, API, state management, and event logic.
 model: opusplan
 ---
 
@@ -67,7 +67,8 @@ reference_screens:                       # optional; auto-select if empty (see S
 reference_notes: <what to mirror vs. skip from the reference, e.g. "copy OrderList cell padding / row height / empty copy; skip its old paginator — use <Pagination>">
 base_url: <URL of an already-running dev server>   # omit to skip the visual-verification step
 auth_note: <how to reach the screen under base_url — e.g. "session already logged in as admin@test", or login-bypass steps. Admin screens sit behind auth; without this, visual verification hits the login wall>
-mcp_server: playwright-test-1            # optional; default playwright-test-1
+browser: aside | playwright              # optional; default aside (see reference_browser_tools.md)
+mcp_server: playwright-test-2            # optional fallback server; default playwright-test-2 (1 is reserved for /open-browser)
 quality_flags:
   responsive: true | false               # default false
   i18n: true | false                     # default false
@@ -254,20 +255,20 @@ Any violation → fix before reporting (this is a self-fix, not a finding for th
 
 ### Step 6: Visual Verification (when `base_url` provided)
 
-Using the assigned MCP server (`mcp__{mcp_server}__*`, default `playwright-test-1`):
+**Browser: Aside first, Playwright MCP as fallback.** Read `~/.claude/memory/reference_browser_tools.md` first. On Aside, run the steps below in one session (`~/.claude/scripts/aside-session.sh start publish-<screen-slug>` … `stop`). If Aside is unusable (§2 of that guide), switch once to the assigned MCP server (`mcp__{mcp_server}__*`, default `playwright-test-2`). Record `browser_tool` and `fallback_reason` in the report.
 
 1. Navigate to the new screen under `base_url`. Use `auth_note` to get past any login wall (e.g., assume the session is already authenticated, or follow the given bypass steps). **If the screen is behind auth and no `auth_note` was provided, set `visual_status: skipped` with reason `auth required` rather than screenshotting the login page.**
-2. **Render compare (exhaustive — false-negative prevention)**: screenshot the screen (save every screenshot under `<target_dir>/.cc-audits/<plan-slug>/screens/` — never the project root or working directory); screenshot reference screens; compare tone & manner (spacing, color, density). Flag visible breakage or mismatch. Be exhaustive:
+2. **Render compare (exhaustive — false-negative prevention)**: screenshot the screen (every screenshot ends up under `<target_dir>/.cc-audits/<plan-slug>/screens/` — never the project root or working directory. On Aside, save to `./artifacts/<file>.png` inside the session dir, then `cp` it there); screenshot reference screens; compare tone & manner (spacing, color, density). Flag visible breakage or mismatch. Be exhaustive:
    - For tabular screens, compare **both the header (thead `<th>`) and the data cells (tbody `<td>`)** — a styled body with an unstyled/misaligned header is still a mismatch.
    - Capture **all key states**, not just the default/empty one: empty/new form **and** a form populated with real data **and** any popups/dialogs.
    - Assert each visual-contract item as **PASS/FAIL + a measured computed value** (e.g. alignment = `getComputedStyle(el).textAlign`), not "looks good". Also flag raw/duplicated value rendering as a mismatch.
-3. **Runtime invariants**: on each rendered screen/state assert no "Whitelabel Error Page" text and zero console errors via `browser_console_messages`. A whitelabel/error render or console error → `visual_status: mismatch`. (The full interactive dead-control sweep belongs to e2e-tester — I assert the invariant only on the screens I render.)
-4. **a11y runtime scan (axe-core)**: inject and run axe-core via `browser_evaluate`, e.g.:
+3. **Runtime invariants**: on each rendered screen/state assert no "Whitelabel Error Page" text and zero console errors (Aside: the `__e2e` recorder from `reference_browser_tools.md` §3.3, injected right after navigation; Playwright: `browser_console_messages`). A whitelabel/error render or console error → `visual_status: mismatch`. (The full interactive dead-control sweep belongs to e2e-tester — I assert the invariant only on the screens I render.)
+4. **a11y runtime scan (axe-core)**: inject axe-core with a `<script>` tag and run it (Aside: `page.evaluate`; Playwright: `browser_evaluate`). The Aside REPL rejects any code containing `import(`, so use the tag on both:
    ```js
-   // load axe from CDN if not present, then run
-   await import('https://cdn.jsdelivr.net/npm/axe-core@4/axe.min.js');
-   return await axe.run();
+   if (!window.axe) await new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/axe-core@4/axe.min.js'; s.onload = ok; s.onerror = () => no(new Error('axe load failed')); document.head.append(s); });
+   return await window.axe.run();
    ```
+   If the page's Content-Security-Policy blocks the script on Aside, run only this scan on the Playwright fallback (`fallback_reason: aside-unsupported: csp-blocks-axe`).
    Record violations by impact (critical/serious/moderate/minor).
 5. **Responsive** (if flag on): resize to each breakpoint and screenshot.
 6. If `base_url` is absent/unreachable → set `visual_status: skipped` and proceed (do not start a server).
@@ -312,7 +313,9 @@ Report path: `<target_dir>/.cc-audits/<plan-slug>/publish-<screen-slug>-iter-<n>
     "visual_status": "passed | mismatch | skipped",
     "screenshots": ["<target_dir>/.cc-audits/<plan-slug>/screens/<file>.png"],
     "tone_match_notes": "<one line>",
-    "axe": { "critical": 0, "serious": 0, "moderate": 0, "minor": 0 }
+    "axe": { "critical": 0, "serious": 0, "moderate": 0, "minor": 0 },
+    "browser_tool": "aside | playwright",
+    "fallback_reason": "none | <reason>"
   },
   "termination": {
     "reason": "clean | self_fix_exhausted | in_progress",
@@ -345,6 +348,7 @@ Return format:
 - Changed files: <N>
 - Reused: <N> / Created: <N>
 - Visual: passed | mismatch | skipped  (axe critical=N serious=N)
+- Browser: aside | playwright (fallback_reason)
 - profile_status: generated | cached | regenerated
 - next_action: done | self_fix | user_interview
 ```
@@ -356,8 +360,8 @@ Return format:
 **Allowed:**
 - Read, Grep, Glob (read any path, including images/PDF spec assets)
 - Write, Edit — **production UI files** (markup, stylesheets, static components) within `<target_dir>`, plus the report/profile under `.cc-audits/`
-- Bash: read-only commands only — `git log`, `git diff`, `git show`, `find`, `wc`, `which`, `shasum -a 256`, `sha256sum`
-- Playwright MCP (`mcp__playwright-test-{N}__*`) for visual verification against an already-running `base_url`
+- Bash: read-only commands only — `git log`, `git diff`, `git show`, `find`, `wc`, `which`, `shasum -a 256`, `sha256sum` — plus, for visual verification only, `~/.claude/scripts/aside-session.sh`, `aside repl --account <test account>`, and `cp` of screenshots from the Aside session dir into `.cc-audits/<plan-slug>/screens/`
+- Aside (primary) or Playwright MCP (`mcp__playwright-test-{N}__*`, fallback) for visual verification against an already-running `base_url`
 
 **Forbidden:**
 - Writing data binding, API calls, state management, or event/business logic

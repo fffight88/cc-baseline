@@ -1,6 +1,6 @@
 ---
 name: E2E Test Manager Guide
-description: Reference for the manager (Claude orchestrator) when calling and operating e2e-tester sub-agents — MCP server management, scenario writing, parallel execution, result aggregation, file cleanup
+description: Reference for the manager (Claude orchestrator) when calling and operating e2e-tester sub-agents — browser assignment (Aside first, Playwright MCP fallback), scenario writing, parallel execution, result aggregation, file cleanup
 type: reference
 ---
 
@@ -27,6 +27,7 @@ The manager oversees the entire E2E test process. The manager is responsible for
 - **Enumerate**: `button`, `a[href]` (excluding `#` and `javascript:void`), `[onclick]`, `[role=button]`, tab / popup triggers.
 - After clicking each element, **one observable effect** must occur: navigation / new window or popup / network request / DOM change / dialog. **No effect at all OR a ReferenceError = dead/broken control → FAIL.**
 - For controls that open a popup, **actually open it** and apply the (A) invariants to the popup too (this is how the popup's own whitelabel / console error gets caught — an unopened popup hides its defects).
+- **Transient controls** (toast close buttons, snackbars, auto-closing modals) appear only after an action and vanish within seconds, so a load-time sweep misses them. The tester records controls added after load and clicks them right after each step (`e2e-tester.md` §0-B). As the manager, still add an **explicit scenario step** for any transient UI you know about (e.g. "while the toast is shown, click its close button") — a `transient-missed` entry in `SWEEP` means the control was never checked.
 
 ### (C) "PASS" is redefined
 
@@ -38,10 +39,13 @@ Convert each blocking TC item into an **executable assertion** (selector / actio
 
 ---
 
-## 1. MCP Servers
+## 1. Browser Assignment (Aside first, Playwright fallback)
 
-- Up to 5 available: `playwright-test-1` through `playwright-test-5`
-- Assign 1:1 per sub-agent for parallel tests
+Read `reference_browser_tools.md` first — it defines the tool choice and the switch conditions.
+
+- **Aside (primary)**: each tester gets its own session name `aside_session: e2e-{N}` (one tab in the test account). Check once before a run: `~/.claude/scripts/aside-session.sh account` exits 0 → `browser: aside`; otherwise `browser: playwright` for every tester and tell the user why.
+- **Playwright (fallback)**: each tester still gets a distinct `mcp_server: playwright-test-{N}`, N = 2–5 (1 is the headed server reserved for `/open-browser`). Use the same N as the Aside session so fail files (`fail-{N}-…`) never collide.
+- Every tester report carries `BROWSER_TOOL` / `FALLBACK_REASON`. A tester that switched to Playwright mid-run is still valid — note it in the summary.
 
 ---
 
@@ -52,7 +56,10 @@ Convert each blocking TC item into an **executable assertion** (selector / actio
 - Delivery format:
 
 ```
-mcp_server: playwright-test-{N}
+browser: aside | playwright
+aside_session: e2e-{N}
+mcp_server: playwright-test-{N}        # fallback, N = 2–5
+project_dir: <absolute path to the project root>   # screenshots go to <project_dir>/e2e-results/
 base_url: <target URL>
 server_log: <path to server log file>   # e.g. server.log — omit if no server log
 scenario:
@@ -70,12 +77,12 @@ screenshot_mode: on_failure_only | always | on_request
 
 - There is one agent definition file (`e2e-tester`); call N instances in parallel
 - Call the Agent tool multiple times simultaneously in a single message for parallel processing
-- Assign a different `mcp_server` number to each instance
+- Assign a different N to each instance (Aside session `e2e-{N}` + fallback `playwright-test-{N}`)
 
 ```
-Agent(e2e-tester, { mcp_server: playwright-test-1, scenario: login })
-Agent(e2e-tester, { mcp_server: playwright-test-2, scenario: checkout })
-Agent(e2e-tester, { mcp_server: playwright-test-3, scenario: signup })
+Agent(e2e-tester, { browser: aside, aside_session: e2e-2, mcp_server: playwright-test-2, scenario: login })
+Agent(e2e-tester, { browser: aside, aside_session: e2e-3, mcp_server: playwright-test-3, scenario: checkout })
+Agent(e2e-tester, { browser: aside, aside_session: e2e-4, mcp_server: playwright-test-4, scenario: signup })
 ```
 
 ---
@@ -129,6 +136,7 @@ e.g. upload must be in a paused state to test resume, user must directly select 
   - On unexpected error
   - When `screenshot_mode: always` is specified
 - Manager explicitly requests with `screenshot_mode: on_request` when needed
+- Save path: always the absolute `<project_dir>/e2e-results/fail-{N}-{YYYYMMDD-HHmmss}-<slug>.png`. A bare filename is resolved against the MCP server's working directory and can land in the project root. After a run, the manager checks `ls <project_dir>/*.png` is empty
 
 ---
 
@@ -138,7 +146,7 @@ e.g. upload must be in a paused state to test resume, user must directly select 
 ```
 e2e-results/fail-{N}-{YYYYMMDD-HHmmss}.md
 ```
-- `N`: MCP server number (1–5) — guarantees uniqueness in parallel runs
+- `N`: the tester number (2–5, same as `e2e-{N}` / `playwright-test-{N}`) — guarantees uniqueness in parallel runs
 - Timestamp: prevents overwrite when the same server runs multiple times
 - Example: `e2e-results/fail-3-20260519-143022.md`
 
@@ -146,13 +154,13 @@ e2e-results/fail-{N}-{YYYYMMDD-HHmmss}.md
 - **PASS**: no log collection, no file written
 - **FAIL or ERROR**: tester collects browser console + network requests (headers + request/response params) + server log → writes to the file above → includes `LOG_FILE` path in the report
 
-### MCP server reservation
-- `playwright-test-1` is reserved for `/open-browser` manual sessions
-- Before assigning `playwright-test-1`, check for `.claude/browser-session.json` in the project directory. If the file exists, treat `playwright-test-1` as reserved and use `playwright-test-2` through `playwright-test-5` instead
-- If no session file exists, `playwright-test-1` may be assigned to an e2e-tester agent
+### Browser reservation
+- `playwright-test-1` (headed) and the Aside session name `manual` are reserved for `/open-browser` — never assign them to testers or publisher
+- Testers use N = 2–5 for both the Aside session (`e2e-{N}`) and the fallback MCP server
 
 ### Cleanup
-- Run `/clean` to delete all `e2e-results/fail-*` files and `.claude/browser-session.json`
+- Run `/clean` to delete all `e2e-results/fail-*` files and `.claude/browser-session.json`, and to stop this project's Aside sessions
+- Each tester stops its own Aside session; after a run, `~/.claude/scripts/aside-session.sh list` should show no `e2e-*` session
 - ✅ Delete `.png`, `.yml`, `.log` files in `.playwright-mcp/` immediately after commit
 - ❌ Never commit with those files staged
 - **Verify:** after commit, run `ls .playwright-mcp/` to confirm no leftover files
@@ -189,7 +197,7 @@ When all tests are complete, create an HTML file with results and serve it via a
 cd .playwright-mcp && python3 -m http.server 7777
 ```
 - Port: `7777` (fixed)
-- After launch, open `http://localhost:7777/report.html` via Playwright MCP and show to user for confirmation
+- After launch, open `http://localhost:7777/report.html` in the user's own browser (`open <url>` on macOS, `xdg-open <url>` on Linux) — an Aside REPL tab closes when its session ends and the Playwright testers are headless
 
 ### Server Shutdown
 - After user confirms, run `/clean` to stop the server
@@ -264,12 +272,15 @@ authenticated result (not a login redirect). Same-origin means all headers
 - [ ] **(§0 mandatory pre-pass)** Ran the runtime-invariant + dead-control sweep on every screen — not just the happy-path scenario
 - [ ] **(§0-A)** Each navigation/click asserted: no whitelabel/`/error`, no 4xx/5xx, zero console errors (ReferenceError = unbound handler = FAIL)
 - [ ] **(§0-B)** Enumerated every clickable element and confirmed an observable effect for each (no-effect / ReferenceError = dead control = FAIL); popups actually opened and re-checked under (A)
+- [ ] **(§0-B)** Transient UI (toasts, auto-closing modals) has an explicit scenario step; no `transient-missed` left in `SWEEP`
+- [ ] `project_dir` passed to every tester; no screenshot in the project root after the run
 - [ ] **(§0-C/D)** PASS granted only with executed asserts + actual-value evidence — never on a markdown ✓ alone
-- [ ] Confirm number of active MCP servers before testing
-- [ ] Do not assign `playwright-test-1` if a `/open-browser` manual session may be active
+- [ ] Checked `aside-session.sh account` once and set `browser:` for every tester; reports carry `BROWSER_TOOL` / `FALLBACK_REASON`
+- [ ] Distinct N (2–5) per tester for `aside_session: e2e-{N}` and fallback `mcp_server`; never `manual` / `playwright-test-1`
+- [ ] No `e2e-*` Aside session left running after the run
 - [ ] Include `server_log` path in scenario delivery if server log is available
 - [ ] Call tester after scenario writing is complete
-- [ ] On parallel call, confirm no duplicate MCP server numbers
+- [ ] On parallel call, confirm no duplicate tester numbers (N)
 - [ ] After all tests complete, generate HTML report (`.playwright-mcp/report.html`)
 - [ ] Include `LOG_FILE` paths from FAIL reports in the HTML report for traceability
 - [ ] Launch web server and open report in browser

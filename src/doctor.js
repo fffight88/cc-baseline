@@ -3,7 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const { HOME, applyHome, PLAYWRIGHT_MCP_BIN, resolveTarget } = require('./paths');
+const { HOME, applyHome, PLAYWRIGHT_MCP_BIN, ASIDE_BIN, resolveTarget } = require('./paths');
+const { spawnSync } = require('child_process');
 const manifest = require('./manifest');
 const { harnessIdOf } = require('./merge/settings-hooks');
 const { hasMarkerBlock, stripDuplicatePreamble } = require('./merge/markdown');
@@ -145,11 +146,15 @@ function checkHooks(claudeDir, target) {
   }
   const hooks = data.hooks || {};
   const counts = new Map();
+  const matchers = new Map();
   for (const event of Object.keys(hooks)) {
     for (const entry of hooks[event] || []) {
       for (const h of (entry.hooks || [])) {
         const id = harnessIdOf(h, event);
-        if (id) counts.set(id, (counts.get(id) || 0) + 1);
+        if (id) {
+          counts.set(id, (counts.get(id) || 0) + 1);
+          matchers.set(id, entry.matcher);
+        }
       }
     }
   }
@@ -165,6 +170,23 @@ function checkHooks(claudeDir, target) {
       `${expectedIds.length}/${expectedIds.length} registered, but duplicated: ` +
         dupes.map(id => `${id} ×${counts.get(id)}`).join(', '),
       fixCmd);
+  }
+  // A hook can be registered yet never fire: an older install keeps the old matcher.
+  const templateFile = isProject ? 'settings-hooks.project.json' : 'settings-hooks.json';
+  const template = readJsonSafe(path.join(TEMPLATES_DIR, templateFile)) || {};
+  const stale = [];
+  for (const entries of Object.values(template)) {
+    for (const entry of entries) {
+      for (const h of entry.hooks || []) {
+        const id = h._ccBaselineId;
+        if (id && counts.has(id) && matchers.get(id) !== entry.matcher) {
+          stale.push(`${id} (matcher ${matchers.get(id) || '(none)'}, expected ${entry.matcher || '(none)'})`);
+        }
+      }
+    }
+  }
+  if (stale.length > 0) {
+    return warn(label, `matcher out of date: ${stale.join(', ')}`, fixCmd);
   }
   return ok(label, `${expectedIds.length}/${expectedIds.length} managed hooks registered`);
 }
@@ -185,10 +207,16 @@ function checkMcpServers(mcpJsonPath, target) {
   const expected = [1, 2, 3, 4, 5].map(n => `playwright-test-${n}`);
   const mcp = data.mcpServers || {};
   const missing = expected.filter(k => !(k in mcp));
-  if (missing.length === 0) {
-    return ok(label, `${expected.length}/${expected.length} playwright-test-* registered`);
+  if (missing.length > 0) {
+    return fail(label, `missing: ${missing.join(', ')}`, fixCmd);
   }
-  return fail(label, `missing: ${missing.join(', ')}`, fixCmd);
+  // playwright-test-1 backs /open-browser, where the user drives the browser,
+  // so it must open a visible window.
+  const manualArgs = (mcp['playwright-test-1'] && mcp['playwright-test-1'].args) || [];
+  if (manualArgs.includes('--headless')) {
+    return warn(label, 'playwright-test-1 is headless, so /open-browser shows no window', fixCmd);
+  }
+  return ok(label, `${expected.length}/${expected.length} playwright-test-* registered`);
 }
 
 // Project-mode informational check: reports whether the user also has a
@@ -251,6 +279,25 @@ function checkScanners() {
     'security-auditor falls back to manual code review when scanners are absent; re-run install to retry');
 }
 
+// Aside is the primary browser tool. Missing pieces only warn: the harness
+// falls back to Playwright MCP. Runs the CLI for real so a broken install
+// does not show as ok.
+function checkAside({ platform = process.platform, bin = ASIDE_BIN, configPath } = {}) {
+  const label = 'Aside (primary browser)';
+  if (platform !== 'darwin') return ok(label, 'not macOS — Playwright MCP only');
+  const fixCmd = 'run `cc-baseline --yes` (installs Aside), then `cc-baseline --yes --aside-account <id>`';
+  if (!fs.existsSync(bin)) return warn(label, 'aside CLI not found — using Playwright fallback', fixCmd);
+  const version = spawnSync(bin, ['--version'], { encoding: 'utf8', timeout: 15000 });
+  if (version.status !== 0) return warn(label, 'aside CLI did not run', fixCmd);
+  let account = null;
+  try { account = JSON.parse(fs.readFileSync(configPath, 'utf8')).aside.account; } catch {}
+  if (!account) return warn(label, `CLI ${version.stdout.trim()}, but no test account in ${path.basename(configPath || 'cc-baseline-browser.json')}`, fixCmd);
+  const list = spawnSync(bin, ['account', 'list'], { encoding: 'utf8', timeout: 15000 });
+  const known = list.status === 0 && new RegExp(`(^|\\s)${account}\\s`, 'm').test(list.stdout);
+  if (!known) return warn(label, `test account ${account} not found in \`aside account list\``, fixCmd);
+  return ok(label, `CLI ${version.stdout.trim()}, test account ${account}`);
+}
+
 function checkPlaywrightMcp() {
   if (fs.existsSync(PLAYWRIGHT_MCP_BIN)) {
     return ok('Playwright MCP binary', PLAYWRIGHT_MCP_BIN.replace(HOME, '~'));
@@ -304,6 +351,7 @@ function runChecks(opts) {
     checkMcpServers(target.mcpJsonPath, target),
     checkScanners(),
     checkPlaywrightMcp(),
+    checkAside({ configPath: path.join(target.claudeDir, 'cc-baseline-browser.json') }),
     checkNotifier(),
   ];
 }
@@ -331,4 +379,4 @@ function doctor(opts) {
   return failCount === 0 ? 0 : 1;
 }
 
-module.exports = { doctor, runChecks };
+module.exports = { doctor, runChecks, checkMcpServers, checkAside, checkHooks };

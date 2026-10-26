@@ -82,7 +82,8 @@ reference_screens:               # optional; publisher auto-selects if empty
 reference_notes: <what to mirror vs. skip, e.g. "copy OrderList padding/row height/empty copy; skip its old paginator">
 base_url: <running dev-server URL>   # omit to skip visual verification
 auth_note: <how to reach the screen — e.g. "session already logged in as admin@test"; omit only for public screens>
-mcp_server: playwright-test-1    # optional, default
+browser: aside                   # optional; aside first, playwright fallback (reference_browser_tools.md)
+mcp_server: playwright-test-2    # optional fallback server, default (1 is reserved for /open-browser)
 quality_flags:
   responsive: false              # set true only when required
   i18n: false
@@ -173,7 +174,7 @@ publisher covers **visual tone & manner + runtime a11y**. It does **not** test f
 **The orchestrator (not publisher, not a change to e2e-tester) is responsible for:**
 
 1. Generating e2e scenarios focused on the **interactive behavior** of the newly published UI — using the elements/states publisher created. Do **not** re-assert visual tone or a11y (already covered).
-2. Delivering those scenarios to e2e-tester in the standard input format (`mcp_server`, `base_url`, `scenario.steps`, `screenshot_mode`).
+2. Delivering those scenarios to e2e-tester in the standard input format (`browser`, `aside_session`, `mcp_server`, `base_url`, `scenario.steps`, `screenshot_mode`).
 3. If `quality_flags.responsive` was true, include `browser_resize` steps at the profile breakpoints (e2e-tester already supports resize + screenshot — no agent change needed).
 
 > **No *publishing-specific* modification to `e2e-tester.md` is required.** It already supports navigation, clicks, resize, screenshots, and console/network collection, and now carries the built-in §0 runtime-invariant + dead-control sweep (a general capability, not publishing-specific). The publishing-specific knowledge still lives here, in the functional scenarios the orchestrator authors — keeping e2e-tester a fixed-protocol executor.

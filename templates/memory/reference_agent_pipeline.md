@@ -15,6 +15,7 @@ type: reference
 - ❌ DON'T: Run publisher for a non-UI plan (`UI Impact: No`) — the flow reverts to the original flat post-implementation fan-out
 - ❌ DON'T: Run design-director when a design profile or an existing design system is present — inheriting an existing design is publisher's job, and a fresh direction would overwrite it
 - ❌ DON'T: Expect runtime/visual defects (whitelabel-on-click, dead controls, baseline drift) from source-based sec/code-review — that class is owned **only** by publisher (§9) + e2e-tester (§0), see §3.1
+- ✅ DO: Run every browser stage (publisher Step 6, e2e-tester, `/open-browser`) on **Aside first, Playwright MCP as fallback** — see `reference_browser_tools.md`; each report states `browser_tool` / `fallback_reason`
 
 ---
 

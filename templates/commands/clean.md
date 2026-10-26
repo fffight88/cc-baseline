@@ -10,6 +10,10 @@ Then stop dev servers this project started (rule 7). Servers launched in the bac
 
 PROJ=$(git rev-parse --show-toplevel 2>/dev/null); if [ -z "$PROJ" ] || [ "$PROJ" = "/" ] || [ "$PROJ" = "$HOME" ]; then echo "Skipping project server cleanup: not inside a git project, or its root is / or \$HOME"; else PROJ=$(cd "$PROJ" && pwd -P); lsof -nP -iTCP -sTCP:LISTEN -Fp 2>/dev/null | sed -n "s/^p//p" | sort -u | while read pid; do cwd=$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n "s/^n//p" | head -1); case "$cwd/" in "$PROJ"/*) ;; *) continue;; esac; comm=$(basename "$(ps -o comm= -p "$pid" 2>/dev/null)"); args=$(ps -o args= -p "$pid" 2>/dev/null); case "$comm" in claude|*[Cc]hrome*|*[Cc]hromium*|*headless_shell*) continue;; esac; case "$args" in *playwright-mcp*|*ms-playwright*) continue;; esac; ports=$(lsof -a -p "$pid" -iTCP -sTCP:LISTEN -nP -Fn 2>/dev/null | sed -n "s/^n//p" | tr "\n" " "); echo "Stopping project server: PID $pid [$ports] $(echo "$args" | cut -c1-60)"; kill "$pid" 2>/dev/null; done; fi; echo "Project server cleanup complete"
 
+Then stop the Aside browser sessions started from this project (the `/open-browser` tab and any e2e/publisher sessions left running). Only sessions whose start directory is inside the current git project root are stopped; their tabs close, the Aside app and the user's own tabs are untouched:
+
+PROJ=$(git rev-parse --show-toplevel 2>/dev/null); if [ -n "$PROJ" ] && [ -x "$HOME/.claude/scripts/aside-session.sh" ]; then "$HOME/.claude/scripts/aside-session.sh" stop-under "$PROJ"; fi; echo "Aside session cleanup complete"
+
 Then clean up E2E test artifacts (fail reports and their screenshots) and browser session state:
 
 find . -path "./e2e-results/fail-*" -type f -delete 2>/dev/null; rm -f .claude/browser-session.json 2>/dev/null; echo "E2E artifacts cleanup complete"

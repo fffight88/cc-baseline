@@ -310,12 +310,13 @@ t('B3: e2e-guide hook prints the guide once per session id', () => {
   const marker = path.join(os.tmpdir(), `cc-baseline-${process.getuid()}`, `e2e-guide-${sid}`);
   const run = (input) => execFileSync('/bin/sh', ['-c', command], { input, encoding: 'utf8', env: { ...process.env, TMPDIR: os.tmpdir() } });
   try {
-    const first = JSON.parse(run(JSON.stringify({ session_id: sid })));
+    const pw = { tool_name: 'mcp__playwright-test-2__browser_navigate' };
+    const first = JSON.parse(run(JSON.stringify({ ...pw, session_id: sid })));
     const context = first.hookSpecificOutput.additionalContext;
     assert.match(context, /# reference_subagent_boundary\.md\nBOUNDARY\nline2/);
     assert.match(context, /# reference_e2e_manager_guide\.md\nGUIDE/);
-    assert.equal(run(JSON.stringify({ session_id: sid })), '', 'second call in the same session must print nothing');
-    assert.notEqual(run('{}'), '', 'without a session id the guide is still printed');
+    assert.equal(run(JSON.stringify({ ...pw, session_id: sid })), '', 'second call in the same session must print nothing');
+    assert.notEqual(run(JSON.stringify(pw)), '', 'without a session id the guide is still printed');
   } finally {
     fs.rmSync(marker, { force: true });
     fs.rmSync(home, { recursive: true, force: true });
@@ -328,6 +329,329 @@ t('B8: SessionEnd hook matches the native claude binary and the npm install', ()
   assert.match(hook.command, /pgrep -u "\$\(id -u\)" -f '@anthropic-ai\/claude-code'/);
   assert.match(hook.command, /' -p '\*\|\*' --print '/, 'headless claude -p / --print must be skipped');
   assert.doesNotMatch(hook.command, /\[\[/, 'use POSIX [ ] so /bin/sh can run it');
+});
+
+t('mergeHooks: a managed hook whose template matcher changed moves to the new matcher', () => {
+  const managed = { type: 'command', command: 'old', _ccBaselineId: 'pre-tool-use-e2e-guide' };
+  const userHook = { type: 'command', command: 'mine' };
+  const existing = {
+    PreToolUse: [
+      { matcher: 'mcp__playwright-test-.*', hooks: [managed] },
+      { matcher: 'Bash', hooks: [userHook, { ...managed }] }, // stray legacy copy
+    ],
+  };
+  const harness = { PreToolUse: [{ matcher: 'mcp__playwright-test-.*|Bash', hooks: [{ ...managed, command: 'new' }] }] };
+  const { PreToolUse } = mergeHooks(existing, harness);
+  const copies = PreToolUse.flatMap(e => e.hooks.filter(h => h._ccBaselineId === 'pre-tool-use-e2e-guide').map(h => [e.matcher, h.command]));
+  assert.deepEqual(copies, [['mcp__playwright-test-.*|Bash', 'new']], 'exactly one copy, under the new matcher');
+  assert.ok(PreToolUse.some(e => e.matcher === 'Bash' && e.hooks.includes(userHook) || e.hooks.some(h => h.command === 'mine')), 'user hook kept');
+  assert.ok(!PreToolUse.some(e => e.matcher === 'mcp__playwright-test-.*'), 'emptied old entry removed');
+  const again = mergeHooks({ PreToolUse }, harness).PreToolUse;
+  assert.deepEqual(again, PreToolUse, 'idempotent');
+});
+
+t('doctor: warns when a managed hook is registered under an outdated matcher', () => {
+  const os = require('os');
+  const { checkHooks } = require(path.join(ROOT, 'src', 'doctor'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ccb-hooks-'));
+  try {
+    const current = JSON.parse(JSON.stringify(harnessTemplate));
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ hooks: current }));
+    assert.equal(checkHooks(dir).status, 'ok');
+    const entry = current.PreToolUse.find(e => e.hooks.some(h => h._ccBaselineId === 'pre-tool-use-e2e-guide'));
+    entry.matcher = 'mcp__playwright-test-.*';
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ hooks: current }));
+    const res = checkHooks(dir);
+    assert.equal(res.status, 'warn');
+    assert.match(res.detail, /pre-tool-use-e2e-guide/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// Regression tests for the harness-smoke v2 findings (docs/plans/browser-aside-e2e-fixes.md)
+function runE2eGuideHook(inputs) {
+  const { execFileSync } = require('child_process');
+  const os = require('os');
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ccb-home-'));
+  fs.mkdirSync(path.join(home, '.claude', 'memory'), { recursive: true });
+  fs.writeFileSync(path.join(home, '.claude', 'memory', 'reference_subagent_boundary.md'), 'BOUNDARY');
+  fs.writeFileSync(path.join(home, '.claude', 'memory', 'reference_e2e_manager_guide.md'), 'GUIDE');
+  const command = templateHook(harnessTemplate, 'pre-tool-use-e2e-guide').command.split(PLACEHOLDER).join(home);
+  const base = path.join(os.tmpdir(), `cc-baseline-${process.getuid()}`);
+  const before = new Set(fs.existsSync(base) ? fs.readdirSync(base) : []);
+  try {
+    return inputs.map(input => execFileSync('/bin/sh', ['-c', command], {
+      input: JSON.stringify(input), encoding: 'utf8', env: { ...process.env, TMPDIR: os.tmpdir() },
+    }));
+  } finally {
+    for (const f of (fs.existsSync(base) ? fs.readdirSync(base) : [])) {
+      if (!before.has(f)) fs.rmSync(path.join(base, f), { force: true });
+    }
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+}
+
+t('B9: e2e-guide marker is per agent, so a later subagent still gets the guide', () => {
+  const sid = `ccb-b9-${process.pid}-${Date.now()}`;
+  const pw = { tool_name: 'mcp__playwright-test-2__browser_navigate' };
+  const out = runE2eGuideHook([
+    { ...pw, session_id: sid, agent_id: 'publisher1', agent_type: 'publisher' },
+    { ...pw, session_id: sid, agent_id: 'publisher1', agent_type: 'publisher' },
+    { ...pw, session_id: sid, agent_id: 'tester1', agent_type: 'e2e-tester' },
+    { ...pw, session_id: sid },
+  ]);
+  assert.notEqual(out[0], '', 'first agent gets the guide');
+  assert.equal(out[1], '', 'same agent does not get it twice');
+  assert.notEqual(out[2], '', 'a different subagent in the same session still gets the guide');
+  assert.notEqual(out[3], '', 'the main session (no agent_id) has its own marker');
+});
+
+t('B9: e2e-guide hook also fires for Aside repl Bash calls, not other Bash calls', () => {
+  const hookEntry = harnessTemplate.PreToolUse.find(e => e.hooks.some(h => h._ccBaselineId === 'pre-tool-use-e2e-guide'));
+  assert.match('Bash', new RegExp(`^(${hookEntry.matcher})$`), 'matcher must include Bash');
+  assert.match('mcp__playwright-test-3__browser_click', new RegExp(`^(${hookEntry.matcher})$`));
+  const sid = `ccb-b9b-${process.pid}-${Date.now()}`;
+  const out = runE2eGuideHook([
+    { session_id: sid, agent_id: 'a1', tool_name: 'Bash', tool_input: { command: 'ls -la' } },
+    { session_id: sid, agent_id: 'a1', tool_name: 'Bash', tool_input: { command: 'aside repl --account u2 "await openTab(1)"' } },
+    { session_id: sid, agent_id: 'a2', tool_name: 'Bash', tool_input: { command: '~/.claude/scripts/aside-session.sh send e2e-2 "x"' } },
+    { session_id: sid, agent_id: 'a3', tool_name: 'Bash', tool_input: { command: 'echo aside' } },
+  ]);
+  assert.equal(out[0], '', 'plain Bash calls get nothing');
+  assert.notEqual(out[1], '', 'aside repl calls get the guide');
+  assert.notEqual(out[2], '', 'aside-session.sh calls get the guide');
+  assert.equal(out[3], '', 'mentioning aside is not enough');
+  const hook = templateHook(harnessTemplate, 'pre-tool-use-e2e-guide');
+  assert.match(hook.command, /^in=\$\(cat\); case "\$in" in \*mcp__playwright-test-\*\|\*aside\*\) ;; \*\) exit 0 ;; esac;/, 'shell pre-filter skips python for unrelated Bash calls');
+});
+
+t('B12: playwright-test-1 (manual sessions) is headed, the others stay headless', () => {
+  for (const file of ['mcp-servers.json', 'mcp-servers.project.json']) {
+    const servers = JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', file), 'utf8'));
+    assert.ok(!servers['playwright-test-1'].args.includes('--headless'), `${file}: test-1 must not be headless`);
+    for (const n of [2, 3, 4, 5]) {
+      assert.ok(servers[`playwright-test-${n}`].args.includes('--headless'), `${file}: test-${n} stays headless`);
+    }
+  }
+});
+
+t('B12: doctor warns when playwright-test-1 is still headless', () => {
+  const os = require('os');
+  const { checkMcpServers } = require(path.join(ROOT, 'src', 'doctor'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ccb-mcp-'));
+  const file = path.join(dir, 'claude.json');
+  const servers = n => Object.fromEntries([1, 2, 3, 4, 5].map(i => [`playwright-test-${i}`, { args: i === 1 && !n ? ['--headless', '--isolated'] : (i === 1 ? ['--isolated'] : ['--headless', '--isolated']) }]));
+  try {
+    fs.writeFileSync(file, JSON.stringify({ mcpServers: servers(false) }));
+    assert.equal(checkMcpServers(file).status, 'warn');
+    fs.writeFileSync(file, JSON.stringify({ mcpServers: servers(true) }));
+    assert.equal(checkMcpServers(file).status, 'ok');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+t('B10: e2e sweep covers transient controls added after load', () => {
+  const tester = fs.readFileSync(path.join(ROOT, 'templates', 'agents', 'e2e-tester.md'), 'utf8');
+  const guide = fs.readFileSync(path.join(ROOT, 'templates', 'memory', 'reference_e2e_manager_guide.md'), 'utf8');
+  assert.match(tester, /MutationObserver/, 'tester records controls added after load');
+  assert.match(tester, /transient-missed/, 'a vanished control must be reported, not counted clean');
+  assert.match(guide, /Transient controls/, 'manager guide asks for explicit steps for transient UI');
+});
+
+t('B11: e2e screenshots use an absolute path under e2e-results/', () => {
+  const tester = fs.readFileSync(path.join(ROOT, 'templates', 'agents', 'e2e-tester.md'), 'utf8');
+  const guide = fs.readFileSync(path.join(ROOT, 'templates', 'memory', 'reference_e2e_manager_guide.md'), 'utf8');
+  assert.match(tester, /project_dir:/, 'tester input carries the project root');
+  assert.match(tester, /<project_dir>\/e2e-results\/fail-\{N\}-\{YYYYMMDD-HHmmss\}-<slug>\.png/);
+  assert.match(guide, /project_dir:/, 'manager passes project_dir');
+});
+
+// Aside (primary browser tool) installer + doctor
+const asideInstaller = require(path.join(ROOT, 'src', 'installers', 'aside'));
+
+t('aside: CLI archive name follows the official installer per arch', () => {
+  assert.equal(asideInstaller.cliArchiveName('arm64'), 'AsideCLI-darwin-arm64-latest.zip');
+  assert.equal(asideInstaller.cliArchiveName('x64'), 'AsideCLI-darwin-x64-latest.zip');
+});
+
+t('aside: parseTeamId reads the signer team from codesign output', () => {
+  const out = 'Executable=/x\nIdentifier=at.studio.AsideBrowser.cli\nTeamIdentifier=8CPD4K4TBB\n';
+  assert.equal(asideInstaller.parseTeamId(out), asideInstaller.ASIDE_TEAM_ID);
+  assert.equal(asideInstaller.parseTeamId('TeamIdentifier=not set\n'), null, 'unsigned code has no team');
+  assert.equal(asideInstaller.parseTeamId(''), null);
+});
+
+t('aside: browser config keeps user values and only fills gaps', () => {
+  assert.deepEqual(asideInstaller.mergeBrowserConfig(null, null),
+    { primary: 'aside', fallback: 'playwright', aside: { account: null } });
+  assert.deepEqual(asideInstaller.mergeBrowserConfig({ primary: 'playwright', aside: { account: 'u3', note: 'x' } }, null),
+    { primary: 'playwright', fallback: 'playwright', aside: { account: 'u3', note: 'x' } });
+  assert.equal(asideInstaller.mergeBrowserConfig({ aside: { account: 'u3' } }, 'u2').aside.account, 'u2');
+});
+
+t('aside: account ids are validated before use', () => {
+  assert.ok(asideInstaller.isValidAccountId('u2'));
+  for (const bad of ['', 'u', '2', 'u2; rm -rf ~', '--profile', 'U2']) {
+    assert.ok(!asideInstaller.isValidAccountId(bad), `accepted ${bad}`);
+  }
+});
+
+t('aside: doctor checkAside warns on gaps and passes with CLI + known test account', () => {
+  const os = require('os');
+  const { checkAside } = require(path.join(ROOT, 'src', 'doctor'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ccb-aside-'));
+  const bin = path.join(dir, 'aside');
+  const configPath = path.join(dir, 'cc-baseline-browser.json');
+  fs.writeFileSync(bin, '#!/bin/sh\nif [ "$1" = "--version" ]; then echo 9.9.9; else printf "* u0  me  signed in\\n  u2  Local Account  signed out\\n"; fi\n', { mode: 0o755 });
+  try {
+    assert.equal(checkAside({ platform: 'linux', bin, configPath }).status, 'ok', 'non-macOS is fine');
+    assert.equal(checkAside({ platform: 'darwin', bin: path.join(dir, 'missing'), configPath }).status, 'warn');
+    assert.equal(checkAside({ platform: 'darwin', bin, configPath }).status, 'warn', 'no config yet');
+    fs.writeFileSync(configPath, JSON.stringify({ aside: { account: 'u7' } }));
+    assert.equal(checkAside({ platform: 'darwin', bin, configPath }).status, 'warn', 'unknown account');
+    fs.writeFileSync(configPath, JSON.stringify({ aside: { account: 'u2' } }));
+    const good = checkAside({ platform: 'darwin', bin, configPath });
+    assert.equal(good.status, 'ok', good.detail);
+    assert.match(good.detail, /9\.9\.9.*u2/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+t('aside: signature check accepts the real CLI and rejects an unsigned copy (macOS, when installed)', () => {
+  const os = require('os');
+  const real = path.join(os.homedir(), '.aside', 'cli', 'Aside CLI.app');
+  if (process.platform !== 'darwin' || !fs.existsSync(real)) return;
+  assert.equal(asideInstaller.verifyAsideSignature(real), null);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ccb-unsigned-'));
+  try {
+    const fake = path.join(dir, 'Aside CLI.app', 'Contents', 'MacOS');
+    fs.mkdirSync(fake, { recursive: true });
+    fs.writeFileSync(path.join(fake, 'aside'), '#!/bin/sh\n', { mode: 0o755 });
+    assert.notEqual(asideInstaller.verifyAsideSignature(path.join(dir, 'Aside CLI.app')), null);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+t('aside-session.sh: start/send/stop with a fake aside REPL, exit codes, stop-under', () => {
+  const os = require('os');
+  const { execFileSync, spawnSync } = require('child_process');
+  const script = path.join(ROOT, 'templates', 'scripts', 'aside-session.sh');
+  const tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ccb-as-')));
+  const proj = path.join(tmp, 'proj');
+  fs.mkdirSync(path.join(proj, '.claude'), { recursive: true });
+  const fake = path.join(tmp, 'aside');
+  fs.writeFileSync(fake, '#!/bin/sh\n[ "$1" = repl ] || exit 9\n[ "$2" = --account ] && [ "$3" = u5 ] || { echo "bad account $3"; exit 8; }\nwhile IFS= read -r line; do\n  [ "$line" = exit ] && exit 0\n  if [ "$line" = boom ]; then echo "Error: boom"; echo "[error | 1ms]"; else echo "out:$line"; echo "[ok | 1ms]"; fi\ndone\n', { mode: 0o755 });
+  const env = { ...process.env, ASIDE_BIN: fake, TMPDIR: tmp, HOME: tmp };
+  const run = (...args) => spawnSync('bash', [script, ...args], { cwd: proj, env, encoding: 'utf8' });
+  try {
+    assert.equal(run('start', 's1').status, 2, 'no test account configured → exit 2 (use fallback)');
+    fs.writeFileSync(path.join(proj, '.claude', 'cc-baseline-browser.json'), JSON.stringify({ aside: { account: 'u5' } }));
+    assert.equal(run('account').stdout.trim(), 'u5');
+    assert.equal(run('start', 'Bad Name').status, 1, 'session names are validated');
+    const started = run('start', 's1');
+    assert.equal(started.status, 0, started.stderr);
+    const ok = run('send', 's1', "console.log('hi')");
+    assert.equal(ok.status, 0, ok.stderr);
+    assert.match(ok.stdout, /out:console\.log\('hi'\)/);
+    assert.equal(run('send', 's1', 'boom').status, 3, 'a failing step exits 3');
+    assert.equal(run('send', 's1', 'a\nb').status, 1, 'multi-line code is refused');
+    assert.match(run('list').stdout, /s1 running \(account u5\)/);
+    assert.equal(run('stop-under', tmp).status, 1, 'refuses $HOME (HOME is tmp here)');
+    assert.equal(run('stop-under', proj).status, 0);
+    assert.equal(run('list').stdout.trim(), '', 'stop-under stopped the project session');
+    assert.equal(run('send', 's1', 'x').status, 2, 'stopped session → exit 2');
+    assert.equal(run('start', 's2').status, 0);
+    const base = path.join(tmp, `cc-baseline-${process.getuid()}`, 'aside');
+    const [projKey] = fs.readdirSync(base);
+    assert.equal(fs.readFileSync(path.join(base, projKey, 'project'), 'utf8').trim(), proj);
+    const replPid = Number(fs.readFileSync(path.join(base, projKey, 's2', 'repl.pid'), 'utf8'));
+    process.kill(replPid);
+    const stopDead = spawnSync('bash', [script, 'stop', 's2'], { cwd: proj, env, encoding: 'utf8', timeout: 10000 });
+    assert.equal(stopDead.status, 0, 'stop returns even when the REPL already exited');
+  } finally {
+    for (const n of ['s1', 's2']) spawnSync('bash', [script, 'stop', n], { cwd: proj, env, timeout: 10000 });
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+t('aside-session.sh: sessions are per project and state dirs must not be symlinks', () => {
+  const os = require('os');
+  const { spawnSync } = require('child_process');
+  const script = path.join(ROOT, 'templates', 'scripts', 'aside-session.sh');
+  const tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ccb-as2-')));
+  const fake = path.join(tmp, 'aside');
+  fs.writeFileSync(fake, '#!/bin/sh\nwhile IFS= read -r line; do [ "$line" = exit ] && exit 0; echo "[ok | 1ms]"; done\n', { mode: 0o755 });
+  const projects = ['a', 'b'].map(n => {
+    const dir = path.join(tmp, n);
+    fs.mkdirSync(path.join(dir, '.claude'), { recursive: true });
+    fs.writeFileSync(path.join(dir, '.claude', 'cc-baseline-browser.json'), JSON.stringify({ aside: { account: 'u5' } }));
+    return dir;
+  });
+  const env = { ...process.env, ASIDE_BIN: fake, TMPDIR: path.join(tmp, 't'), HOME: tmp };
+  fs.mkdirSync(env.TMPDIR);
+  const run = (cwd, ...args) => spawnSync('bash', [script, ...args], { cwd, env, encoding: 'utf8', timeout: 10000 });
+  try {
+    assert.equal(run(projects[0], 'start', 'e2e-2').status, 0);
+    assert.equal(run(projects[1], 'start', 'e2e-2').status, 0, 'same name in another project does not collide');
+    assert.match(run(projects[0], 'list').stdout, /e2e-2 running/);
+    assert.equal(run(projects[0], 'stop-under', projects[0]).status, 0);
+    assert.equal(run(projects[0], 'list').stdout.trim(), '', 'project a stopped');
+    assert.match(run(projects[1], 'list').stdout, /e2e-2 running/, 'project b untouched');
+    run(projects[1], 'stop', 'e2e-2');
+    // a planted symlink in place of the state dir is refused
+    const tmp2 = path.join(tmp, 't2');
+    fs.mkdirSync(tmp2);
+    fs.mkdirSync(path.join(tmp, 'attacker'));
+    fs.symlinkSync(path.join(tmp, 'attacker'), path.join(tmp2, `cc-baseline-${process.getuid()}`));
+    const res = spawnSync('bash', [script, 'start', 'x'], { cwd: projects[0], env: { ...env, TMPDIR: tmp2 }, encoding: 'utf8', timeout: 10000 });
+    assert.equal(res.status, 1);
+    assert.match(res.stderr, /symlinked state dir/);
+  } finally {
+    for (const dir of projects) spawnSync('bash', [script, 'stop', 'e2e-2'], { cwd: dir, env, timeout: 10000 });
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+t('aside: an unreadable browser config is backed up, not silently replaced', () => {
+  const os = require('os');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ccb-cfg-'));
+  const origLog = console.log;
+  console.log = () => {};
+  try {
+    fs.writeFileSync(path.join(dir, 'cc-baseline-browser.json'), '{ broken');
+    const merged = asideInstaller.writeBrowserConfig(dir, 'u2');
+    assert.equal(merged.aside.account, 'u2');
+    assert.ok(fs.readdirSync(dir).some(f => f.startsWith('cc-baseline-browser.json.bak-')), 'backup written');
+  } finally {
+    console.log = origLog;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+t('browser layer: agents and commands are Aside-first with a Playwright fallback', () => {
+  const read = (...p) => fs.readFileSync(path.join(ROOT, 'templates', ...p), 'utf8');
+  const tester = read('agents', 'e2e-tester.md');
+  const publisher = read('agents', 'publisher.md');
+  const openBrowser = read('commands', 'open-browser.md');
+  const checkLog = read('commands', 'check-log.md');
+  for (const [name, text] of [['e2e-tester', tester], ['publisher', publisher], ['open-browser', openBrowser]]) {
+    assert.match(text, /reference_browser_tools\.md/, `${name} points to the browser guide`);
+    assert.match(text, /aside-session\.sh/, `${name} drives Aside through the session helper`);
+    assert.match(text, /playwright-test-/, `${name} keeps the Playwright fallback`);
+  }
+  assert.match(tester, /BROWSER_TOOL:/);
+  assert.match(tester, /FALLBACK_REASON:/);
+  assert.doesNotMatch(publisher, /await import\(/, 'the Aside REPL rejects code containing import(');
+  assert.match(publisher, /"browser_tool"/);
+  assert.match(checkLog, /\[REDACTED\]/);
+  assert.match(checkLog, /2a\. \*\*Aside\*\*/);
+  assert.match(read('commands', 'clean.md'), /aside-session\.sh" stop-under "\$PROJ"/);
+  assert.doesNotMatch(publisher, /default playwright-test-1/, 'test-1 is reserved for /open-browser');
+  assert.match(openBrowser, /\^https\?:\/\/\[A-Za-z0-9\._~:\/\?#@!\*\+,;=%&-\]\+\$/, 'URL allowlist excludes $ and backticks');
 });
 
 t('harnessIdOf: recognizes the user-scoped SessionEnd command without _ccBaselineId', () => {
@@ -734,6 +1058,9 @@ t('project install: creates ./.claude/ tree and ./.mcp.json in cwd', async () =>
     assert.ok(fs.existsSync(path.join(tmp, '.claude', 'settings.json')), '.claude/settings.json missing');
     assert.ok(fs.existsSync(path.join(tmp, '.mcp.json')), '.mcp.json missing');
     assert.ok(fs.existsSync(path.join(tmp, '.claude', 'agents', 'e2e-tester.md')), 'agents/e2e-tester.md missing');
+    const helper = path.join(tmp, '.claude', 'scripts', 'aside-session.sh');
+    assert.ok(fs.existsSync(helper), 'scripts/aside-session.sh missing');
+    assert.ok(fs.statSync(helper).mode & 0o100, 'aside-session.sh must be executable');
   });
 });
 

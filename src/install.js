@@ -14,6 +14,7 @@ const { mergeMcpServers } = require('./merge/mcp-servers');
 const { installScanners } = require('./installers/scanners');
 const { installNotifier } = require('./installers/notifier');
 const { installPlaywrightMcp } = require('./installers/playwright-mcp');
+const { installAside } = require('./installers/aside');
 
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
 
@@ -67,6 +68,8 @@ function writeFile(filePath, content, dryRun) {
     try { fs.chmodSync(filePath, 0o644); } catch {}
   }
   fs.writeFileSync(filePath, content, 'utf8');
+  // shell helpers (scripts/*.sh) are run directly, so they need the exec bit
+  if (filePath.endsWith('.sh')) fs.chmodSync(filePath, 0o755);
 }
 
 // Returns 'created' (file did not exist), 'overwritten' (existed, differs), or 'unchanged'.
@@ -86,6 +89,8 @@ async function install(opts = {}) {
     dryRun = false,
     yes: autoYes = false,
     skipScanners = false,
+    skipAside = false,
+    asideAccount = null,
     dedupeLegacy = false,
   } = opts;
   const target = resolveTarget(opts);
@@ -314,6 +319,11 @@ async function install(opts = {}) {
     await installScanners(dryRun);
     await installNotifier(dryRun);
     await installPlaywrightMcp(dryRun);
+  }
+  if (skipScanners || skipAside) {
+    console.log(`\n⏭️  Skipping Aside install (${skipAside ? '--skip-aside' : '--skip-scanners'}) — browser work uses Playwright MCP`);
+  } else {
+    await installAside(dryRun, { claudeDir: CLAUDE_DIR, account: asideAccount });
   }
 
   console.log('✅ cc-baseline install complete!\n');

@@ -15,6 +15,12 @@ const opts = {
   skipScanners: args.includes('--skip-scanners'),
   project: args.includes('--project'),
   dedupeLegacy: args.includes('--dedupe-legacy'),
+  skipAside: args.includes('--skip-aside'),
+  asideAccount: (() => {
+    const i = args.indexOf('--aside-account');
+    const v = i >= 0 ? args[i + 1] : null;
+    return v && !v.startsWith('-') ? v : null; // a following flag is not a value
+  })(),
 };
 
 if (opts.version) {
@@ -33,8 +39,12 @@ Usage:
 Install options:
   --dry-run             Print planned changes without writing files
   --yes, -y             Auto-approve conflict warnings (non-interactive mode)
-  --skip-scanners       Skip auto-install of semgrep/gitleaks/trivy + Playwright MCP
+  --skip-scanners       Skip auto-install of semgrep/gitleaks/trivy + Playwright MCP + Aside
                         (useful in CI or restricted-network environments)
+  --skip-aside          Skip installing Aside (app + daemon + \`aside\` CLI, macOS only).
+                        Browser work then uses Playwright MCP only.
+  --aside-account <id>  Aside account id of the profile reserved for automated
+                        tests (see \`aside account list\`, e.g. u2)
   --project             Install into the current project (./.claude/ + ./.mcp.json)
                         instead of the global ~/.claude/ home. Use this in a repo
                         you want to share with your team.

@@ -40,8 +40,8 @@
 - **Publisher 에이전트** — 관리자페이지 같은 구조화·심플 디자인 프로젝트의 UI 퍼블리싱 전담. code-reviewer가 프로필을 캐싱하듯 **디자인 시스템 프로파일**(`design-profile.md`: 자동 감지된 스택·디자인 토큰·컴포넌트 인벤토리) 캐싱; 기획서(md/이미지/pdf/html) 분석, 기준 화면의 **톤앤매너** 반영, **재사용 우선**으로 마크업 + CSS + 정적 컴포넌트 작성(기존 매칭 실패 시에만 토큰/네이밍 준수 신규 생성), 모든 UI 상태 + **a11y 강제**; Playwright MCP로 렌더 비교 + **axe-core 런타임 a11y 스캔** 자가검증. 범위는 마크업/CSS만 — 데이터 바인딩·API·상태·이벤트 로직 제외. `UI Impact` 플랜 메타 필드로 자동 트리거; **기능** 검증은 e2e-tester에 핸드오프
 - **HTML 리포트 생성기** (`audit-report.js`) — 감사 JSON을 색상 코딩된 심각도 정렬 웹 페이지로 변환. 스캔 루프 완료 시 자동으로 열림
 - **안정적인 알림** — macOS에서 `terminal-notifier` 자동 설치. design/business 결정 인터뷰 프롬프트를 놓치지 않도록 보장
-- **E2E 테스터 에이전트** — 5개 병렬 Playwright MCP 서버 기반. FAIL 시 브라우저 콘솔·네트워크 헤더/페이로드·서버 로그 자동 수집 → `e2e-results/fail-{N}-{timestamp}.md` 저장. PASS 시 로그 수집 없음
-- **`/open-browser` 스킬** — 수동 테스트용 Playwright 브라우저(`playwright-test-1`) 오픈. 세션 상태를 저장해 `/check-log`가 동일한 MCP 서버를 참조할 수 있게 함
+- **E2E 테스터 에이전트** — **Aside** 우선(테스터마다 `aside repl` 세션 1개, 테스트 계정 전용), 실패 시 5개 병렬 Playwright MCP 서버로 대체. 토스트 같은 일시적 컨트롤도 검사하고 `BROWSER_TOOL` / `FALLBACK_REASON` 기록. FAIL 시 브라우저 콘솔·네트워크 헤더/페이로드·서버 로그 자동 수집 → `e2e-results/fail-{N}-{timestamp}.md` 저장. PASS 시 로그 수집 없음
+- **`/open-browser` 스킬** — 직접 조작할 탭을 엶: Aside 테스트 계정 창, 대체로 창이 뜨는 `playwright-test-1`. 세션 상태를 저장해 `/check-log`가 같은 브라우저를 읽게 함
 - **`/check-log` 스킬** — 열린 브라우저에서 버그를 재현한 후 실행하면, 콘솔 에러·네트워크 요청/응답 상세·서버 로그를 e2e-tester 아티팩트와 동일한 수준으로 `e2e-results/fail-manual-{timestamp}.md`에 수집
 - **안전한 병합 전략** — CLAUDE.md와 MEMORY.md는 마커 블록 병합. 훅은 statusMessage 중복 제거. 개인 설정은 절대 건드리지 않음
 - **설치 전 자동 백업**; `--purge` / `--remove-scanners` 옵션이 포함된 원커맨드 언인스톨
@@ -170,14 +170,14 @@ npx github:fffight88/cc-baseline --project --uninstall --yes
 | 컴포넌트 | 설명 |
 |---|---|
 | 행동 규칙 (`CLAUDE.md`, `memory/*.md`) | 11가지 세션 규칙: 응답 언어, 불확실성, 병렬 읽기, 최소 수정, git 안전성 등 |
-| 커스텀 스킬 (`/plan`, `/clean`, `/open-browser`, `/check-log`) | 플랜 모드 진입; 고아 프로세스 + 프로젝트 개발 서버 + e2e 아티팩트 정리; 수동 테스트용 Playwright 브라우저; Fail 진단 수집기 |
+| 커스텀 스킬 (`/plan`, `/clean`, `/open-browser`, `/check-log`) | 플랜 모드 진입; 고아 프로세스 + 프로젝트 개발 서버 + e2e 아티팩트 정리; 수동 테스트용 브라우저 탭(Aside, 대체 Playwright); Fail 진단 수집기 |
 | E2E 테스터 에이전트 (`e2e-tester`) | 브라우저 기반 E2E 테스트 러너 — 매니저 시나리오에 더해 모든 화면에서 런타임 불변식 + 데드컨트롤 스윕을 내장 실행(화이트라벨/콘솔에러 없음; 모든 클릭요소가 효과를 내야 함, 파괴적 컨트롤은 스킵); PASS: 로그 수집 없음; FAIL: 콘솔 + 네트워크 + 서버 로그 → `e2e-results/fail-{N}-{timestamp}.md` |
 | Security Auditor 에이전트 (`security-auditor`) | SAST · SCA · 시크릿 스캔 · 프롬프트 인젝션 탐지; 이슈별 구조화된 리포트; 스캐너 미설치 gap 이슈 (HIGH/MEDIUM) |
 | Code Reviewer 에이전트 (`code-reviewer`) | 로직 오류 · 엣지 케이스 · CLAUDE.md 위반 · 컨벤션 검사 · 크로스파일 영향 분석 · async/Promise 오류 · 테스트 커버리지 갭; 프로필 무결성 검증; 보안은 security-auditor에 위임 |
 | Publisher 에이전트 (`publisher`) | 관리자형 프로젝트 UI 퍼블리싱 — 디자인 프로파일 캐싱(스택/토큰/컴포넌트) · 기획서 분석(md/이미지/pdf/html) · 톤앤매너 반영 · 재사용 우선 마크업 + CSS + 정적 컴포넌트 · 모든 UI 상태 + a11y · Playwright MCP 망라 렌더 비교(thead+tbody, 전 상태) + 런타임 불변식 단언 + axe-core 스캔; 마크업/CSS만(로직/바인딩 제외); 기능 검증은 e2e-tester에 핸드오프 |
 | HTML 리포트 생성기 (`scripts/audit-report.js`) | 감사/리뷰 JSON을 심각도 색상 코딩된 HTML로 변환. `node ~/.claude/scripts/audit-report.js <audit-dir>` |
 | 훅 설정 (`settings.json hooks`) | SessionStart 메모리 로드, PreToolUse E2E 가이드 주입 · 경로 가드, SessionEnd 프로세스 정리 |
-| MCP 서버 (`~/.claude.json`) | `playwright-test-1~5` 전역 MCP 서버 엔트리 (`playwright-test-1`은 `/open-browser` 수동 세션용 예약) |
+| MCP 서버 (`~/.claude.json`) | `playwright-test-1~5` 전역 MCP 서버 엔트리 — Playwright 대체 경로 (`playwright-test-1`은 창이 뜨는 `/open-browser` 전용, 2–5는 headless) |
 
 ### 파일 설치 상세
 
@@ -233,7 +233,9 @@ npm install -g @playwright/mcp --prefix ~/.npm-global
 |---|---|
 | `--dry-run` | 파일을 쓰지 않고 예정된 변경사항만 출력 |
 | `--yes`, `-y` | cc-baseline 프롬프트 전체 자동 승인. 완전 비대화형 설치는 npx에도 `--yes` 추가: `npx --yes github:fffight88/cc-baseline --yes` |
-| `--skip-scanners` | `semgrep`/`gitleaks`/`trivy`와 Playwright MCP 자동 설치 건너뜀. CI나 제한된 네트워크 환경에 유용 |
+| `--skip-scanners` | `semgrep`/`gitleaks`/`trivy`, Playwright MCP, Aside 자동 설치 건너뜀. CI나 제한된 네트워크 환경에 유용 |
+| `--skip-aside` | Aside 설치 건너뜀(Homebrew cask 앱, 백그라운드 데몬, 서명 검증한 `aside` CLI). 브라우저 작업은 Playwright MCP만 사용 |
+| `--aside-account <id>` | 자동 테스트 전용 프로필의 Aside 계정(`aside account list`, 예: `u2`). `~/.claude/cc-baseline-browser.json`에 기록 |
 | `--dedupe-legacy` | 마커 블록 도입 이전 설치가 남긴 `CLAUDE.md` / `MEMORY.md`의 오래된 중복 사본 제거. 제거 전 백업됨 |
 | `--doctor` | 설치 상태 검증(파일·훅·MCP 서버·스캐너·드리프트). 모든 검사 통과 시 0, 아니면 1로 종료 |
 | `--version`, `-v` | 버전 출력 |
@@ -245,7 +247,7 @@ npm install -g @playwright/mcp --prefix ~/.npm-global
 npx github:fffight88/cc-baseline --doctor
 ```
 
-9개 검사 수행: `~/.claude/` 존재, manifest 무결성, 마커 블록, 파일 드리프트, 관리되는 훅 4개 전부, MCP 서버, 보안 스캐너, Playwright MCP 바이너리, notifier.
+11개 검사 수행: `~/.claude/` 존재, manifest 무결성, 마커 블록, 마커 이전 중복 내용, 파일 드리프트, 관리되는 훅 4개 전부, MCP 서버(`playwright-test-1`이 headless면 경고), 보안 스캐너, Playwright MCP 바이너리, Aside(CLI를 실제 실행해 테스트 계정 확인 — Playwright가 대체하므로 경고만), notifier.
 
 ---
 
@@ -255,7 +257,7 @@ npx github:fffight88/cc-baseline --doctor
 |---|---|---|
 | `SessionStart` | (없음) | `~/.claude/memory/MEMORY.md`와 세션 규칙을 컨텍스트에 주입 |
 | `PreToolUse` | `Write\|Edit` | `/.cc-audits/`에 대한 쓰기 자동 승인; `~/.claude/memory/` 쓰기 차단 후 프로젝트 메모리 경로로 리디렉션 |
-| `PreToolUse` | `mcp__playwright-test-.*` | 세션당 첫 Playwright MCP 호출 시 E2E 매니저 가이드를 컨텍스트에 주입 |
+| `PreToolUse` | `mcp__playwright-test-.*\|Bash` | 에이전트마다(메인 세션·각 서브에이전트) 첫 Playwright MCP 호출 또는 `aside repl` 명령에서 E2E 매니저 가이드를 1회 주입. 다른 Bash 호출은 무시 |
 | `SessionEnd` | (없음) | 고아 claude 프로세스 정리 |
 
 ### 경로 정책 훅 상세
@@ -351,28 +353,28 @@ npx github:fffight88/cc-baseline --uninstall --yes --purge --remove-scanners
 
 ## Playwright 수동 테스트
 
-`/open-browser`와 `/check-log`를 사용하면 Playwright가 제어하는 브라우저에서 직접 테스트하고, Claude가 진단 정보를 수집하게 할 수 있습니다.
+`/open-browser`와 `/check-log`를 사용하면 브라우저 탭(Aside 테스트 계정 창, 대체로 창이 뜨는 `playwright-test-1`)에서 직접 테스트하고, Claude가 진단 정보를 수집하게 할 수 있습니다.
 
 ### 워크플로우
 
-> **`/check-log`는 반드시 `/open-browser`로 브라우저를 먼저 열어야 사용할 수 있습니다.** `/check-log`는 `/open-browser`가 저장한 `.claude/browser-session.json`을 읽어 어떤 Playwright MCP 서버를 쿼리할지 파악합니다. 활성 브라우저 세션 없이 실행하면 먼저 `/open-browser <url>`을 실행하라는 안내가 표시됩니다.
+> **`/check-log`는 반드시 `/open-browser`로 브라우저를 먼저 열어야 사용할 수 있습니다.** `/check-log`는 `/open-browser`가 저장한 `.claude/browser-session.json`을 읽어 어떤 브라우저(Aside 세션 또는 Playwright MCP 서버)를 읽을지 파악합니다. 활성 브라우저 세션 없이 실행하면 먼저 `/open-browser <url>`을 실행하라는 안내가 표시됩니다.
 
 ```
 1.  개발 서버 시작:  npm run dev 2>&1 | tee server.log
-2.  /open-browser http://localhost:3000   →  브라우저 열림 (playwright-test-1)
+2.  /open-browser http://localhost:3000   →  탭 열림 (Aside 테스트 계정, 또는 playwright-test-1)
 3.  브라우저에서 직접 버그 재현
 4.  /check-log server.log                →  콘솔 + 네트워크 + 서버 로그 수집
 5.  e2e-results/fail-manual-{timestamp}.md  자동 생성
 6.  Claude가 분석 후 디버깅 진행 여부 확인
-7.  /clean                               →  프로젝트 개발 서버 정지, fail-* + 브라우저 세션 상태 삭제
+7.  /clean                               →  프로젝트 개발 서버 + Aside 세션 정지, fail-* + 브라우저 세션 상태 삭제
 ```
 
 ### Fail 아티팩트 내용 (에러 발생 시)
 
 | 섹션 | 출처 |
 |---|---|
-| 콘솔 에러 | `browser_console_messages` |
-| 네트워크 요청 | `browser_network_requests` (메서드 · URL · 상태코드) |
+| 콘솔 에러 | Aside: `__e2e` 페이지 기록기 · Playwright: `browser_console_messages` |
+| 네트워크 요청 | Aside: 기록기의 실패한 fetch/XHR · Playwright: `browser_network_requests` (메서드 · URL · 상태코드) |
 | 실패 요청 (4xx/5xx) | 헤더 · 요청 파라미터 · 응답 본문 |
 | 서버 로그 — 에러 & 경고 | `grep -E "ERROR\|WARN"` |
 | 서버 로그 — 최근 200줄 | `tail -n 200` |
@@ -383,9 +385,9 @@ npx github:fffight88/cc-baseline --uninstall --yes --purge --remove-scanners
 
 `e2e-tester` 에이전트도 동일한 정책을 자동으로 따릅니다:
 - **PASS** → 파일 생성 없음
-- **FAIL** → `e2e-results/fail-{N}-{timestamp}.md` 생성 (N = MCP 서버 번호), 경로를 리포트에 포함
+- **FAIL** → `e2e-results/fail-{N}-{timestamp}.md` 생성 (N = 테스터 번호), 경로를 리포트에 포함
 
-`playwright-test-1`은 `/open-browser` 수동 세션용으로 예약됩니다. 매니저는 자동화 실행 시 `playwright-test-2` ~ `playwright-test-5`를 e2e-tester 에이전트에 할당합니다.
+`playwright-test-1`과 Aside 세션 `manual`은 `/open-browser` 전용입니다. 매니저는 e2e-tester마다 N = 2–5를 배정합니다: Aside 세션 `e2e-{N}` 우선, 대체는 `playwright-test-{N}`. `reference_browser_tools.md` 참고.
 
 ---
 
