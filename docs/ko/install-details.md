@@ -18,14 +18,23 @@
 | `memory/feedback_skill_description_budget.md` | 〃 | 덮어쓰기 |
 | `memory/reference_security_auditor_protocol.md` | 〃 | 덮어쓰기 |
 | `memory/reference_code_reviewer_protocol.md` | 〃 | 덮어쓰기 |
+| `memory/reference_design_director_protocol.md` | 〃 | 덮어쓰기 |
+| `memory/reference_design_md_index.md` | 〃 | 덮어쓰기 |
+| `memory/reference_web_interface_guidelines.md` | 〃 | 덮어쓰기 |
+| `memory/reference_publisher_protocol.md` | 〃 | 덮어쓰기 |
+| `memory/reference_agent_pipeline.md` | 〃 | 덮어쓰기 |
+| `memory/reference_browser_tools.md` | 〃 | 덮어쓰기 |
 | `agents/e2e-tester.md` | `~/.claude/agents/e2e-tester.md` | 덮어쓰기 |
 | `agents/security-auditor.md` | `~/.claude/agents/security-auditor.md` | 덮어쓰기 |
 | `agents/code-reviewer.md` | `~/.claude/agents/code-reviewer.md` | 덮어쓰기 |
+| `agents/design-director.md` | `~/.claude/agents/design-director.md` | 덮어쓰기 |
+| `agents/publisher.md` | `~/.claude/agents/publisher.md` | 덮어쓰기 |
 | `commands/plan.md` | `~/.claude/commands/plan.md` | 덮어쓰기 |
 | `commands/clean.md` | `~/.claude/commands/clean.md` | 덮어쓰기 |
 | `commands/open-browser.md` | `~/.claude/commands/open-browser.md` | 덮어쓰기 |
 | `commands/check-log.md` | `~/.claude/commands/check-log.md` | 덮어쓰기 |
 | `scripts/audit-report.js` | `~/.claude/scripts/audit-report.js` | 덮어쓰기 |
+| `scripts/aside-session.sh` | `~/.claude/scripts/aside-session.sh` | 덮어쓰기 (실행 권한 0755) |
 
 ## JSON 병합 상세
 
@@ -44,9 +53,9 @@
 |---|---|---|
 | `templates/CLAUDE.md` | `templates/project-CLAUDE.md` | 상대경로, `{{HOME}}` 치환 없음 |
 | `templates/settings-hooks.json` | `templates/settings-hooks.project.json` | `_ccBaselineId`가 `project-` prefix로 글로벌 ID와 공존; 프로젝트 메모리 대상 SessionStart + PreToolUse 경로 정책 훅 |
-| `templates/mcp-servers.json` | `templates/mcp-servers.project.json` | `npx -y @playwright/mcp@latest` (머신 간 휴대성) |
+| `templates/mcp-servers.json` | `templates/mcp-servers.project.json` | `npx -y @playwright/mcp@0.0.75` (머신 간 휴대성) |
 
-18개 overwrite 파일 (memory/, agents/, commands/, scripts/audit-report.js)은 두 모드 간 바이트 단위 동일.
+27개 overwrite 파일 (memory/, agents/, commands/, scripts/)은 두 모드 간 바이트 단위 동일.
 
 ### JSON 병합 / 쓰기 대상 — 프로젝트 모드
 
