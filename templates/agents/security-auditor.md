@@ -120,6 +120,23 @@ Issue fields for each missing scanner:
 
 > Note: For `rust`, `go`, `ruby`, `java` — language-specific tools (govulncheck, bundler-audit, etc.) are outside cc-baseline install scope. Record in `scanners_skipped` only; do not generate `SEC-TOOL-XXX` issues.
 
+#### Running semgrep
+
+**Never run `semgrep --config auto`.** It refuses to start when metrics are off ("Cannot create auto config when metrics are off"), so the scan is silently skipped. Always pass explicit rulesets and `--metrics=off`:
+
+```bash
+semgrep scan --metrics=off --json --quiet <rulesets> "<target_dir>"
+```
+
+| Type | `<rulesets>` |
+|------|-------------|
+| `web-frontend`, `web-backend`, `library`, `cli` (JS/TS) | `--config p/javascript --config r/javascript.browser.security.insecure-document-method.insecure-document-method` |
+| `python-web`, `python-generic` | `--config p/python` |
+| everything else | `--config p/default` |
+
+- The registry packs miss some DOM sinks — `p/javascript`, `p/default`, `p/xss`, `p/owasp-top-ten` and `p/security-audit` all missed `el.innerHTML = <fetched value>` (verified 2026-10-24); the extra `insecure-document-method` rule catches it. semgrep output **never replaces** the manual review in Step 3.
+- If semgrep exits non-zero or prints an error, add `"semgrep (failed: <first error line>)"` to `scanners_skipped` — not to `scanners_used` — and fall back to the manual OWASP grep. A scanner that ran with zero results goes in `scanners_used`.
+
 ---
 
 ### Step 3: Run Type-specific Checks

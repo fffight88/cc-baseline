@@ -25,7 +25,8 @@ When writing a Plan that includes implementation changes, always include a meta 
 - ✅ DO: If `Security Impact: Yes` or `Unknown`, auto-trigger security-auditor after plan completion
 - ✅ DO: If `Code Quality Impact: Yes` or `Unknown`, auto-trigger code-reviewer after plan completion
 - ✅ DO: If `UI Impact: Yes` or `Unknown`, delegate the markup/CSS/component work to the publisher agent **during execution — before the audit gates** (see `reference_publisher_protocol.md`)
-- ✅ DO: Follow the four-agent order in `reference_agent_pipeline.md` — publisher (build) → security-auditor + code-reviewer (review) → e2e-tester (verify)
+- ✅ DO: If `UI Impact: Yes/Unknown` **and** the project is greenfield (no `design-profile.md`, no existing design system or screens), run the design-director agent **before publisher** to decide and seed the design direction (see `reference_design_director_protocol.md`)
+- ✅ DO: Follow the five-agent order in `reference_agent_pipeline.md` — design-director (direct, greenfield only) → publisher (build) → security-auditor + code-reviewer (review) → e2e-tester (verify)
 - ✅ DO: If both audit fields are Yes/Unknown, call both agents in parallel in a single message
 - ✅ DO: If `Security Impact: No` / `Code Quality Impact: No` / `UI Impact: No`, skip the corresponding agent
 - ❌ DON'T: Never submit an implementation plan without the `Security Impact`, `Code Quality Impact`, or `UI Impact` fields

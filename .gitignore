@@ -7,3 +7,4 @@ node_modules/
 .claude/
 .cc-audits/
 e2e-results/
+.playwright-mcp/

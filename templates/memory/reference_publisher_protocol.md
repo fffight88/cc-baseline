@@ -9,6 +9,7 @@ type: reference
 - ✅ DO: `UI Impact: Yes/Unknown` in a plan's `## Meta` block → delegate UI/publishing work to publisher
 - ✅ DO: After publisher returns `done`, **hand off to e2e-tester for functional verification** (responsive/states/console) — see §6
 - ✅ DO: Provide a running `base_url` so publisher can run render compare + axe-core a11y scan
+- ✅ DO: Expect the vendored Web Interface Guidelines check in every publish report's `self_check` — it runs with or without `base_url`
 - ✅ DO: Pass `quality_flags` (responsive/i18n/dark_mode) only when the user/spec requires them
 - ✅ DO: render-compare exhaustively (thead **and** tbody, all key states) + assert runtime invariants (no whitelabel / no console error) on every rendered screen — see §9
 - ❌ DON'T: Expect publisher to write data binding, API, state, or event logic (out of its role)
@@ -19,7 +20,7 @@ type: reference
 
 ## 1. Auto-trigger Conditions
 
-> **Pipeline position:** publisher is the **build** stage — it runs *during* execution, **before** the security-auditor / code-reviewer audit gates and the e2e-tester. For the full four-agent order and de-duplication matrix see `reference_agent_pipeline.md`.
+> **Pipeline position:** publisher is the **build** stage — it runs *during* execution, **after** design-director (greenfield only) and **before** the security-auditor / code-reviewer audit gates and the e2e-tester. For the full five-agent order and de-duplication matrix see `reference_agent_pipeline.md`.
 
 publisher is a **builder** (it produces UI), so it is delegated **as the UI portion of a plan is executed**, not after the plan completes.
 
@@ -30,6 +31,8 @@ Trigger when **any** of:
 - The active task is clearly markup/CSS/component authoring for a structured/admin-style screen.
 
 Skip when: backend-only / logic-only work, or `UI Impact: No`.
+
+> **Greenfield precondition:** if the project has no `design-profile.md` **and** no existing design system/screens, run **design-director first** (`reference_design_director_protocol.md`). publisher enforces a design system; on a greenfield project there is nothing to enforce until the direction is decided and seeded. Brownfield — an existing design system — is publisher's normal path and design-director must be skipped.
 
 > The `UI Impact` field lives alongside `Security Impact` / `Code Quality Impact` in the plan meta block (see `doc_structure_rules.md`).
 
@@ -63,6 +66,7 @@ spec_assets:                     # optional design inputs (md/image/pdf/html)
   - <path>
 screen_brief:                    # scoped target for THIS call (distilled, not the whole spec)
   screen: <screen / route>
+  screen_slug: <kebab-case id, e.g. user-list — names the report file>
   target_file: <file to write, e.g. src/pages/users/UserList.tsx>
   registration: <how screens register, e.g. route already at /admin/users>
   elements: [<FilterBar, DataTable(7 cols), Pagination, ...>]
@@ -78,7 +82,8 @@ reference_screens:               # optional; publisher auto-selects if empty
 reference_notes: <what to mirror vs. skip, e.g. "copy OrderList padding/row height/empty copy; skip its old paginator">
 base_url: <running dev-server URL>   # omit to skip visual verification
 auth_note: <how to reach the screen — e.g. "session already logged in as admin@test"; omit only for public screens>
-mcp_server: playwright-test-1    # optional, default
+browser: aside                   # optional; aside first, playwright fallback (reference_browser_tools.md)
+mcp_server: playwright-test-2    # optional fallback server, default (1 is reserved for /open-browser)
 quality_flags:
   responsive: false              # set true only when required
   i18n: false
@@ -116,8 +121,8 @@ publisher self-fixes token/naming/UI-state/a11y-static violations internally (no
 
 ```markdown
 ## Publish History
-- publish-iter-1: 2026-05-29 / reused=6 created=2 / visual=mismatch axe(serious=1) / profile=generated / next_action=self_fix
-- publish-iter-2: 2026-05-29 / reused=6 created=2 / visual=passed axe(0) / profile=cached / next_action=done
+- publish-user-list-iter-1: 2026-05-29 / reused=6 created=2 / visual=mismatch axe(serious=1) / profile=generated / next_action=self_fix
+- publish-user-list-iter-2: 2026-05-29 / reused=6 created=2 / visual=passed axe(0) / profile=cached / next_action=done
 ```
 
 ---
@@ -161,6 +166,7 @@ publisher covers **visual tone & manner + runtime a11y**. It does **not** test f
 | Tone & manner, render breakage | publisher (Step 6 render compare) |
 | Runtime a11y (axe-core) | publisher (Step 6) |
 | Token/naming/UI-state coverage | publisher (Step 5 self-check) |
+| Static UI rules (focus, forms, animation, perf, i18n — vendored Vercel guidelines) | publisher (Step 5 self-check) |
 | **Functional interaction** (click → expected result, navigation, form submit) | **e2e-tester** |
 | Console-error-free during interaction | e2e-tester (already collects console) |
 | Responsive behavior under interaction | e2e-tester scenario (if `responsive` flag was on) |
@@ -168,7 +174,7 @@ publisher covers **visual tone & manner + runtime a11y**. It does **not** test f
 **The orchestrator (not publisher, not a change to e2e-tester) is responsible for:**
 
 1. Generating e2e scenarios focused on the **interactive behavior** of the newly published UI — using the elements/states publisher created. Do **not** re-assert visual tone or a11y (already covered).
-2. Delivering those scenarios to e2e-tester in the standard input format (`mcp_server`, `base_url`, `scenario.steps`, `screenshot_mode`).
+2. Delivering those scenarios to e2e-tester in the standard input format (`browser`, `aside_session`, `mcp_server`, `base_url`, `scenario.steps`, `screenshot_mode`).
 3. If `quality_flags.responsive` was true, include `browser_resize` steps at the profile breakpoints (e2e-tester already supports resize + screenshot — no agent change needed).
 
 > **No *publishing-specific* modification to `e2e-tester.md` is required.** It already supports navigation, clicks, resize, screenshots, and console/network collection, and now carries the built-in §0 runtime-invariant + dead-control sweep (a general capability, not publishing-specific). The publishing-specific knowledge still lives here, in the functional scenarios the orchestrator authors — keeping e2e-tester a fixed-protocol executor.
@@ -178,12 +184,13 @@ publisher covers **visual tone & manner + runtime a11y**. It does **not** test f
 ## 7. Report Path Rules
 
 ```
-<target_dir>/.cc-audits/<plan-slug>/publish-iter-<n>.md
-<target_dir>/.cc-audits/<plan-slug>/publish-iter-<n>.json
+<target_dir>/.cc-audits/<plan-slug>/publish-<screen-slug>-iter-<n>.md
+<target_dir>/.cc-audits/<plan-slug>/publish-<screen-slug>-iter-<n>.json
+<target_dir>/.cc-audits/<plan-slug>/screens/*.png   # publisher screenshots
 <target_dir>/.cc-audits/design-profile.md   # shared design profile (reused across plans)
 ```
 
-`plan-slug` is the plan filename without extension.
+`plan-slug` is the plan filename without extension. `screen-slug` comes from `screen_brief.screen_slug` (or the target file's basename), so each screen of a plan keeps its own `iter-1..n` series instead of overwriting the previous screen's report.
 
 ---
 
@@ -192,6 +199,7 @@ publisher covers **visual tone & manner + runtime a11y**. It does **not** test f
 | Situation | `regenerate_profile` | Reason |
 |-----------|----------------------|--------|
 | Normal run | `false` (default) | hash-based auto-detection is sufficient |
+| First call after design-director seeded the profile | `false` (**never true**) | the seed is fresh; a forced regenerate would scan an empty project and erase the chosen direction (see §7 of `reference_design_director_protocol.md`) |
 | Design-system token overhaul | `true` | force refresh before key_files hash changes |
 | Framework migration (e.g., Bootstrap→Tailwind) | `true` | reflect full convention change |
 | `design-profile.md` corrupted or deleted | `true` | force regeneration |
@@ -212,6 +220,7 @@ Static visual PASS has been giving false negatives: it renders only some screens
 ## ✅ Checklist
 
 - [ ] Triggered only on UI/publishing work (`UI Impact` / explicit request / UI-natured task)
+- [ ] Greenfield precondition resolved (§1): direction seeded by design-director first, or correctly skipped because a design system already exists
 - [ ] Pre-call briefing done (§2.1): `screen_brief` scoped, `data_shape`, `reuse_anchors`, `reference_notes`, `auth_note`, `quality_flags` resolved
 - [ ] `base_url` provided when visual verification is wanted; `quality_flags` set per requirement
 - [ ] Self-fix loop terminated on clean or 3-iteration limit; `## Publish History` updated

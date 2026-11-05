@@ -17,20 +17,19 @@
       "hooks": [
         {
           "type": "command",
-          "command": "python3 -c \"\nimport json, sys, os\ndata = json.load(sys.stdin)\nfile_path = data.get('tool_input', {}).get('file_path', '')\ntry:\n    real_path = os.path.realpath(file_path) if file_path else ''\nexcept Exception:\n    real_path = ''\nprotected = os.path.realpath(os.path.expanduser('~/.claude/memory/'))\nif real_path.startswith(protected + os.sep) or real_path == protected:\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'deny', 'permissionDecisionReason': 'cc-baseline path protection: ~/.claude/memory/ is managed by cc-baseline only. Save auto-memory to a path starting with ~/.claude/projects/ instead.'}}))\n    sys.exit(2)\nif '/.cc-audits/' in real_path:\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'allow', 'permissionDecisionReason': 'cc-baseline: .cc-audits/ audit report path auto-approved'}}))\n    sys.exit(0)\n\"",
+          "command": "python3 -c \"\nimport json, sys, os\ndata = json.load(sys.stdin)\nfile_path = data.get('tool_input', {}).get('file_path', '')\ntry:\n    real_path = os.path.realpath(file_path) if file_path else ''\nexcept Exception:\n    real_path = ''\nprotected = os.path.realpath(os.path.expanduser('~/.claude/memory/'))\nif real_path.startswith(protected + os.sep) or real_path == protected:\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'deny', 'permissionDecisionReason': 'cc-baseline path protection: ~/.claude/memory/ is managed by cc-baseline only. Save auto-memory to a path starting with ~/.claude/projects/ instead.'}}))\n    sys.exit(0)\nif '/.cc-audits/' in real_path:\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'allow', 'permissionDecisionReason': 'cc-baseline: .cc-audits/ audit report path auto-approved'}}))\n    sys.exit(0)\n\"",
           "statusMessage": "Applying cc-baseline path policy...",
           "_ccBaselineId": "pre-tool-use-path-policy"
         }
       ]
     },
     {
-      "matcher": "mcp__playwright-test-.*",
+      "matcher": "mcp__playwright-test-.*|Bash",
       "hooks": [
         {
           "type": "command",
-          "command": "python3 -c \"\nimport json, sys\nsys.stdin.read()\nboundary = open('{{HOME}}/.claude/memory/reference_subagent_boundary.md').read()\nguide = open('{{HOME}}/.claude/memory/reference_e2e_manager_guide.md').read()\ncontext = '# reference_subagent_boundary.md\\n' + boundary + '\\n\\n# reference_e2e_manager_guide.md\\n' + guide\nprint(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'additionalContext': context}}))\n\"",
+          "command": "in=$(cat); case \"$in\" in *mcp__playwright-test-*|*aside*) ;; *) exit 0 ;; esac; printf '%s' \"$in\" | python3 -c \"\nimport json, sys, os, stat, tempfile\ntry:\n    data = json.load(sys.stdin)\nexcept Exception:\n    data = {}\ncmd = str((data.get('tool_input') or {}).get('command', ''))\nif data.get('tool_name') == 'Bash' and 'aside repl' not in cmd and 'aside-session.sh' not in cmd:\n    sys.exit(0)\nsid = ''.join(c for c in str(data.get('session_id', '')) if c.isalnum() or c in '-_')\naid = ''.join(c for c in str(data.get('agent_id', '')) if c.isalnum() or c in '-_') or 'main'\nmarker = ''\nif sid:\n    base = os.path.join(tempfile.gettempdir(), 'cc-baseline-%d' % os.getuid())\n    try:\n        os.mkdir(base, 0o700)\n    except FileExistsError:\n        pass\n    try:\n        st = os.lstat(base)\n        if stat.S_ISDIR(st.st_mode) and st.st_uid == os.getuid() and not (st.st_mode & 0o077):\n            marker = os.path.join(base, 'e2e-guide-' + sid + '-' + aid)\n    except OSError:\n        marker = ''\nboundary = open('{{HOME}}/.claude/memory/reference_subagent_boundary.md').read()\nguide = open('{{HOME}}/.claude/memory/reference_e2e_manager_guide.md').read()\nif marker:\n    try:\n        os.close(os.open(marker, os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, 'O_NOFOLLOW', 0), 0o600))\n    except FileExistsError:\n        sys.exit(0)\n    except OSError:\n        pass\ncontext = '# reference_subagent_boundary.md\\n' + boundary + '\\n\\n# reference_e2e_manager_guide.md\\n' + guide\nprint(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'additionalContext': context}}))\n\"",
           "statusMessage": "Loading E2E test guide...",
-          "once": true,
           "_ccBaselineId": "pre-tool-use-e2e-guide"
         }
       ]
@@ -41,7 +40,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "pgrep -f '@anthropic-ai/claude-code' | while read pid; do ppid=$(ps -o ppid= -p $pid 2>/dev/null | tr -d ' '); if [[ \"$ppid\" == \"1\" ]]; then kill \"$pid\" 2>/dev/null; fi; done",
+          "command": "{ pgrep -u \"$(id -u)\" -x claude; pgrep -u \"$(id -u)\" -f '@anthropic-ai/claude-code'; } 2>/dev/null | sort -u | while read pid; do ppid=$(ps -o ppid= -p $pid 2>/dev/null | tr -d ' '); [ \"$ppid\" = \"1\" ] || continue; case \" $(ps -o args= -p $pid 2>/dev/null) \" in *' -p '*|*' --print '*) continue;; esac; kill \"$pid\" 2>/dev/null; done",
           "_ccBaselineId": "session-end-orphan-cleanup"
         }
       ]

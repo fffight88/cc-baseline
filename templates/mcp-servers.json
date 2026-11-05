@@ -2,7 +2,7 @@
   "playwright-test-1": {
     "type": "stdio",
     "command": "{{HOME}}/.npm-global/bin/playwright-mcp",
-    "args": ["--headless", "--isolated"],
+    "args": ["--isolated"],
     "env": {}
   },
   "playwright-test-2": {
