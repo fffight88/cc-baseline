@@ -18,14 +18,23 @@
 | `memory/feedback_skill_description_budget.md` | 〃 | Overwrite |
 | `memory/reference_security_auditor_protocol.md` | 〃 | Overwrite |
 | `memory/reference_code_reviewer_protocol.md` | 〃 | Overwrite |
+| `memory/reference_design_director_protocol.md` | 〃 | Overwrite |
+| `memory/reference_design_md_index.md` | 〃 | Overwrite |
+| `memory/reference_web_interface_guidelines.md` | 〃 | Overwrite |
+| `memory/reference_publisher_protocol.md` | 〃 | Overwrite |
+| `memory/reference_agent_pipeline.md` | 〃 | Overwrite |
+| `memory/reference_browser_tools.md` | 〃 | Overwrite |
 | `agents/e2e-tester.md` | `~/.claude/agents/e2e-tester.md` | Overwrite |
 | `agents/security-auditor.md` | `~/.claude/agents/security-auditor.md` | Overwrite |
 | `agents/code-reviewer.md` | `~/.claude/agents/code-reviewer.md` | Overwrite |
+| `agents/design-director.md` | `~/.claude/agents/design-director.md` | Overwrite |
+| `agents/publisher.md` | `~/.claude/agents/publisher.md` | Overwrite |
 | `commands/plan.md` | `~/.claude/commands/plan.md` | Overwrite |
 | `commands/clean.md` | `~/.claude/commands/clean.md` | Overwrite |
 | `commands/open-browser.md` | `~/.claude/commands/open-browser.md` | Overwrite |
 | `commands/check-log.md` | `~/.claude/commands/check-log.md` | Overwrite |
 | `scripts/audit-report.js` | `~/.claude/scripts/audit-report.js` | Overwrite |
+| `scripts/aside-session.sh` | `~/.claude/scripts/aside-session.sh` | Overwrite (exec bit 0755) |
 
 ## JSON merge details
 
@@ -44,9 +53,9 @@ When the installer is run with `--project`, every path in the table above shifts
 |---|---|---|
 | `templates/CLAUDE.md` | `templates/project-CLAUDE.md` | Relative paths, no `{{HOME}}` substitution |
 | `templates/settings-hooks.json` | `templates/settings-hooks.project.json` | `_ccBaselineId` values prefixed with `project-` so they coexist with global IDs; SessionStart + PreToolUse path-policy hooks scoped to project memory |
-| `templates/mcp-servers.json` | `templates/mcp-servers.project.json` | `npx -y @playwright/mcp@latest` (portable across machines) |
+| `templates/mcp-servers.json` | `templates/mcp-servers.project.json` | `npx -y @playwright/mcp@0.0.75` (portable across machines) |
 
-The 18 overwrite files (memory/, agents/, commands/, scripts/audit-report.js) are byte-identical between modes.
+The 27 overwrite files (memory/, agents/, commands/, scripts/) are byte-identical between modes.
 
 ### JSON merge / write targets — project mode
 

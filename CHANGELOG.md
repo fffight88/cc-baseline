@@ -7,6 +7,9 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- README / README_KO and `docs/install-details.md` (en/ko) caught up with v1.6.0: design-director agent and Aside session helper added to the feature list and component table, publisher's Aside-first verification and Web Interface Guidelines self-check described, the version-pin example points at `#v1.6.0`, and the file-install matrix lists all 27 overwrite files (it had stopped at 18) and the pinned `@playwright/mcp@0.0.75` instead of `@latest`.
+
 ## [1.6.0] — 2026-11-05
 
 ### Added

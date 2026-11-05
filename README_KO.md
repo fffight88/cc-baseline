@@ -37,7 +37,8 @@
 - **11가지 행동 규칙** — 세션 시작 시 로드: 응답 언어, 불확실성 공개, 병렬 읽기, 최소 수정 등
 - **Security Auditor 에이전트** — semgrep/gitleaks/trivy로 실제 SAST·SCA·시크릿 스캔 수행. 이슈별 `decision_type`(auto / design / business)이 포함된 구조화된 JSON+Markdown 리포트 생성; `claude-config` 타입에서 에이전트/커맨드 정의 파일의 **프롬프트 인젝션 패턴** 탐지; 스캐너 미설치 시 silent skip 대신 **HIGH/MEDIUM `scanner-gap` 이슈**로 명시적 보고
 - **Code Reviewer 에이전트** — 보안 패스와 독립적으로 로직 오류, 엣지 케이스, 컨벤션 위반, CLAUDE.md 준수 여부 검사; **크로스파일 영향 분석**으로 export 변경이 의존 파일에 미치는 breaking change 탐지 (JS/TS/Python/Go); **async/Promise 패턴 오류** 탐지 (`await` 누락, unhandled rejection, `Promise.all` 오용); **테스트 커버리지 갭** 확인 (테스트 없는 새 export, 시그니처 변경 후 미업데이트 테스트); 매 로드 시 body hash로 **`project-patterns.md` 무결성 검증** — 변조 감지 시 `QA-PROFILE-TAMPER` 이슈 생성
-- **Publisher 에이전트** — 관리자페이지 같은 구조화·심플 디자인 프로젝트의 UI 퍼블리싱 전담. code-reviewer가 프로필을 캐싱하듯 **디자인 시스템 프로파일**(`design-profile.md`: 자동 감지된 스택·디자인 토큰·컴포넌트 인벤토리) 캐싱; 기획서(md/이미지/pdf/html) 분석, 기준 화면의 **톤앤매너** 반영, **재사용 우선**으로 마크업 + CSS + 정적 컴포넌트 작성(기존 매칭 실패 시에만 토큰/네이밍 준수 신규 생성), 모든 UI 상태 + **a11y 강제**; Playwright MCP로 렌더 비교 + **axe-core 런타임 a11y 스캔** 자가검증. 범위는 마크업/CSS만 — 데이터 바인딩·API·상태·이벤트 로직 제외. `UI Impact` 플랜 메타 필드로 자동 트리거; **기능** 검증은 e2e-tester에 핸드오프
+- **Design Director 에이전트** — **그린필드** 프로젝트 전용. 기존 디자인 시스템이나 만들어진 화면이 없을 때 제품 레인(`product-ui` / `marketing-web`)을 분류하고, 68개 브랜드 `DESIGN.md` 카탈로그에서 방향 후보 3개를 제시. 인터뷰로 하나를 고르면 `.cc-audits/design-profile.md`를 시드해 publisher가 첫 화면부터 그 방향을 지키게 함. 화면은 직접 만들지 않으며, 기존 프로젝트(브라운필드)에서는 건너뜀
+- **Publisher 에이전트** — 관리자페이지 같은 구조화·심플 디자인 프로젝트의 UI 퍼블리싱 전담. code-reviewer가 프로필을 캐싱하듯 **디자인 시스템 프로파일**(`design-profile.md`: 자동 감지된 스택·디자인 토큰·컴포넌트 인벤토리) 캐싱; 기획서(md/이미지/pdf/html) 분석, 기준 화면의 **톤앤매너** 반영, **재사용 우선**으로 마크업 + CSS + 정적 컴포넌트 작성(기존 매칭 실패 시에만 토큰/네이밍 준수 신규 생성), 모든 UI 상태 + **a11y 강제**; 버전 고정된 **Vercel Web Interface Guidelines**로 소스 자가점검 후, 브라우저(Aside 우선, 대체 Playwright MCP)에서 렌더 비교 + **axe-core 런타임 a11y 스캔**으로 검증. 범위는 마크업/CSS만 — 데이터 바인딩·API·상태·이벤트 로직 제외. `UI Impact` 플랜 메타 필드로 자동 트리거; **기능** 검증은 e2e-tester에 핸드오프
 - **HTML 리포트 생성기** (`audit-report.js`) — 감사 JSON을 색상 코딩된 심각도 정렬 웹 페이지로 변환. 스캔 루프 완료 시 자동으로 열림
 - **안정적인 알림** — macOS에서 `terminal-notifier` 자동 설치. design/business 결정 인터뷰 프롬프트를 놓치지 않도록 보장
 - **E2E 테스터 에이전트** — **Aside** 우선(테스터마다 `aside repl` 세션 1개, 테스트 계정 전용), 실패 시 5개 병렬 Playwright MCP 서버로 대체. 토스트 같은 일시적 컨트롤도 검사하고 `BROWSER_TOOL` / `FALLBACK_REASON` 기록. FAIL 시 브라우저 콘솔·네트워크 헤더/페이로드·서버 로그 자동 수집 → `e2e-results/fail-{N}-{timestamp}.md` 저장. PASS 시 로그 수집 없음
@@ -82,7 +83,7 @@ npx github:fffight88/cc-baseline --dry-run
 
 ```bash
 # 특정 릴리즈 고정 (재현 가능한 설치 / CI에 권장)
-npx github:fffight88/cc-baseline#v1.3.0
+npx github:fffight88/cc-baseline#v1.6.0
 
 # 최신 개발본 — 통합 브랜치 (불안정할 수 있음)
 npx github:fffight88/cc-baseline#develop
@@ -174,8 +175,10 @@ npx github:fffight88/cc-baseline --project --uninstall --yes
 | E2E 테스터 에이전트 (`e2e-tester`) | 브라우저 기반 E2E 테스트 러너 — 매니저 시나리오에 더해 모든 화면에서 런타임 불변식 + 데드컨트롤 스윕을 내장 실행(화이트라벨/콘솔에러 없음; 모든 클릭요소가 효과를 내야 함, 파괴적 컨트롤은 스킵); PASS: 로그 수집 없음; FAIL: 콘솔 + 네트워크 + 서버 로그 → `e2e-results/fail-{N}-{timestamp}.md` |
 | Security Auditor 에이전트 (`security-auditor`) | SAST · SCA · 시크릿 스캔 · 프롬프트 인젝션 탐지; 이슈별 구조화된 리포트; 스캐너 미설치 gap 이슈 (HIGH/MEDIUM) |
 | Code Reviewer 에이전트 (`code-reviewer`) | 로직 오류 · 엣지 케이스 · CLAUDE.md 위반 · 컨벤션 검사 · 크로스파일 영향 분석 · async/Promise 오류 · 테스트 커버리지 갭; 프로필 무결성 검증; 보안은 security-auditor에 위임 |
-| Publisher 에이전트 (`publisher`) | 관리자형 프로젝트 UI 퍼블리싱 — 디자인 프로파일 캐싱(스택/토큰/컴포넌트) · 기획서 분석(md/이미지/pdf/html) · 톤앤매너 반영 · 재사용 우선 마크업 + CSS + 정적 컴포넌트 · 모든 UI 상태 + a11y · Playwright MCP 망라 렌더 비교(thead+tbody, 전 상태) + 런타임 불변식 단언 + axe-core 스캔; 마크업/CSS만(로직/바인딩 제외); 기능 검증은 e2e-tester에 핸드오프 |
+| Design Director 에이전트 (`design-director`) | 그린필드 전용 — 레인 분류 · `DESIGN.md` 카탈로그에서 방향 후보 3개 · 사용자 인터뷰 · publisher용 `.cc-audits/design-profile.md` 시드; 화면 작성 안 함 |
+| Publisher 에이전트 (`publisher`) | 관리자형 프로젝트 UI 퍼블리싱 — 디자인 프로파일 캐싱(스택/토큰/컴포넌트) · 기획서 분석(md/이미지/pdf/html) · 톤앤매너 반영 · 재사용 우선 마크업 + CSS + 정적 컴포넌트 · 모든 UI 상태 + a11y · 망라 렌더 비교(thead+tbody, 전 상태) + 런타임 불변식 단언 + axe-core 스캔(Aside, 대체 Playwright) · Vercel Web Interface Guidelines 자가점검; 마크업/CSS만(로직/바인딩 제외); 기능 검증은 e2e-tester에 핸드오프 |
 | HTML 리포트 생성기 (`scripts/audit-report.js`) | 감사/리뷰 JSON을 심각도 색상 코딩된 HTML로 변환. `node ~/.claude/scripts/audit-report.js <audit-dir>` |
+| Aside 세션 헬퍼 (`scripts/aside-session.sh`) | 세션 이름별로 `aside repl` 하나를 유지해 브라우저 단계끼리 탭·변수를 공유 (`start` / `send` / `stop` / `list`) |
 | 훅 설정 (`settings.json hooks`) | SessionStart 메모리 로드, PreToolUse E2E 가이드 주입 · 경로 가드, SessionEnd 프로세스 정리 |
 | MCP 서버 (`~/.claude.json`) | `playwright-test-1~5` 전역 MCP 서버 엔트리 — Playwright 대체 경로 (`playwright-test-1`은 창이 뜨는 `/open-browser` 전용, 2–5는 headless) |
 
