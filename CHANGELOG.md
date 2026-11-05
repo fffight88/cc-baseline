@@ -7,6 +7,8 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.6.0] — 2026-11-05
+
 ### Added
 - **Aside as the primary browser tool, Playwright MCP as the fallback** (`docs/plans/browser-aside-e2e-fixes.md`). e2e-tester, publisher Step 6, `/open-browser` and `/check-log` now drive [Aside](https://aside.com) through its CLI (`aside repl --account <test account>`) and switch once to the existing `playwright-test-*` servers when Aside is missing, has no test account, or fails the same step twice; every report records `BROWSER_TOOL` / `FALLBACK_REASON`. Aside runs only under the account set in `cc-baseline-browser.json`, never the user's personal profile.
   - `templates/memory/reference_browser_tools.md` — tool choice, switch conditions, and how to drive Aside. Measured limits are written down rather than assumed: a single `aside repl "<code>"` call is a fresh session (tabs close on return); console / page-error / response events are not delivered, so a page-side `__e2e` recorder (console.error, `error`, `unhandledrejection`, fetch/XHR ≥ 400) is injected after every navigation; `page.goto` returns no response; screenshots can only be written inside the session dir; `addInitScript` and code containing `import(` are rejected; REPL `fetch()` exposes `Set-Cookie`, so replays are redacted.
@@ -23,6 +25,9 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 ### Changed
 - The agent pipeline is now **five** agents, not four: `design-director` (direct, greenfield only) → `publisher` (build) → `security-auditor` + `code-reviewer` (review, parallel) → `e2e-tester` (verify). `reference_agent_pipeline.md`, `reference_publisher_protocol.md`, and `doc_structure_rules.md` updated accordingly, including a de-duplication row placing direction ownership with design-director. Brownfield projects — the common case — are unaffected: design-director is skipped and publisher's own Step 0 scan runs exactly as before.
 - `templates/agents/publisher.md` Step 0 gained the seeded-profile branch (rule 4) and a preserve-on-regeneration rule for `## Design Direction`; Step 2's `reference_basis: spec-only` fallback now names the direction block as the tone-and-manner basis for screen 1 of a greenfield project.
+
+### Security
+- CI workflow (`.github/workflows/ci.yml`): `actions/checkout` and `actions/setup-node` pinned to the v4.4.0 commit SHA instead of the mutable `v4` tag, and a top-level `permissions: contents: read` limits the workflow token to read-only.
 
 ### Fixed
 Eight harness bugs found by the end-to-end smoke run in `docs/plans/harness-smoke-fixes.md` (a throwaway app built through every agent, hook and command, with planted defects as positive controls). Three of them (B4, B6, B8) failed **silently** — the component ran, did nothing, and `--doctor` still reported ok.
