@@ -9,6 +9,7 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 - README / README_KO and `docs/install-details.md` (en/ko) caught up with v1.6.0: design-director agent and Aside session helper added to the feature list and component table, publisher's Aside-first verification and Web Interface Guidelines self-check described, the version-pin example points at `#v1.6.0`, and the file-install matrix lists all 27 overwrite files (it had stopped at 18) and the pinned `@playwright/mcp@0.0.75` instead of `@latest`.
+- `reference_design_md_index.md`: 19 catalog one-liners corrected against the pinned DESIGN.md files they point to. design-director shortlists from these lines alone, so a wrong line steered it to the wrong candidates: ten entries were described as dark when their DESIGN.md is a light or cream canvas (`elevenlabs`, `minimax`, `opencode.ai`, `cursor`, `expo`, `cohere`, `posthog`, `supabase`, `kraken`, `bmw`), five had the wrong color, type or identity (`mistral.ai` is orange not purple, `intercom` cream/orange not blue, `notion` sans not serif headings, `shopify` has no neon green, `clay` is a GTM data platform not a creative agency), and four were only partly right (`superhuman`, `sentry`, `hashicorp`, `together.ai`). `clay` also moved from Design & Creative Tools to Productivity & SaaS and gained the `product-ui` lane, since its DESIGN.md documents product mockup cards, enrichment tables, inputs and tabs; the catalog now lists 43 entries usable for `product-ui`.
 
 ## [1.6.0] — 2026-11-05
 

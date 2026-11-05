@@ -53,22 +53,22 @@ design-director records this caution in its report `notes` whenever a trademark-
 
 ## Catalog
 
-68 entries · 42 usable for `product-ui` · source: [VoltAgent/awesome-claude-design](https://github.com/VoltAgent/awesome-claude-design) (MIT, index only — the DESIGN.md files live in [VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md) under `design-md/<slug>/DESIGN.md`; all 68 slugs verified present 2026-10-24)
+68 entries · 43 usable for `product-ui` · source: [VoltAgent/awesome-claude-design](https://github.com/VoltAgent/awesome-claude-design) (MIT, index only — the DESIGN.md files live in [VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md) under `design-md/<slug>/DESIGN.md`; all 68 slugs verified present 2026-10-24)
 
 ### AI & LLM Platforms
 
 | Slug | Brand | Character | Lane |
 |------|-------|-----------|------|
 | `claude` | Claude | Anthropic's AI assistant. Warm terracotta accent, clean editorial layout | `marketing-web` |
-| `cohere` | Cohere | Enterprise AI platform. Vibrant gradients, data-rich dashboard aesthetic | `product-ui` · `marketing-web` |
-| `elevenlabs` | ElevenLabs | AI voice platform. Dark cinematic UI, audio-waveform aesthetics | `marketing-web` |
-| `minimax` | Minimax | AI model provider. Bold dark interface with neon accents | `product-ui` · `marketing-web` |
-| `mistral.ai` | Mistral AI | Open-weight LLM provider. French-engineered minimalism, purple-toned | `product-ui` · `marketing-web` |
+| `cohere` | Cohere | Enterprise AI platform. Stark white editorial space, green-black product bands, mineral surfaces | `product-ui` · `marketing-web` |
+| `elevenlabs` | ElevenLabs | AI voice platform. Off-white print-magazine canvas, light serif display, pastel gradient orbs | `marketing-web` |
+| `minimax` | Minimax | AI model provider. White canvas, black pill CTAs, vivid gradient model cards | `product-ui` · `marketing-web` |
+| `mistral.ai` | Mistral AI | Open-weight LLM provider. Sunset gradients, warm cream surfaces, saturated orange CTA | `product-ui` · `marketing-web` |
 | `ollama` | Ollama | Run LLMs locally. Terminal-first, monochrome simplicity | `product-ui` · `marketing-web` |
-| `opencode.ai` | OpenCode AI | AI coding platform. Developer-centric dark theme | `product-ui` · `marketing-web` |
+| `opencode.ai` | OpenCode AI | AI coding platform. Warm cream canvas, all-monospace type, manpage-like simplicity | `product-ui` · `marketing-web` |
 | `replicate` | Replicate | Run ML models via API. Clean white canvas, code-forward | `product-ui` · `marketing-web` |
 | `runwayml` | RunwayML | AI video generation. Cinematic dark UI, media-rich layout | `marketing-web` |
-| `together.ai` | Together AI | Open-source AI infrastructure. Technical, blueprint-style design | `product-ui` · `marketing-web` |
+| `together.ai` | Together AI | Open-source AI infrastructure. Near-black hero bands with tri-color gradient, white docs bands, mono eyebrows | `product-ui` · `marketing-web` |
 | `voltagent` | VoltAgent | AI agent framework. Void-black canvas, emerald accent, terminal-native | `product-ui` · `marketing-web` |
 | `x.ai` | xAI | Elon Musk's AI lab. Stark monochrome, futuristic minimalism | `product-ui` · `marketing-web` |
 
@@ -76,11 +76,11 @@ design-director records this caution in its report `notes` whenever a trademark-
 
 | Slug | Brand | Character | Lane |
 |------|-------|-----------|------|
-| `cursor` | Cursor | AI-first code editor. Sleek dark interface, gradient accents | `product-ui` · `marketing-web` |
-| `expo` | Expo | React Native platform. Dark theme, tight letter-spacing, code-centric | `product-ui` · `marketing-web` |
+| `cursor` | Cursor | AI-first code editor. Warm cream editorial canvas, weight-400 display, single orange accent | `product-ui` · `marketing-web` |
+| `expo` | Expo | React Native platform. White canvas, sky-blue hero wash, black CTAs, code-centric | `product-ui` · `marketing-web` |
 | `lovable` | Lovable | AI full-stack builder. Playful gradients, friendly dev aesthetic | `product-ui` · `marketing-web` |
 | `raycast` | Raycast | Productivity launcher. Sleek dark chrome, vibrant gradient accents | `product-ui` · `marketing-web` |
-| `superhuman` | Superhuman | Fast email client. Premium dark UI, keyboard-first, purple glow | `product-ui` · `marketing-web` |
+| `superhuman` | Superhuman | Fast email client. Dark indigo hero over a quiet white body, heavy variable sans | `product-ui` · `marketing-web` |
 | `vercel` | Vercel | Frontend deployment platform. Black and white precision, Geist font | `product-ui` · `marketing-web` |
 | `warp` | Warp | Modern terminal. Dark IDE-like interface, block-based command UI | `product-ui` · `marketing-web` |
 
@@ -90,31 +90,31 @@ design-director records this caution in its report `notes` whenever a trademark-
 |------|-------|-----------|------|
 | `clickhouse` | ClickHouse | Fast analytics database. Yellow-accented, technical documentation style | `product-ui` · `marketing-web` |
 | `composio` | Composio | Tool integration platform. Modern dark with colorful integration icons | `product-ui` · `marketing-web` |
-| `hashicorp` | HashiCorp | Infrastructure automation. Enterprise-clean, black and white | `product-ui` · `marketing-web` |
+| `hashicorp` | HashiCorp | Infrastructure automation. Black enterprise canvas, per-product accent colors as identity | `product-ui` · `marketing-web` |
 | `mongodb` | MongoDB | Document database. Green leaf branding, developer documentation focus | `product-ui` · `marketing-web` |
-| `posthog` | PostHog | Product analytics. Playful hedgehog branding, developer-friendly dark UI | `product-ui` · `marketing-web` |
+| `posthog` | PostHog | Product analytics. Warm cream canvas, hand-drawn hedgehogs, yellow-orange CTA | `product-ui` · `marketing-web` |
 | `sanity` | Sanity | Headless CMS. Red accent, content-first editorial layout | `product-ui` · `marketing-web` |
-| `sentry` | Sentry | Error monitoring. Dark dashboard, data-dense, pink-purple accent | `product-ui` · `marketing-web` |
-| `supabase` | Supabase | Open-source Firebase alternative. Dark emerald theme, code-first | `product-ui` · `marketing-web` |
+| `sentry` | Sentry | Error monitoring. Deep purple midnight canvas, electric lime accent, illustrated mascots | `product-ui` · `marketing-web` |
+| `supabase` | Supabase | Open-source Firebase alternative. White and near-black, single emerald CTA, product UI mockups | `product-ui` · `marketing-web` |
 
 ### Productivity & SaaS
 
 | Slug | Brand | Character | Lane |
 |------|-------|-----------|------|
 | `cal` | Cal.com | Open-source scheduling. Clean neutral UI, developer-oriented simplicity | `product-ui` · `marketing-web` |
-| `intercom` | Intercom | Customer messaging. Friendly blue palette, conversational UI patterns | `product-ui` · `marketing-web` |
+| `intercom` | Intercom | Customer messaging. Cream-white canvas, charcoal type, Fin Orange reserved for AI | `product-ui` · `marketing-web` |
 | `linear.app` | Linear | Project management for engineers. Ultra-minimal, precise, purple accent | `product-ui` · `marketing-web` |
 | `mintlify` | Mintlify | Documentation platform. Clean, green-accented, reading-optimized | `product-ui` · `marketing-web` |
-| `notion` | Notion | All-in-one workspace. Warm minimalism, serif headings, soft surfaces | `product-ui` · `marketing-web` |
+| `notion` | Notion | All-in-one workspace. Navy hero band, purple CTA, pastel feature cards, Inter-based sans | `product-ui` · `marketing-web` |
 | `resend` | Resend | Email API for developers. Minimal dark theme, monospace accents | `product-ui` · `marketing-web` |
 | `zapier` | Zapier | Automation platform. Warm orange, friendly illustration-driven | `product-ui` · `marketing-web` |
+| `clay` | Clay | GTM data platform. Claymation illustrations, saturated single-color feature cards | `product-ui` · `marketing-web` |
 
 ### Design & Creative Tools
 
 | Slug | Brand | Character | Lane |
 |------|-------|-----------|------|
 | `airtable` | Airtable | Spreadsheet-database hybrid. Colorful, friendly, structured data aesthetic | `product-ui` · `marketing-web` |
-| `clay` | Clay | Creative agency. Organic shapes, soft gradients, art-directed layout | `marketing-web` |
 | `figma` | Figma | Collaborative design tool. Vibrant multi-color, playful yet professional | `product-ui` · `marketing-web` |
 | `framer` | Framer | Website builder. Bold black and blue, motion-first, design-forward | `product-ui` · `marketing-web` |
 | `miro` | Miro | Visual collaboration. Bright yellow accent, infinite canvas aesthetic | `product-ui` · `marketing-web` |
@@ -126,7 +126,7 @@ design-director records this caution in its report `notes` whenever a trademark-
 |------|-------|-----------|------|
 | `binance` | Binance | Crypto exchange. Bold Binance Yellow on monochrome, trading-floor urgency | `product-ui` · `marketing-web` |
 | `coinbase` | Coinbase | Crypto exchange. Clean blue identity, trust-focused, institutional feel | `product-ui` · `marketing-web` |
-| `kraken` | Kraken | Crypto trading platform. Purple-accented dark UI, data-dense dashboards | `product-ui` · `marketing-web` |
+| `kraken` | Kraken | Crypto trading platform. Clean white surfaces, Kraken Purple accent, subtle shadows | `product-ui` · `marketing-web` |
 | `mastercard` | Mastercard | Global payments network. Warm cream canvas, orbital pill shapes, editorial warmth | `marketing-web` |
 | `revolut` | Revolut | Digital banking. Sleek dark interface, gradient cards, fintech precision | `product-ui` · `marketing-web` |
 | `stripe` | Stripe | Payment infrastructure. Signature purple gradients, weight-300 elegance | `product-ui` · `marketing-web` |
@@ -139,7 +139,7 @@ design-director records this caution in its report `notes` whenever a trademark-
 | `airbnb` | Airbnb | Travel marketplace. Warm coral accent, photography-driven, rounded UI | `marketing-web` |
 | `meta` | Meta | Tech retail store. Photography-first, binary light/dark surfaces, Meta Blue CTAs | `marketing-web` |
 | `nike` | Nike | Athletic retail. Monochrome UI, massive uppercase Futura, full-bleed photography | `marketing-web` |
-| `shopify` | Shopify | E-commerce platform. Dark-first cinematic, neon green accent, ultra-light display type | `marketing-web` |
+| `shopify` | Shopify | E-commerce platform. Near-black cinematic heroes, thin display type, cream-mint transactional pages | `marketing-web` |
 
 ### Media & Consumer Tech
 
@@ -161,7 +161,7 @@ design-director records this caution in its report `notes` whenever a trademark-
 
 | Slug | Brand | Character | Lane |
 |------|-------|-----------|------|
-| `bmw` | BMW | Luxury automotive. Dark premium surfaces, precise German engineering aesthetic | `marketing-web` |
+| `bmw` | BMW | Luxury automotive. Cream-white canvas, corporate blue CTAs, navy hero bands | `marketing-web` |
 | `bugatti` | Bugatti | Luxury hypercar. Cinema-black canvas, monochrome austerity, monumental display type | `marketing-web` |
 | `ferrari` | Ferrari | Luxury automotive. Chiaroscuro black-white editorial, Ferrari Red with extreme sparseness | `marketing-web` |
 | `lamborghini` | Lamborghini | Luxury automotive. True black cathedral, gold accent, LamboType custom Neo-Grotesk | `marketing-web` |
