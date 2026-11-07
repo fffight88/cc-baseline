@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Together AI — Preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=block">
+<style>
+:root{--primary:#000;--ink:#000;--body:#959494;--hair:#ebebeb;--canvas:#fff;--dark:#010120;--dsoft:#313641;--dhair:#26263a;--orange:#fc4c02;--magenta:#ef2cc1;--peri:#bdbbff;--mint:#c8f6f9;
+--sans:Inter,"Helvetica Neue",Arial,sans-serif;--mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{font-family:var(--sans);font-feature-settings:"ss01";font-size:16px;line-height:20.8px;letter-spacing:-.16px;color:var(--ink);background:var(--canvas)}
+.wrap{max-width:1280px;margin:0 auto;padding:0 32px}
+.eb{font-family:var(--mono);font-size:11px;font-weight:500;line-height:11px;letter-spacing:.55px;text-transform:uppercase;color:var(--body)}
+.btn{display:inline-flex;align-items:center;height:32px;padding:4px 24px;border-radius:4px;font-family:var(--mono);font-size:16px;font-weight:500;line-height:16px;letter-spacing:.08px;text-transform:uppercase;white-space:nowrap}
+.b-pri{background:#000;color:#fff}.b-mint{background:var(--mint);color:#000}.b-white{background:#fff;color:#000}.b-ghost{background:var(--dsoft);color:#fff}.b-out{background:#fff;color:#000;border:1px solid var(--hair);border-radius:3.25px}
+h1{font-size:62.7px;font-weight:500;line-height:70.4px;letter-spacing:-1.92px}
+h2{font-size:40px;font-weight:500;line-height:48px;letter-spacing:-.8px}
+h3{font-size:22px;font-weight:500;line-height:25.3px;letter-spacing:-.22px}
+.lead{font-size:18px;line-height:23.4px;letter-spacing:-.18px}
+/* dark */
+.dark{background:var(--dark);color:#fff}
+nav{display:flex;align-items:center;gap:24px;padding:16px 32px;max-width:1280px;margin:0 auto}
+.wm{font-size:22px;font-weight:500;letter-spacing:-.6px;display:flex;align-items:center;gap:8px;margin-right:24px}
+.wm i{width:18px;height:18px;border-radius:4px;border:2px solid currentColor;position:relative}
+.wm i::after{content:"";position:absolute;inset:3px;background:currentColor;border-radius:1px}
+nav .links{display:flex;gap:24px;flex:1}
+nav .links span{color:#fff}
+.hero{padding:80px 0 80px}
+.hgrid{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center}
+.badge-d{display:inline-flex;gap:8px;align-items:center;background:var(--dsoft);color:#fff;padding:2px 8px;border-radius:4px;font-size:16px}
+.badge-d .eb{color:#fff}
+.hero h1{margin:24px 0 16px}
+.hero .lead{color:rgba(255,255,255,.7);max-width:520px}
+.ctas{display:flex;gap:12px;margin-top:40px}
+.ribbon{height:460px;position:relative}
+.ribbon svg{position:absolute;inset:0;width:100%;height:100%}
+.logos{display:flex;justify-content:space-between;align-items:center;padding:48px 0 0;border-top:1px solid var(--dhair);margin-top:64px}
+.logos span{font-size:20px;font-weight:500;color:rgba(255,255,255,.55);letter-spacing:-.4px}
+/* white sections */
+.band{padding:80px 0}
+.sh{display:flex;justify-content:space-between;align-items:flex-end;gap:48px;margin-bottom:48px}
+.sh .eb{margin-bottom:16px;display:block}
+.sh p{max-width:440px;color:var(--body)}
+.tabs{display:inline-flex;background:var(--hair);padding:4px;border-radius:8px;gap:4px;margin-bottom:24px}
+.tabs span{padding:12px 24px;border-radius:8px;font-weight:500;color:#555}
+.tabs span.on{background:#fff;color:#000}
+.plat{display:grid;grid-template-columns:5fr 7fr;gap:24px}
+.plist{border:1px solid var(--hair);border-radius:4px}
+.pitem{padding:24px;border-bottom:1px solid var(--hair)}
+.pitem:last-child{border-bottom:0}
+.pitem p{color:var(--body);margin-top:8px}
+.pitem .eb{display:block;margin-bottom:12px}
+.pitem.on{border-left:2px solid #000}
+.code{background:var(--dark);color:#fff;border-radius:4px;padding:24px;font-family:var(--mono);font-size:10px;line-height:14px;letter-spacing:.05px;display:flex;flex-direction:column}
+.code .top{display:flex;justify-content:space-between;margin-bottom:20px}
+.code .top .eb{color:rgba(255,255,255,.6)}
+.code pre{font:inherit;font-size:12.5px;line-height:20px;white-space:pre;color:#e6e6f0}
+.k{color:var(--peri)}.s{color:var(--mint)}.c{color:#6b6b8a}.n{color:#ff9a6a}
+.out{margin-top:auto;border-top:1px solid var(--dhair);padding-top:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.out b{display:block;font-family:var(--sans);font-size:22px;font-weight:500;letter-spacing:-.22px;margin-top:8px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:24px}
+.stat{border-radius:4px;padding:32px;min-height:200px;display:flex;flex-direction:column;justify-content:space-between}
+.stat .eb{color:#000}
+.stat b{font-size:40px;font-weight:500;line-height:48px;letter-spacing:-.8px}
+.stat p{margin-top:8px}
+/* research */
+.rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.rc{border:1px solid var(--dhair);border-radius:4px;padding:24px;min-height:300px;display:flex;flex-direction:column}
+.rc .tag{align-self:flex-start;background:var(--dsoft);padding:2px 8px;border-radius:4px;font-family:var(--mono);font-size:11px;font-weight:500;line-height:15.4px;letter-spacing:.055px;text-transform:uppercase}
+.rc h3{margin:auto 0 12px}
+.rc p{color:rgba(255,255,255,.6)}
+/* pricing table */
+.toggle{display:inline-flex;background:var(--hair);padding:4px;border-radius:4px;gap:4px}
+.toggle span{font-family:var(--mono);font-size:14px;font-weight:500;line-height:16px;text-transform:uppercase;padding:8px 16px;border-radius:4px;background:#fff}
+.toggle span.on{background:#000;color:#fff}
+.subtabs{display:flex;gap:8px;margin:24px 0 16px}
+.subtabs span{padding:8px 16px;border-radius:3.25px;border:1px solid var(--hair)}
+.subtabs span.on{background:#000;color:#fff;border-color:#000}
+table{width:100%;border-collapse:collapse}
+th{background:var(--hair);text-align:left;padding:12px 16px;font-family:var(--mono);font-size:11px;font-weight:500;line-height:11px;letter-spacing:.55px;text-transform:uppercase;color:#6f6e6e}
+td{padding:12px 16px;border-bottom:1px solid var(--hair)}
+td.m{display:flex;gap:12px;align-items:center;font-weight:500}
+td.m i{width:20px;height:20px;border-radius:4px;flex:none}
+td .sub{color:var(--body);font-weight:400}
+.bn{display:inline-block;background:var(--hair);padding:2px 8px;border-radius:4px;font-size:14px;line-height:19.6px}
+td.num{font-variant-numeric:tabular-nums}
+/* testimonials & articles */
+.tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.tc{border:1px solid var(--hair);border-radius:4px;padding:24px}
+.portrait{width:72px;height:72px;margin-bottom:24px}
+.tc p{margin:12px 0 24px}
+.tc .row{display:flex;gap:24px;border-top:1px solid var(--hair);padding-top:16px}
+.tc .row b{display:block;font-size:22px;font-weight:500;letter-spacing:-.22px;margin-top:8px}
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.ac{border:1px solid var(--hair);border-radius:4px;padding:24px}
+.thumb{aspect-ratio:16/7;border-radius:4px 4px 0 0;margin-bottom:24px;position:relative;overflow:hidden}
+.ac h3{margin:12px 0 8px}.ac p{color:var(--body)}
+.ac .by{font-family:var(--mono);font-size:10px;line-height:14px;letter-spacing:.05px;color:var(--body);margin-top:16px;text-transform:uppercase}
+/* cta + footer */
+.cta{padding:80px 0}
+.cta .wrap{display:flex;justify-content:space-between;align-items:center}
+.foot{padding:80px 0 32px}
+.fgrid{display:grid;grid-template-columns:2fr repeat(4,1fr);gap:32px}
+.fgrid .eb{display:block;margin-bottom:16px}
+.fgrid a{display:block;margin-bottom:10px}
+.banner{font-size:236px;font-weight:500;letter-spacing:-9px;line-height:.9;color:var(--hair);white-space:nowrap;text-align:center;padding:24px 0 8px;overflow:hidden}
+.orb{position:absolute;right:32px;bottom:32px;width:48px;height:48px;border-radius:9999px;background:#000;display:grid;place-items:center;box-shadow:rgba(1,1,32,.1) 0 4px 10px 0}
+</style></head><body>
+
+<div class="dark">
+  <nav>
+    <span class="wm"><i></i>together.ai</span>
+    <div class="links"><span>Products</span><span>Solutions</span><span>Research</span><span>Developers</span><span>Pricing</span><span>Company</span></div>
+    <span class="btn b-ghost">Contact sales</span><span class="btn b-white">Sign in</span>
+  </nav>
+  <section class="hero"><div class="wrap">
+    <div class="hgrid">
+      <div>
+        <span class="badge-d"><span class="eb">New</span> DeepSeek-V3.2 now on serverless</span>
+        <h1>Build what’s next on the AI Native Cloud</h1>
+        <p class="lead">Train, fine-tune and run inference on 200+ open-source models — on the fastest GPU clusters, at the lowest cost, with full control of your data.</p>
+        <div class="ctas"><span class="btn b-mint">Get started</span><span class="btn b-white">Contact sales</span></div>
+      </div>
+      <div class="ribbon">
+        <svg viewBox="0 0 600 460" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fc4c02"/><stop offset=".5" stop-color="#ef2cc1"/><stop offset="1" stop-color="#bdbbff"/></linearGradient>
+            <filter id="b"><feGaussianBlur stdDeviation="14"/></filter>
+          </defs>
+          <g fill="none" stroke="url(#g)" stroke-linecap="round">
+            <path d="M-20 360 C120 380 160 120 300 140 S460 380 620 90" stroke-width="80" opacity=".18" filter="url(#b)"/>
+            <path d="M-20 360 C120 380 160 120 300 140 S460 380 620 90" stroke-width="56" opacity=".95"/>
+            <path d="M-20 330 C130 350 170 100 310 112 S470 350 620 60" stroke-width="2" opacity=".6"/>
+            <path d="M-20 300 C140 320 180 80 320 86 S480 320 620 30" stroke-width="1.4" opacity=".45"/>
+            <path d="M-20 392 C110 412 150 150 290 170 S450 412 620 122" stroke-width="2" opacity=".6"/>
+            <path d="M-20 424 C100 444 140 180 280 200 S440 444 620 156" stroke-width="1.4" opacity=".4"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="logos"><span class="eb" style="color:rgba(255,255,255,.55)">Trusted by AI natives</span><span>Salesforce</span><span>Zoom</span><span>Cursor</span><span>Pika</span><span>Hedra</span><span>Krea</span><span>Cartesia</span></div>
+  </div></section>
+</div>
+
+<section class="band"><div class="wrap">
+  <div class="sh"><div><span class="eb">The platform</span><h2>The Together AI Platform</h2></div><p class="lead" style="color:#959494">One full-stack cloud for every stage — from serverless endpoints to frontier-scale training.</p></div>
+  <div class="tabs"><span class="on">Inference</span><span>Fine-tuning</span><span>GPU Clusters</span><span>Code Sandbox</span></div>
+  <div class="plat">
+    <div class="plist">
+      <div class="pitem on"><span class="eb">Serverless</span><h3>Serverless inference</h3><p>Call 200+ open models through one OpenAI-compatible API. Pay per token, scale to zero.</p></div>
+      <div class="pitem"><span class="eb">Dedicated</span><h3>Dedicated endpoints</h3><p>Reserved H100 and B200 capacity with custom autoscaling and 99.9% SLA.</p></div>
+      <div class="pitem"><span class="eb">Batch</span><h3>Batch API</h3><p>Process millions of requests asynchronously at 50% of the serverless price.</p></div>
+    </div>
+    <div class="code">
+      <div class="top"><span class="eb">python · chat.completions</span><span class="eb">Llama-4-Maverick-17B</span></div>
+<pre><span class="k">from</span> together <span class="k">import</span> Together
+
+client = Together()
+
+response = client.chat.completions.create(
+    model=<span class="s">"meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"</span>,
+    messages=[{
+        <span class="s">"role"</span>: <span class="s">"user"</span>,
+        <span class="s">"content"</span>: <span class="s">"Summarize this incident report in 3 bullets."</span>
+    }],
+    max_tokens=<span class="n">512</span>,
+    stream=<span class="k">True</span>,
+)
+<span class="c"># → first token in 0.21s · 412 tok/s</span></pre>
+      <div class="out"><div><span class="eb">TTFT</span><b>210 ms</b></div><div><span class="eb">Throughput</span><b>412 tok/s</b></div><div><span class="eb">Cost / 1M</span><b>$0.27</b></div></div>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat" style="background:var(--mint)"><span class="eb">Inference speed</span><div><b>4x faster</b><p>than vLLM on Together Inference Engine</p></div></div>
+    <div class="stat" style="background:var(--peri)"><span class="eb">Cost</span><div><b>11x lower</b><p>cost than GPT-4o at equivalent quality</p></div></div>
+    <div class="stat" style="background:var(--mint)"><span class="eb">Scale</span><div><b>200+ models</b><p>open-source models, ready to deploy</p></div></div>
+  </div>
+</div></section>
+
+<section class="band dark"><div class="wrap">
+  <div class="sh"><div><span class="eb" style="color:rgba(255,255,255,.6)">Research</span><h2>Grounded in cutting-edge research</h2></div><span class="btn b-ghost">Read the blog</span></div>
+  <div class="rgrid">
+    <div class="rc"><span class="tag">Kernels</span><h3>FlashAttention-4</h3><p>Attention kernels tuned for Blackwell, reaching 71% of peak FLOPs.</p></div>
+    <div class="rc"><span class="tag">Inference</span><h3>ATLAS speculator</h3><p>Adaptive speculative decoding that learns from your traffic in real time.</p></div>
+    <div class="rc"><span class="tag">Architecture</span><h3>Mamba-3 &amp; hybrids</h3><p>State-space models that match transformers at a fraction of the memory.</p></div>
+    <div class="rc"><span class="tag">Data</span><h3>RedPajama-V3</h3><p>An open 30T-token dataset with quality signals for pretraining.</p></div>
+  </div>
+</div></section>
+
+<section class="band" style="padding-bottom:48px"><div class="wrap">
+  <div class="sh"><div><span class="eb">Pricing</span><h2>Serverless inference pricing</h2></div><div class="toggle"><span class="on">Standard pricing</span><span>Wholesale pricing</span></div></div>
+  <div class="subtabs"><span class="on">Text</span><span>Vision</span><span>Image</span><span>Audio</span><span>Video</span></div>
+  <table>
+    <tr><th style="width:44%">Model</th><th>Context</th><th>Type</th><th>Input / 1M</th><th>Output / 1M</th></tr>
+    <tr><td class="m"><i style="background:#0866ff"></i>Llama 4 Maverick <span class="sub">17B · 128E</span></td><td>1M</td><td><span class="bn">On-demand</span></td><td class="num">$0.27</td><td class="num">$0.85</td></tr>
+    <tr><td class="m"><i style="background:#4d6bfe"></i>DeepSeek-V3.2 <span class="sub">671B MoE</span></td><td>128K</td><td><span class="bn">On-demand</span></td><td class="num">$0.60</td><td class="num">$1.70</td></tr>
+    <tr><td class="m"><i style="background:#615ced"></i>Qwen3-235B-A22B <span class="sub">Instruct</span></td><td>262K</td><td><span class="bn">On-demand</span></td><td class="num">$0.20</td><td class="num">$0.60</td></tr>
+    <tr><td class="m"><i style="background:#111"></i>gpt-oss-120b <span class="sub">MXFP4</span></td><td>128K</td><td><span class="bn">On-demand</span></td><td class="num">$0.15</td><td class="num">$0.60</td></tr>
+    <tr><td class="m"><i style="background:#fa5a28"></i>Mistral Small 3.2 <span class="sub">24B</span></td><td>128K</td><td><span class="bn">Batch</span></td><td class="num">$0.10</td><td class="num">$0.30</td></tr>
+    <tr><td class="m"><i style="background:#ababab"></i>Kimi K2 Thinking <span class="sub">1T MoE</span></td><td>256K</td><td><span class="bn">On-demand</span></td><td class="num">$1.20</td><td class="num">$4.00</td></tr>
+  </table>
+</div></section>
+
+<section class="band" style="padding-top:32px"><div class="wrap">
+  <div class="sh"><div><span class="eb">Customers</span><h2>AI natives build on Together AI</h2></div></div>
+  <div class="tgrid">
+    <div class="tc"><div class="portrait" style="background:linear-gradient(180deg,#d9d6ff,#7b78c9)"></div><h3>Pika</h3><p>“Together’s clusters let us train our video models 3x faster without a dedicated infra team.”</p><div class="row"><div><span class="eb">Training time</span><b>−66%</b></div><div><span class="eb">GPUs</span><b>2,048</b></div></div></div>
+    <div class="tc"><div class="portrait" style="background:linear-gradient(180deg,#c8f6f9,#5aa3a8)"></div><h3>Cartesia</h3><p>“Sub-100ms voice latency at global scale — dedicated endpoints made it routine.”</p><div class="row"><div><span class="eb">P50 latency</span><b>84 ms</b></div><div><span class="eb">Regions</span><b>6</b></div></div></div>
+    <div class="tc"><div class="portrait" style="background:linear-gradient(180deg,#ffd2bd,#b06a4a)"></div><h3>Zomato</h3><p>“Switching our support assistant to open models cut inference spend by an order of magnitude.”</p><div class="row"><div><span class="eb">Cost</span><b>−90%</b></div><div><span class="eb">Requests/day</span><b>12M</b></div></div></div>
+  </div>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap">
+  <div class="sh"><div><span class="eb">What’s new</span><h2>What’s new at Together AI</h2></div></div>
+  <div class="agrid">
+    <div class="ac"><div class="thumb" style="background:var(--dark)"><svg viewBox="0 0 600 260" preserveAspectRatio="none" style="width:100%;height:100%"><defs><linearGradient id="g2" x1="0" x2="1"><stop offset="0" stop-color="#fc4c02"/><stop offset=".5" stop-color="#ef2cc1"/><stop offset="1" stop-color="#bdbbff"/></linearGradient></defs><path d="M-20 220 C150 230 220 60 330 90 S480 210 620 40" fill="none" stroke="url(#g2)" stroke-width="40" stroke-linecap="round"/></svg></div><span class="eb">Announcement</span><h3>Instant Clusters with NVIDIA GB200 NVL72, generally available</h3><p>Self-serve multi-node Blackwell clusters, provisioned in minutes.</p><div class="by">Nov 3, 2026 · Together AI Team</div></div>
+    <div class="ac"><div class="thumb" style="background:var(--mint)"><div style="position:absolute;left:32px;top:32px;right:32px;bottom:0;background:#fff;border-radius:4px 4px 0 0;padding:20px;font-family:var(--mono);font-size:11px;color:#959494">FINE-TUNING JOB · ft-8a21<br><br><span style="color:#000">loss 0.412 → 0.118</span><br>epoch 3/3 · LoRA r=16</div></div><span class="eb">Product</span><h3>Fine-tuning now supports DPO and preference data</h3><p>Align models to your product with a few thousand preference pairs.</p><div class="by">Oct 21, 2026 · Product</div></div>
+  </div>
+</div></section>
+
+<section class="cta dark"><div class="wrap"><h2>Start building on Together AI</h2><div style="display:flex;gap:12px"><span class="btn b-mint">Get started now</span><span class="btn b-white">Talk to sales</span></div></div></section>
+
+<section class="foot" style="position:relative"><div class="wrap">
+  <div class="fgrid">
+    <div><span class="wm" style="font-size:20px"><i></i>together.ai</span><p style="color:#959494;margin-top:16px;max-width:260px">The AI Native Cloud for open-source and frontier models.</p><div style="margin-top:24px"><span class="btn b-pri">Sign in</span></div></div>
+    <div><span class="eb">Products</span><a>Inference</a><a>Fine-tuning</a><a>GPU Clusters</a><a>Code Sandbox</a></div>
+    <div><span class="eb">Developers</span><a>Docs</a><a>API reference</a><a>Cookbook</a><a>Status</a></div>
+    <div><span class="eb">Research</span><a>Blog</a><a>Papers</a><a>Open source</a></div>
+    <div><span class="eb">Company</span><a>About</a><a>Careers</a><a>Privacy</a><a>Terms</a></div>
+  </div>
+  <div class="banner">together.ai</div>
+  <span class="orb"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 5h16v11H9l-5 4z"/></svg></span>
+</div></section>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">together.ai</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

@@ -10,6 +10,7 @@ type: reference
 - ✅ DO: Run it **before publisher**, as the first stage of a UI-bearing plan — publisher needs a system to enforce
 - ✅ DO: Run the user interview **yourself** (AskUserQuestion) from its 3 candidates, then re-call with `iteration: 2` + `chosen_direction`
 - ✅ DO: Notify (§5) immediately before that interview — it is a `design` decision
+- ✅ DO: Start the local preview server before the interview and put each candidate's preview link in it; stop the server once the direction is committed (§3)
 - ✅ DO: Honor the **seeded-profile contract** (§7): a `profile_origin: seeded` profile is a cache hit for publisher, not a stale one
 - ❌ DON'T: Call it when a design system already exists — publisher's own Step 0 scan owns that path
 - ❌ DON'T: Let it author markup/CSS/components, or let publisher decide the direction — one role each
@@ -96,12 +97,24 @@ Two iterations, no self-fix loop (there is nothing to verify — only a decision
 
 | Iteration | Agent does | Orchestrator does next |
 |-----------|-----------|------------------------|
-| 1 | Greenfield gate → lane → 3 candidates → `next_action: user_interview` | Notify (§5), then AskUserQuestion with the 3 candidates + their `why` lines |
-| 2 | Fetch source → seed `design-profile.md` → `next_action: done` | Proceed to publisher for screen 1 |
+| 1 | Greenfield gate → lane → 3 candidates → `next_action: user_interview` | Start the preview server, notify (§5), then AskUserQuestion with the 3 candidates, their `why` lines and preview links |
+| 2 | Fetch source → seed `design-profile.md` → `next_action: done` | Stop the preview server, proceed to publisher for screen 1 |
+
+**Preview server** — the catalog's preview pages are installed in `~/.claude/design-previews/` (project installs: `.claude/design-previews/`). Before the interview:
+
+```bash
+BASE=$(node ~/.claude/scripts/design-preview.js start)   # prints e.g. http://127.0.0.1:4310/ — reuses a running server
+```
+
+- Each candidate's link is `$BASE` + its `preview_path` (`$BASE<slug>/`); the whole catalog is `$BASE`. A `taste-lane` candidate (`preview_path: null`) has no page.
+- Print the three links and the gallery link in plain text right before AskUserQuestion — option descriptions are short, and the user needs clickable URLs.
+- The server binds `127.0.0.1` only. If Claude Code runs on a remote machine, tell the user to open a tunnel first: `ssh -L <port>:127.0.0.1:<port> <host>`.
+- If `start` exits non-zero (pages not installed, no free port in 4310–4339), run the interview without links and say so; it is not a blocker.
+- After iteration 2 commits the direction (or the interview is abandoned): `node ~/.claude/scripts/design-preview.js stop`. The server also exits by itself after 2 hours without requests.
 
 **Interview construction** — build the AskUserQuestion from the agent's `candidates[]`:
 
-- One question, `multiSelect: false`, 3 options. Use each candidate's `label` as the option label and its `one_line` + `why` as the description.
+- One question, `multiSelect: false`, 3 options. Use each candidate's `label` as the option label and its `one_line` + `why` as the description; the preview links go in the text printed just before it.
 - Do **not** add a "you decide" option. The whole point of this stage is that the direction is on record.
 - Pass the user's own words back as `chosen_direction.reason` — the profile stores it as "Chosen because", which is what makes the decision auditable later.
 
@@ -194,6 +207,7 @@ This is the one place the two agents share state, and the one place it can silen
 - [ ] `product_brief` supplied with `what` / `audience` / `surfaces`; user's own `vibe_words` passed through, not discarded
 - [ ] Iteration 1 returned 3 candidates and wrote nothing
 - [ ] Notification fired immediately before the interview (§5)
+- [ ] Preview server started before the interview, each candidate's link shown, server stopped after the commit
 - [ ] Interview offered exactly the agent's 3 candidates, no "you decide" option; user's reason captured
 - [ ] Iteration 2 wrote `design-profile.md` with `profile_origin: seeded` + `key_files: []` + `key_files_hash: null`
 - [ ] publisher called next with `regenerate_profile: false`; `reference_basis: spec-only` on screen 1 accepted as normal

@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PlayStation — DESIGN.md preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&family=Inter:wght@400;500;600;700&display=block">
+<style>
+:root{--blue:#0070d1;--bluep:#0064b7;--bluea:#004d8d;--orange:#d53b00;--ld:#53b1ff;--ink:#000;--deep:#121314;--el:#181818;--bl:rgba(0,0,0,.6);--ml:#6b6b6b;--al:#ccc;--bd:rgba(255,255,255,.7);--md:rgba(229,229,229,.55);--ad:rgba(229,229,229,.2);--soft:#f3f3f3;--card:#f5f7fa;--g1:#ffce21;--g2:#f5a623;--g3:#ee8e00}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{font-family:Inter,sst,Arial,Helvetica,sans-serif;font-size:18px;line-height:1.5;letter-spacing:.1px;color:#000;background:#fff}
+.d{font-family:Roboto,Inter,Arial,sans-serif;font-weight:300}
+.w{max-width:1328px;margin:0 auto;padding:0 24px}
+nav{background:#000;color:#fff;height:48px}
+nav .w{display:flex;align-items:center;height:48px;gap:24px;font-size:15px;font-weight:500;letter-spacing:.4px}
+nav .sp{flex:1}
+.sub{background:#000;color:#fff;height:40px;border-top:1px solid var(--ad);font-size:14px}
+.sub .w{display:flex;align-items:center;gap:28px;height:40px}
+.sub b{font-weight:600;font-size:16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:48px;padding:12px 28px;border-radius:9999px;font-size:18px;font-weight:700;line-height:1.25;letter-spacing:.45px;white-space:nowrap}
+.btn.p{background:var(--blue);color:#fff}
+.btn.c{background:var(--orange);color:#fff}
+.btn.sl{border:1px solid var(--al);color:#000}
+.btn.sd{border:1px solid var(--ad);color:#fff}
+.btn.sm{height:auto;padding:8px 16px;font-size:14px;letter-spacing:.324px}
+/* hero dark */
+.hero{position:relative;background:#000;color:#fff;height:680px;overflow:hidden}
+.hero svg.art{position:absolute;inset:0}
+.hero .copy{position:absolute;left:max(48px,calc(50% - 640px));bottom:96px;max-width:520px}
+.badge{display:inline-block;background:var(--blue);color:#fff;font-size:12px;font-weight:500;line-height:1.5;padding:4px 10px;border-radius:9999px}
+.hero h1{font-size:54px;line-height:1.25;letter-spacing:-.1px;margin:16px 0 12px}
+.hero p{color:var(--bd);font-size:18px;margin-bottom:28px}
+.ctas{display:flex;gap:16px}
+.dots{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);display:flex;gap:10px}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--ad)}
+.dots i.on{background:#fff}
+/* light showcase */
+.band{padding:96px 0}
+.show{display:grid;grid-template-columns:4fr 7fr;gap:48px;align-items:center}
+h2{font-size:44px;line-height:1.25;letter-spacing:.1px}
+.lead{color:var(--bl);margin:16px 0 32px;max-width:520px}
+.render{position:relative;height:480px}
+.thumbs{display:grid;grid-template-columns:repeat(5,1fr);gap:24px;margin-top:48px}
+.th{background:var(--card);border-radius:8px;padding:24px;text-align:center;font-size:16px}
+.th .im{height:110px;display:grid;place-items:center;margin-bottom:12px}
+.th b{display:block;font-size:18px;font-weight:600;line-height:1;margin-bottom:6px}
+.th span{color:var(--ml);font-size:14px}
+/* dark rail */
+.dark{background:#000;color:#fff}
+.railhd{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:32px}
+.filters{display:flex;gap:8px}
+.fp{background:rgba(245,247,250,.12);color:#fff;font-size:14px;font-weight:700;letter-spacing:.324px;line-height:1.25;padding:8px 16px;border-radius:9999px}
+.fp.on{background:#fff;color:#000}
+.rail{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.gt{background:var(--deep);border-radius:8px;overflow:hidden;position:relative;aspect-ratio:16/9}
+.gt .lbl{position:absolute;left:16px;bottom:14px;font-size:16px;line-height:1.3}
+.gt .lbl small{display:block;color:var(--md);font-size:12px;font-weight:500}
+.gt .badge{position:absolute;left:16px;top:14px}
+.gtmeta{display:flex;justify-content:space-between;margin-top:12px;font-size:16px}
+.gtmeta span{color:var(--md);font-size:14px}
+.paddle{position:absolute;top:calc(50% - 44px);width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;color:#fff;font-size:22px}
+.rdots{display:flex;gap:10px;justify-content:center;margin-top:40px}
+.rdots i{width:8px;height:8px;border-radius:50%;background:var(--ad)}.rdots i.on{background:#fff}
+/* ps plus */
+.plus{background:var(--deep);color:#fff;border-radius:8px;overflow:hidden;position:relative}
+.plus .bar{height:6px;background:linear-gradient(90deg,var(--g1),var(--g2),var(--g3))}
+.plus .in{padding:48px 32px;display:grid;grid-template-columns:1fr 1.4fr;gap:48px;align-items:center}
+.plus h3{font-size:28px;letter-spacing:.1px;line-height:1.25;margin:12px 0}
+.plus p{color:var(--bd);font-size:16px;margin-bottom:24px}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.tier{background:var(--el);border-radius:8px;padding:24px;font-size:16px}
+.tier h4{font-size:18px;font-weight:600;line-height:1;margin-bottom:12px}
+.tier .pr{font-size:22px;line-height:1.25;margin-bottom:12px}
+.tier li{list-style:none;color:var(--bd);font-size:14px;padding:6px 0;border-top:1px solid var(--ad)}
+.tier.on{box-shadow:inset 0 0 0 2px var(--g2)}
+/* on playstation */
+.onps{background:linear-gradient(180deg,#121314,#000);color:#fff;padding:96px 0}
+.onps .grid{display:grid;grid-template-columns:5fr 7fr;gap:48px;align-items:center}
+.eyb{font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--md)}
+.onps h2{font-size:35px;margin:12px 0 16px}
+.onps p{color:var(--bd)}
+.onps a{color:var(--ld)}
+.shapes{display:flex;gap:28px;justify-content:center}
+.shapes svg{width:120px;height:120px}
+/* news */
+.news{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:40px}
+.nc{background:var(--card);border-radius:8px;overflow:hidden}
+.nc .im{aspect-ratio:16/9}
+.nc .tx{padding:24px}
+.nc small{color:var(--ml);font-size:14px}
+.nc h4{font-size:22px;line-height:1.25;letter-spacing:.1px;margin:8px 0 12px}
+.nc p{font-size:16px;color:var(--bl)}
+/* footer */
+.foot{background:var(--blue);color:#fff;padding:48px 0;font-size:14px}
+.foot .top{display:flex;align-items:center;gap:16px;padding-bottom:32px;border-bottom:1px solid rgba(255,255,255,.3)}
+.foot .top b{font-family:Roboto,Inter,sans-serif;font-weight:300;font-size:32px;letter-spacing:.5px}
+.fcols{display:grid;grid-template-columns:repeat(5,1fr);gap:24px;padding:32px 0}
+.fcols h6{font-size:16px;font-weight:600;margin-bottom:12px}
+.fcols a{display:block;margin-bottom:6px;color:rgba(255,255,255,.85)}
+.fleg{font-size:12px;font-weight:500;color:rgba(255,255,255,.8);display:flex;gap:24px}
+</style></head><body>
+
+<nav><div class="w">
+  <svg width="30" height="30" viewBox="0 0 24 24" fill="#fff"><path d="M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1.151.794-.991.636.18.76.814.76 1.505v5.875c2.441 1.193 4.362-.002 4.362-3.152 0-3.237-1.126-4.675-4.438-5.827-1.307-.448-3.728-1.186-5.39-1.502zm4.656 16.241l6.296-2.275c.715-.258.826-.625.246-.818-.586-.192-1.637-.139-2.357.123l-4.205 1.5V14.98l.24-.085s1.201-.42 2.913-.615c1.696-.18 3.785.03 5.437.661 1.848.601 2.04 1.472 1.576 2.072-.465.6-1.622 1.036-1.622 1.036l-8.544 3.107V18.86zM1.807 18.6c-1.9-.545-2.214-1.668-1.352-2.32.801-.586 2.16-1.052 2.16-1.052l5.615-2.013v2.313L4.205 17c-.705.271-.825.632-.239.826.586.195 1.637.15 2.343-.12L8.247 17v2.074c-.12.03-.256.044-.39.073-1.939.331-3.996.196-6.038-.479z"/></svg>
+  <span>Games</span><span>PS5</span><span>PS4</span><span>PS VR2</span><span>Subscriptions</span><span>Hardware</span><span>Mobile</span><span>News</span><span>Shop</span><span>Support</span>
+  <span class="sp"></span>
+  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.6"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.2 10.2 15 15"/></svg>
+  <svg width="20" height="18" viewBox="0 0 20 18" fill="none" stroke="#fff" stroke-width="1.6"><path d="M1 1h3l2 11h11l2-8H5"/><circle cx="8" cy="16" r="1.3"/><circle cx="16" cy="16" r="1.3"/></svg>
+  <span style="width:28px;height:28px;border-radius:50%;background:#0070d1;display:inline-block"></span>
+</div></nav>
+
+<section class="hero">
+  <svg class="art" viewBox="0 0 1440 680" preserveAspectRatio="xMidYMid slice" width="100%" height="100%">
+    <defs>
+      <radialGradient id="sun" cx="72%" cy="38%" r="40%"><stop offset="0" stop-color="#f6d7a8"/><stop offset=".35" stop-color="#c76a3a"/><stop offset="1" stop-color="#1a0d0b" stop-opacity="0"/></radialGradient>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a1012"/><stop offset=".6" stop-color="#5a2a22"/><stop offset="1" stop-color="#120a09"/></linearGradient>
+      <linearGradient id="fadeL" x1="0" x2="1"><stop offset="0" stop-color="#000"/><stop offset=".45" stop-color="#000" stop-opacity=".55"/><stop offset=".7" stop-color="#000" stop-opacity="0"/></linearGradient>
+    </defs>
+    <rect width="1440" height="680" fill="url(#sky)"/>
+    <rect width="1440" height="680" fill="url(#sun)"/>
+    <path d="M0 470 L220 380 L420 440 L640 330 L860 420 L1040 300 L1240 390 L1440 340 V680 H0Z" fill="#2a1512"/>
+    <path d="M0 560 L300 500 L560 540 L820 470 L1100 530 L1440 480 V680 H0Z" fill="#140a09"/>
+    <!-- lone samurai silhouette -->
+    <g fill="#0a0505" transform="translate(1010 330)">
+      <path d="M40 0 c14 0 22 10 22 22 c0 8 -4 14 -10 18 l30 6 l10 70 l-18 80 l14 0 l-6 10 l-34 0 l4 -86 l-8 0 l-12 86 l-34 0 l12 -84 l-14 -74 c4 -8 12 -10 22 -12 c-8 -4 -12 -10 -12 -18 c0 -12 8 -20 14 -18z"/>
+      <path d="M-30 30 L120 -40" stroke="#0a0505" stroke-width="5"/>
+      <path d="M-60 220 h220" stroke="#0a0505" stroke-width="2" opacity=".6"/>
+    </g>
+    <g fill="#f3b07a" opacity=".55"><circle cx="900" cy="250" r="2"/><circle cx="1180" cy="200" r="1.6"/><circle cx="1300" cy="300" r="2.2"/><circle cx="960" cy="380" r="1.4"/><circle cx="1240" cy="430" r="1.8"/></g>
+    <rect width="1440" height="680" fill="url(#fadeL)"/>
+  </svg>
+  <div class="copy">
+    <span class="badge">Out now</span>
+    <h1 class="d">Ghost of Yōtei</h1>
+    <p>Hokkaido, 1603. Hunt the Yōtei Six across a frozen frontier in a new standalone adventure, only on PS5.</p>
+    <div class="ctas"><span class="btn p">Learn more</span><span class="btn sd">Watch trailer</span></div>
+  </div>
+  <div class="dots"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+</section>
+
+<section class="band"><div class="w">
+  <div class="show">
+    <div>
+      <h2 class="d" style="font-size:54px;letter-spacing:-.1px">Discover all PS5 consoles and accessories</h2>
+      <p class="lead">PS5 Pro brings upgraded GPU rendering, advanced ray tracing and AI-driven upscaling to the games you love.</p>
+      <div class="ctas"><span class="btn c">Buy now</span><span class="btn sl">Compare consoles</span></div>
+    </div>
+    <div class="render">
+      <svg viewBox="0 0 760 480" width="100%" height="100%">
+        <!-- PS5 Pro console: white side panels w/ black core -->
+        <g transform="translate(250 10)">
+          <path d="M70 20 Q90 0 120 6 L170 16 L170 440 L60 450 Q40 440 46 410 Z" fill="#fff" stroke="#e3e5e8" stroke-width="2"/>
+          <path d="M170 16 L210 22 L210 440 L170 440Z" fill="#101113"/>
+          <path d="M210 22 L260 12 Q290 8 300 40 L320 420 Q318 446 290 448 L210 440Z" fill="#f7f8fa" stroke="#e3e5e8" stroke-width="2"/>
+          <path d="M172 60 L208 62 M172 120 L208 122 M172 180 L208 182" stroke="#2a2c30" stroke-width="2"/>
+          <rect x="180" y="250" width="22" height="3" fill="#0070d1"/>
+          <ellipse cx="190" cy="462" rx="150" ry="10" fill="#000" opacity=".08"/>
+        </g>
+        <!-- DualSense -->
+        <g transform="translate(470 300)">
+          <path d="M30 40 Q20 10 60 6 L190 6 Q230 10 220 40 L240 120 Q244 150 214 150 Q196 150 180 118 L70 118 Q54 150 36 150 Q6 150 10 120Z" fill="#fff" stroke="#dfe2e6" stroke-width="2"/>
+          <path d="M80 6 L170 6 L160 50 L90 50Z" fill="#f0f2f5" stroke="#dfe2e6"/>
+          <rect x="88" y="4" width="74" height="4" rx="2" fill="#53b1ff"/>
+          <circle cx="82" cy="80" r="16" fill="#1a1b1e"/><circle cx="168" cy="80" r="16" fill="#1a1b1e"/>
+          <g fill="none" stroke="#9aa0a8" stroke-width="2"><path d="M40 52h18M49 43v18"/><circle cx="200" cy="44" r="5"/><rect x="186" y="56" width="9" height="9"/><path d="M206 60l-6 8h12z"/></g>
+        </g>
+        <ellipse cx="420" cy="468" rx="300" ry="8" fill="#000" opacity=".05"/>
+      </svg>
+    </div>
+  </div>
+  <div class="thumbs">
+    <div class="th"><div class="im"><svg width="60" height="100" viewBox="0 0 60 100"><path d="M10 6 L30 4 L30 96 L6 96Z" fill="#fff" stroke="#d0d4da"/><path d="M30 4 L38 6 L38 96 L30 96Z" fill="#111"/><path d="M38 6 L54 8 L52 96 L38 96Z" fill="#fff" stroke="#d0d4da"/></svg></div><b>PS5 Pro</b><span>From $749.99</span></div>
+    <div class="th"><div class="im"><svg width="56" height="96" viewBox="0 0 60 100"><path d="M12 10 L30 8 L30 94 L10 94Z" fill="#fff" stroke="#d0d4da"/><path d="M30 8 L36 10 L36 94 L30 94Z" fill="#111"/><path d="M36 10 L50 12 L48 94 L36 94Z" fill="#fff" stroke="#d0d4da"/></svg></div><b>PS5 Digital Edition</b><span>From $499.99</span></div>
+    <div class="th"><div class="im"><svg width="110" height="70" viewBox="0 0 250 150"><path d="M30 40 Q20 10 60 6 L190 6 Q230 10 220 40 L240 120 Q244 150 214 150 Q196 150 180 118 L70 118 Q54 150 36 150 Q6 150 10 120Z" fill="#1f2a44"/></svg></div><b>DualSense Edge</b><span>$199.99</span></div>
+    <div class="th"><div class="im"><svg width="100" height="80" viewBox="0 0 100 80"><path d="M10 40 Q10 10 50 10 Q90 10 90 40 L86 60 L14 60Z" fill="#fff" stroke="#d0d4da" stroke-width="2"/><rect x="18" y="34" width="64" height="18" rx="6" fill="#111"/></svg></div><b>PlayStation VR2</b><span>$399.99</span></div>
+    <div class="th"><div class="im"><svg width="90" height="90" viewBox="0 0 90 90"><path d="M15 50 Q15 12 45 12 Q75 12 75 50" fill="none" stroke="#fff" stroke-width="10"/><path d="M15 50 Q15 12 45 12 Q75 12 75 50" fill="none" stroke="#d0d4da" stroke-width="1"/><rect x="6" y="46" width="20" height="30" rx="8" fill="#fff" stroke="#d0d4da"/><rect x="64" y="46" width="20" height="30" rx="8" fill="#fff" stroke="#d0d4da"/></svg></div><b>Pulse Elite</b><span>$149.99</span></div>
+  </div>
+</div></section>
+
+<section class="band dark"><div class="w">
+  <div class="railhd"><h2 class="d" style="max-width:640px">Great PS4 &amp; PS5 games out now or coming soon</h2><div class="filters"><span class="fp on">All</span><span class="fp">Coming soon</span><span class="fp">PlayStation VR2</span><span class="fp">Recently released</span></div></div>
+  <div class="rail">
+    <div><div class="gt"><svg viewBox="0 0 320 180" width="100%" height="100%" preserveAspectRatio="none"><rect width="320" height="180" fill="#0c1a12"/><path d="M0 130 L80 80 L160 120 L240 60 L320 100 V180 H0Z" fill="#1f3d24"/><circle cx="250" cy="50" r="26" fill="#deff20" opacity=".8"/></svg><span class="badge">New</span><div class="lbl">Marathon<small>PS5</small></div></div><div class="gtmeta">Bungie<span>Out now</span></div></div>
+    <div><div class="gt"><svg viewBox="0 0 320 180" width="100%" height="100%" preserveAspectRatio="none"><rect width="320" height="180" fill="#2a0d10"/><circle cx="160" cy="90" r="60" fill="#8a1c1c"/><path d="M0 150 Q160 100 320 150 V180 H0Z" fill="#120607"/></svg><div class="lbl">Ghost of Yōtei<small>PS5</small></div></div><div class="gtmeta">Sucker Punch<span>Out now</span></div></div>
+    <div><div class="gt"><svg viewBox="0 0 320 180" width="100%" height="100%" preserveAspectRatio="none"><rect width="320" height="180" fill="#0f1a2e"/><path d="M40 180 L120 40 L200 180Z" fill="#2c4a7a"/><path d="M150 180 L240 70 L320 180Z" fill="#1d3358"/><circle cx="80" cy="40" r="10" fill="#bde0ff"/></svg><span class="badge">Pre-order</span><div class="lbl">Marvel’s Wolverine<small>PS5</small></div></div><div class="gtmeta">Insomniac Games<span>2026</span></div></div>
+    <div><div class="gt"><svg viewBox="0 0 320 180" width="100%" height="100%" preserveAspectRatio="none"><rect width="320" height="180" fill="#1a1a2e"/><g fill="#f0b400"><rect x="60" y="60" width="40" height="40" rx="8"/><rect x="140" y="80" width="40" height="40" rx="20"/><rect x="220" y="50" width="40" height="40" rx="4"/></g></svg><div class="lbl">Astro Bot<small>PS5</small></div></div><div class="gtmeta">Team Asobi<span>Out now</span></div></div>
+    <span class="paddle" style="left:-24px">‹</span><span class="paddle" style="right:-24px">›</span>
+  </div>
+  <div class="rdots"><i class="on"></i><i></i><i></i></div>
+</div></section>
+
+<section class="band"><div class="w">
+  <div class="plus">
+    <div class="bar"></div>
+    <div class="in">
+      <div>
+        <span style="display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:18px"><span style="width:26px;height:26px;border-radius:6px;background:linear-gradient(90deg,#ffce21,#f5a623,#ee8e00);display:grid;place-items:center;color:#121314;font-weight:700">+</span>PlayStation Plus</span>
+        <h3 class="d">Discover PlayStation Plus</h3>
+        <p>Hundreds of games, online multiplayer, cloud streaming and exclusive discounts — choose the plan that fits how you play.</p>
+        <span class="btn p">Explore plans</span>
+      </div>
+      <div class="tiers">
+        <div class="tier"><h4>Essential</h4><div class="pr d">$9.99/mo</div><ul><li>Online multiplayer</li><li>Monthly games</li><li>Cloud storage</li></ul></div>
+        <div class="tier on"><h4>Extra</h4><div class="pr d">$14.99/mo</div><ul><li>Everything in Essential</li><li>Game Catalog of 400+ titles</li><li>Ubisoft+ Classics</li></ul></div>
+        <div class="tier"><h4>Premium</h4><div class="pr d">$17.99/mo</div><ul><li>Everything in Extra</li><li>Cloud streaming</li><li>Classics & game trials</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<section class="onps"><div class="w grid">
+  <div>
+    <div class="eyb">On PlayStation</div>
+    <h2 class="d">30 years of play has only been the beginning</h2>
+    <p>From the original PlayStation in 1994 to PS5 Pro, celebrate three decades of legendary games and the players who made them. <a>Read the story</a></p>
+    <div class="ctas" style="margin-top:28px"><span class="btn sd">Explore the timeline</span></div>
+  </div>
+  <div class="shapes">
+    <svg viewBox="0 0 100 100"><path d="M50 14 L88 82 H12Z" fill="none" stroke="#3ad6a8" stroke-width="5"/></svg>
+    <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="36" fill="none" stroke="#ff5a6a" stroke-width="5"/></svg>
+    <svg viewBox="0 0 100 100"><path d="M20 20 L80 80 M80 20 L20 80" stroke="#6aa8ff" stroke-width="5"/></svg>
+    <svg viewBox="0 0 100 100"><rect x="16" y="16" width="68" height="68" fill="none" stroke="#e48bd7" stroke-width="5"/></svg>
+  </div>
+</div></section>
+
+<section class="band"><div class="w">
+  <div class="railhd" style="margin-bottom:0"><h2 class="d">Latest news from PlayStation Blog</h2><span class="btn sl">Visit the Blog</span></div>
+  <div class="news">
+    <div class="nc"><div class="im" style="background:linear-gradient(135deg,#0c1a12,#1f3d24 60%,#deff20)"></div><div class="tx"><small>Nov 4, 2026 · Game updates</small><h4 class="d">Marathon Season 2 launches December 9 with a new zone</h4><p>Bungie details new runner shells, ranked play and cross-play improvements.</p></div></div>
+    <div class="nc"><div class="im" style="background:linear-gradient(135deg,#121314,#0070d1)"></div><div class="tx"><small>Nov 3, 2026 · PlayStation Plus</small><h4 class="d">PlayStation Plus Monthly Games for November</h4><p>Three new games join the lineup, available to all members from Tuesday.</p></div></div>
+    <div class="nc"><div class="im" style="background:linear-gradient(135deg,#2a0d10,#8a1c1c 60%,#f6d7a8)"></div><div class="tx"><small>Oct 30, 2026 · Hardware</small><h4 class="d">New DualSense colors arrive this holiday</h4><p>Midnight Black, Cobalt Blue and a limited 30th Anniversary edition.</p></div></div>
+  </div>
+</div></section>
+
+<footer class="foot"><div class="w">
+  <div class="top"><svg width="40" height="40" viewBox="0 0 24 24" fill="#fff"><path d="M8.984 2.596v17.547l3.915 1.261V6.688c0-.69.304-1.151.794-.991.636.18.76.814.76 1.505v5.875c2.441 1.193 4.362-.002 4.362-3.152 0-3.237-1.126-4.675-4.438-5.827-1.307-.448-3.728-1.186-5.39-1.502zm4.656 16.241l6.296-2.275c.715-.258.826-.625.246-.818-.586-.192-1.637-.139-2.357.123l-4.205 1.5V14.98l.24-.085s1.201-.42 2.913-.615c1.696-.18 3.785.03 5.437.661 1.848.601 2.04 1.472 1.576 2.072-.465.6-1.622 1.036-1.622 1.036l-8.544 3.107V18.86zM1.807 18.6c-1.9-.545-2.214-1.668-1.352-2.32.801-.586 2.16-1.052 2.16-1.052l5.615-2.013v2.313L4.205 17c-.705.271-.825.632-.239.826.586.195 1.637.15 2.343-.12L8.247 17v2.074c-.12.03-.256.044-.39.073-1.939.331-3.996.196-6.038-.479z"/></svg><b>PlayStation</b><span style="margin-left:auto">Country / Region: United States</span></div>
+  <div class="fcols">
+    <div><h6>Shop</h6><a>PlayStation Store</a><a>PlayStation Direct</a><a>Gift cards</a></div>
+    <div><h6>Account</h6><a>Sign in</a><a>Create account</a><a>Account management</a></div>
+    <div><h6>Support</h6><a>Help center</a><a>PS5 setup</a><a>Repairs</a></div>
+    <div><h6>Company</h6><a>About Sony Interactive</a><a>Careers</a><a>PlayStation Studios</a></div>
+    <div><h6>Follow</h6><a>X</a><a>Instagram</a><a>YouTube</a></div>
+  </div>
+  <div class="fleg"><span>© 2026 Sony Interactive Entertainment LLC</span><span>Terms of service</span><span>Privacy policy</span><span>Cookie policy</span></div>
+</div></footer>
+
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">playstation</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mastercard — Connecting everyone to Priceless possibilities</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@100..1000&display=block">
+<style>
+:root{--ink:#141413;--charcoal:#262627;--orange:#CF4500;--orange-l:#F37338;--clay:#9A3A0A;--canvas:#F3F0EE;--lifted:#FCFBFA;--slate:#696969;--dust:#D1CDC7;--ghost:#E8E2DA;--link:#3860BE;
+--e1:rgba(0,0,0,.04) 0px 4px 24px 0px;--e2:rgba(0,0,0,.08) 0px 24px 48px 0px;--e3:rgba(0,0,0,.25) 0px 70px 110px 0px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--canvas);color:var(--ink);font-family:'Sofia Sans',SofiaSans,Arial,sans-serif;font-size:16px;font-weight:450;line-height:1.4;overflow-x:hidden}
+.wrap{max-width:1280px;margin:0 auto;padding:0 48px}
+h1{font-size:64px;font-weight:500;line-height:64px;letter-spacing:-1.28px}
+h2{font-size:36px;font-weight:500;line-height:44px;letter-spacing:-.72px}
+h3{font-size:24px;font-weight:500;line-height:28.8px;letter-spacing:-.48px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:700;line-height:14px;letter-spacing:.56px;text-transform:uppercase}
+.eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--orange)}
+.btn{display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:16px;font-weight:500;letter-spacing:-.32px;line-height:20.8px;border-radius:20px;padding:6px 24px;border:1.5px solid var(--ink);white-space:nowrap}
+.btn.ink{background:var(--ink);color:var(--canvas)}
+.btn.out{background:#fff;color:var(--ink);font-weight:450}
+.circle-btn{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--ink);background:transparent;flex:none}
+/* floating nav pill */
+.navbar{position:relative;z-index:5;padding-top:24px}
+.pill-nav{max-width:1232px;margin:0 auto;background:#fff;border-radius:999px;box-shadow:var(--e1);padding:16px 40px;display:flex;align-items:center}
+.pill-nav .links{display:flex;gap:52px;margin:0 auto;font-weight:500;font-size:16px;letter-spacing:-.48px}
+.mark{display:flex;align-items:center;gap:10px;font-weight:500;font-size:18px;letter-spacing:-.4px}
+/* hero */
+.hero-copy{display:grid;grid-template-columns:1.3fr 1fr;gap:64px;align-items:end;padding:96px 0 56px}
+.hero-copy p{font-size:18px;max-width:420px;margin-bottom:24px}
+.stadium{margin:0 24px;height:600px;border-radius:40px;background:#2B2B2B;position:relative;overflow:hidden}
+.stadium .scene{position:absolute;inset:0;background:
+ radial-gradient(ellipse 30% 45% at 72% 60%,rgba(247,158,27,.85),rgba(207,69,0,.35) 55%,transparent 75%),
+ radial-gradient(ellipse 60% 70% at 20% 30%,rgba(154,58,10,.55),transparent 70%),
+ linear-gradient(160deg,#3a2a22 0%,#1d1714 55%,#0e0c0b 100%)}
+.stadium .card{position:absolute;left:58%;top:30%;width:380px;height:240px;border-radius:20px;transform:rotate(-12deg);background:linear-gradient(135deg,#262627,#141413);box-shadow:var(--e3)}
+.stadium .card::after{content:"";position:absolute;right:28px;bottom:26px;width:72px;height:44px;background:radial-gradient(circle at 22px 22px,#EB001B 21px,transparent 22px),radial-gradient(circle at 50px 22px,#F79E1B 21px,transparent 22px)}
+.stadium .chipc{position:absolute;left:36px;top:60px;width:46px;height:36px;border-radius:6px;background:linear-gradient(135deg,#d9c39a,#a8875a)}
+.stadium .num{position:absolute;left:36px;bottom:34px;color:#cfc8c0;font-size:18px;letter-spacing:3px}
+.stadium .cap{position:absolute;left:56px;bottom:56px;color:#fff;max-width:440px}
+.stadium .cap h2{color:#fff;margin:12px 0 20px}
+.stadium .cap .eyebrow::before{background:var(--orange-l)}
+.play{position:absolute;right:56px;bottom:56px;width:80px;height:80px;border-radius:50%;background:#fff;display:grid;place-items:center}
+/* services constellation */
+.services{position:relative;padding:128px 0 96px;min-height:1180px}
+.ghost{position:absolute;left:-20px;top:80px;font-size:128px;font-weight:500;letter-spacing:-2.56px;line-height:1;color:var(--ghost);white-space:nowrap;pointer-events:none}
+.services .intro{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:64px;margin-top:120px}
+.services .intro p{max-width:440px;align-self:end}
+.orbit{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+.portrait{position:absolute;width:300px}
+.portrait .disc{width:300px;height:300px;border-radius:50%;position:relative;box-shadow:var(--e2)}
+.portrait .sat{position:absolute;right:-8px;bottom:12px;width:56px;height:56px;border-radius:50%;background:#fff;display:grid;place-items:center}
+.portrait .eyebrow{margin:28px 0 12px}
+.p1 .disc{background:radial-gradient(circle at 50% 42%,#F79E1B 0 18%,#f3a14a 24%,#e8c9a8 52%,#efe4da 78%,#F3F0EE 100%)}
+.p2 .disc{background:radial-gradient(circle at 40% 60%,#9A3A0A 0 12%,#CF4500 22%,#F37338 40%,#f0c7a6 70%,#F3F0EE 100%)}
+.p3 .disc{background:radial-gradient(circle at 55% 50%,#2a2522 0 22%,#6b4b37 36%,#d8b796 62%,#F3F0EE 100%)}
+.disc .petal{position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(from 0deg at 50% 42%,rgba(255,255,255,.0) 0 10deg,rgba(255,255,255,.18) 10deg 20deg);mix-blend-mode:soft-light}
+/* lifted cream / pill carousel */
+.lifted{background:var(--lifted);padding:128px 0}
+.lifted .head{display:flex;justify-content:space-between;align-items:end;margin-bottom:56px}
+.carousel{display:flex;gap:24px}
+.pcard{flex:0 0 auto;height:420px;border-radius:1000px;position:relative;overflow:hidden;box-shadow:var(--e2)}
+.pcard .chip{position:absolute;left:50%;top:40px;transform:translateX(-50%);background:#fff;border-radius:999px;padding:8px 20px;font-weight:500;font-size:14px}
+.pcard .t{position:absolute;left:0;right:0;bottom:56px;text-align:center;color:#fff;padding:0 48px}
+.pcard .t h3{color:#fff;margin-bottom:20px}
+.pcard .big{border-radius:40px;padding:16px 40px;background:var(--ink);color:var(--canvas);border-color:var(--ink)}
+.dots{display:flex;gap:8px;align-items:center;margin-top:40px}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--dust)}
+.dots i.on{width:32px;border-radius:99px;background:var(--orange-l)}
+/* stats 2-up */
+.split{padding:128px 0;display:grid;grid-template-columns:1fr 1fr;gap:64px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:48px 32px}
+.stats b{display:block;font-size:64px;font-weight:500;letter-spacing:-1.28px;line-height:64px;margin-bottom:12px}
+.stats span{color:var(--slate)}
+/* footer */
+.mfoot{background:var(--ink);color:#fff;padding:96px 100px 148px}
+.mfoot h2{color:#fff;font-size:48px;line-height:52px;letter-spacing:-.96px;max-width:560px;margin-bottom:72px}
+.cols{display:grid;grid-template-columns:repeat(4,1fr);gap:32px;max-width:1240px}
+.cols h5{font-size:14px;font-weight:700;letter-spacing:.56px;text-transform:uppercase;color:#9a9893;margin-bottom:24px}
+.cols a{display:block;font-size:14px;font-weight:450;line-height:20px;margin-bottom:14px;color:#fff;text-decoration:none}
+.bottom{display:flex;align-items:center;gap:24px;border-top:1px solid rgba(255,255,255,.3);margin-top:64px;padding-top:32px;font-size:13px;color:#bdbab5;max-width:1240px}
+.lang{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:8px 20px;color:#fff}
+.soc{width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.4);display:grid;place-items:center;font-size:12px;color:#fff;font-weight:700}
+</style></head><body>
+<div class="navbar"><nav class="pill-nav">
+  <span class="mark"><svg width="52" height="32" viewBox="0 0 52 32" aria-label="Mastercard"><circle cx="16" cy="16" r="16" fill="#EB001B"/><circle cx="36" cy="16" r="16" fill="#F79E1B"/><path d="M26 3.5a16 16 0 0 1 0 25 16 16 0 0 1 0-25z" fill="#FF5F00"/></svg>mastercard</span>
+  <div class="links"><span>For you</span><span>For business</span><span>For the world</span><span>For innovators</span><span>News and trends</span></div>
+  <span class="circle-btn" style="border-color:rgba(20,20,19,.5)"><svg width="18" height="18" fill="none" stroke="#141413" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="m13 13 4 4"/></svg></span>
+</nav></div>
+
+<div class="wrap hero-copy">
+  <div><span class="eyebrow">For business</span><h1 style="margin-top:24px">Powering economies<br>and empowering people</h1></div>
+  <div><p>We connect billions of consumers, businesses and governments in more than 200 countries — making every payment safe, simple, smart and accessible.</p><div style="display:flex;gap:12px"><span class="btn ink">Explore solutions</span><span class="btn out">Find a card</span></div></div>
+</div>
+<div class="stadium">
+  <div class="scene"></div>
+  <div class="card"><span class="chipc"></span><span class="num">5412 •••• •••• 2026</span></div>
+  <div class="cap"><span class="eyebrow">Priceless</span><h2>Tap, pay and go — wherever the day takes you</h2><span class="btn" style="background:#fff;border-color:#fff;color:var(--ink)">Watch the film</span></div>
+  <span class="play"><svg width="22" height="22"><path d="M6 3l14 8-14 8z" fill="#141413"/></svg></span>
+</div>
+
+<section class="services wrap">
+  <div class="ghost">Services that connect</div>
+  <svg class="orbit" viewBox="0 0 1280 1180" preserveAspectRatio="none" fill="none" stroke="#F37338" stroke-width="1.3">
+    <path d="M-60 520 C 180 440, 300 620, 430 700 S 760 700, 860 560 S 1120 380, 1340 470"/>
+    <path d="M300 760 C 420 980, 640 1050, 760 960 S 900 860, 980 1000" stroke-width="1"/>
+  </svg>
+  <div class="intro"><h2>Solutions designed for the way the world moves money</h2><p>From real-time account-to-account payments to cyber intelligence, our services help businesses of every size grow with confidence.</p></div>
+  <div class="portrait p1" style="left:60px;top:520px"><div class="disc"><i class="petal"></i><span class="sat"><svg width="20" height="20" fill="none" stroke="#141413" stroke-width="2"><path d="M3 10h13M11 5l5 5-5 5"/></svg></span></div><span class="eyebrow">Services</span><h3>Data &amp; analytics that<br>reveal what's next</h3></div>
+  <div class="portrait p2" style="left:500px;top:690px"><div class="disc"><span class="sat"><svg width="20" height="20" fill="none" stroke="#141413" stroke-width="2"><path d="M3 10h13M11 5l5 5-5 5"/></svg></span></div><span class="eyebrow">Solutions</span><h3>Open banking and<br>account-to-account pay</h3></div>
+  <div class="portrait p3" style="left:900px;top:400px"><div class="disc"><span class="sat"><svg width="20" height="20" fill="none" stroke="#141413" stroke-width="2"><path d="M3 10h13M11 5l5 5-5 5"/></svg></span></div><span class="eyebrow">Security</span><h3>Cyber &amp; identity<br>protection, built in</h3></div>
+</section>
+
+<section class="lifted"><div class="wrap">
+  <div class="head"><div><span class="eyebrow">News and trends</span><h2 style="margin-top:20px;max-width:620px">Stories from a world of Priceless possibilities</h2></div><div style="display:flex;gap:12px"><span class="circle-btn" style="width:40px;height:40px">←</span><span class="circle-btn" style="width:40px;height:40px">→</span></div></div>
+  <div class="carousel">
+    <div class="pcard" style="width:560px;background:radial-gradient(ellipse at 30% 30%,#F37338,transparent 60%),linear-gradient(180deg,#9A3A0A,#2b1a12)"><span class="chip">Story</span><div class="t"><h3>How small businesses in Lagos are going cashless</h3><span class="btn big">Read the story</span></div></div>
+    <div class="pcard" style="width:380px;background:radial-gradient(circle at 60% 35%,#F79E1B 0 14%,transparent 15%),linear-gradient(200deg,#5c4a3e,#1f1a17)"><span class="chip">Innovation</span><div class="t"><h3>Biometric checkout arrives at the stadium</h3></div></div>
+    <div class="pcard" style="width:240px;background:linear-gradient(170deg,#d8b796,#6b4b37)"><span class="chip">Report</span></div>
+  </div>
+  <div class="dots"><i class="on"></i><i></i><i></i><i></i></div>
+</div></section>
+
+<div class="wrap split">
+  <div><span class="eyebrow">For the world</span><h2 style="margin:20px 0 20px">Building a more inclusive, sustainable digital economy</h2><p style="max-width:440px;margin-bottom:28px">We've committed to connecting one billion people and 50 million micro and small businesses to the digital economy by 2025 — and we're going further.</p><span class="btn ink">See our impact</span></div>
+  <div class="stats"><div><b>210+</b><span>countries and territories in our network</span></div><div><b>3.4B</b><span>cards carrying the Mastercard brand</span></div><div><b>150+</b><span>currencies processed every day</span></div><div><b>1B</b><span>people brought into the digital economy</span></div></div>
+</div>
+
+<div class="mfoot">
+  <h2>We're always here when you need us</h2>
+  <div class="cols">
+    <div><h5>Need help?</h5><a>💬&nbsp; Contact support</a><a>▭&nbsp; Report a lost card</a><a>⌖&nbsp; Find an ATM</a><a>?&nbsp; FAQs</a></div>
+    <div><h5>For you</h5><a>Credit cards</a><a>Debit cards</a><a>Prepaid cards</a><a>Priceless experiences ↗</a></div>
+    <div><h5>For business</h5><a>Small business</a><a>Large enterprise</a><a>Financial institutions</a><a>Developers ↗</a></div>
+    <div><h5>About us</h5><a>Who we are</a><a>Investor relations ↗</a><a>Careers</a><a>Newsroom</a></div>
+  </div>
+  <div class="bottom"><span>© 1994–2026 Mastercard. All rights reserved.</span><span>Privacy notice</span><span>Terms of use</span><span>Your privacy choices</span><span style="flex:1"></span><span class="lang">United States · English ⌄</span><span class="soc">in</span><span class="soc">f</span><span class="soc">X</span><span class="soc">▶</span></div>
+</div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">mastercard</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

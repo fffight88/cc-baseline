@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MiniMax — DESIGN.md preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=block">
+<style>
+:root{--primary:#0a0a0a;--coral:#ff5530;--magenta:#ea5ec1;--blue:#1456f0;--blue-deep:#1d4ed8;--blue-700:#17437d;--cyan:#3daeff;--blue-200:#bfdbfe;--purple:#a855f7;--canvas:#fff;--surface:#f7f8fa;--surface-soft:#f2f3f5;--hair:#e5e7eb;--hair-soft:#eaecf0;--ink:#0a0a0a;--charcoal:#222;--slate:#45515e;--steel:#5f5f5f;--stone:#8e8e93;--muted:#a8aab2;--ok-bg:#e8ffea;--ok:#1ba673;
+--sans:"DM Sans",Inter,"Helvetica Neue",Helvetica,Arial,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--canvas);color:var(--charcoal);font:400 16px/1.5 var(--sans);overflow-x:hidden}
+.wrap{max-width:1280px;margin:0 auto;padding:0 32px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:11px 24px;border-radius:9999px;font:600 14px/1.4 var(--sans);background:var(--primary);color:#fff;white-space:nowrap}
+.btn.s{background:transparent;color:var(--ink);border:1px solid var(--ink);padding:10px 23px}
+.btn.t{background:#fff;color:var(--ink);border:1px solid var(--hair);padding:10px 23px}
+.bdg{display:inline-flex;padding:4px 10px;border-radius:9999px;font:600 13px/1.5 var(--sans)}
+.bdg.new{background:var(--coral);color:#fff}.bdg.beta{background:var(--blue-200);color:var(--blue-deep)}.bdg.ok{background:var(--ok-bg);color:var(--ok)}
+.code{display:inline-block;padding:2px 6px;border-radius:6px;background:var(--blue-200);color:var(--blue-deep);font:600 13px/1.5 var(--sans)}
+.promo{background:var(--primary);color:#fff;text-align:center;padding:12px 20px;font:500 14px/1.5 var(--sans)}
+.promo u{text-underline-offset:3px}
+header{border-bottom:1px solid var(--hair-soft)}
+nav{height:64px;display:flex;align-items:center;gap:32px;font-size:14px;color:var(--charcoal)}
+.wm{font:700 24px/1 var(--sans);letter-spacing:-.8px;color:var(--ink);display:flex;align-items:center;gap:8px;margin-right:12px}
+.wm i{display:flex;gap:2px;align-items:center;height:20px}.wm i b{width:3px;border-radius:2px;background:linear-gradient(var(--coral),var(--magenta))}
+nav .sp{flex:1}
+.hero{text-align:center;padding:96px 0 80px}
+.h-hero{font:600 80px/1.1 var(--sans);letter-spacing:-2px;color:#000}
+.hero p{font:500 18px/1.5 var(--sans);color:var(--steel);max-width:640px;margin:24px auto 36px}
+.ctas{display:flex;gap:12px;justify-content:center}
+.h-lg{font:600 56px/1.1 var(--sans);letter-spacing:-1.5px;color:var(--ink)}
+.h-40{font:600 40px/1.2 var(--sans);letter-spacing:-1px;color:var(--ink)}
+.h-32{font:600 32px/1.25 var(--sans);letter-spacing:-.5px;color:var(--ink)}
+.ct{font:600 20px/1.4 var(--sans);color:var(--ink)}
+.head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:32px}
+.matrix{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.pc{position:relative;overflow:hidden;border-radius:32px;padding:32px;height:400px;color:#fff;display:flex;flex-direction:column}
+.pc .t{margin-top:auto;position:relative}
+.pc .tag{font:400 14px/1.5 var(--sans);color:rgba(255,255,255,.8);margin-top:6px}
+.pc .bdg{position:absolute;top:24px;right:24px;background:#fff;color:var(--ink)}
+.pc .k{font:600 13px/1.5 var(--sans);opacity:.85;position:relative}
+.pc.coral{background:radial-gradient(90% 70% at 80% 10%,#ff9a6b 0%,transparent 60%),radial-gradient(80% 60% at 10% 100%,#c22c10 0%,transparent 70%),var(--coral)}
+.pc.mag{background:radial-gradient(80% 70% at 20% 0%,#ffb0e4 0%,transparent 60%),radial-gradient(90% 70% at 100% 100%,var(--purple) 0%,transparent 70%),var(--magenta)}
+.pc.blue{background:radial-gradient(90% 70% at 90% 0%,var(--cyan) 0%,transparent 60%),radial-gradient(90% 70% at 0% 100%,#0b2f8f 0%,transparent 70%),var(--blue)}
+.pc.pur{background:radial-gradient(80% 70% at 10% 10%,#ff8a5c 0%,transparent 55%),radial-gradient(90% 80% at 100% 100%,#5b21b6 0%,transparent 70%),var(--purple);box-shadow:rgba(44,30,116,.16) 0 0 15px}
+.pc svg{position:absolute;inset:0}
+.aim{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:16px}
+.tile{border:1px solid var(--hair);border-radius:24px;padding:24px;background:#fff}
+.tile .il{height:100px;display:flex;align-items:center;margin-bottom:12px}
+.tile p{font-size:14px;color:var(--steel);margin-top:4px}
+.sec{padding:80px 0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.stat{padding:24px;border-left:1px solid var(--hair-soft)}
+.stat:first-child{border-left:0}
+.stat b{display:block;font:600 40px/1.2 var(--sans);letter-spacing:-1px;color:var(--ink)}
+.stat span{font-size:14px;color:var(--steel)}
+/* docs */
+.docs{border:1px solid var(--hair);border-radius:16px;overflow:hidden;background:#fff}
+.dnav{height:56px;display:flex;align-items:center;gap:24px;padding:0 24px;border-bottom:1px solid var(--hair-soft);font-size:14px}
+.search{height:36px;width:360px;margin:0 auto;border:1px solid var(--hair);background:var(--surface);border-radius:8px;display:flex;align-items:center;padding:0 16px;color:var(--steel);font-size:14px;justify-content:space-between}
+.dgrid{display:grid;grid-template-columns:220px 1fr 180px;gap:0}
+.side{padding:24px 12px;border-right:1px solid var(--hair-soft);font-size:14px}
+.side h6{font:600 13px/1.5 var(--sans);color:var(--stone);padding:16px 16px 6px}
+.side div{padding:8px 16px;border-radius:6px;color:var(--charcoal)}
+.side div.on{background:var(--surface);color:var(--ink);font-weight:500}
+.prose{padding:32px 40px;max-width:760px;font-size:16px;line-height:1.6;color:var(--charcoal)}
+.prose code{font:14px var(--mono);background:var(--surface);border-radius:4px;padding:1px 6px}
+.crumb{font:400 13px/1.7 var(--sans);color:var(--stone);margin-bottom:8px}
+table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--hair);border-radius:8px;overflow:hidden;font-size:14px;margin-top:20px}
+th{background:var(--surface);color:var(--steel);font:600 13px/1.5 var(--sans);text-align:left;padding:12px 16px}
+td{padding:16px;border-top:1px solid var(--hair-soft);vertical-align:top;color:var(--charcoal)}
+td:first-child{color:var(--ink);font-weight:500;white-space:nowrap}
+td ul{padding-left:16px}
+.toc{padding:32px 16px;font-size:14px;color:var(--steel);border-left:1px solid var(--hair-soft)}
+.toc div{padding:8px 0}
+.toc .on{color:var(--ink)}
+/* pricing */
+.ptabs{display:flex;gap:8px;justify-content:center;margin:24px 0 40px}
+.ptab{padding:8px 16px;border-radius:9999px;border:1px solid var(--hair);background:#fff;color:var(--steel);font:500 14px/1.5 var(--sans)}
+.ptab.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.tier{border:1px solid var(--hair);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:10px;background:#fff}
+.tier.f{background:var(--surface);border-color:var(--surface)}
+.tier .pr{font:600 40px/1.2 var(--sans);letter-spacing:-1px;color:var(--ink)}
+.tier .pr small{font:400 14px var(--sans);color:var(--steel);letter-spacing:0}
+.tier ul{list-style:none;font-size:14px;display:flex;flex-direction:column;gap:8px;margin:8px 0 16px;color:var(--charcoal)}
+.tier li::before{content:"✓";color:var(--ok);margin-right:8px;font-weight:700}
+.tier .btn{justify-content:center;margin-top:auto}
+.promo-card{background:radial-gradient(70% 120% at 100% 0%,#ff8a5c 0%,transparent 60%),var(--coral);border-radius:32px;padding:64px;color:#fff;display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+.rec{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+.rc{border:1px solid var(--hair);border-radius:12px;padding:20px;box-shadow:rgba(0,0,0,.04) 0 1px 2px}
+.rc p{font-size:14px;color:var(--steel)}
+.bf{background:var(--primary);color:#fff;padding:64px 32px;margin-top:80px}
+.bf .top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:40px;border-bottom:1px solid #222}
+.bf .cols{display:grid;grid-template-columns:repeat(5,1fr);gap:32px;padding-top:40px}
+.bf h6{font:500 14px/1.5 var(--sans);color:#fff;margin-bottom:12px}
+.bf a{display:block;color:var(--muted);font-size:14px;padding:4px 0}
+.soc{display:flex;gap:8px}.soc span{width:36px;height:36px;border-radius:50%;border:1px solid #333;display:grid;place-items:center;font-size:13px;color:#fff}
+</style></head><body>
+<div class="promo">Invite &amp; Earn — rewards for both you and your friends. <u>Learn more →</u></div>
+<header><div class="wrap"><nav><span class="wm"><i><b style="height:8px"></b><b style="height:16px"></b><b style="height:20px"></b><b style="height:12px"></b><b style="height:6px"></b></i>MiniMax</span><span>Models</span><span>Product</span><span>API</span><span>Research</span><span>Company</span><span class="sp"></span><span class="btn">Contact Us</span><span class="btn s">Login</span></nav></div></header>
+
+<div class="wrap">
+  <section class="hero">
+    <span class="bdg new">NEW</span>
+    <h1 class="h-hero" style="margin-top:20px">Intelligence with Everyone</h1>
+    <p>A full-stack foundation model company. Text, speech, video and music models built for agents, creators and enterprises worldwide.</p>
+    <div class="ctas"><span class="btn">Start Building</span><span class="btn s">Explore Models</span></div>
+  </section>
+
+  <div class="head"><h2 class="h-32">Full-Stack Model Matrix</h2><div style="display:flex;gap:8px"><span class="btn t" style="width:36px;height:36px;padding:0;justify-content:center">‹</span><span class="btn t" style="width:36px;height:36px;padding:0;justify-content:center">›</span></div></div>
+  <div class="matrix">
+    <div class="pc coral"><span class="k">Text · Agentic</span><span class="bdg">NEW</span>
+      <svg viewBox="0 0 300 400" preserveAspectRatio="none"><g fill="none" stroke="rgba(255,255,255,.18)"><circle cx="230" cy="110" r="60"/><circle cx="230" cy="110" r="100"/><circle cx="230" cy="110" r="140"/></g></svg>
+      <div class="t"><div class="h-lg" style="color:#fff">M2.7</div><div class="tag">Self-evolving agentic model for coding and long-horizon tasks</div></div></div>
+    <div class="pc mag"><span class="k">Music</span>
+      <svg viewBox="0 0 300 400" preserveAspectRatio="none"><g fill="rgba(255,255,255,.22)"><rect x="40" y="150" width="10" height="60" rx="5"/><rect x="62" y="120" width="10" height="120" rx="5"/><rect x="84" y="140" width="10" height="80" rx="5"/><rect x="106" y="100" width="10" height="160" rx="5"/><rect x="128" y="130" width="10" height="100" rx="5"/><rect x="150" y="90" width="10" height="180" rx="5"/><rect x="172" y="125" width="10" height="110" rx="5"/><rect x="194" y="145" width="10" height="70" rx="5"/><rect x="216" y="115" width="10" height="130" rx="5"/><rect x="238" y="150" width="10" height="60" rx="5"/></g></svg>
+      <div class="t"><div class="h-40" style="color:#fff">Music 2.6</div><div class="tag">Full songs with vocals and instrumentals from a prompt</div></div></div>
+    <div class="pc blue"><span class="k">Video</span>
+      <svg viewBox="0 0 300 400" preserveAspectRatio="none"><g fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.5"><rect x="60" y="80" width="180" height="120" rx="14"/><rect x="80" y="100" width="180" height="120" rx="14"/><path d="M150 140l26 15-26 15z" fill="rgba(255,255,255,.4)"/></g></svg>
+      <div class="t"><div class="h-40" style="color:#fff">Hailuo 02</div><div class="tag">1080p cinematic video with physics-accurate motion</div></div></div>
+    <div class="pc pur"><span class="k">Speech</span>
+      <svg viewBox="0 0 300 400" preserveAspectRatio="none"><path d="M20 160 Q 60 100 100 160 T 180 160 T 260 160 T 300 160" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2"/><path d="M0 190 Q 50 140 100 190 T 200 190 T 300 190" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="2"/></svg>
+      <div class="t"><div class="h-40" style="color:#fff">Speech 2.8</div><div class="tag">Expressive TTS in 40 languages with voice cloning</div></div></div>
+  </div>
+
+  <div class="head" style="margin:64px 0 0"><h2 class="h-32">AI Product Matrix</h2><span style="font:500 14px var(--sans);color:var(--ink)">View all products →</span></div>
+  <div class="aim">
+    <div class="tile"><div class="il"><svg width="72" height="72" viewBox="0 0 72 72" fill="none" stroke="#0a0a0a" stroke-width="1.5"><rect x="10" y="14" width="52" height="40" rx="10"/><circle cx="27" cy="34" r="4"/><circle cx="45" cy="34" r="4"/><path d="M36 6v8M24 62h24"/></svg></div><div class="ct">MiniMax Agent</div><p>A general agent that plans, codes and browses to finish complex tasks.</p></div>
+    <div class="tile"><div class="il"><svg width="72" height="72" viewBox="0 0 72 72" fill="none" stroke="#0a0a0a" stroke-width="1.5"><rect x="8" y="16" width="56" height="40" rx="8"/><path d="M30 28l14 8-14 8z"/></svg></div><div class="ct">Hailuo Video</div><p>Turn text and images into vivid, story-driven video clips.</p></div>
+    <div class="tile"><div class="il"><svg width="72" height="72" viewBox="0 0 72 72" fill="none" stroke="#0a0a0a" stroke-width="1.5"><path d="M10 36h6M22 24v24M32 14v44M42 26v20M52 18v36M62 36h0"/></svg></div><div class="ct">MiniMax Audio</div><p>Studio-grade voice generation, cloning and audiobook production.</p></div>
+    <div class="tile"><div class="il"><svg width="72" height="72" viewBox="0 0 72 72" fill="none" stroke="#0a0a0a" stroke-width="1.5"><circle cx="36" cy="36" r="24"/><path d="M28 30c0-6 16-6 16 0 0 8-8 6-8 12M36 50v1"/></svg></div><div class="ct">Talkie</div><p>Character companions with memory, voice and personality.</p></div>
+  </div>
+
+  <section class="sec">
+    <div class="stats">
+      <div class="stat"><b>214,000+</b><span>Enterprise clients &amp; developers</span></div>
+      <div class="stat"><b>200+</b><span>Countries and regions served</span></div>
+      <div class="stat"><b>157M+</b><span>Individual users</span></div>
+      <div class="stat"><b>#1</b><span>Open-weight model on agentic benchmarks</span></div>
+    </div>
+  </section>
+
+  <section style="padding-bottom:80px">
+    <div class="head"><div><h2 class="h-40">Built for developers</h2><p style="font:500 18px/1.5 var(--sans);color:var(--steel);margin-top:8px">OpenAI- and Anthropic-compatible APIs, with docs for every model.</p></div><span class="btn s">Read the docs</span></div>
+    <div class="docs">
+      <div class="dnav"><span class="wm" style="font-size:18px">MiniMax <span style="font-weight:500;color:var(--stone);letter-spacing:0;font-size:14px">Open Platform</span></span><div class="search">Search documentation…<span class="code" style="background:var(--surface-soft);color:var(--steel)">⌘K</span></div><span>Documentation</span><span>Account</span><span>Subscribe</span><span class="btn" style="padding:7px 18px">Sign Up</span></div>
+      <div class="dgrid">
+        <div class="side"><h6>Get started</h6><div>Quickstart</div><div class="on">Models overview</div><div>Pricing</div><div>Rate limits</div><h6>Guides</h6><div>Text generation</div><div>Tool use</div><div>Speech T2A</div><div>Video generation</div><div>Music generation</div></div>
+        <div class="prose">
+          <div class="crumb">Get started / Models overview</div>
+          <h3 class="h-32">Models Overview</h3>
+          <p style="margin-top:12px">MiniMax offers foundation models across text, speech, video and music. Call any model through the <code>/v1/chat/completions</code> endpoint or the native SDKs. <span class="bdg beta" style="font-size:12px;padding:2px 8px">BETA</span></p>
+          <table>
+            <tr><th>Model</th><th>Description</th><th>Features</th><th>Status</th></tr>
+            <tr><td>MiniMax-M2.7</td><td>Agentic text model for coding and multi-step tool use</td><td><ul><li>204K context</li><li>Interleaved thinking</li></ul></td><td><span class="bdg ok">Available</span></td></tr>
+            <tr><td>speech-2.8-hd</td><td>High-fidelity text-to-audio with emotion control</td><td><ul><li>40 languages</li><li>Voice cloning</li></ul></td><td><span class="bdg ok">Available</span></td></tr>
+            <tr><td>MiniMax-Hailuo-02</td><td>Text and image to 1080p video, up to 10s</td><td><ul><li>Director camera control</li></ul></td><td><span class="bdg ok">Available</span></td></tr>
+            <tr><td>music-2.6</td><td>Lyrics and prompt to full-length songs</td><td><ul><li>Stereo 44.1kHz</li></ul></td><td><span class="bdg new">Live</span></td></tr>
+          </table>
+        </div>
+        <div class="toc"><div style="font:600 13px var(--sans);color:var(--ink)">On this page</div><div class="on">Text models</div><div>Speech models</div><div>Video models</div><div>Music models</div><div>Deprecations</div></div>
+      </div>
+    </div>
+    <div class="rec">
+      <div class="rc"><div class="ct" style="font-size:16px">Quickstart</div><p>Make your first API call in under five minutes.</p></div>
+      <div class="rc"><div class="ct" style="font-size:16px">Tool use with M2.7</div><p>Build agents that call functions and APIs reliably.</p></div>
+      <div class="rc"><div class="ct" style="font-size:16px">Voice cloning</div><p>Clone a voice from a 10-second sample.</p></div>
+    </div>
+  </section>
+
+  <section style="text-align:center">
+    <h2 class="h-40">Token Plan</h2>
+    <p style="font:500 18px/1.5 var(--sans);color:var(--steel);margin-top:8px">One subscription for every MiniMax model.</p>
+    <div class="ptabs"><span class="ptab on">Token Plan</span><span class="ptab">Audio Subscription</span><span class="ptab">Video Package</span></div>
+    <div class="tiers" style="text-align:left">
+      <div class="tier"><div class="ct">Starter</div><div class="pr">$10 <small>/ month</small></div><p style="font-size:14px;color:var(--steel)">For individual developers exploring the API.</p><ul><li>100 prompts every 5 hours</li><li>M2.7 in Claude Code &amp; Cursor</li><li>Community support</li></ul><span class="btn t">Subscribe</span></div>
+      <div class="tier f"><div class="ct" style="display:flex;justify-content:space-between">Plus <span class="bdg new">Popular</span></div><div class="pr">$20 <small>/ month</small></div><p style="font-size:14px;color:var(--steel)">For daily coding and agent workloads.</p><ul><li>300 prompts every 5 hours</li><li>Speech and image generation</li><li>Priority throughput</li></ul><span class="btn">Subscribe</span></div>
+      <div class="tier"><div class="ct">Max</div><div class="pr">$50 <small>/ month</small></div><p style="font-size:14px;color:var(--steel)">For teams running agents in production.</p><ul><li>1,000 prompts every 5 hours</li><li>Video and music credits</li><li>Dedicated support</li></ul><span class="btn t">Subscribe</span></div>
+    </div>
+    <div class="promo-card" style="text-align:left"><div><div class="h-40" style="color:#fff">Refunds of 10% on annual plans</div><p style="color:rgba(255,255,255,.85);margin-top:8px">Switch to yearly billing before December 31 and get 10% back as credits.</p></div><span class="btn t">Join Now</span></div>
+  </section>
+</div>
+
+<div class="bf"><div style="max-width:1216px;margin:0 auto">
+  <div class="top"><div><span class="wm" style="color:#fff">MiniMax</span><p style="color:var(--muted);font-size:14px;margin-top:8px">Intelligence with everyone</p></div><div class="soc"><span>X</span><span>in</span><span>GH</span><span>YT</span></div></div>
+  <div class="cols">
+    <div><h6>Research</h6><a>M2.7 report</a><a>Lightning attention</a><a>Publications</a></div>
+    <div><h6>Product</h6><a>MiniMax Agent</a><a>Hailuo Video</a><a>MiniMax Audio</a><a>Talkie</a></div>
+    <div><h6>API</h6><a>Open Platform</a><a>Documentation</a><a>Pricing</a><a>Status</a></div>
+    <div><h6>Company</h6><a>About</a><a>Careers</a><a>Contact</a></div>
+    <div><h6>News</h6><a>Announcements</a><a>Blog</a><a>Press kit</a></div>
+  </div>
+</div></div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">minimax</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

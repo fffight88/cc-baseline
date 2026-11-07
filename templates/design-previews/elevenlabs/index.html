@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ElevenLabs — DESIGN.md preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400&family=Inter:wght@400;500;600&display=block">
+<style>
+:root{--primary:#292524;--ink:#0c0a09;--body:#4e4e4e;--muted:#777169;--muted-soft:#a8a29e;--hair:#e7e5e4;--hair-soft:#f0efed;--hair-strong:#d6d3d1;--canvas:#f5f5f5;--canvas-soft:#fafafa;--card:#fff;--strong:#f0efed;--dark:#0c0a09;--dark-el:#1c1917;--on-dark-soft:#a8a29e;
+--mint:#a7e5d3;--peach:#f4c5a8;--lav:#c8b8e0;--sky:#a8c8e8;--rose:#e8b8c4;
+--serif:"EB Garamond","Times New Roman",serif;--sans:Inter,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--canvas);color:var(--body);font:400 16px/1.5 var(--sans);letter-spacing:.16px;overflow-x:hidden}
+.wrap{max-width:1200px;margin:0 auto}
+/* EB Garamond's lightest web weight is 400 — used in place of Waldenburg 300; never bolder */
+.dm,.dx,.dl,.dmd,.ds{font-family:var(--serif);font-weight:400;color:var(--ink)}
+.dm{font-size:64px;line-height:1.05;letter-spacing:-1.92px}
+.dx{font-size:48px;line-height:1.08;letter-spacing:-.96px}
+.dl{font-size:36px;line-height:1.17;letter-spacing:-.36px}
+.dmd{font-size:32px;line-height:1.13;letter-spacing:-.32px}
+.ds{font-size:24px;line-height:1.2}
+.tm{font:500 20px/1.35 var(--sans);color:var(--ink);letter-spacing:0}
+.ts{font:500 18px/1.44 var(--sans);letter-spacing:.18px;color:var(--ink)}
+.cu{font:600 12px/1.4 var(--sans);letter-spacing:.96px;text-transform:uppercase}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:10px 20px;border-radius:9999px;font:500 15px/1 var(--sans);letter-spacing:0;white-space:nowrap;background:var(--primary);color:#fff}
+.btn.o{background:transparent;color:var(--ink);border:1px solid var(--hair-strong);padding:9px 19px}
+.badge{display:inline-flex;padding:4px 10px;border-radius:9999px;background:var(--strong);color:var(--ink);font:600 12px/1.4 var(--sans);letter-spacing:.96px;text-transform:uppercase}
+nav{height:64px;display:flex;align-items:center;gap:28px;font:500 15px/1.4 var(--sans);color:var(--ink);letter-spacing:0}
+.wm{display:flex;align-items:center;gap:6px;font:600 21px/1 var(--sans);letter-spacing:-.4px;margin-right:16px}
+nav .sp{flex:1}
+.hero{position:relative;text-align:center;padding:96px 0 64px}
+.orb{position:absolute;border-radius:50%;filter:blur(24px);pointer-events:none}
+.hero .orb.a{width:620px;height:620px;left:120px;top:-60px;background:radial-gradient(circle,var(--mint) 0%,transparent 72%)}
+.hero .orb.b{width:560px;height:560px;left:560px;top:-90px;background:radial-gradient(circle,var(--lav) 0%,transparent 72%)}
+.hero .orb.c{width:600px;height:600px;left:800px;top:0;background:radial-gradient(circle,var(--peach) 0%,transparent 72%)}
+.hero > *{position:relative}
+.hero p{max-width:560px;margin:24px auto 32px;font-size:18px;color:var(--body)}
+.ctas{display:flex;justify-content:center;gap:12px}
+/* product card stack — TTS editor */
+.stack{position:relative;background:var(--card);border:1px solid var(--hair);border-radius:16px;overflow:hidden;margin-top:72px;text-align:left;display:grid;grid-template-columns:1fr 340px}
+.ed{padding:0;border-right:1px solid var(--hair)}
+.tabs{display:flex;gap:24px;padding:16px 24px;border-bottom:1px solid var(--hair);font-size:14px;color:var(--muted)}
+.tabs .on{color:var(--ink);font-weight:500;box-shadow:inset 0 -2px 0 var(--ink);padding-bottom:14px;margin-bottom:-17px}
+.text{padding:28px 24px;font:400 20px/1.6 var(--sans);color:var(--ink);letter-spacing:.1px;min-height:250px}
+.text mark{background:var(--strong);color:var(--ink);border-radius:4px;padding:0 3px}
+.player{display:flex;align-items:center;gap:16px;padding:16px 24px;border-top:1px solid var(--hair)}
+.play{width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;font-size:13px;flex:none}
+.wave{flex:1;display:flex;align-items:center;gap:2px;height:36px}
+.wave i{flex:1;background:var(--ink);border-radius:2px}
+.wave i.f{background:var(--hair-strong)}
+.set{padding:24px;display:flex;flex-direction:column;gap:18px;font-size:14px}
+.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;letter-spacing:0}
+.sel{height:44px;border:1px solid var(--hair-strong);border-radius:8px;display:flex;align-items:center;gap:10px;padding:0 12px;color:var(--ink)}
+.slider{height:4px;border-radius:2px;background:var(--hair);position:relative}
+.slider b{position:absolute;left:0;top:0;bottom:0;background:var(--ink);border-radius:2px}
+.slider b::after{content:"";position:absolute;right:-7px;top:-5px;width:14px;height:14px;border-radius:50%;background:#fff;border:1px solid var(--hair-strong)}
+.vi{width:32px;height:32px;border-radius:50%;background:var(--strong);display:grid;place-items:center;font:500 12px var(--sans);color:var(--ink);flex:none}
+.logos{display:flex;justify-content:space-between;align-items:center;padding:56px 0 0;color:var(--muted);font:500 20px/1 var(--sans);letter-spacing:-.3px}
+.band{padding:96px 0}
+.band.soft{background:var(--canvas-soft)}
+.head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:48px}
+.head p{max-width:380px}
+.orbs{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.oc{position:relative;overflow:hidden;background:var(--canvas-soft);border:1px solid var(--hair);border-radius:24px;padding:32px;height:420px;display:flex;flex-direction:column;justify-content:space-between;text-align:center;align-items:center}
+.band.soft .oc{background:var(--canvas)}
+.oc .orb{width:420px;height:420px;left:50%;top:50%;transform:translate(-50%,-50%)}
+.oc > *:not(.orb){position:relative}
+.oc p{max-width:380px}
+.lib{display:grid;grid-template-columns:1fr 1.1fr;gap:64px;align-items:start}
+.rows{border-top:1px solid var(--hair)}
+.vr{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--hair)}
+.vr .nm{color:var(--ink);font-weight:500}
+.vr .ac{font-size:14px;color:var(--muted);letter-spacing:0}
+.vr .tag{margin-left:auto;font-size:13px;color:var(--muted);letter-spacing:0}
+.vr .pv{width:32px;height:32px;border-radius:50%;border:1px solid var(--hair-strong);display:grid;place-items:center;font-size:10px;color:var(--ink)}
+.wcard{background:var(--card);border:1px solid var(--hair);border-radius:16px;padding:24px;margin-top:24px}
+.wcard .wave{height:56px;margin:18px 0 12px}
+.feats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.feat{background:var(--card);border:1px solid var(--hair);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:8px}
+.feat .ill{height:140px;border-radius:12px;background:var(--canvas);margin-bottom:16px;position:relative;overflow:hidden}
+.tests{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.test{background:var(--card);border-radius:16px;padding:32px;border:1px solid var(--hair)}
+.test q{display:block;font:400 24px/1.3 var(--serif);color:var(--ink);quotes:none;margin-bottom:24px}
+.who{display:flex;align-items:center;gap:12px;font-size:14px;letter-spacing:0}
+.tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tier{background:var(--card);border:1px solid var(--hair);border-radius:16px;padding:32px;display:flex;flex-direction:column;gap:8px}
+.tier.f{background:var(--dark);border-color:var(--dark);color:var(--on-dark-soft)}
+.tier.f .tm,.tier.f .dmd{color:#fff}
+.tier ul{list-style:none;margin:16px 0 24px;display:flex;flex-direction:column;gap:8px;font-size:15px;letter-spacing:.15px}
+.tier li::before{content:"—";margin-right:8px;color:var(--muted-soft)}
+.tier .btn{margin-top:auto}
+.tier.f .btn{background:#fff;color:var(--ink)}
+.cta{position:relative;text-align:center;padding:96px 0;overflow:hidden}
+.cta .orb{width:600px;height:400px;left:50%;top:50%;transform:translate(-50%,-50%);background:radial-gradient(ellipse,var(--sky) 0%,transparent 66%)}
+.cta > *:not(.orb){position:relative}
+.bf{padding:64px 48px;border-top:1px solid var(--hair);font-size:15px;letter-spacing:.15px}
+.bf .cols{display:grid;grid-template-columns:repeat(5,1fr);gap:32px;max-width:1200px;margin:0 auto}
+.bf h6{font:600 12px/1.4 var(--sans);letter-spacing:.96px;text-transform:uppercase;color:var(--ink);margin-bottom:16px}
+.bf a{display:block;margin-bottom:8px}
+</style></head><body>
+<div class="wrap">
+  <nav><span class="wm"><svg width="18" height="18" fill="#0c0a09" style="flex:none;display:block" aria-label="elevenlabs" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4.6035 0v24h4.9317V0zm9.8613 0v24h4.9317V0z"/></svg>ElevenLabs</span><span>Creative</span><span>Agents</span><span>Video</span><span>Pricing</span><span>Enterprise</span><span>Docs</span><span class="sp"></span><span>Sign in</span><span class="btn">Try free</span></nav>
+  <section class="hero">
+    <i class="orb a"></i><i class="orb b"></i><i class="orb c"></i>
+    <span class="badge">Eleven v3 · Now in alpha</span>
+    <h1 class="dm" style="margin-top:24px">The most realistic voice AI platform</h1>
+    <p>AI voice models and products powering millions of developers, creators and enterprises. From low-latency conversational agents to the leading text to speech.</p>
+    <div class="ctas"><span class="btn">Sign up</span><span class="btn o">Contact sales</span></div>
+    <div class="stack">
+      <div class="ed">
+        <div class="tabs"><span class="on">Text to Speech</span><span>Agents</span><span>Music</span><span>Speech to Text</span><span>Dubbing</span></div>
+        <div class="text">In the ancient land of Eldoria, where skies shimmered and forests whispered secrets to the wind, lived a dragon named Zephyros. <mark>[whispers]</mark> Not the burning kind — he was gentle, wise, and old as the hills themselves. <mark>[laughs softly]</mark> Children would climb the mountain just to hear his stories.</div>
+        <div class="player"><span class="play">▶</span><div class="wave" id="w1"></div><span style="font-size:13px;color:var(--muted);letter-spacing:0">0:07 / 0:24</span></div>
+      </div>
+      <div class="set">
+        <div class="field"><label>Voice</label><div class="sel"><span class="vi">AR</span>Aria — calm narrator<span style="margin-left:auto;color:var(--muted)">⌄</span></div></div>
+        <div class="field"><label>Model</label><div class="sel">Eleven v3 (alpha)<span style="margin-left:auto;color:var(--muted)">⌄</span></div></div>
+        <div class="field"><label>Stability</label><div class="slider"><b style="width:46%"></b></div></div>
+        <div class="field"><label>Style exaggeration</label><div class="slider"><b style="width:28%"></b></div></div>
+        <div class="field"><label>Language</label><div class="sel">English (US) · auto-detect</div></div>
+        <span class="btn" style="margin-top:4px">Generate speech</span>
+      </div>
+    </div>
+    <div class="logos"><span>Deutsche Telekom</span><span>TIME</span><span>Duolingo</span><span>Epic Games</span><span>Chess.com</span><span>Perplexity</span></div>
+  </section>
+</div>
+
+<section class="band soft"><div class="wrap">
+  <div class="head"><div><span class="cu" style="color:var(--muted)">Platforms</span><h2 class="dl" style="margin-top:12px">Two platforms, one voice</h2></div><p>Build and deploy conversational agents, or create and edit lifelike audio for any story, in 70+ languages.</p></div>
+  <div class="orbs">
+    <div class="oc"><i class="orb" style="background:radial-gradient(circle,var(--rose) 0%,transparent 66%)"></i><span class="badge">ElevenAgents</span><div><h3 class="dx">Talk to an agent</h3><p style="margin-top:14px">Low-latency voice agents that listen, reason and respond — on phone, web and in-app.</p></div><span class="btn">Build an agent</span></div>
+    <div class="oc"><i class="orb" style="background:radial-gradient(circle,var(--sky) 0%,transparent 66%)"></i><span class="badge">ElevenCreative</span><div><h3 class="dx">Create with voice</h3><p style="margin-top:14px">Narrate audiobooks, dub videos and compose music with studio-grade AI audio tools.</p></div><span class="btn o">Start creating</span></div>
+  </div>
+</div></section>
+
+<section class="band"><div class="wrap lib">
+  <div>
+    <span class="cu" style="color:var(--muted)">Voice library</span>
+    <h2 class="dl" style="margin:12px 0 16px">Over 10,000 voices, for every character and context</h2>
+    <p>Browse community voices, clone your own in under a minute, or design a new one from a text prompt.</p>
+    <div class="wcard">
+      <div style="display:flex;align-items:center;gap:12px"><span class="vi">BR</span><div><div class="ts" style="font-size:16px">Brian · Deep narrator</div><div style="font-size:14px;color:var(--muted);letter-spacing:0">American · middle-aged · audiobook</div></div><span class="badge" style="margin-left:auto">Pro clone</span></div>
+      <div class="wave" id="w2"></div>
+      <div style="display:flex;align-items:center;gap:12px"><span class="play">▶</span><span style="font-size:14px;color:var(--muted);letter-spacing:0">“Every journey begins with a single word.”</span><span style="margin-left:auto;font-size:13px;color:var(--muted)">0:12</span></div>
+    </div>
+  </div>
+  <div class="rows">
+    <div class="vr"><span class="vi">AR</span><div><div class="nm">Aria</div><div class="ac">American · expressive · social media</div></div><span class="tag">Narration</span><span class="pv">▶</span></div>
+    <div class="vr"><span class="vi">GE</span><div><div class="nm">George</div><div class="ac">British · warm · storytelling</div></div><span class="tag">Audiobook</span><span class="pv">▶</span></div>
+    <div class="vr"><span class="vi">CH</span><div><div class="nm">Charlotte</div><div class="ac">Swedish · seductive · characters</div></div><span class="tag">Games</span><span class="pv">▶</span></div>
+    <div class="vr"><span class="vi">LI</span><div><div class="nm">Liam</div><div class="ac">American · articulate · news</div></div><span class="tag">Explainer</span><span class="pv">▶</span></div>
+    <div class="vr"><span class="vi">MA</span><div><div class="nm">Matilda</div><div class="ac">American · friendly · conversational</div></div><span class="tag">Agents</span><span class="pv">▶</span></div>
+    <div class="vr"><span class="vi">DA</span><div><div class="nm">Daniel</div><div class="ac">British · authoritative · broadcast</div></div><span class="tag">News</span><span class="pv">▶</span></div>
+    <div class="vr"><span class="vi">SA</span><div><div class="nm">Sarah</div><div class="ac">American · soft · meditation</div></div><span class="tag">Wellness</span><span class="pv">▶</span></div>
+    <div class="vr"><span class="vi">YU</span><div><div class="nm">Yuki</div><div class="ac">Japanese · bright · animation</div></div><span class="tag">Characters</span><span class="pv">▶</span></div>
+  </div>
+</div></section>
+
+<section class="band soft"><div class="wrap">
+  <div class="head"><h2 class="dl">Built for the way you work</h2><p>Every model is available through one API, with SDKs for Python and TypeScript.</p></div>
+  <div class="feats">
+    <div class="feat"><div class="ill"><svg width="100%" height="140" viewBox="0 0 340 140"><circle cx="170" cy="70" r="44" fill="none" stroke="#0c0a09" stroke-width="1"/><circle cx="170" cy="70" r="28" fill="none" stroke="#0c0a09" stroke-width="1"/><circle cx="170" cy="70" r="6" fill="#0c0a09"/></svg></div><h3 class="tm">Speech to Text</h3><p>Scribe transcribes 99 languages with speaker diarization and word-level timestamps.</p></div>
+    <div class="feat"><div class="ill"><svg width="100%" height="140" viewBox="0 0 340 140"><path d="M60 70h220" stroke="#d6d3d1"/><path d="M60 70 Q 100 20 140 70 T 220 70 T 280 70" fill="none" stroke="#0c0a09" stroke-width="1.2"/></svg></div><h3 class="tm">Dubbing</h3><p>Translate video into 29 languages while preserving the original speaker's voice.</p></div>
+    <div class="feat"><div class="ill"><svg width="100%" height="140" viewBox="0 0 340 140"><rect x="110" y="34" width="120" height="72" rx="12" fill="none" stroke="#0c0a09"/><path d="M130 58h80M130 72h56M130 86h68" stroke="#777169"/></svg></div><h3 class="tm">Music</h3><p>Compose studio-quality tracks from a text prompt, cleared for commercial use.</p></div>
+  </div>
+  <div class="tests">
+    <div class="test"><q>“ElevenLabs let us launch an AI tutor in 20 languages in a single quarter. Learners can't tell it apart from a human.”</q><div class="who"><span class="vi">JM</span><div><b style="font-weight:500;color:var(--ink)">Jamie Marsh</b><br><span style="color:var(--muted)">Head of Product, Lingua</span></div></div></div>
+    <div class="test"><q>“Our audiobook catalog grew fourfold. Narration that took weeks now takes an afternoon, without losing warmth.”</q><div class="who"><span class="vi">PS</span><div><b style="font-weight:500;color:var(--ink)">Priya Shah</b><br><span style="color:var(--muted)">Publisher, Northlight Audio</span></div></div></div>
+  </div>
+</div></section>
+
+<section class="band"><div class="wrap">
+  <div class="head"><h2 class="dl">Simple pricing, room to grow</h2><p>Start free with 10,000 credits a month. Upgrade anytime.</p></div>
+  <div class="tiers">
+    <div class="tier"><span class="tm">Free</span><span class="dmd">$0</span><span style="font-size:14px;color:var(--muted)">10k credits / month</span><ul><li>Text to Speech</li><li>Speech to Text</li><li>3 custom voices</li></ul><span class="btn o">Get started</span></div>
+    <div class="tier"><span class="tm">Starter</span><span class="dmd">$5</span><span style="font-size:14px;color:var(--muted)">30k credits / month</span><ul><li>Commercial license</li><li>Instant voice cloning</li><li>Dubbing studio</li></ul><span class="btn o">Choose Starter</span></div>
+    <div class="tier f"><span class="tm">Creator</span><span class="dmd">$22</span><span style="font-size:14px">100k credits / month</span><ul><li>Professional voice cloning</li><li>192 kbps audio</li><li>Usage-based billing</li></ul><span class="btn">Choose Creator</span></div>
+    <div class="tier"><span class="tm">Pro</span><span class="dmd">$99</span><span style="font-size:14px;color:var(--muted)">500k credits / month</span><ul><li>44.1kHz PCM via API</li><li>Priority support</li><li>Usage analytics</li></ul><span class="btn o">Choose Pro</span></div>
+  </div>
+</div></section>
+
+<section class="cta wrap"><i class="orb"></i><h2 class="dl">Give your words a voice</h2><p style="margin:16px 0 28px">Join over a million creators and developers building with ElevenLabs.</p><span class="btn">Try ElevenLabs free</span></section>
+
+<div class="bf"><div class="cols">
+  <div><div class="wm" style="color:var(--ink);margin-bottom:14px"><svg width="16" height="16" fill="#0c0a09" style="flex:none;display:block" aria-label="elevenlabs" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4.6035 0v24h4.9317V0zm9.8613 0v24h4.9317V0z"/></svg>ElevenLabs</div><p style="font-size:14px">Voice AI research and deployment.</p></div>
+  <div><h6>Products</h6><a>Text to Speech</a><a>Agents</a><a>Speech to Text</a><a>Dubbing</a><a>Music</a></div>
+  <div><h6>Solutions</h6><a>Publishing</a><a>Media</a><a>Gaming</a><a>Customer support</a></div>
+  <div><h6>Developers</h6><a>API reference</a><a>Docs</a><a>SDKs</a><a>Status</a></div>
+  <div><h6>Company</h6><a>About</a><a>Careers</a><a>Safety</a><a>Privacy</a></div>
+</div></div>
+<script>
+for(const [id,n,p] of [["w1",120,.3],["w2",90,.55]]){const w=document.getElementById(id);let h='';for(let i=0;i<n;i++){const v=Math.abs(Math.sin(i*.37)*Math.cos(i*.13))*.85+.12;h+=`<i style="height:${Math.round(v*100)}%" class="${i/n>p?'f':''}"></i>`}w.innerHTML=h}
+</script>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">elevenlabs</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

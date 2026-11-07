@@ -1,0 +1,114 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400&display=block">
+<style>
+:root{--primary:#533afd;--primary-deep:#4434d4;--soft:#665efd;--subdued:#b9b9f9;--navy:#1c1e54;--ink:#0d253d;--ink2:#273951;--mute:#64748d;--canvas:#fff;--soft-bg:#f6f9fc;--cream:#f5e9d4;--hair:#e3e8ee;--ruby:#ea2261;--magenta:#f96bee;
+--s1:rgba(0,55,112,.08) 0 1px 3px;--s2:rgba(0,55,112,.08) 0 8px 24px,rgba(0,55,112,.04) 0 2px 6px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1440px;font-family:Inter,system-ui,sans-serif;font-weight:300;font-size:15px;line-height:1.4;color:var(--ink);background:var(--canvas);font-feature-settings:"ss01"}
+.tnum{font-feature-settings:"tnum","ss01";letter-spacing:-.42px}
+.wrap{width:1200px;margin:0 auto}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9999px;font-size:16px;font-weight:400;line-height:1}
+.btn.p{background:var(--primary);color:#fff}
+.btn.s{background:#fff;color:var(--primary);border:1px solid var(--primary)}
+.btn.d{background:var(--navy);color:#fff}
+/* gradient mesh: layered blurred blobs, upper third */
+.hero{position:relative;overflow:hidden;padding-bottom:96px}
+.mesh{position:absolute;inset:-120px -80px auto -80px;height:620px;transform:skewY(-8deg);transform-origin:0 0;filter:blur(60px) saturate(1.15);opacity:.95}
+.mesh i{position:absolute;border-radius:50%}
+.hero::after{content:"";position:absolute;left:0;right:0;top:470px;height:300px;background:linear-gradient(#fff0,#fff 60%);}
+nav{position:relative;z-index:2;display:flex;align-items:center;gap:28px;padding:16px 24px;margin-top:16px;font-size:15px;font-weight:400}
+.wm{font-weight:500;font-size:22px;letter-spacing:-.6px;margin-right:16px}
+nav .sp{flex:1}
+.hgrid{position:relative;z-index:2;display:grid;grid-template-columns:1fr 1fr;gap:56px;margin-top:84px;align-items:start}
+.tag{display:inline-block;background:var(--subdued);color:var(--primary-deep);font-size:10px;font-weight:400;letter-spacing:.1px;text-transform:uppercase;padding:4px 8px;border-radius:9999px}
+h1{font-size:56px;font-weight:300;line-height:1.03;letter-spacing:-1.4px;margin:20px 0 22px}
+.lead{font-size:16px;color:var(--ink2);max-width:470px;margin-bottom:28px}
+.email{display:flex;gap:8px;max-width:440px}
+.email input{flex:1;font:inherit;padding:8px 12px;border:1px solid #a8c3de;border-radius:6px;color:var(--ink)}
+/* composited dashboard mockup */
+.comp{position:relative;height:440px}
+.panel{position:absolute;background:#fff;border-radius:12px;box-shadow:var(--s2)}
+.ide{left:0;top:40px;width:300px;background:#0d253d;color:#c9d6e8;padding:18px;font:12.5px/1.7 'JetBrains Mono',monospace}
+.ide .k{color:#f96bee}.ide .s{color:#9fe3c8}.ide .c{color:#64748d}
+.dash{left:180px;top:0;width:400px;padding:24px}
+.dash h4{font-size:13px;font-weight:400;color:var(--mute);letter-spacing:-.39px}
+.dash .amt{font-size:32px;font-weight:300;letter-spacing:-.64px;margin:4px 0 14px}
+.dash table{width:100%;border-collapse:collapse;font-size:14px}
+.dash td{padding:9px 0;border-top:1px solid var(--hair)}
+.dash td:last-child{text-align:right}
+.ok{display:inline-block;padding:1px 7px;border-radius:4px;background:#d7f7c2;color:#05690d;font-size:11px;font-weight:400}
+.chart{left:330px;top:250px;width:270px;padding:18px}
+.chart svg{display:block}
+.logos{display:flex;justify-content:space-between;color:#a3acb9;font-size:20px;font-weight:500;letter-spacing:-.5px;padding:40px 0 0}
+section.band{padding:96px 0}
+.soft{background:var(--soft-bg)}
+.eyebrow{font-size:16px;color:var(--primary);font-weight:400;margin-bottom:12px}
+h2{font-size:48px;font-weight:300;letter-spacing:-.96px;line-height:1.15;max-width:760px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+.card{background:#fff;border:1px solid var(--hair);border-radius:12px;padding:32px;box-shadow:var(--s1)}
+.card h3{font-size:22px;font-weight:300;letter-spacing:-.22px;margin:16px 0 8px}
+.card p{color:var(--mute)}
+.ico{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--primary),var(--magenta))}
+.cream{background:var(--cream);border-radius:12px;padding:48px;display:grid;grid-template-columns:1.2fr 1fr;gap:48px;align-items:center}
+.cream h3{font-size:32px;font-weight:300;letter-spacing:-.64px;line-height:1.1;margin-bottom:12px}
+.stat{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.stat b{display:block;font-size:40px;font-weight:300;letter-spacing:-.9px}
+.stat span{color:var(--ink2);font-size:14px}
+.pricing{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+.tier{border:1px solid var(--hair);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:12px}
+.tier.f{background:var(--navy);color:#fff;border-color:var(--navy)}
+.tier h4{font-size:22px;font-weight:300}
+.tier .price{font-size:26px;font-weight:300;letter-spacing:-.26px}
+.tier p{color:var(--mute);font-size:15px}.tier.f p{color:#b9b9f9}
+.tier .btn{align-self:flex-start;margin-top:12px}
+</style></head><body>
+<div class="hero">
+  <div class="mesh">
+    <i style="left:-60px;top:80px;width:520px;height:420px;background:#ffcf8a"></i>
+    <i style="left:300px;top:20px;width:520px;height:380px;background:#ff9a6c"></i>
+    <i style="left:620px;top:100px;width:560px;height:420px;background:#a99bff"></i>
+    <i style="left:930px;top:0;width:520px;height:440px;background:#533afd"></i>
+    <i style="left:1220px;top:120px;width:420px;height:380px;background:#ea2261"></i>
+    <i style="left:1100px;top:-40px;width:300px;height:260px;background:#f96bee"></i>
+  </div>
+  <div class="wrap">
+    <nav><span class="wm" style="font-weight:700;font-size:26px;letter-spacing:-1.2px">stripe</span><span>Products</span><span>Solutions</span><span>Developers</span><span>Resources</span><span>Pricing</span><span class="sp"></span><span>Sign in</span><span class="btn p">Contact sales ›</span></nav>
+    <div class="hgrid">
+      <div>
+        <span class="tag">Sessions 2026 · Keynote recap</span>
+        <h1>Financial infrastructure to grow your revenue</h1>
+        <p class="lead">Accept payments, offer financial services and run custom revenue models — from your first transaction to your billionth.</p>
+        <div class="email"><input value="you@company.com" aria-label="email"><span class="btn p">Start now ›</span></div>
+      </div>
+      <div class="comp">
+        <div class="panel ide"><span class="c">// create a payment</span><br><span class="k">const</span> intent = <span class="k">await</span> stripe.paymentIntents<br>&nbsp;&nbsp;.create({<br>&nbsp;&nbsp;&nbsp;&nbsp;amount: <span class="s">2400</span>,<br>&nbsp;&nbsp;&nbsp;&nbsp;currency: <span class="s">'usd'</span>,<br>&nbsp;&nbsp;&nbsp;&nbsp;methods: [<span class="s">'card'</span>, <span class="s">'link'</span>]<br>&nbsp;&nbsp;});<br><span class="c">// → status: succeeded</span></div>
+        <div class="panel dash tnum"><h4>Gross volume · Today</h4><div class="amt">$128,402.17</div>
+          <table><tr><td>Acme Robotics</td><td>$2,400.00 <span class="ok">Succeeded</span></td></tr><tr><td>Northwind Ltd.</td><td>$860.50 <span class="ok">Succeeded</span></td></tr><tr><td>Globex</td><td>$12,019.00 <span class="ok">Succeeded</span></td></tr><tr><td>Initech</td><td>$49.99 <span class="ok">Succeeded</span></td></tr></table></div>
+        <div class="panel chart tnum"><h4 style="font-size:13px;color:#64748d;font-weight:400">Net revenue</h4><div style="font-size:22px;letter-spacing:-.4px">+38.2%</div>
+          <svg width="234" height="80" viewBox="0 0 234 80"><path d="M0 70 L26 62 L52 64 L78 50 L104 52 L130 38 L156 40 L182 24 L208 26 L234 8" fill="none" stroke="#533afd" stroke-width="2"/><path d="M0 70 L26 62 L52 64 L78 50 L104 52 L130 38 L156 40 L182 24 L208 26 L234 8 L234 80 L0 80Z" fill="#533afd" opacity=".08"/><path d="M0 74 L52 70 L104 66 L156 60 L234 52" fill="none" stroke="#ea2261" stroke-width="1.5" stroke-dasharray="3 3"/></svg></div>
+      </div>
+    </div>
+    <div class="logos" style="position:relative;z-index:2"><span>OpenAI</span><span>amazon</span><span>Google</span><span>Anthropic</span><span>shopify</span><span>Marriott</span></div>
+  </div>
+</div>
+<section class="band soft"><div class="wrap">
+  <div class="eyebrow">Modular solutions</div>
+  <h2>A fully integrated suite of financial and payments products</h2>
+  <div class="cards">
+    <div class="card"><div class="ico"></div><h3>Payments</h3><p>Online payments with 100+ methods, optimized checkout and built-in fraud prevention.</p></div>
+    <div class="card"><div class="ico" style="background:linear-gradient(135deg,#ff9a6c,#ea2261)"></div><h3>Billing</h3><p>Subscriptions, usage-based pricing and invoicing with automated revenue recovery.</p></div>
+    <div class="card"><div class="ico" style="background:linear-gradient(135deg,#ffcf8a,#665efd)"></div><h3>Connect</h3><p>Route payouts to sellers and service providers in 46 countries.</p></div>
+  </div>
+</div></section>
+<section class="band"><div class="wrap">
+  <div class="cream"><div><div class="eyebrow" style="color:#4434d4">Global scale</div><h3>The backbone for global commerce</h3><p style="color:#273951;max-width:440px">Our systems operate with 99.999% historical uptime and process over a trillion dollars in payments each year.</p></div>
+  <div class="stat tnum"><div><b>500M+</b><span>API requests per day</span></div><div><b>99.999%</b><span>historical uptime</span></div><div><b>46</b><span>countries with local acquiring</span></div><div><b>135+</b><span>currencies supported</span></div></div></div>
+  <div class="pricing tnum">
+    <div class="tier"><h4>Standard</h4><div class="price">2.9% + 30¢</div><p>per successful card charge</p><span class="btn s">Get started</span></div>
+    <div class="tier f"><h4>Custom</h4><div class="price">Volume pricing</div><p>for large payments volume or unique business models</p><span class="btn p">Contact sales</span></div>
+    <div class="tier"><h4>Billing</h4><div class="price">0.7%</div><p>of billing volume, pay as you go</p><span class="btn s">See billing</span></div>
+  </div>
+</div></section>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">stripe</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

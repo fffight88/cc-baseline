@@ -35,6 +35,8 @@
 | `commands/check-log.md` | `~/.claude/commands/check-log.md` | 덮어쓰기 |
 | `scripts/audit-report.js` | `~/.claude/scripts/audit-report.js` | 덮어쓰기 |
 | `scripts/aside-session.sh` | `~/.claude/scripts/aside-session.sh` | 덮어쓰기 (실행 권한 0755) |
+| `scripts/design-preview.js` | `~/.claude/scripts/design-preview.js` | 덮어쓰기 |
+| `design-previews/` (파일 69개) | `~/.claude/design-previews/` | 파일마다 덮어쓰기. 제거할 때 파일과 비게 된 폴더를 지움 |
 
 ## JSON 병합 상세
 
@@ -55,7 +57,7 @@
 | `templates/settings-hooks.json` | `templates/settings-hooks.project.json` | `_ccBaselineId`가 `project-` prefix로 글로벌 ID와 공존; 프로젝트 메모리 대상 SessionStart + PreToolUse 경로 정책 훅 |
 | `templates/mcp-servers.json` | `templates/mcp-servers.project.json` | `npx -y @playwright/mcp@0.0.75` (머신 간 휴대성) |
 
-27개 overwrite 파일 (memory/, agents/, commands/, scripts/)은 두 모드 간 바이트 단위 동일.
+28개 overwrite 파일 (memory/, agents/, commands/, scripts/)과 `design-previews/` 폴더는 두 모드 간 바이트 단위 동일.
 
 ### JSON 병합 / 쓰기 대상 — 프로젝트 모드
 

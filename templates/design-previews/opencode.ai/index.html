@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OpenCode — DESIGN.md preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=block">
+<style>
+:root{--ink:#201d1d;--ink-deep:#0f0000;--charcoal:#302c2c;--body:#424245;--mute:#646262;--stone:#6e6e73;--ash:#9a9898;--canvas:#fdfcfc;--soft:#f8f7f7;--card:#f1eeee;--dark:#201d1d;--dark-el:#302c2c;--hair:rgba(15,0,0,.12);--hair-strong:#646262;--accent:#007aff;--warning:#ff9f0a;--danger:#ff3b30;--success:#30d158;
+--mono:"JetBrains Mono","Berkeley Mono","IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--canvas);color:var(--ink);font:400 16px/1.5 var(--mono);overflow-x:hidden}
+.col{max-width:960px;margin:0 auto}
+.frame{max-width:1100px;margin:0 auto}
+b,strong{font-weight:700}
+.btn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:4px 20px;border-radius:4px;font:500 16px/2 var(--mono);background:var(--ink);color:var(--canvas);white-space:nowrap}
+.btn.s{background:var(--canvas);color:var(--ink);border:1px solid var(--hair-strong)}
+a.il{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+header{border-bottom:1px solid var(--hair)}
+nav{height:56px;display:flex;align-items:center;gap:28px;font-weight:500}
+pre.wm{font:700 5px/1 var(--mono);letter-spacing:0;white-space:pre}
+nav .sp{flex:1}
+nav .m{color:var(--mute);font-weight:400}
+.hero{padding:96px 0 64px}
+.news{display:flex;align-items:center;gap:12px;font-size:14px;line-height:2;color:var(--body);margin-bottom:24px}
+.badge{background:var(--dark);color:var(--canvas);border-radius:4px;padding:2px 8px;font:400 14px/2 var(--mono)}
+h1{font:700 38px/1.5 var(--mono)}
+.hero p{color:var(--body);max-width:720px;margin:12px 0 40px}
+.tabs{display:flex;border-bottom:1px solid var(--hair-strong);width:max-content}
+.tab{padding:8px 16px;font:500 16px/2 var(--mono);color:var(--mute)}
+.tab.on{color:var(--ink);box-shadow:inset 0 -2px 0 var(--ash)}
+.snip{display:flex;justify-content:space-between;align-items:center;background:var(--card);border-radius:4px;padding:12px 16px;margin-top:16px;max-width:720px}
+.snip .cp{color:var(--mute);font-size:14px}
+.ctas{display:flex;gap:12px;margin-top:24px}
+/* TUI */
+.tui{background:var(--dark);color:var(--canvas);padding:64px 32px}
+.tui .top{display:flex;justify-content:space-between;font-size:14px;line-height:2;color:var(--ash);border-bottom:1px solid #3a3535;padding-bottom:8px;margin-bottom:40px}
+.tui pre.big{font:700 13px/1 var(--mono);text-align:center;margin-bottom:40px;white-space:pre}
+.sess{max-width:820px;margin:0 auto;font-size:15px;line-height:1.6}
+.sess .u{border-left:2px solid var(--accent);padding:4px 0 4px 14px;margin-bottom:16px;color:var(--canvas)}
+.sess .a{color:#d8d4d4;margin-bottom:6px;padding-left:16px}
+.sess .tool{color:var(--ash);padding-left:16px}
+.sess .ok{color:var(--success)}.sess .w{color:var(--warning)}.sess .acc{color:var(--accent)}.sess .del{color:var(--danger)}
+.diff{margin:10px 0 18px 16px;background:#272323;border-radius:4px;padding:10px 14px;font-size:14px}
+.prompt{max-width:820px;margin:28px auto 0;background:var(--dark-el);border-radius:4px;padding:8px 12px;display:flex;gap:14px;align-items:center}
+.prompt .pipe{color:var(--accent)}
+.prompt .tok{color:var(--ash)}
+.keys{max-width:820px;margin:14px auto 0;display:flex;justify-content:space-between;color:var(--ash);font-size:14px}
+.keys span b{color:var(--canvas);font-weight:500}
+.sec{padding-top:96px}
+.lbl{font:700 16px/1.5 var(--mono);padding-bottom:12px;border-bottom:1px solid var(--hair);margin-bottom:16px}
+.sec p.lead{color:var(--body);margin-bottom:16px;max-width:780px}
+.row{display:grid;grid-template-columns:40px 260px 1fr;padding:8px 0;color:var(--body)}
+.row b{color:var(--ink);font-weight:700}
+.row .m{color:var(--ink)}
+.charts{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.chart{padding:16px;border-left:1px solid var(--hair);font:400 14px/2 var(--mono);color:var(--body)}
+.chart:first-child{border-left:0}
+.chart .cap{color:var(--mute)}
+.chart svg{display:block;margin-bottom:8px}
+.tests{display:flex;flex-direction:column;gap:8px}
+.test{background:var(--soft);border-radius:4px;padding:16px 20px;display:grid;grid-template-columns:32px 1fr;gap:16px;color:var(--body)}
+.av{width:32px;height:32px;border-radius:9999px}
+.test .n{font-weight:500;color:var(--ink)}
+.test .n span{color:var(--mute);font-weight:400}
+.faq .q{padding:12px 0;border-bottom:1px solid var(--hair)}
+.faq .q .t{color:var(--ink)}
+.faq .q p{color:var(--body);padding:8px 0 0 24px}
+.ent{display:grid;grid-template-columns:360px 1fr;gap:96px}
+.form{display:flex;flex-direction:column;gap:12px}
+.form .r2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.in{height:40px;background:var(--soft);border:1px solid var(--hair);border-radius:4px;padding:8px 12px;color:var(--ash);line-height:22px}
+.in.f{background:var(--canvas);border-color:var(--ink);color:var(--ink)}
+.ta{height:96px;background:var(--soft);border:1px solid var(--hair);border-radius:4px;padding:12px;color:var(--ash)}
+.bf{margin-top:96px;border-top:1px solid var(--hair);padding:32px 0;font:400 14px/2 var(--mono);color:var(--body)}
+.bf .grid{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--hair);border-width:1px 0}
+.bf .grid span{text-align:center;padding:12px;border-left:1px solid var(--hair)}
+.bf .grid span:first-child{border-left:0}
+.bf .bot{display:flex;justify-content:space-between;color:var(--mute);margin-top:24px}
+.news-in{display:flex;gap:8px;margin-top:16px;max-width:560px}
+.news-in .in{flex:1}
+</style></head><body>
+<header><div class="col"><nav>
+  <pre class="wm" aria-label="OpenCode"><span style="color:#9a9898">████ ████ ████ █  █</span> <span style="color:#201d1d">████ ████ ███  ████</span>
+<span style="color:#9a9898">█  █ █  █ █    ██ █</span> <span style="color:#201d1d">█    █  █ █  █ █   </span>
+<span style="color:#9a9898">█  █ ████ ███  █ ██</span> <span style="color:#201d1d">█    █  █ █  █ ███ </span>
+<span style="color:#9a9898">█  █ █    █    █  █</span> <span style="color:#201d1d">█    █  █ █  █ █   </span>
+<span style="color:#9a9898">████ █    ████ █  █</span> <span style="color:#201d1d">████ ████ ███  ████</span></pre>
+  <span class="sp"></span><span>GitHub <span class="m">[150K]</span></span><span>Docs</span><span>Zen</span><span>Go</span><span>Enterprise</span><span class="btn">↓ Download</span>
+</nav></div></header>
+
+<section class="col hero">
+  <div class="news"><span class="badge">New</span>OpenCode Zen — a curated set of models tested for coding agents. <a class="il">Learn more</a></div>
+  <h1>The open source AI coding agent</h1>
+  <p>OpenCode is an AI coding agent built for the terminal. Use any model — Claude, GPT, Gemini or local — with LSP-aware context, multi-session workflows and shareable links.</p>
+  <div class="tabs"><span class="tab on">curl</span><span class="tab">npm</span><span class="tab">bun</span><span class="tab">brew</span><span class="tab">yay</span></div>
+  <div class="snip"><span>curl -fsSL https://opencode.ai/install | bash</span><span class="cp">[copy]</span></div>
+  <div class="ctas"><span class="btn">Read docs →</span><span class="btn s">View on GitHub</span></div>
+</section>
+
+<div class="frame"><div class="tui">
+  <div class="top"><span>~/src/acme-api · main</span><span>session 3 of 4 · $0.42</span></div>
+  <pre class="big" aria-label="OpenCode"><span style="color:#646262">████ ████ ████ █  █</span> <span style="color:#fdfcfc">████ ████ ███  ████</span>
+<span style="color:#646262">█  █ █  █ █    ██ █</span> <span style="color:#fdfcfc">█    █  █ █  █ █   </span>
+<span style="color:#646262">█  █ ████ ███  █ ██</span> <span style="color:#fdfcfc">█    █  █ █  █ ███ </span>
+<span style="color:#646262">█  █ █    █    █  █</span> <span style="color:#fdfcfc">█    █  █ █  █ █   </span>
+<span style="color:#646262">████ █    ████ █  █</span> <span style="color:#fdfcfc">████ ████ ███  ████</span></pre>
+  <div class="sess">
+    <div class="u">Add rate limiting to the /v1/orders endpoint, 100 req/min per API key</div>
+    <div class="tool"><span class="acc">◇ read</span>  src/routes/orders.ts</div>
+    <div class="tool"><span class="acc">◇ grep</span>  "rateLimit" — 2 matches in src/middleware</div>
+    <div class="tool"><span class="w">◇ edit</span>  src/routes/orders.ts</div>
+    <div class="diff"><span class="del">- router.post("/v1/orders", createOrder);</span><br><span class="ok">+ router.post("/v1/orders", rateLimit({ window: "1m", max: 100, key: apiKey }), createOrder);</span></div>
+    <div class="tool"><span class="ok">◇ bash</span>  npm test -- orders  <span class="ok">✓ 14 passed</span></div>
+    <div class="a">Added the existing rateLimit middleware keyed by API key. LSP reports no type errors.</div>
+  </div>
+  <div class="prompt"><span class="pipe">┃</span><span><b style="font-weight:700">Build</b></span><span class="tok">[Claude Opus 4.5]</span><span class="tok">OpenCode Zen</span><span style="margin-left:auto;color:var(--ash)">▍</span></div>
+  <div class="keys"><span><b>tab</b> switch agent</span><span><b>ctrl-p</b> commands</span><span><b>ctrl-x s</b> share session</span><span><b>esc</b> interrupt</span></div>
+</div></div>
+
+<section class="col sec">
+  <div class="lbl">What is OpenCode?</div>
+  <p class="lead">OpenCode is an open source agent that helps you write and run code directly from the terminal, desktop app or IDE.</p>
+  <div class="row"><span class="m">[+]</span><b>LSP enabled</b><span>Automatically loads the right LSPs for the LLM</span></div>
+  <div class="row"><span class="m">[+]</span><b>Multi-session</b><span>Start multiple agents in parallel on the same project</span></div>
+  <div class="row"><span class="m">[+]</span><b>Share links</b><span>Share a link to any session for reference or to debug</span></div>
+  <div class="row"><span class="m">[+]</span><b>Any model</b><span>75+ LLM providers through Models.dev, including local models</span></div>
+  <div class="row"><span class="m">[+]</span><b>Any editor</b><span>Terminal UI, desktop app, and VS Code / Zed extensions</span></div>
+  <div class="row"><span class="m">[-]</span><b>No lock-in</b><span>Bring your own keys or sign in with an existing subscription</span></div>
+</section>
+
+<section class="col sec">
+  <div class="lbl">The open source AI coding agent</div>
+  <div class="charts">
+    <div class="chart"><svg width="100%" height="110" viewBox="0 0 280 110"><g fill="#424245"><circle cx="10" cy="100" r="1.5"/><circle cx="30" cy="98" r="1.5"/><circle cx="50" cy="95" r="1.5"/><circle cx="70" cy="92" r="1.5"/><circle cx="90" cy="86" r="1.5"/><circle cx="110" cy="80" r="1.5"/><circle cx="130" cy="70" r="1.5"/><circle cx="150" cy="62" r="1.5"/><circle cx="170" cy="50" r="1.5"/><circle cx="190" cy="40" r="1.5"/><circle cx="210" cy="30" r="1.5"/><circle cx="230" cy="22" r="1.5"/><circle cx="250" cy="14" r="1.5"/><circle cx="270" cy="8" r="1.5"/></g><path d="M0 108h280" stroke="rgba(15,0,0,.12)"/></svg><span class="cap">Fig 1.</span> 150K GitHub Stars</div>
+    <div class="chart"><svg width="100%" height="110" viewBox="0 0 280 110"><path d="M0 100 L20 96 L40 97 L60 88 L80 90 L100 76 L120 78 L140 64 L160 66 L180 50 L200 52 L220 36 L240 34 L260 22 L280 18" fill="none" stroke="#424245" stroke-dasharray="2 4"/><path d="M0 108h280" stroke="rgba(15,0,0,.12)"/></svg><span class="cap">Fig 2.</span> 850 Contributors</div>
+    <div class="chart"><svg width="100%" height="110" viewBox="0 0 280 110"><g stroke="#424245"><path d="M14 108V96M34 108V92M54 108V90M74 108V84M94 108V80M114 108V72M134 108V66M154 108V58M174 108V48M194 108V42M214 108V32M234 108V24M254 108V16M274 108V10"/></g><path d="M0 108h280" stroke="rgba(15,0,0,.12)"/></svg><span class="cap">Fig 3.</span> 6.5M Monthly Devs</div>
+  </div>
+</section>
+
+<section class="col sec">
+  <div class="lbl">Built for privacy first</div>
+  <p class="lead">OpenCode does not store any of your code or context data. It runs locally, talks directly to the provider you choose, and can operate in environments with no outbound access beyond your model endpoint.</p>
+  <div class="row"><span class="m">[x]</span><b>No telemetry by default</b><span>Opt in, never opt out</span></div>
+  <div class="row"><span class="m">[x]</span><b>Self-hosted models</b><span>Point at Ollama, vLLM or any OpenAI-compatible server</span></div>
+</section>
+
+<section class="col sec">
+  <div class="lbl">What developers say about Zen</div>
+  <div class="tests">
+    <div class="test"><span class="av" style="background:#d9c7b8"></span><div><div class="n">Maya Chen <span>· Staff Engineer, Northbeam</span></div>"Zen took the guesswork out of picking models. Every one I've tried just works with tool calls."</div></div>
+    <div class="test"><span class="av" style="background:#b8c4d9"></span><div><div class="n">Tomás Ruiz <span>· Founder, Fieldnote</span></div>"I run four sessions at once — one refactoring, one writing tests, two reviewing PRs. It feels like a team."</div></div>
+    <div class="test"><span class="av" style="background:#c9d9b8"></span><div><div class="n">Priya Raman <span>· Platform Lead, Arcwell</span></div>"The fact that it's open source and never stores our code made legal review a one-day thing."</div></div>
+  </div>
+</section>
+
+<section class="col sec faq">
+  <div class="lbl" style="margin-bottom:0">FAQ</div>
+  <div class="q"><div class="t">− Is OpenCode free?</div><p>Yes. OpenCode is MIT licensed. You pay only for the model provider you choose, or use free models in Zen.</p></div>
+  <div class="q"><div class="t">+ Can I use my existing Claude or ChatGPT subscription?</div></div>
+  <div class="q"><div class="t">+ Does it work with local models?</div></div>
+  <div class="q"><div class="t">+ How is this different from other coding agents?</div></div>
+</section>
+
+<section class="col sec">
+  <div class="ent">
+    <div><div class="lbl">OpenCode for Enterprise</div><p style="color:var(--body)">Centralized config, SSO, private model routing and audit logs for teams standardizing on OpenCode.</p></div>
+    <div class="form">
+      <div class="r2"><div class="in f">Ada Lovelace</div><div class="in">Role</div></div>
+      <div class="r2"><div class="in">Company</div><div class="in">Company email</div></div>
+      <div class="ta">What problem are you trying to solve?</div>
+      <span class="btn" style="align-self:flex-start">Send</span>
+    </div>
+  </div>
+</section>
+
+<section class="col sec">
+  <div class="lbl">Subscribe to updates</div>
+  <p style="color:var(--body)">Release notes and new features, about once a month.</p>
+  <div class="news-in"><div class="in">you@example.com</div><span class="btn">Subscribe</span></div>
+</section>
+
+<div class="col bf">
+  <div class="grid"><span>GitHub [150K]</span><span>Docs</span><span>Changelog</span><span>Discord</span><span>X</span></div>
+  <div class="bot"><span>©2026 Anomaly</span><span>Brand · Privacy · Terms · English ▼</span></div>
+</div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">opencode.ai</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

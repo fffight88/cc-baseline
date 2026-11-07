@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Renault — Renault 5 E-Tech electric</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600;700&display=block">
+<style>
+:root{--primary:#ffed00;--primary-deep:#e6d200;--ink:#000;--body:#222;--charcoal:#333;--mute:#666;--ash:#8a8a8a;--stone:#c4c4c4;--on-dark-mute:rgba(255,255,255,.72);--canvas:#fff;--soft:#f7f7f7;--deep:#111;--hair:#f2f2f2;--div-dark:rgba(255,255,255,.16);--success:#8dc572}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:400 16px/1.4 "Inter Tight","Helvetica Neue",Arial,sans-serif;color:var(--body);background:#fff;overflow-x:hidden}
+.wrap{max-width:1440px;margin:0 auto;padding:0 64px}
+h1,h2,h3,h4{font-weight:700;line-height:.95;letter-spacing:0;color:var(--ink)}
+.dxl{font-size:56px}.dlg{font-size:40px}.dmd{font-size:32px}.hlg{font-size:24px}.hmd{font-size:20px}.hsm{font-size:18px;line-height:1}
+.sub{font-size:19.2px;font-weight:600;line-height:1.3}
+.ov{font-size:10px;font-weight:700;line-height:1.45;text-transform:uppercase}
+.btn{display:inline-flex;align-items:center;height:48px;padding:14px 24px;border-radius:2px;background:var(--primary);color:#000;font:700 14.4px/1 "Inter Tight",sans-serif;letter-spacing:.144px;white-space:nowrap}
+.btn.k{background:#000;color:#fff}
+.btn.od{background:#fff;color:#000;border:1px solid #000;padding:13px 23px}
+.btn.ol{background:#000;color:#fff;border:1px solid #fff;padding:13px 23px}
+.pill{display:inline-flex;align-items:center;height:36px;padding:8px 16px;border:1px solid #000;border-radius:46px;background:#fff;color:#000;font:600 13px/1.2 "Inter Tight",sans-serif;letter-spacing:.13px;white-space:nowrap}
+.pill.on{background:#000;color:#fff}
+.ib{width:40px;height:40px;border:1px solid #000;border-radius:2px;display:inline-grid;place-items:center;background:#fff}
+.new{display:inline-block;background:var(--primary);color:#000;padding:6px 14px;border-radius:9999px;font:700 14.4px/1 "Inter Tight",sans-serif;letter-spacing:.144px}
+/* nav */
+.nav{height:60px;border-bottom:1px solid var(--hair);background:#fff}
+.nav .wrap{height:100%;display:flex;align-items:center;gap:32px;font:700 14.4px/1 "Inter Tight",sans-serif;letter-spacing:.144px;color:#000}
+.nav .sp{flex:1}
+.nav .m{color:var(--mute);font-weight:700}
+/* hero */
+.hero{background:#000;color:#fff;position:relative;overflow:hidden;height:720px}
+.mesh{position:absolute;inset:0}
+.mesh i{position:absolute;border-radius:50%;filter:blur(90px)}
+.hero .wrap{position:relative;height:100%;display:flex;flex-direction:column;justify-content:center}
+.hero h1{color:#fff;font-size:56px;max-width:560px}
+.hero p{color:var(--on-dark-mute);margin:20px 0 32px;max-width:440px}
+.hero .car{position:absolute;right:40px;bottom:60px}
+.hero .meta{position:absolute;left:64px;right:64px;bottom:0;border-top:1px solid var(--div-dark);display:flex;gap:64px;padding:20px 0;color:var(--on-dark-mute);font-size:14px}
+.hero .meta b{color:#fff;font-size:20px;display:block;line-height:.95;margin-bottom:6px}
+.subnav{border-bottom:1px solid var(--hair);padding:16px 0}
+.subnav .wrap{display:flex;gap:8px}
+/* range */
+.sec{padding:80px 0}
+.sh{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:32px}
+.range{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.vc .ph{aspect-ratio:4/3;background:var(--soft);position:relative;display:grid;place-items:center}
+.vc .ph .new{position:absolute;left:16px;bottom:16px}
+.vc .tx{padding:16px 0;display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--hair)}
+.vc .tx p{font-size:14px;line-height:1.57;color:var(--charcoal);margin-top:8px}
+.vc .pr{font-size:14px;line-height:1.57;color:var(--mute);margin-top:2px}
+/* promo tiles */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.tile{padding:32px;min-height:380px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.tile h3{font-size:24px}
+.tile p{margin:12px 0 24px;max-width:360px}
+.tile .btn{align-self:flex-start;margin-top:auto}
+.tile.l{background:#fff;border:1px solid #000}
+.tile.d{background:#000}.tile.d h3{color:#fff}.tile.d p{color:var(--on-dark-mute)}
+.tile.y{background:var(--primary)}.tile.y h3,.tile.y p{color:#000}
+/* configurator */
+.conf{background:var(--soft);padding:80px 0}
+.cgrid{display:grid;grid-template-columns:3fr 2fr;background:#fff}
+.viz{position:relative;background:#fff;border-right:1px solid var(--hair);padding:32px;display:flex;flex-direction:column}
+.viz .stage{flex:1;display:grid;place-items:center;min-height:440px}
+.viz .dots{display:flex;gap:8px;justify-content:center}
+.viz .dots i{width:8px;height:8px;border-radius:50%;background:var(--stone)}
+.viz .dots i.on{background:var(--primary);outline:1px solid #000}
+.opts{padding:32px}
+.crow{padding:24px 0;border-bottom:1px solid var(--hair)}
+.crow .lbl{display:flex;justify-content:space-between;margin-bottom:14px}
+.crow .lbl span{color:var(--mute);font-size:14px}
+.sw{display:flex;gap:12px}
+.sw i{width:56px;height:56px;border-radius:9999px;display:block}
+.sw i.on{outline:1px solid #000;outline-offset:3px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.choice{display:flex;justify-content:space-between;padding:14px 16px;border:1px solid var(--hair);margin-bottom:8px;font-size:16px}
+.choice.on{border-color:#000}
+.choice span{color:var(--mute);font-size:14px}
+.bar{display:flex;justify-content:space-between;align-items:center;padding:20px 32px;background:#fff;border-top:1px solid var(--hair);box-shadow:0 -2px 4px rgba(0,0,0,.1)}
+.bar b{font-size:24px;color:#000;line-height:.95}
+/* story */
+.story{background:#000;color:#fff;padding:80px 0}
+.story .g{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+.story h2{color:#fff}
+.story p{color:var(--on-dark-mute);font-size:18px;line-height:1.5;margin:20px 0 32px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--div-dark);margin-top:40px}
+.stats div{padding:20px 0}
+.stats b{display:block;font-size:40px;line-height:.95;color:#fff;margin-bottom:8px}
+.stats span{color:var(--on-dark-mute);font-size:14px}
+.form{display:flex;gap:16px;align-items:flex-end;margin-top:24px}
+.inp{flex:1;height:48px;padding:12px 16px;border:0;border-bottom:1px solid #000;border-radius:0;font:400 16px "Inter Tight",sans-serif;color:#000;background:#fff}
+/* footer */
+.bf{background:#000;color:#fff;padding:64px 24px;font-size:14px;line-height:1.57}
+.bf .in{max-width:1312px;margin:0 auto}
+.bf .cols{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:40px}
+.bf h4{color:#fff;font-size:18px;line-height:1;margin-bottom:16px}
+.bf p{color:var(--on-dark-mute);margin-bottom:6px}
+.bf .legal{border-top:1px solid var(--div-dark);margin-top:48px;padding-top:20px;display:flex;justify-content:space-between;font-size:12px;line-height:1.4;color:var(--on-dark-mute)}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="r5" viewBox="0 0 600 260"><ellipse cx="300" cy="240" rx="280" ry="10" fill="#000" opacity=".3"/><path d="M40 204 L40 150 Q42 128 70 122 L150 112 L200 60 Q212 48 236 46 L430 44 Q458 44 470 66 L510 116 L548 124 Q566 130 566 152 L566 204 Z" fill="currentColor"/><path d="M216 112 L248 62 L340 60 L340 112 Z M352 60 L430 60 Q444 60 452 74 L478 112 L352 112 Z" fill="#141414" opacity=".88"/><rect x="58" y="138" width="56" height="18" rx="2" fill="#fff" opacity=".85"/><rect x="532" y="138" width="26" height="18" fill="#ff3a2a" opacity=".85"/><path d="M50 176 L556 176" stroke="#000" stroke-opacity=".15"/><path d="M270 120 L280 120" stroke="#000" stroke-width="4" stroke-opacity=".4"/><circle cx="142" cy="204" r="36" fill="#111"/><circle cx="142" cy="204" r="22" fill="#888"/><circle cx="142" cy="204" r="8" fill="#222"/><circle cx="460" cy="204" r="36" fill="#111"/><circle cx="460" cy="204" r="22" fill="#888"/><circle cx="460" cy="204" r="8" fill="#222"/></symbol>
+<symbol id="suv" viewBox="0 0 600 260"><ellipse cx="300" cy="240" rx="280" ry="10" fill="#000" opacity=".3"/><path d="M30 204 L30 146 Q34 124 66 118 L150 108 Q210 52 280 48 L440 50 Q480 54 510 104 L554 116 Q572 124 572 150 L572 204 Z" fill="currentColor"/><path d="M180 108 Q226 64 284 60 L350 60 L350 108Z M362 60 L436 62 Q464 66 486 108 L362 108Z" fill="#141414" opacity=".88"/><path d="M40 170 L564 170" stroke="#000" stroke-opacity=".15"/><circle cx="140" cy="204" r="38" fill="#111"/><circle cx="140" cy="204" r="24" fill="#888"/><circle cx="470" cy="204" r="38" fill="#111"/><circle cx="470" cy="204" r="24" fill="#888"/></symbol>
+</defs></svg>
+
+<header class="nav"><div class="wrap">
+<svg width="30" height="38" viewBox="0 0 24 24" fill="#000" aria-label="Renault"><path d="M17.463 11.99l-4.097-7.692-.924 1.707 3.213 5.985-5.483 10.283L4.69 11.990 11.096 0H9.27L2.882 11.99 9.269 24h1.807zm3.655 0L14.711 0h-1.807L6.517 11.99l4.117 7.712.904-1.707-3.193-6.005 5.463-10.263L19.290 11.990 12.904 24h1.807Z"/></svg>
+<span>Models</span><span>Electric &amp; hybrid</span><span>Offers</span><span>Services</span><span>Renault life</span><span class="sp"></span><span class="m">EN</span><span class="m">Find a dealer</span><span>MyRenault</span>
+</div></header>
+
+<section class="hero">
+<div class="mesh"><i style="left:640px;top:120px;width:520px;height:420px;background:#7b2cbf;opacity:.9"></i><i style="left:900px;top:60px;width:440px;height:380px;background:#e0479e;opacity:.8"></i><i style="left:1040px;top:300px;width:420px;height:360px;background:#ffed00;opacity:.55"></i></div>
+<div class="wrap"><span class="new" style="align-self:flex-start;margin-bottom:24px">new</span><h1>RENAULT 5 E-TECH ELECTRIC</h1><p class="sub" style="color:rgba(255,255,255,.72);font-size:19.2px">An icon reinvented. Up to 410 km range, 11 kW bidirectional charging, from £22,995.</p><div style="display:flex;gap:12px"><span class="btn">Configure yours</span><span class="btn ol">Book a test drive</span></div></div>
+<svg class="car" width="760" height="330" style="color:#ffed00"><use href="#r5"/></svg>
+<div class="meta"><div><b>410 km</b>WLTP range</div><div><b>30 min</b>15–80% on DC</div><div><b>150 hp</b>Max power</div><div><b>£22,995</b>On the road from</div></div>
+</section>
+
+<div class="subnav"><div class="wrap"><span class="pill on">All models</span><span class="pill">Electric</span><span class="pill">Full hybrid</span><span class="pill">SUVs</span><span class="pill">Vans</span><span class="pill">Offers</span><span class="pill">Service &amp; booking</span></div></div>
+
+<section class="sec"><div class="wrap">
+<div class="sh"><h2 class="dlg">THE RANGE</h2><span style="display:flex;gap:8px"><span class="ib">‹</span><span class="ib">›</span></span></div>
+<div class="range">
+<div class="vc"><div class="ph"><svg width="280" height="121" style="color:#ffed00"><use href="#r5"/></svg><span class="new">new</span></div><div class="tx"><div><h3 class="hmd">Renault 5 E-Tech</h3><p>100% electric city car</p><div class="pr">from £22,995</div></div><span>→</span></div></div>
+<div class="vc"><div class="ph"><svg width="280" height="121" style="color:#5f8fb4"><use href="#r5"/></svg><span class="new">new</span></div><div class="tx"><div><h3 class="hmd">Renault 4 E-Tech</h3><p>100% electric compact SUV</p><div class="pr">from £25,995</div></div><span>→</span></div></div>
+<div class="vc"><div class="ph"><svg width="280" height="121" style="color:#c9c9c4"><use href="#suv"/></svg></div><div class="tx"><div><h3 class="hmd">Scenic E-Tech</h3><p>100% electric family SUV</p><div class="pr">from £37,495</div></div><span>→</span></div></div>
+<div class="vc"><div class="ph"><svg width="280" height="121" style="color:#3a3d40"><use href="#suv"/></svg></div><div class="tx"><div><h3 class="hmd">Rafale</h3><p>Full hybrid E-Tech 300 hp</p><div class="pr">from £41,195</div></div><span>→</span></div></div>
+</div></div></section>
+
+<section class="sec" style="padding-top:0"><div class="wrap">
+<div class="tiles">
+<div class="tile d"><svg width="420" height="182" style="position:absolute;right:-20px;bottom:24px;color:#8a8a8a"><use href="#suv"/></svg><span class="ov" style="color:rgba(255,255,255,.72)">Vans</span><h3 style="margin-top:8px">Master E-Tech electric</h3><p>Up to 460 km range and 14 m³ of load space. Business finance from £399/month + VAT.</p><span class="btn ol">Explore vans</span></div>
+<div class="tile y"><span class="ov">Limited offer</span><h3 style="margin-top:8px">0% APR on Renault 5 E-Tech</h3><p>Plus a free home charger and installation on orders placed before 31 December.</p><span class="btn k">See the offer</span></div>
+<div class="tile l" style="grid-column:span 2;min-height:260px;flex-direction:row;align-items:center;gap:48px"><div style="flex:1"><span class="ov" style="color:var(--mute)">Hybrid models</span><h3 style="margin-top:8px">E-Tech full hybrid. No plug, no compromise.</h3><p>Up to 80% of city driving in electric mode, with the range of a petrol car.</p><span class="btn od">Discover hybrids</span></div><svg width="440" height="191" style="color:#e4e4e4"><use href="#suv"/></svg></div>
+</div></div></section>
+
+<section class="conf"><div class="wrap">
+<div class="sh"><div><span class="ov" style="color:var(--mute)">Configurator</span><h2 class="dmd" style="margin-top:8px">Build your Renault 5</h2></div><span class="pill">Save configuration</span></div>
+<div class="cgrid">
+<div class="viz"><div style="display:flex;gap:8px"><span class="pill on">Exterior</span><span class="pill">Interior</span><span class="pill">360°</span></div><div class="stage"><svg width="660" height="286" style="color:#ffed00"><use href="#r5"/></svg></div><div class="dots"><i class="on"></i><i></i><i></i><i></i></div></div>
+<div class="opts">
+<div class="crow" style="padding-top:0"><div class="lbl"><h4 class="hsm">Version</h4><span>Step 2 of 5</span></div><div class="choice"><b style="font-weight:400">evolution · 120 hp · 52 kWh</b><span>£22,995</span></div><div class="choice on"><b style="font-weight:700">techno · 150 hp · 52 kWh</b><span>£26,995</span></div><div class="choice"><b style="font-weight:400">iconic cinq · 150 hp · 52 kWh</b><span>£28,995</span></div></div>
+<div class="crow"><div class="lbl"><h4 class="hsm">Colour · Pop Yellow</h4><span>+ £800</span></div><div class="sw"><i class="on" style="background:#ffed00"></i><i style="background:#2f6fa8"></i><i style="background:#d8d8d4"></i><i style="background:#2a2a2a"></i><i style="background:#7a8b6a"></i></div></div>
+<div class="crow"><div class="lbl"><h4 class="hsm">Packs</h4><span>Optional</span></div><div class="chips"><span class="pill on">Heat pump</span><span class="pill">Winter pack</span><span class="pill">V2L adapter</span><span class="pill">18" alloys</span></div></div>
+</div>
+</div>
+<div class="bar"><div><span style="font-size:14px;color:var(--mute)">Renault 5 E-Tech techno · Pop Yellow · Heat pump</span><br><b>£28,395</b> <span style="font-size:14px;color:var(--mute)">or £249/month PCP</span></div><div style="display:flex;gap:12px"><span class="btn od">Summary</span><span class="btn">Continue</span></div></div>
+</div></section>
+
+<section class="story"><div class="wrap g">
+<div><span class="ov" style="color:rgba(255,255,255,.72)">Renaulution</span><h2 class="dxl" style="margin-top:12px">MADE IN FRANCE. ELECTRIC BY NATURE.</h2><p>Every Renault 5 E-Tech is assembled at our ElectriCity hub in northern France, within 300 km of its battery and motor suppliers.</p><span class="btn ol">Our commitments</span>
+<div class="stats"><div><b>90%</b><span>recyclable by mass</span></div><div><b>300 km</b><span>supply-chain radius</span></div><div><b>2030</b><span>100% EV in Europe</span></div></div></div>
+<div style="aspect-ratio:1/1;background:var(--deep);position:relative;overflow:hidden"><svg viewBox="0 0 500 500" width="100%" height="100%"><rect width="500" height="500" fill="#111"/><g fill="#1c1c1c"><rect x="40" y="220" width="120" height="180"/><rect x="180" y="160" width="160" height="240"/><rect x="360" y="240" width="100" height="160"/></g><g fill="#2a2a2a"><rect x="200" y="190" width="30" height="40"/><rect x="250" y="190" width="30" height="40"/><rect x="300" y="190" width="20" height="40"/></g><rect x="0" y="400" width="500" height="100" fill="#000"/><svg x="90" y="330" width="320" height="139" style="color:#ffed00"><use href="#r5"/></svg></svg></div>
+</div></section>
+
+<section class="sec"><div class="wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center">
+<div><h2 class="dmd">Book a test drive</h2><p style="margin-top:12px;color:var(--charcoal)">Choose a dealer and a time. We'll have the car charged and ready.</p></div>
+<div><div class="form"><input class="inp" value="Postcode" aria-label="postcode"><input class="inp" value="Preferred model" aria-label="model"><span class="btn">Find a slot</span></div></div>
+</div></section>
+
+<div class="bf"><div class="in">
+<div class="cols">
+<div><svg width="36" height="46" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M17.463 11.99l-4.097-7.692-.924 1.707 3.213 5.985-5.483 10.283L4.69 11.99 11.096 0H9.27L2.882 11.99 9.269 24h1.807zm3.655 0L14.711 0h-1.807L6.517 11.99l4.117 7.712.904-1.707-3.193-6.005 5.463-10.263L19.29 11.99 12.904 24h1.807Z"/></svg><p style="margin-top:16px;max-width:280px">Renault UK Ltd. The Rivers Office Park, Denham Way, Maple Cross, Rickmansworth.</p></div>
+<div><h4>Quick links</h4><p>Models &amp; prices</p><p>Offers</p><p>Book a service</p><p>Electric charging</p></div>
+<div><h4>Renault</h4><p>Newsroom</p><p>Careers</p><p>Renault Group</p><p>Language: English (UK)</p></div>
+</div>
+<div class="legal"><span>© Renault 2026</span><span>Legal · Cookies · Privacy · Accessibility</span></div>
+</div></div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">renault</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

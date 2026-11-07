@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PostHog — preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500&display=block">
+<style>
+:root{--primary:#f7a501;--ppress:#dd9001;--pact:#b17816;--ink:#23251d;--body:#4d4f46;--charcoal:#33342d;--mute:#6c6e63;--ash:#9b9c92;--stone:#b6b7af;--hair:#bfc1b7;--hsoft:#dcdfd2;--canvas:#eeefe9;--soft:#e5e7e0;--card:#fff;--doc:#fcfcfa;--dark:#23251d;--lblue:#1d4ed8;--lteal:#1078a3;
+--blue:#2c84e0;--bluesoft:#dceaf6;--red:#cd4239;--redsoft:#f7d6d3;--green:#2c8c66;--greensoft:#d9eddf;--purple:#7c44a6;--purplesoft:#e7d8ee;
+--sans:'IBM Plex Sans',-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;--mono:'Source Code Pro',ui-monospace,Menlo,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{background:var(--canvas);color:var(--body);font-family:var(--sans);font-size:16px;line-height:1.5}
+.wrap{max-width:1328px;margin:0 auto;padding:0 24px}
+nav{height:56px}
+nav .wrap{height:56px;display:flex;align-items:center;gap:24px;font-size:16px;font-weight:600;color:var(--ink)}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:20px;letter-spacing:-.5px;margin-right:16px;color:var(--ink)}
+nav .sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;height:40px;padding:8px 16px;border-radius:6px;font-size:14px;font-weight:700;line-height:1.5;background:var(--primary);color:var(--ink);white-space:nowrap;box-shadow:inset 0 -2px 0 var(--pact)}
+.btn.pill{border-radius:9999px}
+.btn.s{background:var(--soft);box-shadow:inset 0 0 0 1px var(--hair)}
+.btn.t{background:transparent;box-shadow:none;padding:8px 12px}
+.subnav{height:40px;background:var(--soft);border-top:1px solid var(--hsoft);border-bottom:1px solid var(--hsoft)}
+.subnav .wrap{height:40px;display:flex;align-items:center;gap:20px;font-size:14px;font-weight:500;line-height:1.43}
+.subnav b{color:var(--ink);font-weight:700}
+.subnav .r{margin-left:auto;color:var(--lteal)}
+.eyebrow{font-size:18px;font-weight:700;line-height:1.5;text-transform:uppercase;color:var(--ink)}
+.util{font-size:12px;font-weight:700;line-height:1.33;text-transform:uppercase;color:var(--mute)}
+.code{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:500;line-height:1.43;background:var(--soft);color:var(--ink);padding:2px 6px;border-radius:2px}
+/* hero */
+.hero{padding:80px 0 56px}
+.hgrid{display:grid;grid-template-columns:1fr 360px;gap:48px;align-items:center}
+h1{font-size:36px;font-weight:700;line-height:1.5;color:var(--ink);max-width:640px}
+h1 span{background:linear-gradient(transparent 62%,rgba(247,165,1,.45) 62%)}
+.lead{font-size:18px;font-weight:600;line-height:1.56;color:var(--body);max-width:620px;margin:12px 0 24px}
+.ctas{display:flex;gap:12px;align-items:center}
+.ctas .note{font-size:13px;font-weight:500;color:var(--mute)}
+.hog{display:block}
+.tabs{display:flex;gap:4px;margin-top:56px;border-bottom:1px solid var(--hair)}
+.tab{padding:8px 12px;border-radius:6px 6px 0 0;font-weight:600;color:var(--body);display:flex;gap:8px;align-items:center}
+.tab.on{background:var(--card);color:var(--ink);box-shadow:inset 0 1px 0 var(--hair),inset 1px 0 0 var(--hair),inset -1px 0 0 var(--hair);margin-bottom:-1px}
+.tab i{width:18px;height:18px;border-radius:4px;border:1.5px solid currentColor;display:inline-block}
+/* app mockup */
+.app{background:var(--card);border:1px solid var(--hair);border-top:0;border-radius:0 0 6px 6px;display:grid;grid-template-columns:200px 1fr;min-height:520px}
+.aside{border-right:1px solid var(--hsoft);padding:16px 12px;font-size:14px;font-weight:500;line-height:1.43}
+.aside div{padding:6px 8px;border-radius:4px;display:flex;align-items:center;gap:8px}
+.aside div.on{background:var(--soft);color:var(--ink)}
+.aside .ic{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--mute)}
+.aside h6{font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ash);padding:14px 8px 6px}
+.amain{padding:20px 24px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.ahead{display:flex;align-items:center;gap:10px}
+.ahead h4{font-size:20px;font-weight:700;line-height:1.4;color:var(--ink)}
+.ahead .pills{margin-left:auto;display:flex;gap:4px}
+.pt{font-size:13px;font-weight:500;line-height:1;padding:6px 14px;border-radius:9999px;color:var(--body)}
+.pt.on{background:var(--ink);color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.kpi{border:1px solid var(--hair);border-radius:6px;padding:12px 14px}
+.kpi .l{font-size:13px;font-weight:500;color:var(--mute)}
+.kpi b{display:block;font-size:24px;font-weight:700;letter-spacing:-.6px;line-height:1.33;color:var(--ink)}
+.kpi .d{font-size:12px;font-weight:600;color:var(--green)}
+.kpi .d.n{color:var(--red)}
+.chart{border:1px solid var(--hair);border-radius:6px;padding:12px 14px}
+.chart .lg{display:flex;gap:16px;font-size:13px;font-weight:500;margin-bottom:6px}
+.chart .lg i{display:inline-block;width:10px;height:3px;vertical-align:middle;margin-right:6px}
+table{width:100%;border-collapse:collapse;font-size:14px;line-height:1.43}
+thead td{font-size:12px;font-weight:700;text-transform:uppercase;color:var(--mute);padding:8px 10px;border-bottom:1px solid var(--hair)}
+tbody td{padding:8px 10px;border-bottom:1px solid var(--hsoft);color:var(--charcoal);font-weight:500}
+td.r{text-align:right}
+.ev{font-family:var(--mono);font-size:13px;color:var(--ink)}
+.bar{display:inline-block;height:8px;border-radius:2px;background:var(--blue);vertical-align:middle}
+/* tiles */
+.sec{padding:80px 0}
+h2{font-size:24px;font-weight:700;line-height:1.33;letter-spacing:-.6px;color:var(--ink);margin-top:8px}
+.sub{font-size:15px;line-height:1.71;max-width:640px;margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:32px}
+.tile{background:var(--card);border:1px solid var(--hair);border-radius:6px;padding:24px;position:relative;min-height:250px;display:flex;flex-direction:column}
+.tile .hg{position:absolute;right:12px;top:12px}
+.tile .util{margin-top:64px}
+.tile h3{font-size:18px;font-weight:600;line-height:1.56;color:var(--ink);margin:4px 0 6px}
+.tile p{font-size:15px;line-height:1.71}
+.tile .more{margin-top:auto;padding-top:12px;font-size:14px;font-weight:700;color:var(--ink)}
+.promo{display:inline-block;font-size:12px;font-weight:600;line-height:1.33;text-transform:uppercase;background:var(--bluesoft);color:var(--lblue);padding:2px 8px;border-radius:9999px;margin-left:6px;vertical-align:2px}
+/* docs */
+.docs{display:grid;grid-template-columns:240px 1fr 200px;gap:32px;margin-top:32px;align-items:start}
+.dside{font-size:14px;font-weight:500;line-height:1.43}
+.search{display:flex;align-items:center;gap:8px;height:36px;padding:8px 12px;border-radius:6px;background:var(--card);border:1px solid var(--hair);color:var(--mute);font-size:16px;margin-bottom:16px}
+.dside .grp{display:flex;align-items:center;gap:8px;padding:6px 8px;font-weight:600;color:var(--ink)}
+.dside .grp i{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:11px}
+.dside .it{padding:6px 8px 6px 38px;color:var(--body)}
+.dside .it.on{color:var(--ink);background:var(--soft);border-radius:4px;font-weight:600}
+.doccard{background:var(--doc);border:1px solid var(--hair);border-radius:6px;padding:24px;max-width:720px;display:flex;flex-direction:column;gap:12px;font-size:15px;line-height:1.71}
+.doccard h3{font-size:21px;font-weight:700;line-height:1.4;letter-spacing:-.5px;color:var(--ink)}
+.doccard a{color:var(--lteal)}
+.cb{background:var(--dark);color:#fff;border-radius:6px;padding:16px 20px;font-family:var(--mono);font-size:14px;line-height:1.43}
+.cb .kw{color:#8fb6ea}.cb .st{color:#9fcfa9}.cb .nu{color:#c7a3e0}.cb .cm{color:var(--ash)}
+.call{border-radius:6px;padding:16px 20px;color:var(--ink);font-size:16px;line-height:1.5}
+.call b{font-weight:600}
+.toc{font-size:13px;font-weight:500;line-height:1.5;border-left:1px solid var(--hair);padding-left:16px;display:flex;flex-direction:column;gap:8px}
+.toc .on{color:var(--ink);font-weight:600}
+/* pricing */
+.pgrid{display:grid;grid-template-columns:300px repeat(3,1fr);gap:16px;margin-top:32px;align-items:stretch}
+.prail{padding:8px 8px 0 0;font-size:15px;line-height:1.71}
+.prail h3{font-size:21px;font-weight:700;letter-spacing:-.5px;line-height:1.4;color:var(--ink);margin-bottom:8px}
+.tier{background:var(--card);border:1px solid var(--hair);border-radius:6px;padding:32px;display:flex;flex-direction:column;gap:10px}
+.tier h4{font-size:24px;font-weight:700;letter-spacing:-.6px;line-height:1.33;color:var(--ink)}
+.tier .p{font-size:36px;font-weight:700;line-height:1.5;color:var(--ink)}
+.tier .p small{font-size:14px;font-weight:500;color:var(--mute)}
+.tier ul{list-style:none;display:flex;flex-direction:column;gap:6px;font-size:15px;line-height:1.71;border-top:1px solid var(--hsoft);padding-top:12px;margin-bottom:12px}
+.tier li::before{content:"✓";color:var(--green);font-weight:700;margin-right:8px}
+.tier .btn{margin-top:auto;align-self:flex-start}
+footer.site{border-top:1px solid var(--hair);padding:32px 24px 32px;font-size:14px;font-weight:500;line-height:1.43}
+.fcols{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr);gap:24px;padding-top:16px}
+.fcols h6{font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ink);margin-bottom:12px;line-height:1.33}
+.fcols span{display:block;margin-bottom:8px;color:var(--body)}
+.fbot{max-width:1280px;margin:32px auto 0;display:flex;align-items:center;gap:12px;font-size:12px;font-weight:600;text-transform:uppercase;color:var(--mute)}
+</style></head><body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="hog" viewBox="0 0 200 160">
+      <path d="M30 120 C20 80 50 40 95 36 L104 22 L112 38 L124 26 L128 44 L142 36 L142 54 L158 52 L152 68 L168 72 L156 84 L170 94 L154 100 L164 114 L146 116 Q140 130 120 134 L50 134 Q34 132 30 120Z" fill="#8a5a3b" stroke="#23251d" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M40 118 C36 96 50 74 74 70 C92 68 104 82 104 100 C104 118 90 132 66 134 L50 134 Q40 130 40 118Z" fill="#f1d7b5" stroke="#23251d" stroke-width="3"/>
+      <circle cx="74" cy="96" r="5" fill="#23251d"/>
+      <circle cx="76" cy="94" r="1.6" fill="#fff"/>
+      <ellipse cx="44" cy="110" rx="7" ry="6" fill="#23251d"/>
+      <path d="M58 116 Q66 122 74 116" stroke="#23251d" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <ellipse cx="88" cy="112" rx="7" ry="4" fill="#f6a8a0" opacity=".8"/>
+      <path d="M60 134 L58 146 M110 134 L112 146" stroke="#23251d" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<nav><div class="wrap">
+  <span class="logo"><svg width="30" height="17" viewBox="0 0 24 24" aria-hidden="true"><path fill="#1d4ed8" d="M9.854 14.5 5 9.647.854 5.5A.5.5 0 0 0 0 5.854V8.44a.5.5 0 0 0 .146.353L5 13.647l.147.146L9.854 18.5l.146.147v-.049c.065.03.134.049.207.049h2.586a.5.5 0 0 0 .353-.854L9.854 14.5zm0-5-4-4a.487.487 0 0 0-.409-.144.515.515 0 0 0-.356.21.493.493 0 0 0-.089.288V8.44a.5.5 0 0 0 .147.353l9 9a.5.5 0 0 0 .853-.354v-2.585a.5.5 0 0 0-.146-.354l-5-5zm1-4a.5.5 0 0 0-.854.354V8.44a.5.5 0 0 0 .147.353l4 4a.5.5 0 0 0 .853-.354V9.854a.5.5 0 0 0-.146-.354l-4-4zm12.647 11.515a3.863 3.863 0 0 1-2.232-1.1l-4.708-4.707a.5.5 0 0 0-.854.354v6.585a.5.5 0 0 0 .5.5H23.5a.5.5 0 0 0 .5-.5v-.6c0-.276-.225-.497-.499-.532zm-5.394.032a.8.8 0 1 1 0-1.6.8.8 0 0 1 0 1.6zM.854 15.5a.5.5 0 0 0-.854.354v2.293a.5.5 0 0 0 .5.5h2.293c.222 0 .39-.135.462-.309a.493.493 0 0 0-.109-.545L.854 15.501zM5 14.647.854 10.5a.5.5 0 0 0-.854.353v2.586a.5.5 0 0 0 .146.353L4.854 18.5l.146.147h2.793a.5.5 0 0 0 .353-.854L5 14.647z"/></svg>PostHog<svg width="30" height="24"><use href="#hog"/></svg></span>
+  <span>Product OS</span><span>Pricing</span><span>Docs</span><span>Community</span><span>Company</span>
+  <span class="sp"></span>
+  <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#23251d" stroke-width="2"><circle cx="9" cy="9" r="6"/><path d="M13.5 13.5 18 18"/></svg>
+  <span style="font-weight:600">Login</span><span class="btn pill">Get started — free</span>
+</div></nav>
+<div class="subnav"><div class="wrap"><b>Product analytics</b><span>Overview</span><span>Features</span><span>Pricing</span><span>Docs</span><span>Tutorials</span><span>Compare</span><span class="r">Get started →</span></div></div>
+
+<header class="hero"><div class="wrap">
+  <div class="hgrid">
+    <div>
+      <span class="util">The product OS for developers</span>
+      <h1>The new way to build products: <span>every tool you need</span>, in one place.</h1>
+      <p class="lead">Product analytics, session replay, feature flags, experiments, surveys and a data warehouse — built for engineers who ship.</p>
+      <div class="ctas"><span class="btn">Get started — free</span><span class="btn s">Talk to a human</span><span class="note">1M events free every month · no credit card</span></div>
+    </div>
+    <svg class="hog" width="340" height="272" viewBox="0 0 340 272" aria-hidden="true">
+      <rect x="150" y="60" width="170" height="120" rx="6" fill="#fff" stroke="#23251d" stroke-width="3"/>
+      <rect x="150" y="60" width="170" height="20" rx="6" fill="#e5e7e0" stroke="#23251d" stroke-width="3"/>
+      <path d="M168 160 L196 130 L222 142 L250 104 L276 116 L302 92" stroke="#2c84e0" stroke-width="4" fill="none" stroke-linejoin="round"/>
+      <path d="M168 164 L196 150 L222 156 L250 136 L276 144 L302 130" stroke="#f7a501" stroke-width="3" fill="none" stroke-dasharray="6 5"/>
+      <path d="M230 180 L224 206 L246 206 L240 180" fill="#e5e7e0" stroke="#23251d" stroke-width="3"/>
+      <use href="#hog" x="0" y="96" width="220" height="176"/>
+      <path d="M18 132 Q60 112 102 128 L100 140 Q60 126 20 144Z" fill="#23251d"/>
+      <circle cx="62" cy="166" r="16" fill="none" stroke="#23251d" stroke-width="3"/>
+    </svg>
+  </div>
+  <div class="tabs"><span class="tab on"><i></i>Product analytics</span><span class="tab"><i></i>Session replay</span><span class="tab"><i></i>Feature flags</span><span class="tab"><i></i>Experiments</span><span class="tab"><i></i>Surveys</span><span class="tab"><i></i>Data warehouse</span></div>
+  <div class="app">
+    <div class="aside">
+      <div class="on"><span class="ic"></span>Dashboards</div><div><span class="ic"></span>Product analytics</div><div><span class="ic"></span>Web analytics</div><div><span class="ic"></span>Session replay</div><div><span class="ic"></span>Feature flags</div><div><span class="ic"></span>Experiments</div>
+      <h6>Data</h6><div><span class="ic"></span>Activity</div><div><span class="ic"></span>People</div><div><span class="ic"></span>SQL editor</div>
+    </div>
+    <div class="amain">
+      <div class="ahead"><h4>Growth dashboard</h4><span class="promo">Live</span><div class="pills"><span class="pt">24h</span><span class="pt on">7d</span><span class="pt">30d</span><span class="pt">90d</span></div></div>
+      <div class="kpis">
+        <div class="kpi"><span class="l">Weekly active users</span><b>48,213</b><span class="d">▲ 12.4%</span></div>
+        <div class="kpi"><span class="l">Signups</span><b>3,902</b><span class="d">▲ 8.1%</span></div>
+        <div class="kpi"><span class="l">Activation rate</span><b>41.7%</b><span class="d">▲ 2.3 pts</span></div>
+        <div class="kpi"><span class="l">Churned accounts</span><b>212</b><span class="d n">▲ 4.0%</span></div>
+      </div>
+      <div class="chart">
+        <div class="lg"><span><i style="background:#2c84e0"></i>Pageview</span><span><i style="background:#f7a501"></i>Signed up</span><span><i style="background:#7c44a6"></i>Created insight</span></div>
+        <svg width="100%" height="130" viewBox="0 0 900 130" preserveAspectRatio="none">
+          <g stroke="#dcdfd2" stroke-width="1"><path d="M0 10H900M0 50H900M0 90H900M0 129H900"/></g>
+          <path d="M0 96 L75 88 L150 92 L225 70 L300 74 L375 52 L450 58 L525 40 L600 46 L675 28 L750 34 L825 18 L900 22" stroke="#2c84e0" stroke-width="2.5" fill="none"/>
+          <path d="M0 112 L75 108 L150 110 L225 100 L300 102 L375 92 L450 96 L525 84 L600 88 L675 78 L750 80 L825 70 L900 72" stroke="#f7a501" stroke-width="2.5" fill="none"/>
+          <path d="M0 120 L75 118 L150 119 L225 114 L300 115 L375 110 L450 111 L525 106 L600 108 L675 102 L750 103 L825 98 L900 99" stroke="#7c44a6" stroke-width="2.5" fill="none"/>
+        </svg>
+      </div>
+      <table><thead><tr><td>Event</td><td class="r">Count</td><td class="r">Unique users</td><td>Trend</td></tr></thead>
+        <tbody>
+          <tr><td class="ev">$pageview</td><td class="r">1,284,302</td><td class="r">48,213</td><td><span class="bar" style="width:180px"></span></td></tr>
+          <tr><td class="ev">signed_up</td><td class="r">3,902</td><td class="r">3,902</td><td><span class="bar" style="width:62px;background:#f7a501"></span></td></tr>
+          <tr><td class="ev">insight_created</td><td class="r">22,417</td><td class="r">9,108</td><td><span class="bar" style="width:96px;background:#7c44a6"></span></td></tr>
+          <tr><td class="ev">feature_flag_called</td><td class="r">812,660</td><td class="r">31,774</td><td><span class="bar" style="width:140px;background:#2c8c66"></span></td></tr>
+        </tbody></table>
+    </div>
+  </div>
+</div></header>
+
+<section class="sec" style="padding-top:24px"><div class="wrap">
+  <span class="eyebrow">Understand product usage</span>
+  <h2>Everything you need to build a better product</h2>
+  <p class="sub">One SDK, one data model, one bill. Ship faster without stitching together six different tools.</p>
+  <div class="tiles">
+    <div class="tile"><svg class="hg" width="96" height="77"><use href="#hog"/></svg><span class="util">Analytics</span><h3>Funnels &amp; retention</h3><p>See where users drop off and what keeps them coming back.</p><span class="more">Learn more →</span></div>
+    <div class="tile"><svg class="hg" width="96" height="77" style="transform:scaleX(-1)"><use href="#hog"/></svg><span class="util">Session replay</span><h3>Watch real sessions</h3><p>Replays with console logs and network requests, linked to every event.</p><span class="more">Learn more →</span></div>
+    <div class="tile"><svg class="hg" width="96" height="77"><use href="#hog"/></svg><span class="util">Feature flag</span><h3>Roll out safely</h3><p>Ship to 5% of users, watch the numbers, then go to 100%.</p><span class="more">Learn more →</span></div>
+    <div class="tile"><svg class="hg" width="96" height="77" style="transform:scaleX(-1)"><use href="#hog"/></svg><span class="util">Experiment</span><h3>Test before launch <span class="promo">New</span></h3><p>A/B tests with Bayesian stats and no extra code.</p><span class="more">Learn more →</span></div>
+  </div>
+</div></section>
+
+<section class="sec" style="padding-top:0"><div class="wrap">
+  <span class="eyebrow">Docs</span>
+  <h2>Install in two minutes</h2>
+  <div class="docs">
+    <div class="dside">
+      <div class="search">⌕ Ask PostHog AI</div>
+      <div class="grp"><i>▲</i>Product analytics</div><div class="it on">Installation</div><div class="it">Capturing events</div><div class="it">Identifying users</div><div class="it">Funnels</div>
+      <div class="grp"><i>▶</i>Session replay</div>
+      <div class="grp"><i>⚑</i>Feature flags</div>
+      <div class="grp"><i>⚗</i>Experiments</div>
+    </div>
+    <div class="doccard">
+      <h3>Install the JavaScript SDK</h3>
+      <p>Add <span class="code">posthog-js</span> to your app and initialize it with your project API key. Autocapture starts tracking clicks and pageviews right away — see <a>autocapture docs</a>.</p>
+      <div class="cb"><span class="cm">// npm install posthog-js</span><br><span class="kw">import</span> posthog <span class="kw">from</span> <span class="st">'posthog-js'</span><br><br>posthog.init(<span class="st">'phc_3kF9xQ2mVb7'</span>, {<br>&nbsp;&nbsp;api_host: <span class="st">'https://us.i.posthog.com'</span>,<br>&nbsp;&nbsp;person_profiles: <span class="st">'identified_only'</span>,<br>&nbsp;&nbsp;session_recording: { sampleRate: <span class="nu">0.5</span> }<br>})<br><br>posthog.capture(<span class="st">'signed_up'</span>, { plan: <span class="st">'free'</span> })</div>
+      <div class="call" style="background:var(--bluesoft)">💡 <b>Tip:</b> Use a reverse proxy so ad blockers don't drop your events.</div>
+      <div class="call" style="background:var(--greensoft)">✅ <b>Success:</b> Events show up in the Activity tab within seconds.</div>
+      <div class="call" style="background:var(--redsoft)">⚠️ <b>Warning:</b> Never expose your personal API key in client-side code.</div>
+    </div>
+    <div class="toc"><span class="util" style="margin-bottom:4px">On this page</span><span class="on">Install the SDK</span><span>Identify users</span><span>Send custom events</span><span>Next steps</span></div>
+  </div>
+</div></section>
+
+<section class="sec" style="padding-top:0"><div class="wrap">
+  <span class="eyebrow">Pricing</span>
+  <h2>Usage-based pricing that starts at $0</h2>
+  <div class="pgrid">
+    <div class="prail"><h3>Pay only for what you use</h3><p>Every product has a generous free tier. Set billing limits so you never get a surprise invoice.</p><p style="margin-top:12px;font-weight:600;color:#23251d">90% of companies use PostHog for free.</p></div>
+    <div class="tier"><h4>Free</h4><div class="p">$0<small> /mo</small></div><ul><li>1M analytics events</li><li>5k session replays</li><li>1M feature flag requests</li></ul><span class="btn s">Get started</span></div>
+    <div class="tier"><h4>Pay-as-you-go</h4><div class="p">$0<small> to start</small></div><ul><li>Everything in Free, then usage pricing</li><li>Unlimited projects</li><li>Billing limits</li></ul><span class="btn">Get started — free</span></div>
+    <div class="tier"><h4>Enterprise</h4><div class="p" style="font-size:24px;letter-spacing:-.6px;line-height:2.25">Custom</div><ul><li>SAML SSO &amp; audit logs</li><li>Dedicated support</li><li>Volume discounts</li></ul><span class="btn s">Talk to sales</span></div>
+  </div>
+</div></section>
+
+<footer class="site"><div class="fcols">
+  <div><h6>Product</h6><span>Product analytics</span><span>Session replay</span><span>Feature flags</span><span>Experiments</span></div>
+  <div><h6>Resources</h6><span>Docs</span><span>Tutorials</span><span>Changelog</span></div>
+  <div><h6>Company</h6><span>About</span><span>Handbook</span><span>Careers</span></div>
+  <div><h6>Community</h6><span>Questions</span><span>Newsletter</span><span>Merch</span></div>
+  <div><h6>Pricing</h6><span>Calculator</span><span>Startups</span><span>Nonprofits</span></div>
+  <div><h6>Legal</h6><span>Privacy</span><span>Terms</span><span>DPA</span></div>
+</div><div class="fbot"><span class="logo" style="text-transform:none;font-size:18px;margin:0">PostHog</span><svg width="40" height="32"><use href="#hog"/></svg><span>© 2026 PostHog, Inc.</span></div></footer>
+
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">posthog</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

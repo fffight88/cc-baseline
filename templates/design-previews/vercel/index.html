@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vercel — preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=block">
+<style>
+:root{--primary:#171717;--ink:#171717;--body:#4d4d4d;--mute:#888;--hair:#ebebeb;--hair2:#a1a1a1;--canvas:#fff;--soft:#fafafa;--soft2:#f5f5f5;--link:#0070f3;--linkbg:#d3e5ff;--err:#ee0000;--warn:#f5a623;--warnsoft:#ffefcf;--warndeep:#ab570a;--violet:#7928ca;--cyan:#50e3c2;--pink:#ff0080;
+--l1:inset 0 0 0 1px #00000014;--l2:0 1px 1px #00000005,0 2px 2px #0000000a,inset 0 0 0 1px #00000014;--l3:0 2px 2px #0000000a,0 8px 8px -8px #0000000a,inset 0 0 0 1px #00000014;--l4:0 2px 2px #0000000a,0 8px 16px -4px #0000000a,inset 0 0 0 1px #00000014;--l5:0 1px 1px #00000005,0 8px 16px -4px #0000000a,0 24px 32px -8px #0000000f,inset 0 0 0 1px #00000014;
+--sans:Inter,system-ui,-apple-system,sans-serif;--mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Monaco,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{font-family:var(--sans);font-feature-settings:"ss01","ss02";font-size:16px;line-height:24px;color:var(--ink);background:var(--soft)}
+::selection{background:#171717;color:#f2f2f2}
+.mono{font-family:var(--mono);font-size:12px;line-height:16px}
+.wrap{max-width:1248px;margin:0 auto;padding:0 24px}
+/* nav */
+nav{height:64px;background:var(--canvas);border-bottom:1px solid var(--hair);position:relative;z-index:5}
+nav .in{max-width:1448px;margin:0 auto;height:64px;padding:12px 24px;display:flex;align-items:center;gap:4px;font-size:14px;line-height:20px;letter-spacing:-.28px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:600;font-size:18px;letter-spacing:-.6px;margin-right:24px}
+nav a{color:var(--body);padding:8px 12px;border-radius:9999px}
+nav .sp{flex:1}
+.nb{height:28px;display:inline-flex;align-items:center;padding:0 8px;border-radius:6px;font-weight:500;font-size:14px;letter-spacing:-.28px;margin-left:8px}
+.nb.ai{background:#fff;box-shadow:inset 0 0 0 1px var(--hair)}
+.nb.li{background:#fff;box-shadow:inset 0 0 0 1px var(--hair)}
+.nb.su{background:var(--primary);color:#fff}
+/* hero */
+.hero{position:relative;background:var(--canvas);padding:120px 24px 96px;overflow:hidden;text-align:center;border-bottom:1px solid var(--hair)}
+.mesh{position:absolute;left:50%;top:-40px;width:1440px;height:560px;transform:translateX(-50%);pointer-events:none}
+.mesh svg{width:100%;height:100%;display:block}
+.hero>*:not(.mesh){position:relative}
+.banner{display:inline-flex;align-items:center;gap:8px;background:var(--soft);box-shadow:var(--l1);border-radius:9999px;padding:8px 12px;font-size:14px;line-height:20px;letter-spacing:-.28px;color:var(--body)}
+.banner b{font-weight:500;color:var(--ink)}
+.banner .badge{background:var(--linkbg);color:var(--link);font-size:12px;line-height:16px;padding:0 8px;border-radius:9999px}
+h1{font-size:48px;line-height:48px;font-weight:600;letter-spacing:-2.4px;margin:32px auto 20px;max-width:720px}
+.lead{font-size:18px;line-height:28px;color:var(--body);max-width:600px;margin:0 auto 40px}
+.ctas{display:flex;gap:12px;justify-content:center}
+.bp{display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 24px;border-radius:100px;font-size:16px;line-height:24px;font-weight:500;background:var(--primary);color:#fff}
+.bs{display:inline-flex;align-items:center;height:48px;padding:0 24px;border-radius:100px;font-size:16px;font-weight:500;background:#fff;color:var(--ink);box-shadow:var(--l2)}
+.bps{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 14px;border-radius:100px;font-size:14px;line-height:20px;font-weight:500;background:var(--primary);color:#fff}
+.bss{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 14px;border-radius:100px;font-size:14px;line-height:20px;font-weight:500;background:#fff;color:var(--ink);box-shadow:var(--l1)}
+.cmd{margin:28px auto 0;display:inline-flex;gap:12px;align-items:center;font-family:var(--mono);font-size:13px;line-height:20px;color:var(--body);background:var(--soft2);border-radius:6px;padding:8px 12px;box-shadow:var(--l1)}
+.cmd span{color:var(--mute)}
+/* logos */
+.logos{background:var(--canvas);border-bottom:1px solid var(--hair)}
+.logos .wrap{display:flex;justify-content:space-between;align-items:center;padding:24px 32px;color:var(--body);font-weight:600;font-size:20px;letter-spacing:-.8px;height:96px}
+/* bands */
+.band{padding:96px 24px}
+.eyebrow{font-family:var(--mono);font-size:12px;line-height:16px;color:var(--body);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.eyebrow i{width:6px;height:6px;border-radius:50%;background:var(--ink)}
+h2{font-size:32px;line-height:40px;font-weight:600;letter-spacing:-1.28px;max-width:640px}
+h2 span{color:var(--body)}
+.sub{font-size:18px;line-height:28px;color:var(--body);max-width:620px;margin-top:12px}
+.tabs{display:flex;gap:8px;justify-content:flex-start;margin:40px 0 24px}
+.tab{height:36px;display:inline-flex;align-items:center;padding:0 16px;border-radius:64px;font-size:14px;letter-spacing:-.28px;background:#fff;box-shadow:var(--l1)}
+.tab.on{background:var(--primary);color:#fff;box-shadow:none}
+.tgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.tcard{background:#fff;border-radius:8px;padding:16px;box-shadow:var(--l2)}
+.thumb{aspect-ratio:16/9;border-radius:6px;background:var(--soft2);box-shadow:var(--l1);margin-bottom:14px;position:relative;overflow:hidden}
+.thumb i{position:absolute;display:block;background:#e0e0e0;border-radius:3px}
+.tcard h4{font-size:14px;line-height:20px;font-weight:500;letter-spacing:-.28px}
+.tcard p{font-size:12px;line-height:16px;color:var(--mute);margin-top:2px}
+.fw{font-family:var(--mono);font-size:12px;color:var(--body);display:flex;align-items:center;gap:6px;margin-top:10px}
+.fw b{width:14px;height:14px;border-radius:50%;background:var(--ink);display:inline-block}
+/* features */
+.f3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+.fc{background:#fff;border-radius:8px;padding:24px;box-shadow:var(--l3)}
+.fc h3{font-size:20px;line-height:28px;font-weight:600;letter-spacing:-.6px;margin-bottom:8px}
+.fc p{color:var(--body);font-size:14px;line-height:20px;letter-spacing:-.28px}
+.fc .viz{height:150px;border-radius:6px;background:var(--soft);box-shadow:var(--l1);margin-bottom:24px;padding:16px;font-family:var(--mono);font-size:12px;line-height:16px;color:var(--body);display:flex;flex-direction:column;gap:8px;justify-content:center}
+.bar{height:8px;border-radius:4px;background:var(--hair)}
+.bar i{display:block;height:8px;border-radius:4px;background:var(--ink)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+a.il{color:var(--link);text-decoration:underline;text-underline-offset:3px}
+/* dark */
+.dark{background:var(--primary);color:#fff}
+.dark .eyebrow{color:var(--hair2)}.dark .eyebrow i{background:#fff}
+.dark h2 span,.dark .sub{color:var(--hair2)}
+.dgrid{display:grid;grid-template-columns:1fr 1.25fr;gap:24px;margin-top:48px}
+.code{background:#0a0a0a;border-radius:8px;padding:24px;font-family:var(--mono);font-size:13px;line-height:20px;color:#ededed;box-shadow:inset 0 0 0 1px #2e2e2e}
+.code .fn{color:var(--mute);font-size:12px;border-bottom:1px solid #2e2e2e;padding-bottom:12px;margin-bottom:14px;display:flex;justify-content:space-between}
+.k{color:#ff4d8d}.s{color:var(--cyan)}.c{color:#666}.f{color:#7aa7ff}
+.table{background:#fff;color:var(--ink);border-radius:8px;overflow:hidden;box-shadow:var(--l4)}
+.table .th{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--hair)}
+.table .th b{font-size:14px;font-weight:500;letter-spacing:-.28px}
+table{width:100%;border-collapse:collapse}
+thead td{background:var(--soft);font-family:var(--mono);font-size:12px;line-height:16px;color:var(--body);text-transform:uppercase;padding:8px 12px;border-bottom:1px solid var(--hair)}
+tbody td{font-size:14px;line-height:20px;letter-spacing:-.28px;padding:10px 12px;border-bottom:1px solid var(--hair);white-space:nowrap}
+tbody td.m{font-family:var(--mono);font-size:12px;color:var(--body);letter-spacing:0}
+.st{display:inline-flex;align-items:center;gap:6px}
+.st i{width:8px;height:8px;border-radius:50%}
+.bdg{display:inline-flex;font-size:12px;line-height:16px;padding:0 8px;border-radius:9999px;background:var(--soft);color:var(--body);box-shadow:var(--l1)}
+/* pricing */
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px;align-items:stretch}
+.pc{background:#fff;border-radius:12px;padding:32px;box-shadow:var(--l4);display:flex;flex-direction:column}
+.pc h3{font-size:24px;line-height:32px;font-weight:600;letter-spacing:-.96px}
+.pc .d{color:var(--body);font-size:14px;line-height:20px;letter-spacing:-.28px;margin:4px 0 24px}
+.pc .pr{font-size:48px;line-height:48px;font-weight:600;letter-spacing:-2.4px}
+.pc .pr small{font-size:14px;letter-spacing:-.28px;font-weight:400;color:var(--body)}
+.pc ul{list-style:none;margin:28px 0 32px;display:flex;flex-direction:column;gap:10px;font-size:16px;line-height:24px}
+.pc li{display:flex;gap:10px}
+.pc li::before{content:"";width:16px;height:16px;margin-top:4px;border-radius:50%;background:var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.2l2.2 2.2 4.8-4.8' stroke='white' stroke-width='1.6' fill='none'/%3E%3C/svg%3E") center/16px no-repeat;flex:none}
+.pc .bps,.pc .bss{margin-top:auto}
+.pc.ft{background:var(--primary);color:#fff;box-shadow:var(--l5)}
+.pc.ft .d,.pc.ft .pr small{color:var(--hair2)}
+.pc.ft li::before{background-color:#fff;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.2l2.2 2.2 4.8-4.8' stroke='%23171717' stroke-width='1.6' fill='none'/%3E%3C/svg%3E")}
+/* footer */
+footer.site{background:var(--canvas);border-top:1px solid var(--hair);padding:64px 24px;color:var(--body);font-size:14px;line-height:20px;letter-spacing:-.28px}
+.fcols{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1.2fr repeat(4,1fr);gap:24px}
+.fcols h6{font-family:var(--mono);font-size:12px;line-height:16px;font-weight:400;color:var(--ink);margin-bottom:16px;letter-spacing:0}
+.fcols span{display:block;margin-bottom:10px}
+.fcols .status{display:inline-flex;margin:0;align-items:center;gap:8px;font-size:14px;color:var(--link)}
+.fcols .status .dot{display:inline-block;margin:0}
+</style></head><body>
+
+<nav><div class="in">
+  <span class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="#171717" aria-hidden="true"><path d="M24 22.525H0l12-21.05 12 21.05z"/></svg>Vercel</span>
+  <a>Products</a><a>Resources</a><a>Solutions</a><a>Enterprise</a><a>Docs</a><a>Pricing</a>
+  <span class="sp"></span><span class="nb ai">Ask AI</span><span class="nb li">Log In</span><span class="nb su">Sign Up</span>
+</div></nav>
+
+<header class="hero">
+  <div class="mesh" aria-hidden="true">
+    <svg viewBox="0 0 1440 560" preserveAspectRatio="none">
+      <defs>
+        <filter id="b" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="70"/></filter>
+        <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff"/></linearGradient>
+      </defs>
+      <g filter="url(#b)" opacity=".55">
+        <ellipse cx="380" cy="140" rx="240" ry="150" fill="#007cf0"/>
+        <ellipse cx="560" cy="250" rx="200" ry="130" fill="#00dfd8"/>
+        <ellipse cx="760" cy="120" rx="230" ry="140" fill="#7928ca"/>
+        <ellipse cx="900" cy="260" rx="200" ry="120" fill="#ff0080"/>
+        <ellipse cx="1080" cy="150" rx="210" ry="130" fill="#ff4d4d"/>
+        <ellipse cx="1180" cy="280" rx="170" ry="110" fill="#f9cb28"/>
+      </g>
+      <rect width="1440" height="560" fill="url(#fade)"/>
+    </svg>
+  </div>
+  <span class="banner"><span class="badge">New</span><b>AI Gateway</b> is now generally available →</span>
+  <h1>Build and deploy on the AI Cloud.</h1>
+  <p class="lead">Vercel provides the developer tools and cloud infrastructure to build, scale, and secure a faster, more personalized web.</p>
+  <div class="ctas"><span class="bp"><svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M24 22.525H0l12-21.05 12 21.05z"/></svg>Start Deploying</span><span class="bs">Get a Demo</span></div>
+  <div class="cmd"><span>$</span>npm i -g vercel &amp;&amp; vercel deploy</div>
+</header>
+
+<div class="logos"><div class="wrap"><span>OpenAI</span><span>Runway</span><span>Under Armour</span><span>Notion</span><span>Leonardo.Ai</span><span>Zapier</span></div></div>
+
+<section class="band" style="background:var(--soft)"><div class="wrap">
+  <div class="eyebrow"><i></i>TEMPLATES</div>
+  <h2>Deploy your first app in seconds. <span>Start from a template built by the community.</span></h2>
+  <div class="tabs"><span class="tab on">AI Apps</span><span class="tab">Web Apps</span><span class="tab">Ecommerce</span><span class="tab">Marketing</span><span class="tab">Platforms</span></div>
+  <div class="tgrid">
+    <div class="tcard"><div class="thumb"><i style="left:12%;top:20%;width:50%;height:10%"></i><i style="left:12%;top:38%;width:76%;height:40%;background:#fff;box-shadow:inset 0 0 0 1px #ebebeb"></i></div><h4>AI Chatbot</h4><p>Full-featured chatbot with the AI SDK</p><div class="fw"><b></b>Next.js</div></div>
+    <div class="tcard"><div class="thumb"><i style="left:10%;top:16%;width:22%;height:68%"></i><i style="left:38%;top:16%;width:52%;height:30%"></i><i style="left:38%;top:54%;width:52%;height:30%"></i></div><h4>Commerce</h4><p>Headless storefront with Shopify</p><div class="fw"><b></b>Next.js</div></div>
+    <div class="tcard"><div class="thumb"><i style="left:25%;top:22%;width:50%;height:12%"></i><i style="left:35%;top:42%;width:30%;height:8%"></i><i style="left:15%;top:60%;width:70%;height:24%;background:#fff;box-shadow:inset 0 0 0 1px #ebebeb"></i></div><h4>SaaS Starter</h4><p>Auth, billing and dashboard</p><div class="fw"><b style="background:#888"></b>Remix</div></div>
+    <div class="tcard"><div class="thumb"><i style="left:10%;top:18%;width:80%;height:8%"></i><i style="left:10%;top:34%;width:36%;height:50%"></i><i style="left:54%;top:34%;width:36%;height:50%"></i></div><h4>Image Gallery</h4><p>Blur placeholders and edge caching</p><div class="fw"><b></b>Next.js</div></div>
+    <div class="tcard"><div class="thumb"><i style="left:14%;top:20%;width:40%;height:8%"></i><i style="left:14%;top:34%;width:72%;height:4%"></i><i style="left:14%;top:44%;width:66%;height:4%"></i><i style="left:14%;top:54%;width:70%;height:4%"></i></div><h4>Blog Starter</h4><p>Markdown, MDX and RSS</p><div class="fw"><b style="background:#888"></b>Astro</div></div>
+  </div>
+</div></section>
+
+<section class="band" style="background:var(--canvas);border-top:1px solid var(--hair)"><div class="wrap">
+  <div class="eyebrow"><i></i>FRONTEND CLOUD</div>
+  <h2>Your frontend, delivered. <span>Ship fast, personalized experiences from the edge.</span></h2>
+  <div class="f3">
+    <div class="fc"><div class="viz"><span><span class="dot" style="background:#0070f3"></span>iad1 · 18ms</span><span><span class="dot" style="background:#0070f3"></span>fra1 · 22ms</span><span><span class="dot" style="background:#0070f3"></span>hnd1 · 31ms</span><span><span class="dot" style="background:#f5a623"></span>gru1 · 64ms</span></div><h3>Global Edge Network</h3><p>Serve content from 126 PoPs worldwide with automatic caching and instant purges.</p></div>
+    <div class="fc"><div class="viz"><span>Preview · feat/checkout</span><div class="bar"><i style="width:100%"></i></div><span>Build completed in 23s</span><div class="bar"><i style="width:62%;background:#a1a1a1"></i></div></div><h3>Preview Deployments</h3><p>Every git push gets a live URL. Comment, review and approve before you merge.</p></div>
+    <div class="fc"><div class="viz"><span>Active CPU · fluid</span><span style="font-size:24px;line-height:32px;color:#171717;font-family:var(--sans);font-weight:600;letter-spacing:-.96px">−85% cost</span><span>billing only while your code runs</span></div><h3>Fluid Compute</h3><p>Serverless that scales like servers. Read the <a class="il">compute docs</a>.</p></div>
+  </div>
+</div></section>
+
+<section class="band dark"><div class="wrap">
+  <div class="eyebrow"><i></i>COMPUTE</div>
+  <h2>A compute model for all workloads. <span>From static pages to long-running AI agents.</span></h2>
+  <div class="dgrid">
+    <div class="code"><div class="fn"><span>app/api/chat/route.ts</span><span>TypeScript</span></div>
+<span class="k">import</span> { streamText } <span class="k">from</span> <span class="s">'ai'</span>;<br>
+<span class="k">import</span> { gateway } <span class="k">from</span> <span class="s">'@vercel/ai-gateway'</span>;<br><br>
+<span class="k">export const</span> maxDuration = <span class="s">300</span>;<br><br>
+<span class="k">export async function</span> <span class="f">POST</span>(req: Request) {<br>
+&nbsp;&nbsp;<span class="k">const</span> { messages } = <span class="k">await</span> req.<span class="f">json</span>();<br>
+&nbsp;&nbsp;<span class="k">const</span> result = <span class="f">streamText</span>({<br>
+&nbsp;&nbsp;&nbsp;&nbsp;model: <span class="f">gateway</span>(<span class="s">'anthropic/claude'</span>),<br>
+&nbsp;&nbsp;&nbsp;&nbsp;messages,<br>
+&nbsp;&nbsp;});<br>
+&nbsp;&nbsp;<span class="c">// streams from the nearest region</span><br>
+&nbsp;&nbsp;<span class="k">return</span> result.<span class="f">toDataStreamResponse</span>();<br>
+}</div>
+    <div class="table">
+      <div class="th"><b>Deployments · acme-web</b><span class="bdg">Production</span></div>
+      <table><thead><tr><td>Deployment</td><td>Status</td><td>Branch</td><td>Duration</td><td>Age</td></tr></thead>
+      <tbody>
+        <tr><td class="m">acme-web-8f2k1q</td><td><span class="st"><i style="background:#0070f3"></i>Ready</span></td><td class="m">main</td><td class="m">23s</td><td style="color:#888">2m ago</td></tr>
+        <tr><td class="m">acme-web-3jd9zx</td><td><span class="st"><i style="background:#f5a623"></i>Building</span></td><td class="m">feat/checkout</td><td class="m">—</td><td style="color:#888">4m ago</td></tr>
+        <tr><td class="m">acme-web-p0w7ne</td><td><span class="st"><i style="background:#0070f3"></i>Ready</span></td><td class="m">fix/og-image</td><td class="m">31s</td><td style="color:#888">1h ago</td></tr>
+        <tr><td class="m">acme-web-kz81aa</td><td><span class="st"><i style="background:#ee0000"></i>Error</span></td><td class="m">exp/edge-config</td><td class="m">12s</td><td style="color:#888">3h ago</td></tr>
+        <tr><td class="m">acme-web-ty62cm</td><td><span class="st"><i style="background:#0070f3"></i>Ready</span></td><td class="m">main</td><td class="m">27s</td><td style="color:#888">5h ago</td></tr>
+        <tr><td class="m">acme-web-r4n0vb</td><td><span class="st"><i style="background:#888"></i>Canceled</span></td><td class="m">chore/deps</td><td class="m">—</td><td style="color:#888">1d ago</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+</div></section>
+
+<section class="band" style="background:var(--soft)"><div class="wrap">
+  <div class="eyebrow"><i></i>PRICING</div>
+  <h2>Start for free. <span>Scale with Active CPU pricing.</span></h2>
+  <div class="pgrid">
+    <div class="pc"><h3>Hobby</h3><p class="d">For personal projects and experiments.</p><div class="pr">$0</div><ul><li>Automatic CI/CD</li><li>Global Edge Network</li><li>Web Application Firewall</li></ul><span class="bss">Start Deploying</span></div>
+    <div class="pc ft"><h3>Pro</h3><p class="d">For teams shipping production apps.</p><div class="pr">$20<small> /user/mo</small></div><ul><li>Everything in Hobby</li><li>$20 of included usage credit</li><li>Fluid compute with Active CPU</li><li>Team collaboration and RBAC</li></ul><span class="bss">Start a free trial</span></div>
+    <div class="pc"><h3>Enterprise</h3><p class="d">For critical workloads at scale.</p><div class="pr" style="font-size:32px;line-height:48px;letter-spacing:-1.28px">Custom</div><ul><li>99.99% SLA</li><li>SSO, SCIM and audit logs</li><li>Dedicated support</li></ul><span class="bps">Get a Demo</span></div>
+  </div>
+</div></section>
+
+<footer class="site"><div class="fcols">
+  <div><span class="logo" style="margin:0 0 16px"><svg width="20" height="20" viewBox="0 0 24 24" fill="#171717"><path d="M24 22.525H0l12-21.05 12 21.05z"/></svg></span><span class="status"><span class="dot" style="background:#0070f3;margin:0"></span>All systems normal.</span></div>
+  <div><h6>GET STARTED</h6><span>Templates</span><span>Supported frameworks</span><span>Marketplace</span></div>
+  <div><h6>BUILD</h6><span>Next.js on Vercel</span><span>Turborepo</span><span>v0</span></div>
+  <div><h6>SCALE</h6><span>Content delivery</span><span>Fluid compute</span><span>AI Gateway</span></div>
+  <div><h6>RESOURCES</h6><span>Docs</span><span>Guides</span><span>Changelog</span></div>
+</div></footer>
+
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">vercel</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

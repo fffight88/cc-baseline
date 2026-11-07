@@ -8,3 +8,4 @@ node_modules/
 .cc-audits/
 e2e-results/
 .playwright-mcp/
+tools/design-previews/.thumbs/

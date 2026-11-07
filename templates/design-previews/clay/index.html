@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clay — DESIGN.md preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=block">
+<style>
+:root{--primary:#0a0a0a;--primary-active:#1f1f1f;--ink:#0a0a0a;--body:#3a3a3a;--body-strong:#1a1a1a;--muted:#6a6a6a;--muted-soft:#9a9a9a;--hair:#e5e5e5;--hair-soft:#f0f0f0;
+--canvas:#fffaf0;--soft:#faf5e8;--card:#f5f0e0;--strong:#ebe6d6;--dark:#0a1a1a;--dark-el:#1a2a2a;--on-dark-soft:#a0a0a0;
+--pink:#ff4d8b;--teal:#1a3a3a;--lav:#b8a4ed;--peach:#ffb084;--ochre:#e8b94a;--mint:#a4d4c5;--coral:#ff6b5a;--success:#22c55e;--warning:#f59e0b;
+--sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{font-family:var(--sans);font-size:16px;line-height:1.55;color:var(--body);background:var(--canvas)}
+.wrap{max-width:1280px;margin:0 auto;padding:0 24px}
+.dxl{font-size:72px;font-weight:500;line-height:1;letter-spacing:-2.5px;color:var(--ink)}
+.dlg{font-size:56px;font-weight:500;line-height:1.05;letter-spacing:-2px;color:var(--ink)}
+.dmd{font-size:40px;font-weight:500;line-height:1.1;letter-spacing:-1px;color:var(--ink)}
+.dsm{font-size:32px;font-weight:500;line-height:1.15;letter-spacing:-.5px}
+.tlg{font-size:24px;font-weight:600;line-height:1.3;letter-spacing:-.3px}
+.tmd{font-size:18px;font-weight:600;line-height:1.4}
+.tsm{font-size:16px;font-weight:600;line-height:1.4}
+.cap{font-size:13px;font-weight:500;line-height:1.4}
+.eyebrow{font-size:12px;font-weight:600;line-height:1.4;letter-spacing:1.5px;text-transform:uppercase}
+.btn{display:inline-flex;align-items:center;height:44px;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;line-height:1;white-space:nowrap}
+.btn.p{background:var(--primary);color:#fff}
+.btn.s{background:var(--canvas);color:var(--ink);border:1px solid var(--hair)}
+.btn.w{background:#fff;color:var(--ink)}
+.badge{display:inline-block;background:var(--card);color:var(--ink);font-size:13px;font-weight:500;padding:4px 12px;border-radius:9999px}
+nav{height:64px;display:flex;align-items:center;gap:32px;font-size:14px;font-weight:500;color:var(--ink)}
+.wm{display:flex;align-items:center;gap:8px;font-size:26px;font-weight:500;letter-spacing:-1.2px;margin-right:24px}
+.wm i{width:26px;height:26px;border-radius:9px 13px 11px 14px;background:radial-gradient(circle at 35% 30%,#ffc6a3,#ff6b5a 55%,#c9473a);display:block}
+nav .sp{flex:1}
+/* hero */
+.hero{display:grid;grid-template-columns:7fr 5fr;gap:48px;align-items:center;padding:96px 0}
+.hero .lead{font-size:18px;color:var(--body-strong);margin:24px 0 32px;max-width:540px}
+.row{display:flex;gap:12px;align-items:center}
+.hic{background:var(--soft);border-radius:24px;height:500px;position:relative;overflow:hidden}
+/* claymation stand-in: soft radial-lit clay forms */
+.clay{position:absolute}
+.sky{position:absolute;inset:0;background:linear-gradient(#cfe7df 0%,#f7ead6 70%)}
+.sun{left:300px;top:60px;width:84px;height:84px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe7a8,#e8b94a 60%,#c7952b)}
+.mtn{border-radius:48% 52% 0 0/90% 90% 0 0}
+.m1{left:-60px;bottom:90px;width:340px;height:300px;background:radial-gradient(ellipse at 40% 25%,#d7c9ff,#b8a4ed 45%,#8a74c9)}
+.m2{left:170px;bottom:90px;width:360px;height:250px;background:radial-gradient(ellipse at 45% 25%,#ffd0b3,#ffb084 45%,#e08a5c)}
+.m1:after,.m2:after{content:"";position:absolute;left:30%;top:4%;width:40%;height:22%;border-radius:50%;background:radial-gradient(#fff,#fff0 70%);opacity:.8}
+.ground{left:-20px;right:-20px;bottom:0;height:120px;border-radius:50% 50% 0 0/40% 40% 0 0;background:radial-gradient(ellipse at 50% 20%,#c5e8db,#a4d4c5 50%,#7fb3a2)}
+.mascot{left:60px;bottom:70px;width:130px;height:150px;border-radius:50% 50% 46% 46%/58% 58% 42% 42%;background:radial-gradient(circle at 35% 28%,#ff9cbf,#ff4d8b 52%,#c02a62)}
+.eye{position:absolute;top:48px;width:22px;height:26px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff,#eee)}
+.eye:after{content:"";position:absolute;left:7px;top:9px;width:10px;height:11px;border-radius:50%;background:#0a0a0a}
+.mouth{position:absolute;left:44px;top:92px;width:40px;height:16px;border-radius:0 0 20px 20px;background:#7a1438}
+.tag3d{right:28px;top:120px;background:#fff;border-radius:16px;padding:12px 14px;font-size:13px;color:var(--ink);box-shadow:0 8px 20px rgba(10,10,10,.08);width:200px}
+.logos{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:22px;font-weight:600;letter-spacing:-.4px;padding-bottom:24px}
+section{padding:96px 0}
+.shead{text-align:center;max-width:920px;margin:0 auto 48px}
+.shead p{font-size:18px;color:var(--body);margin-top:16px}
+.fc3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.fc{border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:12px;min-height:440px}
+.fc h3{font-size:18px;font-weight:600;line-height:1.4}
+.fc p{font-size:16px}
+.fc h3.dsm{font-size:32px;font-weight:500;line-height:1.15;letter-spacing:-.5px}
+.ui{margin-top:auto;background:#fff;border-radius:16px;padding:16px;color:var(--ink);font-size:13px}
+.ui .r{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--hair-soft)}
+.ui .r:first-child{border-top:0}
+.ok{width:16px;height:16px;border-radius:50%;background:var(--success);flex:none}
+.step{display:flex;gap:10px;align-items:center;background:var(--card);border-radius:12px;padding:10px 12px;margin-top:8px;font-weight:500}
+.step b{width:22px;height:22px;border-radius:6px;background:var(--pink);color:#fff;display:grid;place-items:center;font-size:12px}
+/* product mockup */
+.pm{background:var(--canvas);border:1px solid var(--hair);border-radius:16px;padding:24px;margin-top:24px}
+.pmtop{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.tabs{display:flex;gap:4px}
+.tabs span{font-size:14px;font-weight:500;color:var(--muted);padding:8px 16px;border-radius:9999px}
+.tabs span.on{background:var(--card);color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:13px;color:var(--ink)}
+th{text-align:left;font-weight:500;color:var(--muted);background:var(--soft);padding:10px 12px;border-bottom:1px solid var(--hair);white-space:nowrap}
+th i{font-style:normal;display:inline-block;width:16px;height:16px;border-radius:4px;vertical-align:-3px;margin-right:6px}
+td{padding:10px 12px;border-bottom:1px solid var(--hair-soft);white-space:nowrap}
+td .lg{display:inline-block;width:18px;height:18px;border-radius:5px;vertical-align:-4px;margin-right:8px}
+.pill{display:inline-block;font-size:12px;font-weight:500;padding:2px 10px;border-radius:9999px}
+.fc2{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:24px;margin-top:24px}
+/* testimonials */
+.tg{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.tc{background:var(--card);border-radius:16px;padding:24px}
+.tc .who{display:flex;gap:12px;align-items:center;margin-bottom:16px}
+.tc .who i{width:44px;height:44px;border-radius:50%;flex:none}
+.tc .who b{display:block;font-size:16px;font-weight:600;color:var(--ink);line-height:1.3}
+.tc .who span{font-size:13px;color:var(--muted)}
+.tc p{color:var(--body-strong)}
+/* pricing */
+.pg{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.pt{background:var(--canvas);border:1px solid var(--hair);border-radius:16px;padding:32px;display:flex;flex-direction:column;gap:14px}
+.pt.f{background:var(--teal);border-color:var(--teal);color:#fff}
+.pt .pr{font-size:40px;font-weight:500;letter-spacing:-1px;color:var(--ink);line-height:1.1}
+.pt.f .pr,.pt.f h4{color:#fff}
+.pt h4{color:var(--ink)}
+.pt ul{list-style:none;font-size:14px;display:grid;gap:8px}
+.pt li:before{content:"✓  ";color:var(--success);font-weight:600}
+.pt .btn{margin-top:auto;justify-content:center}
+.cta{background:var(--soft);border-radius:24px;padding:80px;display:grid;grid-template-columns:1fr 360px;gap:48px;align-items:center;position:relative;overflow:hidden}
+.ctaill{height:260px;position:relative}
+.foot{background:var(--soft);padding:80px 0 0;font-size:14px;color:var(--body);position:relative;overflow:hidden}
+.fcols{display:grid;grid-template-columns:2fr repeat(4,1fr);gap:24px}
+.fcols h5{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:14px}
+.fcols li{list-style:none;color:var(--muted);margin-bottom:8px}
+.horizon{position:relative;height:200px;margin-top:64px}
+</style></head><body>
+<div class="wrap">
+<nav><span class="wm"><i></i>clay</span><span>Product</span><span>Solutions</span><span>Resources</span><span>Pricing</span><span>Customers</span><span class="sp"></span><span>Sign in</span><span class="btn p">Try free</span></nav>
+
+<header class="hero">
+  <div>
+    <span class="badge">New · Claygent Navigator is live</span>
+    <h1 class="dxl" style="margin-top:24px">Go to market with unique data</h1>
+    <p class="lead">Clay combines 150+ data providers, AI research agents and intent signals so you can find, enrich and reach every account that matters — and do the outbound nobody else can.</p>
+    <div class="row"><span class="btn p">Get started — it's free</span><span class="btn s">Book a demo</span></div>
+    <p class="cap" style="color:var(--muted-soft);margin-top:20px">No credit card required · Free 14-day Pro trial</p>
+  </div>
+  <div class="hic">
+    <div class="sky"></div>
+    <span class="clay sun"></span>
+    <span class="clay mtn m1"></span>
+    <span class="clay mtn m2"></span>
+    <span class="clay ground"></span>
+    <span class="clay mascot"><span class="eye" style="left:30px"></span><span class="eye" style="left:74px"></span><span class="mouth"></span></span>
+    <div class="clay tag3d"><b style="font-weight:600">Claygent</b> found 42 companies hiring RevOps in the last 30 days<div style="margin-top:8px;height:6px;border-radius:3px;background:var(--hair-soft)"><div style="width:72%;height:6px;border-radius:3px;background:var(--pink)"></div></div></div>
+  </div>
+</header>
+<div class="logos"><span>OpenAI</span><span>Anthropic</span><span>Canva</span><span>Rippling</span><span>Intercom</span><span>Verkada</span><span>Notion</span></div>
+</div>
+
+<section><div class="wrap">
+  <div class="shead"><span class="eyebrow" style="color:var(--muted)">The GTM development platform</span><h2 class="dlg" style="margin-top:16px">Every data point. Every workflow. One table.</h2><p>Turn any go-to-market idea into a repeatable, automated play — from TAM sourcing to personalized sequences.</p></div>
+  <div class="fc3">
+    <div class="fc" style="background:var(--pink);color:#fff"><span class="eyebrow">Sequencer</span><h3 class="dsm">Outbound that writes itself</h3><p>Personalize every touch with research Clay already did.</p>
+      <div class="ui"><div class="tsm" style="margin-bottom:4px">Q4 expansion play</div><div class="step"><b>1</b>Email · Day 1 — Hiring signal intro</div><div class="step"><b>2</b>LinkedIn · Day 3 — Connect</div><div class="step"><b>3</b>Email · Day 6 — Case study</div></div></div>
+    <div class="fc" style="background:var(--teal);color:#fff"><span class="eyebrow" style="color:var(--mint)">Enterprise</span><h3 class="dsm">Waterfall enrichment</h3><p style="color:#d6e2df">Query 150+ providers in sequence. Pay only for the data you find.</p>
+      <div class="ui"><div class="r"><span class="ok"></span>Apollo — no match</div><div class="r"><span class="ok"></span>Clearbit — no match</div><div class="r"><span class="ok"></span>Hunter — <b style="font-weight:600">maria@northwind.io</b></div><div class="r" style="color:var(--muted)">Coverage up 38% vs. single provider</div></div></div>
+    <div class="fc" style="background:var(--lav);color:var(--ink)"><span class="eyebrow">AI agents</span><h3 class="dsm">Claygent researches for you</h3><p>Ask anything about any company. Get cited answers in seconds.</p>
+      <div class="ui"><div style="background:var(--card);border-radius:12px;padding:10px 12px;margin-bottom:10px">Does this company sell to healthcare? Cite the page.</div><div class="r"><span class="ok"></span><span><b style="font-weight:600">Yes</b> — "Trusted by 400+ hospitals" · /customers</span></div><div class="r"><span class="ok" style="background:var(--ochre)"></span>3 sources checked · 4.1s</div></div></div>
+  </div>
+
+  <div class="pm">
+    <div class="pmtop"><b class="tmd" style="color:var(--ink)">Series B SaaS · Hiring RevOps</b><span class="pill" style="background:var(--card)">2,418 rows</span><div class="tabs" style="margin-left:auto"><span class="on">Table</span><span>Sequences</span><span>Signals</span><span>Exports</span></div></div>
+    <table>
+      <tr><th>Company</th><th>Domain</th><th><i style="background:var(--lav)"></i>Claygent: ICP fit</th><th><i style="background:var(--peach)"></i>Headcount</th><th><i style="background:var(--mint)"></i>Head of RevOps</th><th><i style="background:var(--pink)"></i>Work email</th><th>Intent</th><th>CRM</th></tr>
+      <tr><td><span class="lg" style="background:var(--coral)"></span>Northwind Analytics</td><td>northwind.io</td><td>Strong — PLG, 30+ AEs</td><td>412</td><td>Maria Lopez</td><td>maria@northwind.io</td><td><span class="pill" style="background:#dcf7e6;color:#15803d">High</span></td><td>Synced</td></tr>
+      <tr><td><span class="lg" style="background:var(--teal)"></span>Lumen Health</td><td>lumenhealth.com</td><td>Strong — healthcare SaaS</td><td>268</td><td>David Kim</td><td>dkim@lumenhealth.com</td><td><span class="pill" style="background:#dcf7e6;color:#15803d">High</span></td><td>Synced</td></tr>
+      <tr><td><span class="lg" style="background:var(--ochre)"></span>Brightpath</td><td>brightpath.ai</td><td>Medium — SMB focus</td><td>96</td><td>Aisha Patel</td><td>aisha@brightpath.ai</td><td><span class="pill" style="background:#fdf1d8;color:#a16207">Medium</span></td><td>New</td></tr>
+      <tr><td><span class="lg" style="background:var(--lav)"></span>Tessellate</td><td>tessellate.dev</td><td>Strong — dev tools, EU</td><td>184</td><td>Jonas Weber</td><td>jonas@tessellate.dev</td><td><span class="pill" style="background:#dcf7e6;color:#15803d">High</span></td><td>Synced</td></tr>
+      <tr><td><span class="lg" style="background:var(--pink)"></span>Orbital Freight</td><td>orbitalfreight.com</td><td>Weak — no sales team</td><td>58</td><td style="color:var(--muted-soft)">Searching…</td><td style="color:var(--muted-soft)">—</td><td><span class="pill" style="background:var(--card);color:var(--muted)">Low</span></td><td>—</td></tr>
+    </table>
+  </div>
+
+  <div class="fc2">
+    <div class="fc" style="background:var(--peach);color:var(--ink);min-height:300px"><h3 class="dsm">Signals that tell you when to reach out</h3><p>Job changes, funding rounds, tech installs and web visits — pushed straight into your table.</p></div>
+    <div class="fc" style="background:var(--ochre);color:var(--ink);min-height:300px"><span class="eyebrow">Community</span><h3>Clay Experts</h3><p>Hire a certified GTM engineer to build your first plays.</p><div class="ui"><b style="font-weight:600">400+</b> certified experts · 38 countries</div></div>
+    <div class="fc" style="background:var(--card);color:var(--ink);min-height:300px"><span class="eyebrow">Integrations</span><h3>Works with your stack</h3><p>Salesforce, HubSpot, Outreach, Smartlead, Slack and 100+ more.</p><div class="ui" style="display:flex;gap:8px"><span class="lg" style="width:32px;height:32px;border-radius:8px;background:#00a1e0"></span><span style="width:32px;height:32px;border-radius:8px;background:#ff7a59"></span><span style="width:32px;height:32px;border-radius:8px;background:#5951ff"></span><span style="width:32px;height:32px;border-radius:8px;background:#4a154b"></span></div></div>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <div class="shead"><h2 class="dmd">Loved by 300,000+ GTM teams</h2></div>
+  <div class="tg">
+    <div class="tc"><div class="who"><i style="background:radial-gradient(circle at 35% 30%,#ffd0b3,#ffb084 60%,#e08a5c)"></i><div><b>Keith Jones</b><span>Head of Growth, OpenAI</span></div></div><p>“Clay replaced four tools and a spreadsheet army. Our SDRs spend their time talking to customers, not researching them.”</p></div>
+    <div class="tc"><div class="who"><i style="background:radial-gradient(circle at 35% 30%,#d7c9ff,#b8a4ed 60%,#8a74c9)"></i><div><b>Priya Shah</b><span>VP Revenue Ops, Rippling</span></div></div><p>“Waterfall enrichment took our email coverage from 41% to 87%. That one change paid for the year.”</p></div>
+    <div class="tc"><div class="who"><i style="background:radial-gradient(circle at 35% 30%,#c5e8db,#a4d4c5 60%,#7fb3a2)"></i><div><b>Marco Ruiz</b><span>Founder, Pipeline Labs</span></div></div><p>“The craft of outbound came back. Every email we send now references something real about the account.”</p></div>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <div class="shead"><h2 class="dlg">Simple pricing that scales with you</h2><p>Credits roll over. Cancel anytime.</p></div>
+  <div class="pg">
+    <div class="pt"><h4 class="tlg">Free</h4><div class="pr">$0</div><span class="cap" style="color:var(--muted)">100 credits / month</span><ul><li>Unlimited users</li><li>Chrome extension</li><li>AI research</li></ul><span class="btn s">Get started</span></div>
+    <div class="pt"><h4 class="tlg">Starter</h4><div class="pr">$149</div><span class="cap" style="color:var(--muted)">2,000 credits / month</span><ul><li>Everything in Free</li><li>Phone enrichment</li><li>Use your own API keys</li></ul><span class="btn p">Start trial</span></div>
+    <div class="pt f"><span class="eyebrow" style="color:var(--mint)">Most popular</span><h4 class="tlg">Explorer</h4><div class="pr">$349</div><span class="cap" style="color:#c7d6d3">10,000 credits / month</span><ul><li>Everything in Starter</li><li>Webhooks & HTTP API</li><li>Email sequencing</li></ul><span class="btn w">Start trial</span></div>
+    <div class="pt"><h4 class="tlg">Pro</h4><div class="pr">$800</div><span class="cap" style="color:var(--muted)">50,000 credits / month</span><ul><li>Everything in Explorer</li><li>CRM sync</li><li>Priority support</li></ul><span class="btn p">Start trial</span></div>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <div class="cta"><div><h2 class="dmd">Turn your growth ideas into reality today</h2><p style="font-size:18px;margin:16px 0 28px">Start free, then scale to the plays your competitors can't copy.</p><div class="row"><span class="btn p">Get started — it's free</span><span class="btn s">Talk to sales</span></div></div>
+    <div class="ctaill"><span class="clay mtn" style="left:20px;bottom:0;width:220px;height:200px;background:radial-gradient(ellipse at 40% 25%,#ffd88a,#e8b94a 50%,#b98a22)"></span><span class="clay mtn" style="left:150px;bottom:0;width:200px;height:150px;background:radial-gradient(ellipse at 45% 25%,#ffa99e,#ff6b5a 50%,#c9473a)"></span><span class="clay" style="left:110px;bottom:120px;width:60px;height:60px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#d7c9ff,#b8a4ed 55%,#8a74c9)"></span></div></div>
+</div></section>
+
+<footer class="foot"><div class="wrap">
+  <div class="fcols"><div><span class="wm"><i></i>clay</span><p style="margin-top:12px;color:var(--muted);max-width:260px">The GTM development platform for teams that build their own advantage.</p></div>
+    <ul><h5>Product</h5><li>Data enrichment</li><li>Claygent</li><li>Sequencer</li><li>Signals</li></ul>
+    <ul><h5>Solutions</h5><li>Outbound</li><li>Inbound</li><li>RevOps</li><li>Recruiting</li></ul>
+    <ul><h5>Resources</h5><li>Clay University</li><li>Templates</li><li>Experts</li><li>Community</li></ul>
+    <ul><h5>Company</h5><li>About</li><li>Careers</li><li>Security</li><li>Privacy</li></ul></div>
+  </div>
+  <div class="horizon"><span class="clay mtn" style="left:-40px;bottom:0;width:420px;height:180px;background:radial-gradient(ellipse at 40% 25%,#d7c9ff,#b8a4ed 50%,#8a74c9)"></span><span class="clay mtn" style="left:300px;bottom:0;width:520px;height:140px;background:radial-gradient(ellipse at 45% 25%,#c5e8db,#a4d4c5 50%,#7fb3a2)"></span><span class="clay mtn" style="left:720px;bottom:0;width:440px;height:200px;background:radial-gradient(ellipse at 45% 25%,#ffd0b3,#ffb084 50%,#e08a5c)"></span><span class="clay mtn" style="left:1080px;bottom:0;width:420px;height:150px;background:radial-gradient(ellipse at 45% 25%,#ffd88a,#e8b94a 50%,#b98a22)"></span></div>
+</footer>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">clay</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

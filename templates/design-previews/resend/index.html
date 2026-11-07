@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Resend — Email for developers</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400&family=Geist:wght@400;500&family=Inter:wght@400;500&family=Geist+Mono:wght@400&display=block">
+<style>
+:root{--primary:#fcfdff;--ink:#fcfdff;--body:rgba(252,253,255,.86);--charcoal:rgba(252,253,255,.7);--mute:#a1a4a5;--ash:#888e90;--stone:#464a4d;--olm:rgba(0,0,51,.7);--canvas:#000;--card:#0a0a0c;--elev:#101012;--deep:#06060a;--hair:rgba(255,255,255,.06);--hs:rgba(255,255,255,.14);--div:rgba(255,255,255,.04);
+--orange:#ff801f;--og:rgba(255,89,0,.22);--yellow:#ffc53d;--blue:#3b9eff;--bg:rgba(0,117,255,.34);--green:#11ff99;--gg:rgba(34,255,153,.18);--red:#ff2047;--rg:rgba(255,32,71,.34);--light:#f1f7fe;
+--serif:"Playfair Display","Tiempos Headline",Georgia,serif;--fav:Geist,"Inter Tight",Inter,system-ui,sans-serif;--ui:Inter,system-ui,-apple-system,sans-serif;--mono:"Geist Mono",ui-monospace,Menlo,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#000}
+body{max-width:1440px;margin:0 auto;overflow-x:hidden;background:var(--canvas);color:var(--ink);font-family:var(--fav);font-size:16px;line-height:1.5;letter-spacing:-.8px;font-feature-settings:"ss01","ss04","ss11"}
+.wrap{max-width:1200px;margin:0 auto;padding:0 32px}
+.ui{font-family:var(--ui);letter-spacing:0;font-feature-settings:normal}
+.disp{font-family:var(--serif);font-weight:400;line-height:1;font-feature-settings:"ss01","liga"}
+nav{height:64px;border-bottom:1px solid var(--hair)}
+nav .wrap{height:64px;display:flex;align-items:center;gap:28px;font:500 14px/1.43 var(--fav);letter-spacing:.35px;color:var(--body);font-feature-settings:"ss01","ss03","ss04"}
+.logo{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:18px;letter-spacing:-.3px;margin-right:16px}
+nav .sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:8px 16px;border-radius:8px;font:500 14px/1.43 var(--ui);letter-spacing:0;text-decoration:none;color:var(--ink);white-space:nowrap}
+.btn.p{background:var(--primary);color:#000}
+.btn.g{background:var(--elev);border:1px solid var(--hs)}
+.btn.o{background:var(--canvas);border:1px solid var(--hs);padding:7px 15px}
+.badge{display:inline-flex;align-items:center;gap:8px;background:var(--elev);color:var(--body);font:400 12px/1.5 var(--ui);letter-spacing:0;border-radius:9999px;padding:4px 10px;border:1px solid var(--hair)}
+.dot{width:8px;height:8px;border-radius:9999px;background:var(--green);display:inline-block}
+/* hero */
+.hero{padding:128px 32px 96px;text-align:center}
+h1{font-size:96px;letter-spacing:-.96px;margin:28px auto 0;max-width:900px}
+.subt{font:400 20px/1.3 var(--fav);letter-spacing:0;color:var(--charcoal);max-width:560px;margin:28px auto 40px}
+.ctas{display:flex;gap:12px;justify-content:center}
+.logos{display:flex;justify-content:space-between;align-items:center;padding:40px 0 0;color:var(--ash);font:500 20px/1 var(--ui);letter-spacing:-.4px;border-top:1px solid var(--hair);margin-top:96px}
+/* glow sections */
+section{position:relative;padding:96px 0;overflow:hidden}
+.glow{position:absolute;left:50%;top:-260px;width:1300px;height:820px;transform:translateX(-50%);pointer-events:none;background:radial-gradient(ellipse 50% 50% at 50% 30%,var(--c),transparent 70%)}
+section > .wrap{position:relative}
+.kick{font:500 14px/1.43 var(--fav);letter-spacing:.35px;color:var(--mute);margin-bottom:16px}
+h2{font-size:76.8px;letter-spacing:-.768px;max-width:900px}
+.sub{font:400 18px/1.5 var(--ui);letter-spacing:0;color:var(--body);max-width:540px;margin-top:24px}
+.split{display:grid;grid-template-columns:1fr 1.2fr;gap:56px;align-items:center;margin-top:64px}
+.list{display:grid;gap:0;border-top:1px solid var(--hair)}
+.list div{padding:20px 0;border-bottom:1px solid var(--hair)}
+.list b{display:block;font:500 20px/1.3 var(--ui);letter-spacing:-.3px}
+.list span{font:400 14px/1.43 var(--ui);letter-spacing:0;color:var(--mute)}
+.cw{background:var(--deep);border:1px solid var(--hs);border-radius:12px;padding:24px;font:400 13px/1.6 var(--mono);letter-spacing:0;color:var(--body);font-variant-ligatures:none;font-feature-settings:normal}
+.tl{display:flex;gap:6px;margin-bottom:16px}
+.tl i{width:10px;height:10px;border-radius:9999px}
+.ctabs{display:flex;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--hair);padding-bottom:12px}
+.ctabs span{background:var(--card);color:var(--charcoal);border-radius:6px;padding:6px 12px}
+.ctabs .on{color:var(--ink);box-shadow:inset 0 -1px 0 var(--hs)}
+.cw pre{white-space:pre;font:inherit}
+.k{color:#c4a7ff}.s{color:var(--green)}.f{color:var(--blue)}.c{color:var(--ash)}.n{color:var(--yellow)}
+.resp{margin-top:16px;padding-top:14px;border-top:1px solid var(--hair);color:var(--ash);display:flex;justify-content:space-between}
+.resp b{font-weight:400;color:var(--green)}
+/* email band */
+.eband{display:grid;grid-template-columns:1fr 640px;gap:56px;align-items:center;margin-top:64px}
+.mail{background:#fff;color:#000;border-radius:12px;overflow:hidden;font-family:var(--ui);letter-spacing:0}
+.mhead{padding:16px 24px;border-bottom:1px solid #e8ebf0;font-size:13px;color:var(--olm);display:grid;gap:2px}
+.mhead b{color:#000;font-weight:500}
+.mbody{padding:40px 48px}
+.mlogo{width:36px;height:36px;border-radius:8px;background:#000;margin-bottom:28px;display:grid;place-items:center}
+.mbody h3{font:500 24px/1.3 var(--ui);letter-spacing:-.4px;margin-bottom:12px}
+.mbody p{font-size:15px;color:var(--olm);line-height:1.6;margin-bottom:20px}
+.mbtn{display:inline-block;background:#000;color:#fff;font:500 14px/1 var(--ui);padding:12px 20px;border-radius:8px}
+.mrow{display:flex;justify-content:space-between;border-top:1px solid #e8ebf0;margin-top:28px;padding-top:16px;font-size:13px;color:var(--olm)}
+.mfoot{padding:16px 48px 28px;font-size:12px;color:#8a8f98}
+/* features */
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:64px}
+.fc{background:var(--card);border:1px solid var(--hs);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:12px;min-height:260px}
+.fc h4{font:500 24px/1.5 var(--ui);letter-spacing:-.4px;margin-top:auto}
+.fc p{color:var(--mute)}
+.fc .ic{width:40px;height:40px;border-radius:8px;border:1px solid var(--hs);display:grid;place-items:center;color:var(--ink);font-family:var(--mono);font-size:13px;letter-spacing:0}
+.hl{color:var(--ink);box-shadow:inset 0 -2px 0 var(--yellow)}
+/* dashboard */
+.dash{margin-top:64px;background:var(--card);border:1px solid var(--hs);border-radius:12px;overflow:hidden;font-family:var(--ui);letter-spacing:0}
+.dtop{display:flex;align-items:center;gap:16px;padding:16px 24px;border-bottom:1px solid var(--hair)}
+.dtop b{font:500 20px/1.3 var(--ui);letter-spacing:-.3px;margin-right:auto}
+.inp{height:40px;width:280px;background:var(--card);border:1px solid var(--hs);border-radius:8px;padding:10px 14px;font:400 14px/1.43 var(--ui);color:var(--ash)}
+.sub-pills{display:flex;gap:6px}
+.sub-pills span{background:var(--elev);color:var(--body);font:500 14px/1.43 var(--fav);letter-spacing:.35px;border-radius:9999px;padding:6px 14px}
+.sub-pills .on{color:var(--ink);box-shadow:inset 0 0 0 1px var(--hs)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font:400 12px/1.5 var(--ui);color:var(--ash);text-align:left;padding:10px 24px;border-bottom:1px solid var(--hair)}
+td{padding:12px 24px;border-bottom:1px solid var(--hair);color:var(--body)}
+td.m{font:400 13px/1.6 var(--mono);color:var(--charcoal)}
+.st{display:inline-flex;align-items:center;gap:8px;font-size:13px;border-radius:9999px;padding:2px 10px;background:var(--elev);border:1px solid var(--hair)}
+.st i{width:8px;height:8px;border-radius:9999px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--hair)}
+.kpis div{padding:20px 24px;border-right:1px solid var(--hair)}
+.kpis div:last-child{border:0}
+.kpis span{font-size:12px;color:var(--ash)}
+.kpis b{display:block;font:400 32px/1.2 var(--fav);letter-spacing:-1.2px;color:var(--ink)}
+/* pricing */
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:64px}
+.tier{background:var(--card);border:1px solid var(--hs);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:12px}
+.tier.feat{background:var(--elev)}
+.tier h4{font:500 24px/1.5 var(--ui);letter-spacing:-.4px}
+.tier .pr{font:400 56px/1.2 var(--fav);letter-spacing:-2.8px}
+.tier .pr small{font:400 14px/1.43 var(--ui);letter-spacing:0;color:var(--mute)}
+.tier p{color:var(--mute);font-size:15px}
+.tier ul{list-style:none;display:grid;gap:10px;font:400 14px/1.43 var(--ui);letter-spacing:0;color:var(--body);flex:1;align-content:start;padding-top:16px;border-top:1px solid var(--hair);margin:8px 0 16px}
+.tier li:before{content:"✓";margin-right:10px;color:var(--ash)}
+.tier .btn{justify-content:center}
+.quote{margin-top:96px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.qc{background:var(--card);border-radius:12px;padding:32px}
+.qc p{font:400 20px/1.3 var(--fav);letter-spacing:0;color:var(--body)}
+.qc .who{display:flex;gap:12px;align-items:center;margin-top:24px;font:400 14px/1.43 var(--ui);letter-spacing:0;color:var(--mute)}
+.qc .who i{width:32px;height:32px;border-radius:9999px;background:var(--elev);border:1px solid var(--hs)}
+.qc .who b{color:var(--ink);font-weight:500}
+.closing{text-align:center;padding:128px 0}
+.closing h2{margin:0 auto}
+.foot{padding:64px 32px;display:grid;grid-template-columns:1.6fr repeat(4,1fr);gap:24px;font:400 14px/1.43 var(--ui);letter-spacing:0;color:var(--charcoal);border-top:1px solid var(--hair)}
+.foot h6{font:500 14px/1.43 var(--ui);color:var(--ink);margin-bottom:12px}
+.foot a{display:block;color:var(--charcoal);text-decoration:none;line-height:2.1}
+.copy{display:flex;justify-content:space-between;padding:20px 32px 40px;border-top:1px solid var(--div);font:400 12px/1.5 var(--ui);letter-spacing:0;color:var(--ash)}
+</style></head><body>
+<nav><div class="wrap">
+  <span class="logo"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fcfdff" aria-hidden="true"><path d="M2.023 0v24h5.553v-8.434h2.998L15.326 24h6.65l-5.372-9.258a7.652 7.652 0 0 0 3.316-3.016c.709-1.21 1.062-2.57 1.062-4.08 0-1.462-.353-2.767-1.062-3.91-.709-1.165-1.692-2.079-2.95-2.742C15.737.331 14.355 0 12.823 0Zm5.553 4.87h4.219c.731 0 1.349.125 1.851.376.526.252.925.618 1.2 1.098.274.457.412.994.412 1.611S15.132 9.12 14.88 9.6c-.229.48-.572.856-1.03 1.13-.434.252-.948.38-1.542.38H7.576Z"/></svg>Resend</span>
+  <span>Features</span><span>Company</span><span>Resources</span><span>Docs</span><span>Pricing</span>
+  <span class="sp"></span><span>Sign in</span><a class="btn p" href="#">Get started</a>
+</div></nav>
+
+<header class="hero">
+  <span class="badge"><span class="dot"></span>New · Resend Inbound is now generally available</span>
+  <h1 class="disp">Email for developers</h1>
+  <p class="subt">The best way to reach humans instead of spam folders. Deliver transactional and marketing emails at scale.</p>
+  <div class="ctas"><a class="btn p" href="#">Get started</a><a class="btn g" href="#">Documentation</a></div>
+  <div class="wrap" style="padding:0"><div class="logos"><span>Warner Bros.</span><span>Payload</span><span>Gumroad</span><span>Mintlify</span><span>Zapier</span><span>Raycast</span><span>Vercel</span></div></div>
+</header>
+
+<section><div class="glow" style="--c:var(--bg)"></div><div class="wrap">
+  <div class="kick">Integrate</div>
+  <h2 class="disp">Integrate this weekend</h2>
+  <p class="sub">A simple, elegant interface so you can start sending emails in minutes. It fits right into your code with SDKs for your favorite programming languages.</p>
+  <div class="split">
+    <div class="list ui">
+      <div><b>Node.js, Python, Go, Ruby, PHP…</b><span>Official SDKs for every major language and framework.</span></div>
+      <div><b>SMTP when you need it</b><span>Drop-in relay for legacy systems and third-party tools.</span></div>
+      <div><b>Webhooks for every event</b><span>Delivered, opened, bounced, complained — in real time.</span></div>
+    </div>
+    <div class="cw">
+      <div class="tl"><i style="background:var(--red)"></i><i style="background:var(--yellow)"></i><i style="background:var(--green)"></i></div>
+      <div class="ctabs"><span class="on">Node.js</span><span>Python</span><span>Go</span><span>cURL</span></div>
+<pre><span class="k">import</span> { Resend } <span class="k">from</span> <span class="s">'resend'</span>;
+
+<span class="k">const</span> resend = <span class="k">new</span> <span class="f">Resend</span>(<span class="s">'re_123456789'</span>);
+
+<span class="k">await</span> resend.emails.<span class="f">send</span>({
+  from: <span class="s">'Acme &lt;onboarding@acme.dev&gt;'</span>,
+  to: [<span class="s">'delivered@resend.dev'</span>],
+  subject: <span class="s">'Hello world'</span>,
+  react: <span class="f">&lt;WelcomeEmail</span> firstName=<span class="s">"Ada"</span> <span class="f">/&gt;</span>,
+});</pre>
+      <div class="resp"><span>{ "id": "49a3999c-0ce1-4ea6-ab68-afcd6dc2e794" }</span><b>200 · 92ms</b></div>
+    </div>
+  </div>
+</div></section>
+
+<section><div class="glow" style="--c:var(--og)"></div><div class="wrap">
+  <div class="kick">React Email</div>
+  <h2 class="disp">Email reimagined</h2>
+  <div class="eband">
+    <div>
+      <p class="sub" style="margin-top:0">Build your emails with React components instead of tables. Preview locally, send anywhere, render perfectly in every client.</p>
+      <div class="cw" style="margin-top:32px;padding:20px">
+<pre><span class="k">export default function</span> <span class="f">WelcomeEmail</span>({ firstName }) {
+  <span class="k">return</span> (
+    <span class="f">&lt;Html&gt;</span>
+      <span class="f">&lt;Heading&gt;</span>Welcome, {firstName}<span class="f">&lt;/Heading&gt;</span>
+      <span class="f">&lt;Button</span> href=<span class="s">"https://acme.dev"</span><span class="f">&gt;</span>
+        Get started
+      <span class="f">&lt;/Button&gt;</span>
+    <span class="f">&lt;/Html&gt;</span>
+  );
+}</pre></div>
+    </div>
+    <div class="mail">
+      <div class="mhead"><span><b>Acme</b> &lt;onboarding@acme.dev&gt;</span><span>To: ada@lovelace.dev · Today, 9:41 AM</span></div>
+      <div class="mbody">
+        <div class="mlogo"><svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M12 2 22 20H2z"/></svg></div>
+        <h3>Welcome to Acme, Ada</h3>
+        <p>Your workspace is ready. We've set up a starter project so you can send your first email in under five minutes — no DNS wrangling required.</p>
+        <span class="mbtn">Open your dashboard</span>
+        <div class="mrow"><span>Need help? Reply to this email.</span><span>acme.dev/docs</span></div>
+      </div>
+      <div class="mfoot">Acme Inc, 2261 Market Street, San Francisco · Unsubscribe</div>
+    </div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2 class="disp" style="font-size:76.8px">First-class developer experience</h2>
+  <p class="sub">We're a team of engineers who love building tools for other engineers. Our goal is to create the email platform we've always wished we had — <span class="hl">one that just works</span>.</p>
+  <div class="g3">
+    <div class="fc"><span class="ic">{ }</span><h4>Test mode</h4><p>Simulate deliveries, bounces and complaints without hurting your sender reputation.</p></div>
+    <div class="fc"><span class="ic">⇄</span><h4>Modular webhooks</h4><p>Receive real-time notifications directly to your server for every email event.</p></div>
+    <div class="fc"><span class="ic">◎</span><h4>Dedicated IPs</h4><p>Auto warm-up and scaling for high-volume senders who need full control.</p></div>
+  </div>
+</div></section>
+
+<section><div class="glow" style="--c:var(--gg)"></div><div class="wrap">
+  <div class="kick">Deliverability</div>
+  <h2 class="disp">Reach humans, not spam folders</h2>
+  <div class="dash">
+    <div class="dtop"><b>Emails</b><div class="sub-pills"><span class="on">Sending</span><span>Receiving</span><span>Broadcasts</span></div><div class="inp">Search by recipient or subject…</div></div>
+    <div class="kpis"><div><span>Sent · last 7 days</span><b>1,284,902</b></div><div><span>Delivered</span><b>99.4%</b></div><div><span>Opened</span><b>48.7%</b></div><div><span>Bounced</span><b>0.31%</b></div></div>
+    <table>
+      <tr><th>To</th><th>Status</th><th>Subject</th><th>Domain</th><th>Sent</th></tr>
+      <tr><td class="m">ada@lovelace.dev</td><td><span class="st"><i style="background:var(--green)"></i>Delivered</span></td><td>Welcome to Acme, Ada</td><td class="m">acme.dev</td><td>2 min ago</td></tr>
+      <tr><td class="m">grace@hopper.io</td><td><span class="st"><i style="background:var(--blue)"></i>Opened</span></td><td>Your invoice for October</td><td class="m">billing.acme.dev</td><td>6 min ago</td></tr>
+      <tr><td class="m">linus@kernel.org</td><td><span class="st"><i style="background:var(--green)"></i>Delivered</span></td><td>Reset your password</td><td class="m">acme.dev</td><td>11 min ago</td></tr>
+      <tr><td class="m">margaret@apollo.nasa</td><td><span class="st"><i style="background:var(--yellow)"></i>Delayed</span></td><td>Weekly product digest</td><td class="m">news.acme.dev</td><td>18 min ago</td></tr>
+      <tr><td class="m">bounce@simulator.dev</td><td><span class="st"><i style="background:var(--red)"></i>Bounced</span></td><td>Confirm your email</td><td class="m">acme.dev</td><td>24 min ago</td></tr>
+    </table>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="kick">Pricing</div>
+  <h2 class="disp">Simple, transparent pricing</h2>
+  <div class="tiers">
+    <div class="tier"><h4>Free</h4><div class="pr">$0<small> /mo</small></div><p>For side projects and testing.</p><ul><li>3,000 emails / month</li><li>100 emails / day</li><li>1 domain</li><li>Ticket support</li></ul><a class="btn o" href="#">Start for free</a></div>
+    <div class="tier feat"><h4>Pro</h4><div class="pr">$20<small> /mo</small></div><p>For startups sending at real volume.</p><ul><li>50,000 emails / month</li><li>No daily limit</li><li>10 domains</li><li>Multi-region sending</li></ul><a class="btn p" href="#">Get started</a></div>
+    <div class="tier"><h4>Scale</h4><div class="pr">$90<small> /mo</small></div><p>For teams with high-volume needs.</p><ul><li>100,000 emails / month</li><li>Dedicated IP add-on</li><li>1,000 domains</li><li>Slack support</li></ul><a class="btn g" href="#">Get started</a></div>
+  </div>
+  <div class="quote">
+    <div class="qc"><p>“Resend is the email API I didn't know I needed. Setup took ten minutes and deliverability has been flawless since day one.”</p><div class="who"><i></i><div><b>Guillermo Rauch</b> · CEO, Vercel</div></div></div>
+    <div class="qc"><p>“React Email plus Resend finally made our transactional emails something engineers are proud to ship.”</p><div class="who"><i></i><div><b>Sahil Lavingia</b> · Founder, Gumroad</div></div></div>
+  </div>
+</div></section>
+
+<div class="closing"><div class="wrap">
+  <h2 class="disp">Email reimagined.<br>Available today.</h2>
+  <div class="ctas" style="margin-top:40px"><a class="btn p" href="#">Get started</a><a class="btn g" href="#">Contact us</a></div>
+</div></div>
+
+<div class="wrap" style="padding:0"><div class="foot">
+  <div><span class="logo" style="font-family:var(--fav)">Resend</span><p style="margin-top:12px">2261 Market Street #5039<br>San Francisco, CA 94114</p><p style="margin-top:16px;display:flex;gap:8px;align-items:center"><span class="dot"></span>All systems operational</p></div>
+  <div><h6>Documentation</h6><a href="#">Getting started</a><a href="#">API reference</a><a href="#">Integrations</a><a href="#">Examples</a></div>
+  <div><h6>Resources</h6><a href="#">Changelog</a><a href="#">Pricing</a><a href="#">Security</a><a href="#">SOC 2</a></div>
+  <div><h6>Company</h6><a href="#">About</a><a href="#">Blog</a><a href="#">Careers</a><a href="#">Customers</a></div>
+  <div><h6>Legal</h6><a href="#">Privacy</a><a href="#">Terms</a><a href="#">DPA</a><a href="#">Acceptable use</a></div>
+</div><div class="copy"><span>© 2026 Resend, Inc.</span><span>GitHub · X · YouTube</span></div></div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">resend</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

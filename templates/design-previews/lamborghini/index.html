@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lamborghini — Temerario</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wght@300;400;500;600;700&display=block">
+<style>
+:root{--gold:#ffc000;--gold-dark:#917300;--gold-text:#ffce3e;--black:#000;--charcoal:#202020;--iron-d:#181818;--white:#fff;--smoke:#f5f5f5;--graphite:#494949;--ash:#7d7d7d;--steel:#969696;--shadow:#313131}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:#fff;font:400 16px/1.5 Saira,Roboto,"Helvetica Neue",Arial,sans-serif;letter-spacing:.16px;overflow-x:hidden}
+.wrap{max-width:1200px;margin:0 auto;padding:0 40px}
+.up{text-transform:uppercase}
+.hero-d{font-size:120px;line-height:.92;font-weight:400;text-transform:uppercase;letter-spacing:normal}
+.d2{font-size:80px;line-height:1.13;font-weight:400;text-transform:uppercase;letter-spacing:normal}
+.st{font-size:54px;line-height:1.19;font-weight:400;text-transform:uppercase;letter-spacing:normal}
+.ss{font-size:40px;line-height:1.15;font-weight:400;text-transform:uppercase;letter-spacing:normal}
+.fh{font-size:27px;line-height:1.37;font-weight:400;text-transform:uppercase;letter-spacing:normal}
+.cap{font-size:14px;font-weight:600;line-height:1.14;letter-spacing:-.42px;text-transform:uppercase}
+.lab{font-size:12px;font-weight:500;line-height:1.83;letter-spacing:.96px;text-transform:uppercase}
+.micro{font-size:10px;line-height:2;letter-spacing:.225px;text-transform:uppercase}
+.ash{color:var(--ash)}
+.btn-gold{display:inline-block;background:var(--gold);color:#000;padding:24px;font-size:16px;font-weight:400;line-height:1.5;text-transform:uppercase;border-radius:0;white-space:nowrap}
+.btn-ghost{display:inline-block;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);padding:16px;font-size:14.4px;font-weight:300;line-height:1;letter-spacing:.2px;text-transform:uppercase;border-radius:0;white-space:nowrap}
+.btn-white{display:inline-block;background:#fff;color:#202020;padding:16px;font-size:14.4px;font-weight:700;line-height:1;letter-spacing:.2px;text-transform:uppercase}
+.badge{display:inline-block;background:var(--steel);color:#fff;padding:8px;font-size:10px;line-height:1;letter-spacing:.225px;text-transform:uppercase;border-radius:2px}
+.more{color:#fff;text-decoration:underline;text-underline-offset:4px;font-size:14.4px;letter-spacing:.2px;text-transform:uppercase}
+/* nav */
+.nav{position:absolute;top:0;left:0;right:0;z-index:5;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:24px 40px}
+.menu{display:flex;align-items:center;gap:12px;font-size:14px;text-transform:uppercase}
+.menu i{display:block;width:24px;height:2px;background:#fff;box-shadow:0 -7px 0 #fff,0 7px 0 #fff}
+.icons{justify-self:end;display:flex;gap:24px}
+/* hero */
+.hero{position:relative;height:900px;overflow:hidden;background:#000}
+.hero .ph{position:absolute;inset:0}
+.hero .copy{position:absolute;left:0;right:0;bottom:120px;text-align:center}
+.hero .copy p{font-size:18px;line-height:1.56;color:var(--smoke);margin:20px auto 40px;max-width:560px}
+.hero .row{display:flex;gap:16px;justify-content:center;align-items:center}
+.hex{position:absolute;right:40px;bottom:40px;width:48px;height:48px}
+.prog{position:absolute;left:40px;right:120px;bottom:63px;height:1px;background:rgba(255,255,255,.25)}
+.prog i{display:block;width:38%;height:1px;background:#fff}
+.slides{position:absolute;left:40px;bottom:76px;font-size:12px;letter-spacing:.96px;color:var(--steel)}
+/* models */
+.sec{padding:56px 0}
+.big{padding:160px 0 56px;text-align:center}
+.big p{color:var(--ash);font-size:18px;line-height:1.56;max-width:680px;margin:24px auto 0}
+.models{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:56px}
+.mc{background:var(--charcoal);position:relative;overflow:hidden}
+.mc .ph{height:260px;display:grid;place-items:center;background:#181818}
+.mc .tx{padding:32px 32px 40px}
+.mc .tx p{color:var(--ash);margin:8px 0 24px}
+.specs{display:flex;gap:32px;border-top:1px solid #313131;padding-top:16px;margin-bottom:24px}
+.specs b{display:block;font-size:24px;font-weight:400}
+/* feature split */
+.split{display:grid;grid-template-columns:1fr 1fr;min-height:640px}
+.split .ph{position:relative;overflow:hidden;background:#181818}
+.split .tx{background:#000;padding:96px 80px;display:flex;flex-direction:column;justify-content:center}
+.split .tx p{color:var(--ash);margin:24px 0 40px;font-size:18px;line-height:1.56}
+/* config */
+.conf{background:var(--charcoal);padding:56px 0}
+.conf .grid{display:grid;grid-template-columns:1fr 1.4fr;gap:56px;align-items:center}
+.sw{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:32px 0}
+.sw span{aspect-ratio:1;display:block}
+.sw span.on{outline:1px solid #fff;outline-offset:3px}
+.opts{display:grid;gap:0;border-top:1px solid #313131;margin-bottom:32px}
+.opts div{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #313131;font-size:14px}
+.opts div span:last-child{color:var(--ash)}
+.toggle{display:inline-block;width:40px;height:22px;border:1px solid #ddd;border-radius:20px;position:relative;vertical-align:middle}
+.toggle i{position:absolute;right:3px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--gold)}
+/* news */
+.news{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:40px}
+.nc{background:var(--charcoal)}
+.nc .ph{aspect-ratio:16/9;position:relative;overflow:hidden}
+.nc .tx{padding:24px 24px 32px}
+.nc .tx p{color:var(--ash);margin:12px 0 20px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid #202020;padding-bottom:24px}
+/* footer */
+.bf{background:var(--iron-d);padding:56px 40px 32px}
+.bf .in{max-width:1200px;margin:0 auto}
+.bf .top{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #313131;padding-bottom:40px}
+.bf .cols{display:grid;grid-template-columns:repeat(5,1fr);gap:24px;padding:40px 0}
+.bf .cols p{color:var(--ash);font-size:14px;margin-bottom:8px}
+.bf .legal{color:var(--graphite);font-size:12px;letter-spacing:.96px;text-transform:uppercase;border-top:1px solid #313131;padding-top:24px;display:flex;justify-content:space-between}
+</style></head><body>
+
+<section class="hero">
+<svg class="ph" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" width="100%" height="100%"><defs><radialGradient id="spot" cx="50%" cy="46%" r="50%"><stop offset="0" stop-color="#2a2a2a"/><stop offset="1" stop-color="#000"/></radialGradient><linearGradient id="vig" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".7"/><stop offset=".25" stop-color="#000" stop-opacity="0"/><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000"/></linearGradient></defs>
+<rect width="1440" height="900" fill="url(#spot)"/><path d="M0 560 L1440 560 L1440 900 L0 900Z" fill="#070707"/><g stroke="#1a1a1a"><path d="M720 560 L0 900"/><path d="M720 560 L1440 900"/><path d="M720 560 L720 900"/></g>
+<g transform="translate(370 110) scale(.7)"><svg viewBox="0 0 1000 420" width="1000" height="420" preserveAspectRatio="xMidYMid meet"><defs><linearGradient id="bdo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffcf4d"/><stop offset=".5" stop-color="#7a5200"/><stop offset="1" stop-color="#030303"/></linearGradient></defs><g><ellipse cx="500" cy="372" rx="480" ry="20" fill="#000"/>
+<path d="M30 330 L60 270 L250 236 L420 170 L600 160 L760 200 L940 236 L975 300 L960 340 L40 344 Z" fill="url(#bdo)"/>
+<path d="M440 178 L600 168 L720 204 L470 214 Z" fill="#050505"/>
+<path d="M70 282 L210 258 L240 268 L90 296 Z" fill="#fff" opacity=".9"/>
+<path d="M90 300 L60 320 M120 296 L96 324" stroke="#fff" stroke-width="3" opacity=".6"/>
+<path d="M260 248 L330 270 L300 340 L230 340Z" fill="#050505" opacity=".85"/>
+<path d="M620 250 L760 240 L800 262 L640 276Z" fill="#050505" opacity=".7"/>
+<path d="M880 246 L960 262" stroke="#ff3b1f" stroke-width="4"/>
+<path d="M60 300 L960 300" stroke="#fff" stroke-opacity=".1"/>
+<circle cx="190" cy="340" r="52" fill="#080808"/><circle cx="190" cy="340" r="34" fill="none" stroke="#555" stroke-width="5"/>
+<circle cx="800" cy="340" r="56" fill="#080808"/><circle cx="800" cy="340" r="37" fill="none" stroke="#555" stroke-width="5"/></g></svg></g>
+<rect width="1440" height="900" fill="url(#vig)"/></svg>
+<nav class="nav"><span class="menu"><i></i>Menu</span><svg width="44" height="52" viewBox="0 0 24 24" fill="#fff" aria-label="Lamborghini"><path d="M22.192 13.826c-.032.02-.232.114-.288.136-.406.18-.772.152-1.18-.088-.294-.172-.566-.552-.672-.684-.084-.106-.186-.244-.332-.374-.272-.244-.638-.404-1.272-.392a.3.3 0 0 1-.146-.036c-.64-.338-1.746-.752-2.8-.7-.21.016-.24-.136-.31-.306a3.866 3.866 0 0 0-.46-.936c-.168-.238-.24-.24-.378-.278-.152-.042-.32-.06-.42-.236-.012-.022-.062-.116-.006-.182.14-.164.528-.388-.056-.718-.356-.2-.196-.33-.138-.36a.614.614 0 0 1 .392-.042 1 1 0 0 1 .56.36c.19.222.832 1.264 1.222 2.054.006.01.014.066.086.074.108.01.296.01.334.014.06.004.06-.044.054-.064-.552-1.836-1.19-4.124-2.296-5.714-.02-.046-.002-.094.068-.088.988.1 1.276 1.51 1.856 2.434.744 1.19 1.18.724 1.252-.08.048-.56-.1-1.272-.49-1.672-.092-.114-.258-.256-.326-.34-.024-.032-.028-.082.038-.1a.446.446 0 0 1 .118-.006c.458.034 1.092.404 1.36.816.546.846.506 1.3.43 1.6-.128.512-.368.806-.07 1.618.588 1.604.434 1.268.1 2.278-.03.076.018.134.084.128.77-.072 1.004.104 1.17.192.018.01.032.024.044.02.03-.01.04-.048.044-.098.064-.432-.026-.616-.124-.87-.06-.15-.124-.32-.146-.484a.8.8 0 0 1 .07-.488c.131-.274.16-.587.084-.882-.194-.856-.896-2.264-1.344-3.076-.13-.245-.26-.49-.392-.734-.032-.06-.02-.128.006-.184l.054-.136c.108-.274.164-.48.196-.72.104-.766-.098-1.312-.652-1.768-.516-.424-1.432-.612-2.654-.544l-.26.016c-1.148.066-2.452.14-3.434.06-.95-.08-1.504-.23-1.696-.46a.332.332 0 0 1-.076-.262A.844.844 0 0 1 9.74.96c.17-.13.37-.2.514-.18.254.012.536.156.86.322.29.15.62.32 1.004.428a3 3 0 0 0 .952.124c.29-.012.576-.072.846-.18a.892.892 0 0 0 .232-.132c.02-.016.026-.048.004-.08-.014-.016-.03-.016-.09-.016a4.5 4.5 0 0 1-1-.12c-.256-.064-.28-.124-.276-.148.006-.056.14-.108.294-.114.752-.034 1.328.006 1.71.034.161.017.323.022.486.016.022-.002.03-.016.032-.022a.04.04 0 0 0-.012-.04c-.264-.22-1.126-.55-2.11-.724-1.582-.28-2.642-.05-3.252.192a3.103 3.103 0 0 0-.714.4c-.306.238-.476.496-.508.77-.04.364.224.836 1.72 1.01 1.586.184 3.068.158 4.374.136l.402-.008c.828-.012 1.528.188 1.83.522.289.34.393.798.28 1.228-.03.115-.078.224-.14.324-.094.13-.2.168-.39.118-.612-.162-1.704-.52-2.232-.7-.472-.16-.844-.284-1.16-.362-.936-.23-1.228-.078-1.858.32-.152.096-.306.2-.484.322-.26.176-.55.376-.94.62-.285.172-.575.337-.868.494-.332.18-.674.37-1.01.572-1.076.632-1.248 1.48-1.448 2.46-.14.696-.3 1.484-.832 2.284-.058.086-.52.646-.616.804-.366.586-.56 1.092-.484 1.94.06.636-.16 1.188-.37 1.722-.164.42-.32.82-.346 1.244-.02.264-.01.51 0 .748.014.394.02.788-.1 1.128-.092.26-.328.52-.42.772a3.874 3.874 0 0 0-.198 1.212c-.006.36-.272.622-.554.9-.248.246-.508.504-.602.84-.014.044-.02.078-.038.104-.024.04-.06.064-.11.1a.962.962 0 0 0-.336.408c-.096.253-.089.533.02.78.016.028.058.096.122.104.044.004.088-.02.13-.07 0 0 .276-.318.382-.412a.086.086 0 0 1 .108-.008c.032.022.038.06.02.1-.012.024-.178.32-.274.568l-.002.008c-.014.034-.03.08-.006.114.022.036.076.056.17.06.04.004.08.004.12.004.508 0 .776-.136.914-.254a.342.342 0 0 0 .08-.124l.02-.04c.1-.272.168-.588.178-.824 0-.1.028-.128.096-.196.268-.272.268-.628.268-.974 0-.32 0-.648.21-.906.57-.64.866-1.384 1.152-2.104.296-.744.6-1.514 1.208-2.154.154-.158.302-.244.4-.228.05.008.088.04.116.094.13.24.09.562.052.874-.042.354-.082.686.104.904.126.162.16.334.098.494-.08.256-.324 1.032-.902 1.376a2.44 2.44 0 0 0-.216.164.404.404 0 0 0-.064.094.473.473 0 0 1-.312.262.964.964 0 0 0-.536.346c-.22.331-.314.73-.264 1.124.01.06.03.138.088.214.034.048.074.076.116.082a.132.132 0 0 0 .1-.028c.046-.04.088-.084.126-.132.08-.09.178-.204.3-.296.04-.03.08-.022.104-.006.02.016.032.04.024.06a.85.85 0 0 1-.094.174c-.06.094-.134.21-.192.348-.016.03-.018.06-.006.084.016.04.06.056.07.06.37.118.92-.022 1.23-.312a.762.762 0 0 0 .228-.59.36.36 0 0 1 .098-.228c.216-.186.306-.476.4-.784l.072-.222c.098-.317.287-.6.542-.812.406-.38.59-.74.706-.96.118-.238.144-.37.23-.508.17-.268.742-.32.954-.194.088.052.106.124.058.214-.032.058-.334.546-.476.88-.07.164-.228.226-.32.28-.568.332-.672.956-.688 1.212-.006.08.002.186.044.246a.14.14 0 0 0 .09.06.136.136 0 0 0 .106-.028c.032-.026.34-.336.376-.368.052-.044.096-.036.12-.016.022.02.032.062 0 .11-.04.062-.254.382-.228.452.04.118.162.116.282.116.974-.08 1.318-.774 1.318-.774.024-.04.052-.094.036-.238-.028-.26-.088-1.16.432-1.72.154-.172.246-.056.28.02.064.14.156.378.21.498.112.254.188.44.32.692.216.424.546.482.952.432.526-.066.888-.024 1.24.01.3.026.466.046.688-.156.12-.11.35-.31.504-.53.1-.138.128-.226.104-.44-.072-1.082.49-2.022 1.504-2.514.152-.062.32-.044.424.096.228.336.756 1.2.756 1.934a.746.746 0 0 1-.058.234c-.072.2-.16.45.004.79.012.294-.098.524-.194.728-.138.288-.246.516.13.74.141.08.293.14.45.18a.074.074 0 0 0 .04-.012.048.048 0 0 0 .024-.034c.01-.086.02-.38.036-.448.006-.028.02-.06.052-.064.03 0 .06.022.068.046.03.072.106.36.128.404.018.04.04.066.068.076.15.042.356-.216.432-.35.132-.274.078-.68-.138-1.036a.304.304 0 0 1-.036-.158.974.974 0 0 0-.04-.66 1.452 1.452 0 0 1-.088-.344c-.06-.508.254-2.12.282-2.284.054-.3.098-.514.116-.734a.856.856 0 0 0-.216-.62c-.136-.146-.3-.28-.46-.408a4.603 4.603 0 0 1-.378-.33.87.87 0 0 1-.228-.512c0-.02.004-.034.012-.04a.045.045 0 0 1 .026-.006c.24.018.434.176.676.38.22.18.466.384.81.536.684.304 1.332.26 1.984-.136.276-.196.362-.366.376-.388.018-.03-.008-.116-.088-.07ZM7.054 11.124c.04-.316.272-.65.374-1.044.146-.444.186-1.22.266-1.836.04-.308.156-.436.378-.464.146-.014.3.114.378.548.272 1.774.804 2.02 1.114 2.49a.328.328 0 0 1 .016.026c.08.148.104.284-.02.384-.072.06-.316.146-.728-.104-.496-.298-.57-.62-1.392.038 0 0-.11.084-.214.108-.09.02-.188-.014-.172-.146Zm4.3 6.51c-.03.02-.064.006-.112-.024-.326-.21-1.23-.374-1.992-.068-.786.314-1.504.76-1.552-.018-.01-.688.136-.988-.104-1.396l-.02-.032c-.02-.032.004-.04.012-.04 1.102-.086 1.398-.43 1.466-.55.014-.028-.004-.056-.032-.06-.254-.028-1.518-.066-2.024.008-.894.13-1.494 1.474-1.61 1.602-.134.146-.304.034-.304-.1 0-.224.134-1.314.22-1.692.14-.598.332-1.04.916-1.132.408-.062 1.412-.168 1.344-.44a2.388 2.388 0 0 1-.088-.5c0-.132.068-.16.202-.128.1.02.232.08.404.12 1.26.298 1.908.06 2.66-.274l.318-.144a.168.168 0 0 1 .23.222c-.04.086-.094.126-.21.236-.248.24-1.174 1-.616 2.284.434 1 .56 1.26.87 1.942.05.112.058.16.02.184h.002Zm2.346 1.732c-.062.096-.158.164-.34.164-.228 0-.388-.068-.484-.17a.758.758 0 0 1-.174-.688c.03-.12.1-.198.18-.22.032-.012.05-.008.068.014.034.054.156.248.184.288a.342.342 0 0 0 .142.108c.092.038.21.07.272.098.19.082.234.278.152.406Zm3.638-3.54c-.024.04-.046.046-.078.06-1.142.432-2.052 1.6-1.886 3a.338.338 0 0 1-.09.246s-.24.244-.39.348c-.052.036-.11.064-.244.056l-.51-.032c-.08-.014-.046-.084-.04-.1a.34.34 0 0 0 .016-.05c.044-.21.012-.504-.284-.614-.042-.024-.016-.064-.01-.076.126-.314.286-.7.412-1.242.09-.313.023-.65-.18-.906l-.18-.24c-.052-.058-.038-.12.034-.144l.254-.066c.06-.02.056-.114-.004-.13l-.13-.04a.61.61 0 0 1-.256-.228.57.57 0 0 1-.1-.226l-.014-.074c-.002-.038-.06-.04-.088-.012a.62.62 0 0 0-.114.754c.206.344.198.31.38.57.06.084.098.154.118.24.029.21.008.425-.06.626l-.208.632c-.126.28-.266.214-.344.16-.104-.068-.2-.244-.25-.432 0 0-.144-.526-.14-1.228-.008-.084-.066-.222-.25-.1l-.49.404c-.068.038-.188.018-.164-.142 0 0 .352-1.57.73-2.454.284-.72-.032-1.126-.408-1.572-.618-.788-.756-1.846.68-1.266.386.176.524-.052 1-.094.34-.028.452.11.48.168a.422.422 0 0 1 .04.14c0 .012-.004.02-.02.02-.804.048-1.764.716-1.02 1.766.726 1.028 2.73 1.372 3.626.392.012-.012.014-.042-.004-.056a.044.044 0 0 0-.046-.008 2.9 2.9 0 0 1-.556.16c-.428.07-1.334.02-1.76-.47-.246-.28-.24-.602.174-.652.23-.018.344.024.444.026.258-.004.31-.26.258-.38a.976.976 0 0 0-.292-.364c-.134-.094-.06-.194.026-.192.828.048 1.62.192 1.92 1.186.012.038.032.164.064.21.064.096.174.168.298.274.3.262.57.73-.344 2.152Zm1.076-.616c.146-.304.344-.1.44.234.12.426.136 1.108.084 1.46-.064.46-.28.368-.396.204-.184-.258-.38-.6-.52-.836a.294.294 0 0 1-.01-.022c-.064-.134-.074-.24-.006-.336.068-.106.34-.564.408-.704Z"/></svg><span class="icons"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#fff" stroke-width="2"><circle cx="9" cy="9" r="7"/><path d="M14 14l6 6"/></svg><svg width="18" height="22" viewBox="0 0 18 22" fill="none" stroke="#fff" stroke-width="2"><path d="M2 2h14v18l-7-5-7 5z"/></svg></span></nav>
+<div class="copy"><span class="lab" style="color:var(--steel)">The new HPEV · Fuoriclasse</span><h1 class="hero-d" style="margin-top:12px">Temerario</h1><p>920 CV twin-turbo V8 hybrid. 10,000 rpm. A super sports car that redefines what a Lamborghini can be.</p><div class="row"><span class="btn-gold">Discover more</span><span class="btn-ghost">Start configuration</span></div></div>
+<span class="slides">01 / 03</span><div class="prog"><i></i></div>
+<svg class="hex" viewBox="0 0 48 48" fill="none" stroke="#fff"><path d="M24 2 L43 13 L43 35 L24 46 L5 35 L5 13 Z"/><path d="M19 17v14M29 17v14" stroke-width="2"/></svg>
+</section>
+
+<section class="big"><div class="wrap"><span class="lab ash">Driving Humans Beyond</span><h2 class="d2" style="margin-top:12px">Beyond the<br>impossible</h2><p>Every Lamborghini is designed and built in Sant'Agata Bolognese. Three model lines, one obsession: to go beyond.</p></div></section>
+
+<section class="sec" style="padding-top:0"><div class="wrap" style="max-width:1440px">
+<div class="models">
+<article class="mc"><div class="ph"><svg viewBox="0 0 1000 420" width="380" height="160" preserveAspectRatio="xMidYMid meet"><defs><linearGradient id="bdgr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fd36a"/><stop offset=".5" stop-color="#1e5c12"/><stop offset="1" stop-color="#030303"/></linearGradient></defs><g><ellipse cx="500" cy="372" rx="480" ry="20" fill="#000"/>
+<path d="M30 330 L60 270 L250 236 L420 170 L600 160 L760 200 L940 236 L975 300 L960 340 L40 344 Z" fill="url(#bdgr)"/>
+<path d="M440 178 L600 168 L720 204 L470 214 Z" fill="#050505"/>
+<path d="M70 282 L210 258 L240 268 L90 296 Z" fill="#fff" opacity=".9"/>
+<path d="M90 300 L60 320 M120 296 L96 324" stroke="#fff" stroke-width="3" opacity=".6"/>
+<path d="M260 248 L330 270 L300 340 L230 340Z" fill="#050505" opacity=".85"/>
+<path d="M620 250 L760 240 L800 262 L640 276Z" fill="#050505" opacity=".7"/>
+<path d="M880 246 L960 262" stroke="#ff3b1f" stroke-width="4"/>
+<path d="M60 300 L960 300" stroke="#fff" stroke-opacity=".1"/>
+<circle cx="190" cy="340" r="52" fill="#080808"/><circle cx="190" cy="340" r="34" fill="none" stroke="#555" stroke-width="5"/>
+<circle cx="800" cy="340" r="56" fill="#080808"/><circle cx="800" cy="340" r="37" fill="none" stroke="#555" stroke-width="5"/></g></svg></div><div class="tx"><span class="badge">V12 HPEV</span><h3 class="ss" style="margin-top:16px">Revuelto</h3><p>The first V12 hybrid plug-in super sports car.</p><div class="specs"><div><b>1,015 CV</b><span class="micro ash">Max power</span></div><div><b>2.5 s</b><span class="micro ash">0–100 km/h</span></div><div><b>&gt;350</b><span class="micro ash">km/h</span></div></div><span class="btn-ghost">Explore</span></div></article>
+<article class="mc"><div class="ph"><svg viewBox="0 0 1000 420" width="380" height="160" preserveAspectRatio="xMidYMid meet"><defs><linearGradient id="bdo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffcf4d"/><stop offset=".5" stop-color="#7a5200"/><stop offset="1" stop-color="#030303"/></linearGradient></defs><g><ellipse cx="500" cy="372" rx="480" ry="20" fill="#000"/>
+<path d="M30 330 L60 270 L250 236 L420 170 L600 160 L760 200 L940 236 L975 300 L960 340 L40 344 Z" fill="url(#bdo)"/>
+<path d="M440 178 L600 168 L720 204 L470 214 Z" fill="#050505"/>
+<path d="M70 282 L210 258 L240 268 L90 296 Z" fill="#fff" opacity=".9"/>
+<path d="M90 300 L60 320 M120 296 L96 324" stroke="#fff" stroke-width="3" opacity=".6"/>
+<path d="M260 248 L330 270 L300 340 L230 340Z" fill="#050505" opacity=".85"/>
+<path d="M620 250 L760 240 L800 262 L640 276Z" fill="#050505" opacity=".7"/>
+<path d="M880 246 L960 262" stroke="#ff3b1f" stroke-width="4"/>
+<path d="M60 300 L960 300" stroke="#fff" stroke-opacity=".1"/>
+<circle cx="190" cy="340" r="52" fill="#080808"/><circle cx="190" cy="340" r="34" fill="none" stroke="#555" stroke-width="5"/>
+<circle cx="800" cy="340" r="56" fill="#080808"/><circle cx="800" cy="340" r="37" fill="none" stroke="#555" stroke-width="5"/></g></svg></div><div class="tx"><span class="badge">V8 HPEV</span><h3 class="ss" style="margin-top:16px">Temerario</h3><p>The Fuoriclasse. Twin-turbo V8 at 10,000 rpm.</p><div class="specs"><div><b>920 CV</b><span class="micro ash">Max power</span></div><div><b>2.7 s</b><span class="micro ash">0–100 km/h</span></div><div><b>343</b><span class="micro ash">km/h</span></div></div><span class="btn-ghost">Explore</span></div></article>
+<article class="mc"><div class="ph"><svg viewBox="0 0 1000 420" width="380" height="160" preserveAspectRatio="xMidYMid meet"><defs><linearGradient id="bdv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9c7bd1"/><stop offset=".5" stop-color="#3a2368"/><stop offset="1" stop-color="#030303"/></linearGradient></defs><g><ellipse cx="500" cy="372" rx="480" ry="20" fill="#000"/>
+<path d="M30 330 L60 270 L250 236 L420 170 L600 160 L760 200 L940 236 L975 300 L960 340 L40 344 Z" fill="url(#bdv)"/>
+<path d="M440 178 L600 168 L720 204 L470 214 Z" fill="#050505"/>
+<path d="M70 282 L210 258 L240 268 L90 296 Z" fill="#fff" opacity=".9"/>
+<path d="M90 300 L60 320 M120 296 L96 324" stroke="#fff" stroke-width="3" opacity=".6"/>
+<path d="M260 248 L330 270 L300 340 L230 340Z" fill="#050505" opacity=".85"/>
+<path d="M620 250 L760 240 L800 262 L640 276Z" fill="#050505" opacity=".7"/>
+<path d="M880 246 L960 262" stroke="#ff3b1f" stroke-width="4"/>
+<path d="M60 300 L960 300" stroke="#fff" stroke-opacity=".1"/>
+<circle cx="190" cy="340" r="52" fill="#080808"/><circle cx="190" cy="340" r="34" fill="none" stroke="#555" stroke-width="5"/>
+<circle cx="800" cy="340" r="56" fill="#080808"/><circle cx="800" cy="340" r="37" fill="none" stroke="#555" stroke-width="5"/></g></svg></div><div class="tx"><span class="badge">SUV PHEV</span><h3 class="ss" style="margin-top:16px">Urus SE</h3><p>The first plug-in hybrid Super SUV.</p><div class="specs"><div><b>800 CV</b><span class="micro ash">Max power</span></div><div><b>3.4 s</b><span class="micro ash">0–100 km/h</span></div><div><b>312</b><span class="micro ash">km/h</span></div></div><span class="btn-ghost">Explore</span></div></article>
+</div></div></section>
+
+<section class="split" style="margin-top:56px">
+<div class="ph"><svg viewBox="0 0 720 640" width="100%" height="100%" preserveAspectRatio="xMidYMid slice"><rect width="720" height="640" fill="#0a0a0a"/><g fill="none" stroke="#2a2a2a" stroke-width="2"><path d="M0 520 C200 420 520 420 720 300"/><path d="M0 580 C220 480 540 480 720 360"/></g><g fill="#fff" opacity=".9"><circle cx="120" cy="120" r="2"/><circle cx="300" cy="90" r="2"/><circle cx="520" cy="140" r="2"/><circle cx="640" cy="80" r="2"/></g><g transform="translate(60 260) scale(.6)"><svg viewBox="0 0 1000 420" width="1000" height="420" preserveAspectRatio="xMidYMid meet"><defs><linearGradient id="bdk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a4a4a"/><stop offset=".5" stop-color="#141414"/><stop offset="1" stop-color="#030303"/></linearGradient></defs><g><ellipse cx="500" cy="372" rx="480" ry="20" fill="#000"/>
+<path d="M30 330 L60 270 L250 236 L420 170 L600 160 L760 200 L940 236 L975 300 L960 340 L40 344 Z" fill="url(#bdk)"/>
+<path d="M440 178 L600 168 L720 204 L470 214 Z" fill="#050505"/>
+<path d="M70 282 L210 258 L240 268 L90 296 Z" fill="#fff" opacity=".9"/>
+<path d="M90 300 L60 320 M120 296 L96 324" stroke="#fff" stroke-width="3" opacity=".6"/>
+<path d="M260 248 L330 270 L300 340 L230 340Z" fill="#050505" opacity=".85"/>
+<path d="M620 250 L760 240 L800 262 L640 276Z" fill="#050505" opacity=".7"/>
+<path d="M880 246 L960 262" stroke="#ff3b1f" stroke-width="4"/>
+<path d="M60 300 L960 300" stroke="#fff" stroke-opacity=".1"/>
+<circle cx="190" cy="340" r="52" fill="#080808"/><circle cx="190" cy="340" r="34" fill="none" stroke="#555" stroke-width="5"/>
+<circle cx="800" cy="340" r="56" fill="#080808"/><circle cx="800" cy="340" r="37" fill="none" stroke="#555" stroke-width="5"/></g></svg></g></svg></div>
+<div class="tx"><span class="lab ash">Motorsport · Squadra Corse</span><h2 class="st" style="margin-top:12px">SC63 at Le Mans</h2><p>The Lamborghini LMDh hypercar returns to La Sarthe for its third season in the FIA World Endurance Championship.</p><div style="display:flex;gap:16px"><span class="btn-gold">Tickets</span><span class="btn-ghost">Race calendar</span></div></div>
+</section>
+
+<section class="conf"><div class="wrap grid">
+<div><span class="lab ash">Configurator</span><h2 class="st" style="margin-top:12px">Make it yours</h2>
+<div class="sw"><span style="background:#ffc000" class="on"></span><span style="background:#7fd36a"></span><span style="background:#3a2368"></span><span style="background:#f5f5f5"></span><span style="background:#494949"></span><span style="background:#000;outline:1px solid #494949"></span></div>
+<div class="opts"><div><span>Exterior · Giallo Inti</span><span>Pearl</span></div><div><span>Rims · 21" Dianthus forged</span><span>Shiny black</span></div><div><span>Calipers · Gold</span><span>Carbon ceramic</span></div><div><span>Ad Personam programme</span><span class="toggle"><i></i></span></div></div>
+<span class="btn-gold">Start configuration</span></div>
+<div style="background:#181818;height:420px;display:grid;place-items:center"><svg viewBox="0 0 1000 420" width="620" height="260" preserveAspectRatio="xMidYMid meet"><defs><linearGradient id="bdo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffcf4d"/><stop offset=".5" stop-color="#7a5200"/><stop offset="1" stop-color="#030303"/></linearGradient></defs><g><ellipse cx="500" cy="372" rx="480" ry="20" fill="#000"/>
+<path d="M30 330 L60 270 L250 236 L420 170 L600 160 L760 200 L940 236 L975 300 L960 340 L40 344 Z" fill="url(#bdo)"/>
+<path d="M440 178 L600 168 L720 204 L470 214 Z" fill="#050505"/>
+<path d="M70 282 L210 258 L240 268 L90 296 Z" fill="#fff" opacity=".9"/>
+<path d="M90 300 L60 320 M120 296 L96 324" stroke="#fff" stroke-width="3" opacity=".6"/>
+<path d="M260 248 L330 270 L300 340 L230 340Z" fill="#050505" opacity=".85"/>
+<path d="M620 250 L760 240 L800 262 L640 276Z" fill="#050505" opacity=".7"/>
+<path d="M880 246 L960 262" stroke="#ff3b1f" stroke-width="4"/>
+<path d="M60 300 L960 300" stroke="#fff" stroke-opacity=".1"/>
+<circle cx="190" cy="340" r="52" fill="#080808"/><circle cx="190" cy="340" r="34" fill="none" stroke="#555" stroke-width="5"/>
+<circle cx="800" cy="340" r="56" fill="#080808"/><circle cx="800" cy="340" r="37" fill="none" stroke="#555" stroke-width="5"/></g></svg></div>
+</div></section>
+
+<section class="sec" style="padding-top:96px"><div class="wrap">
+<div class="head"><h2 class="st">News</h2><span class="more">All news</span></div>
+<div class="news">
+<article class="nc"><div class="ph"><svg viewBox="0 0 400 225" width="100%" height="100%" preserveAspectRatio="xMidYMid slice"><rect width="400" height="225" fill="#111"/><g fill="#ffc000" opacity=".85"><circle cx="80" cy="60" r="3"/><circle cx="140" cy="40" r="3"/><circle cx="220" cy="70" r="3"/><circle cx="300" cy="50" r="3"/></g><path d="M0 170 L400 150 L400 225 L0 225Z" fill="#1c1c1c"/><g fill="#000"><rect x="40" y="130" width="40" height="40"/><rect x="100" y="120" width="60" height="50"/><rect x="250" y="126" width="70" height="44"/></g></svg></div><div class="tx"><span class="lab ash">Event · 04.11.2026</span><h3 class="fh" style="margin-top:8px">Lamborghini Arena 2026</h3><p>Over 1,200 owners gathered at Misano for three days of track action.</p><span class="more">Read more</span></div></article>
+<article class="nc"><div class="ph"><svg viewBox="0 0 400 225" width="100%" height="100%" preserveAspectRatio="xMidYMid slice"><rect width="400" height="225" fill="#181818"/><path d="M200 30 L300 88 L300 196 L200 254 L100 196 L100 88Z" fill="none" stroke="#494949" stroke-width="2"/><path d="M200 70 L260 105 L260 175 L200 210 L140 175 L140 105Z" fill="#202020"/></svg></div><div class="tx"><span class="lab ash">Design · 28.10.2026</span><h3 class="fh" style="margin-top:8px">The hexagon, decoded</h3><p>How Centro Stile turned one shape into a sixty-year design language.</p><span class="more">Read more</span></div></article>
+<article class="nc"><div class="ph"><svg viewBox="0 0 400 225" width="100%" height="100%" preserveAspectRatio="xMidYMid slice"><rect width="400" height="225" fill="#0d0d0d"/><g transform="translate(40 50) scale(.32)"><svg viewBox="0 0 1000 420" width="1000" height="420" preserveAspectRatio="xMidYMid meet"><defs><linearGradient id="bdg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a8f94"/><stop offset=".5" stop-color="#2b2e31"/><stop offset="1" stop-color="#030303"/></linearGradient></defs><g><ellipse cx="500" cy="372" rx="480" ry="20" fill="#000"/>
+<path d="M30 330 L60 270 L250 236 L420 170 L600 160 L760 200 L940 236 L975 300 L960 340 L40 344 Z" fill="url(#bdg)"/>
+<path d="M440 178 L600 168 L720 204 L470 214 Z" fill="#050505"/>
+<path d="M70 282 L210 258 L240 268 L90 296 Z" fill="#fff" opacity=".9"/>
+<path d="M90 300 L60 320 M120 296 L96 324" stroke="#fff" stroke-width="3" opacity=".6"/>
+<path d="M260 248 L330 270 L300 340 L230 340Z" fill="#050505" opacity=".85"/>
+<path d="M620 250 L760 240 L800 262 L640 276Z" fill="#050505" opacity=".7"/>
+<path d="M880 246 L960 262" stroke="#ff3b1f" stroke-width="4"/>
+<path d="M60 300 L960 300" stroke="#fff" stroke-opacity=".1"/>
+<circle cx="190" cy="340" r="52" fill="#080808"/><circle cx="190" cy="340" r="34" fill="none" stroke="#555" stroke-width="5"/>
+<circle cx="800" cy="340" r="56" fill="#080808"/><circle cx="800" cy="340" r="37" fill="none" stroke="#555" stroke-width="5"/></g></svg></g></svg></div><div class="tx"><span class="lab ash">Product · 19.10.2026</span><h3 class="fh" style="margin-top:8px">Temerario Alleggerita</h3><p>Lighter by 25 kg, with a carbon-fibre aero package from the SC63.</p><span class="more">Read more</span></div></article>
+</div></div></section>
+
+<div class="bf"><div class="in">
+<div class="top"><svg width="36" height="42" viewBox="0 0 24 24" fill="#fff" aria-label="Lamborghini"><path d="M22.192 13.826c-.032.02-.232.114-.288.136-.406.18-.772.152-1.18-.088-.294-.172-.566-.552-.672-.684-.084-.106-.186-.244-.332-.374-.272-.244-.638-.404-1.272-.392a.3.3 0 0 1-.146-.036c-.64-.338-1.746-.752-2.8-.7-.21.016-.24-.136-.31-.306a3.866 3.866 0 0 0-.46-.936c-.168-.238-.24-.24-.378-.278-.152-.042-.32-.06-.42-.236-.012-.022-.062-.116-.006-.182.14-.164.528-.388-.056-.718-.356-.2-.196-.33-.138-.36a.614.614 0 0 1 .392-.042 1 1 0 0 1 .56.36c.19.222.832 1.264 1.222 2.054.006.01.014.066.086.074.108.01.296.01.334.014.06.004.06-.044.054-.064-.552-1.836-1.19-4.124-2.296-5.714-.02-.046-.002-.094.068-.088.988.1 1.276 1.51 1.856 2.434.744 1.19 1.18.724 1.252-.08.048-.56-.1-1.272-.49-1.672-.092-.114-.258-.256-.326-.34-.024-.032-.028-.082.038-.1a.446.446 0 0 1 .118-.006c.458.034 1.092.404 1.36.816.546.846.506 1.3.43 1.6-.128.512-.368.806-.07 1.618.588 1.604.434 1.268.1 2.278-.03.076.018.134.084.128.77-.072 1.004.104 1.17.192.018.01.032.024.044.02.03-.01.04-.048.044-.098.064-.432-.026-.616-.124-.87-.06-.15-.124-.32-.146-.484a.8.8 0 0 1 .07-.488c.131-.274.16-.587.084-.882-.194-.856-.896-2.264-1.344-3.076-.13-.245-.26-.49-.392-.734-.032-.06-.02-.128.006-.184l.054-.136c.108-.274.164-.48.196-.72.104-.766-.098-1.312-.652-1.768-.516-.424-1.432-.612-2.654-.544l-.26.016c-1.148.066-2.452.14-3.434.06-.95-.08-1.504-.23-1.696-.46a.332.332 0 0 1-.076-.262A.844.844 0 0 1 9.74.96c.17-.13.37-.2.514-.18.254.012.536.156.86.322.29.15.62.32 1.004.428a3 3 0 0 0 .952.124c.29-.012.576-.072.846-.18a.892.892 0 0 0 .232-.132c.02-.016.026-.048.004-.08-.014-.016-.03-.016-.09-.016a4.5 4.5 0 0 1-1-.12c-.256-.064-.28-.124-.276-.148.006-.056.14-.108.294-.114.752-.034 1.328.006 1.71.034.161.017.323.022.486.016.022-.002.03-.016.032-.022a.04.04 0 0 0-.012-.04c-.264-.22-1.126-.55-2.11-.724-1.582-.28-2.642-.05-3.252.192a3.103 3.103 0 0 0-.714.4c-.306.238-.476.496-.508.77-.04.364.224.836 1.72 1.01 1.586.184 3.068.158 4.374.136l.402-.008c.828-.012 1.528.188 1.83.522.289.34.393.798.28 1.228-.03.115-.078.224-.14.324-.094.13-.2.168-.39.118-.612-.162-1.704-.52-2.232-.7-.472-.16-.844-.284-1.16-.362-.936-.23-1.228-.078-1.858.32-.152.096-.306.2-.484.322-.26.176-.55.376-.94.62-.285.172-.575.337-.868.494-.332.18-.674.37-1.01.572-1.076.632-1.248 1.48-1.448 2.46-.14.696-.3 1.484-.832 2.284-.058.086-.52.646-.616.804-.366.586-.56 1.092-.484 1.94.06.636-.16 1.188-.37 1.722-.164.42-.32.82-.346 1.244-.02.264-.01.51 0 .748.014.394.02.788-.1 1.128-.092.26-.328.52-.42.772a3.874 3.874 0 0 0-.198 1.212c-.006.36-.272.622-.554.9-.248.246-.508.504-.602.84-.014.044-.02.078-.038.104-.024.04-.06.064-.11.1a.962.962 0 0 0-.336.408c-.096.253-.089.533.02.78.016.028.058.096.122.104.044.004.088-.02.13-.07 0 0 .276-.318.382-.412a.086.086 0 0 1 .108-.008c.032.022.038.06.02.1-.012.024-.178.32-.274.568l-.002.008c-.014.034-.03.08-.006.114.022.036.076.056.17.06.04.004.08.004.12.004.508 0 .776-.136.914-.254a.342.342 0 0 0 .08-.124l.02-.04c.1-.272.168-.588.178-.824 0-.1.028-.128.096-.196.268-.272.268-.628.268-.974 0-.32 0-.648.21-.906.57-.64.866-1.384 1.152-2.104.296-.744.6-1.514 1.208-2.154.154-.158.302-.244.4-.228.05.008.088.04.116.094.13.24.09.562.052.874-.042.354-.082.686.104.904.126.162.16.334.098.494-.08.256-.324 1.032-.902 1.376a2.44 2.44 0 0 0-.216.164.404.404 0 0 0-.064.094.473.473 0 0 1-.312.262.964.964 0 0 0-.536.346c-.22.331-.314.73-.264 1.124.01.06.03.138.088.214.034.048.074.076.116.082a.132.132 0 0 0 .1-.028c.046-.04.088-.084.126-.132.08-.09.178-.204.3-.296.04-.03.08-.022.104-.006.02.016.032.04.024.06a.85.85 0 0 1-.094.174c-.06.094-.134.21-.192.348-.016.03-.018.06-.006.084.016.04.06.056.07.06.37.118.92-.022 1.23-.312a.762.762 0 0 0 .228-.59.36.36 0 0 1 .098-.228c.216-.186.306-.476.4-.784l.072-.222c.098-.317.287-.6.542-.812.406-.38.59-.74.706-.96.118-.238.144-.37.23-.508.17-.268.742-.32.954-.194.088.052.106.124.058.214-.032.058-.334.546-.476.88-.07.164-.228.226-.32.28-.568.332-.672.956-.688 1.212-.006.08.002.186.044.246a.14.14 0 0 0 .09.06.136.136 0 0 0 .106-.028c.032-.026.34-.336.376-.368.052-.044.096-.036.12-.016.022.02.032.062 0 .11-.04.062-.254.382-.228.452.04.118.162.116.282.116.974-.08 1.318-.774 1.318-.774.024-.04.052-.094.036-.238-.028-.26-.088-1.16.432-1.72.154-.172.246-.056.28.02.064.14.156.378.21.498.112.254.188.44.32.692.216.424.546.482.952.432.526-.066.888-.024 1.24.01.3.026.466.046.688-.156.12-.11.35-.31.504-.53.1-.138.128-.226.104-.44-.072-1.082.49-2.022 1.504-2.514.152-.062.32-.044.424.096.228.336.756 1.2.756 1.934a.746.746 0 0 1-.058.234c-.072.2-.16.45.004.79.012.294-.098.524-.194.728-.138.288-.246.516.13.74.141.08.293.14.45.18a.074.074 0 0 0 .04-.012.048.048 0 0 0 .024-.034c.01-.086.02-.38.036-.448.006-.028.02-.06.052-.064.03 0 .06.022.068.046.03.072.106.36.128.404.018.04.04.066.068.076.15.042.356-.216.432-.35.132-.274.078-.68-.138-1.036a.304.304 0 0 1-.036-.158.974.974 0 0 0-.04-.66 1.452 1.452 0 0 1-.088-.344c-.06-.508.254-2.12.282-2.284.054-.3.098-.514.116-.734a.856.856 0 0 0-.216-.62c-.136-.146-.3-.28-.46-.408a4.603 4.603 0 0 1-.378-.33.87.87 0 0 1-.228-.512c0-.02.004-.034.012-.04a.045.045 0 0 1 .026-.006c.24.018.434.176.676.38.22.18.466.384.81.536.684.304 1.332.26 1.984-.136.276-.196.362-.366.376-.388.018-.03-.008-.116-.088-.07ZM7.054 11.124c.04-.316.272-.65.374-1.044.146-.444.186-1.22.266-1.836.04-.308.156-.436.378-.464.146-.014.3.114.378.548.272 1.774.804 2.02 1.114 2.49a.328.328 0 0 1 .016.026c.08.148.104.284-.02.384-.072.06-.316.146-.728-.104-.496-.298-.57-.62-1.392.038 0 0-.11.084-.214.108-.09.02-.188-.014-.172-.146Zm4.3 6.51c-.03.02-.064.006-.112-.024-.326-.21-1.23-.374-1.992-.068-.786.314-1.504.76-1.552-.018-.01-.688.136-.988-.104-1.396l-.02-.032c-.02-.032.004-.04.012-.04 1.102-.086 1.398-.43 1.466-.55.014-.028-.004-.056-.032-.06-.254-.028-1.518-.066-2.024.008-.894.13-1.494 1.474-1.61 1.602-.134.146-.304.034-.304-.1 0-.224.134-1.314.22-1.692.14-.598.332-1.04.916-1.132.408-.062 1.412-.168 1.344-.44a2.388 2.388 0 0 1-.088-.5c0-.132.068-.16.202-.128.1.02.232.08.404.12 1.26.298 1.908.06 2.66-.274l.318-.144a.168.168 0 0 1 .23.222c-.04.086-.094.126-.21.236-.248.24-1.174 1-.616 2.284.434 1 .56 1.26.87 1.942.05.112.058.16.02.184h.002Zm2.346 1.732c-.062.096-.158.164-.34.164-.228 0-.388-.068-.484-.17a.758.758 0 0 1-.174-.688c.03-.12.1-.198.18-.22.032-.012.05-.008.068.014.034.054.156.248.184.288a.342.342 0 0 0 .142.108c.092.038.21.07.272.098.19.082.234.278.152.406Zm3.638-3.54c-.024.04-.046.046-.078.06-1.142.432-2.052 1.6-1.886 3a.338.338 0 0 1-.09.246s-.24.244-.39.348c-.052.036-.11.064-.244.056l-.51-.032c-.08-.014-.046-.084-.04-.1a.34.34 0 0 0 .016-.05c.044-.21.012-.504-.284-.614-.042-.024-.016-.064-.01-.076.126-.314.286-.7.412-1.242.09-.313.023-.65-.18-.906l-.18-.24c-.052-.058-.038-.12.034-.144l.254-.066c.06-.02.056-.114-.004-.13l-.13-.04a.61.61 0 0 1-.256-.228.57.57 0 0 1-.1-.226l-.014-.074c-.002-.038-.06-.04-.088-.012a.62.62 0 0 0-.114.754c.206.344.198.31.38.57.06.084.098.154.118.24.029.21.008.425-.06.626l-.208.632c-.126.28-.266.214-.344.16-.104-.068-.2-.244-.25-.432 0 0-.144-.526-.14-1.228-.008-.084-.066-.222-.25-.1l-.49.404c-.068.038-.188.018-.164-.142 0 0 .352-1.57.73-2.454.284-.72-.032-1.126-.408-1.572-.618-.788-.756-1.846.68-1.266.386.176.524-.052 1-.094.34-.028.452.11.48.168a.422.422 0 0 1 .04.14c0 .012-.004.02-.02.02-.804.048-1.764.716-1.02 1.766.726 1.028 2.73 1.372 3.626.392.012-.012.014-.042-.004-.056a.044.044 0 0 0-.046-.008 2.9 2.9 0 0 1-.556.16c-.428.07-1.334.02-1.76-.47-.246-.28-.24-.602.174-.652.23-.018.344.024.444.026.258-.004.31-.26.258-.38a.976.976 0 0 0-.292-.364c-.134-.094-.06-.194.026-.192.828.048 1.62.192 1.92 1.186.012.038.032.164.064.21.064.096.174.168.298.274.3.262.57.73-.344 2.152Zm1.076-.616c.146-.304.344-.1.44.234.12.426.136 1.108.084 1.46-.064.46-.28.368-.396.204-.184-.258-.38-.6-.52-.836a.294.294 0 0 1-.01-.022c-.064-.134-.074-.24-.006-.336.068-.106.34-.564.408-.704Z"/></svg><span class="btn-white">Find a dealer</span></div>
+<div class="cols"><div><p style="color:#fff">Models</p><p>Revuelto</p><p>Temerario</p><p>Urus SE</p></div><div><p style="color:#fff">Ownership</p><p>Configurator</p><p>Certified pre-owned</p><p>Ad Personam</p></div><div><p style="color:#fff">Motorsport</p><p>Squadra Corse</p><p>Super Trofeo</p><p>Esports</p></div><div><p style="color:#fff">Company</p><p>Careers</p><p>Sustainability</p><p>Media center</p></div><div><p style="color:#fff">Follow</p><p>Instagram</p><p>YouTube</p><p>TikTok</p></div></div>
+<div class="legal"><span>© 2026 Automobili Lamborghini S.p.A.</span><span>Privacy · Cookie policy · Legal · Accessibility</span></div>
+</div></div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">lamborghini</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

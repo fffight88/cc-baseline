@@ -1,0 +1,78 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@300;400;500;700&family=Space+Mono:wght@400;700&family=Newsreader:opsz,wght@6..72,400&display=block">
+<style>
+:root{--canvas:#131313;--mint:#3cffd0;--uv:#5200ff;--mintb:#309875;--rule:#3d00bf;--slate:#2d2d2d;--frame:#313131;--sec:#949494;--yellow:#ffe94d;--pink:#ff5ec4;--orange:#ff6a2a;--blue:#3d7bff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1440px;background:var(--canvas);color:#fff;font-family:'Space Grotesk',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6}
+.wrap{width:1300px;margin:0 auto;padding:0 48px}
+.mono{font-family:'Space Mono','Courier New',monospace;text-transform:uppercase}
+nav{display:flex;align-items:center;gap:26px;padding:18px 0;border-bottom:1px solid var(--frame)}
+nav .mono{font-size:12px;letter-spacing:1.6px;font-weight:700}
+nav .on{box-shadow:0 -1px 0 0 var(--mint) inset;padding-bottom:4px}
+nav .sp{flex:1}
+.btn{display:inline-block;background:var(--mint);color:#000;border-radius:24px;padding:10px 24px;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;line-height:1.4}
+.btn.o{background:transparent;color:var(--mint);border:1px solid var(--mint);border-radius:40px}
+.mast{font-family:Anton,Impact,sans-serif;font-size:220px;line-height:.92;letter-spacing:1px;text-transform:uppercase;padding:28px 0 10px;white-space:nowrap}
+.mast span{color:var(--mint)}
+.whisper{font-weight:300;font-size:19px;letter-spacing:1.9px;text-transform:uppercase;color:#e9e9e9;padding-bottom:32px;border-bottom:1px solid var(--frame)}
+.grid{display:grid;grid-template-columns:1.55fr 1fr;gap:32px;padding-top:32px;align-items:start}
+.feature{border:1px solid #fff;border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:16px}
+.img{border-radius:4px;border:1px solid var(--frame);aspect-ratio:16/9;background:
+  radial-gradient(circle at 30% 40%,#5200ff 0 18%,transparent 19%),radial-gradient(circle at 68% 58%,#3cffd0 0 14%,transparent 15%),repeating-linear-gradient(45deg,#1d1d1d 0 10px,#222 10px 20px)}
+.kick{font-size:12px;letter-spacing:1.8px;color:var(--mint)}
+.feature h2{font-family:Anton,Impact,sans-serif;font-size:72px;line-height:.95;font-weight:400;text-transform:uppercase}
+.by{font-size:11px;letter-spacing:1.1px;color:var(--sec)}
+.deck{font-family:Newsreader,Georgia,serif;font-size:20px;line-height:1.3;color:#e9e9e9}
+.stream{position:relative;padding-left:96px}
+.stream::before{content:"";position:absolute;left:78px;top:6px;bottom:0;border-left:1px dashed var(--rule)}
+.sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.sh b{font-size:34px;font-weight:700;line-height:1}
+.item{position:relative;margin-bottom:14px;border-radius:20px;padding:22px 24px;border:1px solid #fff}
+.item time{position:absolute;left:-96px;top:24px;width:72px;font-size:11px;letter-spacing:1.1px;color:var(--sec);text-align:right;line-height:1.3}
+.item h3{font-size:24px;font-weight:700;line-height:1.05;margin:6px 0 8px}
+.item .k{font-size:11px;letter-spacing:1.8px}
+.item p{font-size:13px;line-height:1.6}
+.item.m{background:var(--mint);color:#000;border:0}
+.item.u{background:var(--uv);border:0}
+.item.y{background:var(--yellow);color:#000;border:0}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:48px 0}
+.tile{border-radius:20px;padding:24px;min-height:220px;display:flex;flex-direction:column;justify-content:flex-end;gap:8px}
+.tile h4{font-size:22px;font-weight:700;line-height:1.05}
+.tile .k{font-size:11px;letter-spacing:1.8px}
+.pill{display:inline-block;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;padding:4px 10px;border-radius:20px;align-self:flex-start}
+.sub{display:flex;align-items:center;gap:24px;border:1px solid var(--uv);border-radius:30px;padding:28px 36px;margin-bottom:64px}
+.sub b{font-family:Anton,Impact,sans-serif;font-size:60px;font-weight:400;line-height:.95;text-transform:uppercase}
+.sub input{flex:1;background:var(--canvas);border:1px solid var(--sec);border-radius:2px;padding:12px 14px;color:#fff;font:15px 'Space Grotesk'}
+</style></head><body>
+<div class="wrap">
+  <nav><span class="mono on">Tech</span><span class="mono">Reviews</span><span class="mono">Science</span><span class="mono">Entertainment</span><span class="mono">AI</span><span class="mono">Policy</span><span class="sp"></span><span class="mono" style="font-size:12px;color:#949494;letter-spacing:1.6px">Search</span><span class="btn">Subscribe</span></nav>
+  <div class="mast">The Verge</div>
+  <div class="whisper">Technology, science, art and culture · Tuesday, November 5</div>
+  <div class="grid">
+    <article class="feature">
+      <div class="img"></div>
+      <span class="kick mono">Featured · Hands-on</span>
+      <h2>The foldable finally stopped apologizing</h2>
+      <p class="deck">Three generations of creased screens later, the new hinge is the first one you forget is there. That changes who this phone is for.</p>
+      <span class="by mono">By Dana Okafor · 14 min read</span>
+    </article>
+    <div class="stream">
+      <div class="sh"><b>Top Stories</b><span class="btn o">See all</span></div>
+      <div class="item m"><time class="mono">9:42 AM</time><span class="k mono">Breaking</span><h3>Open model beats closed rivals on coding benchmark</h3><p>The weights ship today under a permissive license.</p></div>
+      <div class="item"><time class="mono">9:10 AM</time><span class="k mono" style="color:#3cffd0">Policy</span><h3>EU sets deadline for app store interoperability</h3><p style="color:#949494">Platforms have until March to comply.</p></div>
+      <div class="item u"><time class="mono">8:31 AM</time><span class="k mono">Gaming</span><h3>The handheld everyone wanted is real, and it's $399</h3></div>
+      <div class="item"><time class="mono">7:55 AM</time><span class="k mono" style="color:#3cffd0">Science</span><h3>Fusion startup reports a full minute of net gain</h3></div>
+      <div class="item y"><time class="mono">7:20 AM</time><span class="k mono">Review</span><h3>These $79 earbuds embarrass flagships</h3></div>
+    </div>
+  </div>
+  <div class="tiles">
+    <div class="tile" style="background:var(--pink);color:#000"><span class="pill" style="background:#000;color:#ff5ec4">Culture</span><h4>Why every app is becoming a chat app</h4><span class="k mono">By M. Reyes</span></div>
+    <div class="tile" style="background:var(--orange);color:#000"><span class="pill" style="background:#000;color:#ff6a2a">Cars</span><h4>The EV price war reaches the used lot</h4><span class="k mono">By J. Park</span></div>
+    <div class="tile" style="background:var(--blue)"><span class="pill" style="background:#fff;color:#000">Podcast</span><h4>The Vergecast: gadget of the year draft</h4><span class="k mono">58 min</span></div>
+    <div class="tile" style="background:#fff;color:#000"><span class="pill" style="background:#3cffd0;color:#000">Deals</span><h4>The best laptop deals this week</h4><span class="k mono">Updated 6:00 AM</span></div>
+  </div>
+  <div class="sub"><b>Get the Stream</b><input value="Your email address"><span class="btn">Sign up</span></div>
+</div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">theverge</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

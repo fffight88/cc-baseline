@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kraken — Buy, sell and trade crypto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=block">
+<style>
+:root{--purple:#7132f5;--purple-dark:#5741d8;--purple-deep:#5b1ecf;--purple-subtle:rgba(133,91,251,.16);--ink:#101114;--cool:#686b82;--silver:#9497a9;--border:#dedee5;--green:#149e61;--green-dark:#026b3f;
+--sh:rgba(0,0,0,.03) 0px 4px 24px;--micro:rgba(16,24,40,.04) 0px 1px 4px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#fff;color:var(--ink);font-family:'IBM Plex Sans','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.38;font-weight:400}
+.brand{font-family:'IBM Plex Sans',Helvetica,Arial,sans-serif;font-weight:700}
+.wrap{max-width:1280px;margin:0 auto;padding:0 24px}
+.tnum{font-variant-numeric:tabular-nums}
+/* nav */
+nav{border-bottom:1px solid var(--border)}
+nav .wrap{display:flex;align-items:center;gap:24px;height:72px}
+.logo{display:flex;align-items:center;gap:8px;font-size:26px;letter-spacing:-1px;color:var(--purple)}
+.logo svg{width:30px;height:30px}
+.links{display:flex;gap:24px;font-weight:500;font-size:16px;margin-left:16px}
+.sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:8px;font:inherit;font-weight:500;font-size:16px;line-height:1.38;border-radius:12px;padding:13px 16px;border:0;white-space:nowrap}
+.btn.p{background:var(--purple);color:#fff}
+.btn.o{background:#fff;color:var(--purple-dark);border:1px solid var(--purple-dark);padding:12px 15px}
+.btn.s{background:var(--purple-subtle);color:var(--purple);padding:8px 12px}
+.btn.g{background:rgba(148,151,169,.08);color:var(--ink)}
+.btn.w{background:#fff;color:var(--ink);border-radius:10px;box-shadow:var(--sh)}
+/* hero */
+.hero{padding:72px 0 80px}
+.hgrid{display:grid;grid-template-columns:1fr 600px;gap:64px;align-items:center}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:500;line-height:1.43;padding:4px 10px;border-radius:8px;background:rgba(104,107,130,.12);color:#484b5e}
+.badge.ok{background:rgba(20,158,97,.16);color:var(--green-dark);border-radius:6px}
+h1{font-size:48px;line-height:1.17;letter-spacing:-1px;margin:20px 0 16px}
+.lead{font-size:18px;color:var(--cool);max-width:520px;margin-bottom:32px}
+.signup{display:flex;gap:12px;max-width:520px}
+.signup input{flex:1;font:inherit;border:1px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--ink)}
+.trust{display:flex;gap:28px;margin-top:28px;font-size:14px;color:var(--silver)}
+.trust b{display:block;color:var(--ink);font-size:22px;font-weight:600;line-height:1.2}
+/* trade card mockup */
+.panel{border:1px solid var(--border);border-radius:16px;box-shadow:var(--sh);background:#fff}
+.trade{padding:24px;position:relative}
+.trade .top{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.coin{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:14px;flex:none}
+.btc{background:#f7931a}.eth{background:#627eea}.sol{background:linear-gradient(135deg,#9945ff,#14f195)}.usdc{background:#2775ca}.xrp{background:#23292f}.ada{background:#0033ad}.dot{background:#e6007a}
+.trade h3{font-size:22px;font-weight:600;line-height:1.2}
+.price{font-size:36px;font-weight:700;letter-spacing:-.5px;line-height:1.22}
+.up{color:var(--green);font-weight:500}.dn{color:#d1344b;font-weight:500}
+.tabs{display:flex;gap:4px;background:rgba(148,151,169,.08);padding:4px;border-radius:12px;margin:16px 0}
+.tabs span{flex:1;text-align:center;padding:8px;border-radius:10px;font-weight:500;font-size:14px;color:var(--cool)}
+.tabs .on{background:#fff;color:var(--ink);box-shadow:var(--micro)}
+.field{border:1px solid var(--border);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.field small{display:block;font-size:12px;color:var(--silver);line-height:1.33}
+.field b{font-size:22px;font-weight:600}
+.chips{display:flex;gap:8px;margin:12px 0 16px}
+.chips span{font-size:14px;font-weight:500;padding:4px 10px;border-radius:8px;background:rgba(148,151,169,.08)}
+.trade .btn.p{width:100%;justify-content:center}
+.float{position:absolute;right:-28px;top:-24px;padding:14px 16px;display:flex;gap:10px;align-items:center;font-size:14px}
+.float2{position:absolute;left:-150px;bottom:150px;padding:14px 16px;font-size:14px;width:220px}
+/* sections */
+section{padding:88px 0}
+.alt{background:#f7f7fa}
+h2{font-size:36px;line-height:1.22;letter-spacing:-.5px}
+.shead{display:flex;justify-content:space-between;align-items:end;margin-bottom:32px}
+.shead p{color:var(--cool);margin-top:8px;max-width:560px}
+/* market table */
+.market{overflow:hidden}
+.mtabs{display:flex;gap:8px;padding:16px 24px;border-bottom:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:16px}
+th{font-size:14px;font-weight:500;color:var(--silver);text-align:right;padding:12px 24px;border-bottom:1px solid var(--border)}
+th:first-child,td:first-child{text-align:left}
+td{padding:14px 24px;border-bottom:1px solid var(--border);text-align:right}
+tr:last-child td{border-bottom:0}
+.asset{display:flex;align-items:center;gap:12px}
+.asset small{color:var(--silver);font-size:14px;margin-left:4px}
+.spark{display:inline-block;vertical-align:middle}
+/* features */
+.feat{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.fcard{padding:32px;border-radius:16px;background:#fff;box-shadow:var(--sh);border:1px solid var(--border)}
+.ficon{width:48px;height:48px;border-radius:12px;background:var(--purple-subtle);display:grid;place-items:center;margin-bottom:24px}
+.fcard h3{font-size:22px;font-weight:600;line-height:1.2;margin-bottom:8px}
+.fcard p{color:var(--cool)}
+.fcard a{display:inline-block;margin-top:16px;color:var(--purple);font-weight:500;text-decoration:none}
+/* pro band */
+.pro{background:var(--ink);color:#fff;border-radius:16px;padding:56px;display:grid;grid-template-columns:1fr 1.25fr;gap:48px;align-items:center}
+.pro h2{color:#fff}
+.pro p{color:var(--silver);margin:12px 0 28px}
+.book{background:#17181d;border-radius:12px;padding:16px;font-size:14px;line-height:1.71;border:1px solid #26272e}
+.book .row{display:grid;grid-template-columns:1fr 1fr 1fr;position:relative}
+.book .row span:nth-of-type(2),.book .row span:nth-of-type(3){text-align:right}
+.book .bar{position:absolute;right:0;top:2px;bottom:2px;border-radius:3px}
+.book .hd{color:var(--silver);font-size:12px}
+.book .mid{font-size:22px;font-weight:600;padding:6px 0;color:var(--green)}
+.stake{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.stile{border:1px solid var(--border);border-radius:16px;padding:24px}
+.stile .apy{font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1.29;margin:16px 0 4px}
+.stile small{color:var(--silver);font-size:14px}
+.foot{border-top:1px solid var(--border);padding:40px 0 48px;color:var(--silver);font-size:14px}
+.foot .wrap{display:flex;justify-content:space-between}
+</style></head><body>
+<nav><div class="wrap">
+  <span class="logo brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path fill="#7132f5" d="M16 3C8.8 3 3 8.8 3 16v9.2a2.3 2.3 0 0 0 4.6 0V16a1.7 1.7 0 0 1 3.4 0v9.2a2.3 2.3 0 0 0 4.6 0V16a1.7 1.7 0 0 1 3.4 0v9.2a2.3 2.3 0 0 0 4.6 0V16a1.7 1.7 0 0 1 3.4 0v9.2a2.3 2.3 0 0 0 4.6 0V16C29 8.8 23.2 3 16 3z" transform="scale(.94) translate(1 1)"/></svg>kraken</span>
+  <div class="links"><span>Crypto</span><span>Prices</span><span>Pro</span><span>Earn</span><span>Institutions</span><span>Learn</span></div>
+  <span class="sp"></span>
+  <span class="btn g" style="padding:10px 16px">Sign in</span>
+  <span class="btn p" style="padding:10px 16px">Create account</span>
+</div></nav>
+
+<header class="hero"><div class="wrap hgrid">
+  <div>
+    <span class="badge ok">● Trusted by 10M+ clients since 2011</span>
+    <h1 class="brand">Crypto made easy.<br>Trade with confidence.</h1>
+    <p class="lead">Buy, sell and earn 400+ cryptocurrencies on one of the longest-standing and most secure exchanges. Fund in minutes with bank transfer, card or Apple Pay.</p>
+    <div class="signup"><input value="satoshi@example.com" aria-label="email"><span class="btn p">Get started</span></div>
+    <div class="trust tnum"><div><b>$207B+</b>quarterly volume</div><div><b>400+</b>assets listed</div><div><b>24/7</b>client support</div></div>
+  </div>
+  <div style="position:relative;padding:24px 28px 0 44px">
+    <div class="panel trade tnum">
+      <div class="top"><span class="coin btc">₿</span><div><h3>Bitcoin</h3><span style="color:var(--silver);font-size:14px">BTC / USD</span></div><span class="sp"></span><span class="badge ok">+2.84%</span></div>
+      <div class="price">$98,412.36</div>
+      <svg width="100%" height="88" viewBox="0 0 520 88" preserveAspectRatio="none" style="display:block;margin-top:8px"><path d="M0 70 L45 66 L90 60 L135 50 L180 52 L225 36 L270 38 L315 24 L360 26 L415 14 L470 14 L520 6" fill="none" stroke="#7132f5" stroke-width="2.5"/><path d="M0 70 L45 66 L90 60 L135 50 L180 52 L225 36 L270 38 L315 24 L360 26 L415 14 L470 14 L520 6 V88 H0Z" fill="rgba(133,91,251,.16)"/></svg>
+      <div class="tabs"><span class="on">Buy</span><span>Sell</span><span>Convert</span></div>
+      <div class="field"><div><small>You pay</small><b>$1,000.00</b></div><span class="btn s">USD ▾</span></div>
+      <div class="field"><div><small>You receive</small><b>0.01016 BTC</b></div><span class="btn s">BTC ▾</span></div>
+      <div class="chips"><span>$100</span><span>$500</span><span style="background:var(--purple-subtle);color:var(--purple)">$1,000</span><span>Max</span></div>
+      <span class="btn p">Buy Bitcoin</span>
+    </div>
+    <div class="panel float"><span class="coin eth" style="width:28px;height:28px;font-size:12px">Ξ</span><div><b style="font-weight:600">ETH staked</b><br><span class="up">+4.12% APY</span></div></div>
+    <div class="panel float2 tnum"><span style="color:var(--silver);font-size:12px">Portfolio balance</span><div style="font-size:22px;font-weight:600">$24,860.12</div><span class="up">▲ $612.40 today</span></div>
+  </div>
+</div></header>
+
+<section class="alt"><div class="wrap">
+  <div class="shead"><div><h2 class="brand">Today's crypto prices</h2><p>Live market data for the most traded assets on Kraken. Prices update in real time.</p></div><span class="btn o">View all 400+ assets</span></div>
+  <div class="panel market tnum">
+    <div class="mtabs"><span class="btn s">Top assets</span><span class="btn g" style="padding:8px 12px">Gainers</span><span class="btn g" style="padding:8px 12px">New listings</span><span class="btn g" style="padding:8px 12px">Stablecoins</span></div>
+    <table>
+      <tr><th>Asset</th><th>Price</th><th>24h change</th><th>Market cap</th><th>Volume (24h)</th><th>7d</th><th></th></tr>
+      <tr><td><div class="asset"><span class="coin btc">₿</span><b style="font-weight:500">Bitcoin</b><small>BTC</small></div></td><td>$98,412.36</td><td class="up">+2.84%</td><td>$1.94T</td><td>$38.2B</td><td><svg class="spark" width="96" height="28"><path d="M0 22 L16 18 L32 20 L48 12 L64 14 L80 6 L96 4" fill="none" stroke="#149e61" stroke-width="2"/></svg></td><td><span class="btn p" style="padding:8px 14px;font-size:14px">Buy</span></td></tr>
+      <tr><td><div class="asset"><span class="coin eth">Ξ</span><b style="font-weight:500">Ethereum</b><small>ETH</small></div></td><td>$3,642.10</td><td class="up">+1.37%</td><td>$438.6B</td><td>$17.9B</td><td><svg class="spark" width="96" height="28"><path d="M0 18 L16 20 L32 14 L48 16 L64 10 L80 12 L96 8" fill="none" stroke="#149e61" stroke-width="2"/></svg></td><td><span class="btn p" style="padding:8px 14px;font-size:14px">Buy</span></td></tr>
+      <tr><td><div class="asset"><span class="coin sol">◎</span><b style="font-weight:500">Solana</b><small>SOL</small></div></td><td>$212.48</td><td class="dn">−0.92%</td><td>$101.3B</td><td>$4.6B</td><td><svg class="spark" width="96" height="28"><path d="M0 8 L16 10 L32 6 L48 14 L64 12 L80 18 L96 16" fill="none" stroke="#d1344b" stroke-width="2"/></svg></td><td><span class="btn p" style="padding:8px 14px;font-size:14px">Buy</span></td></tr>
+      <tr><td><div class="asset"><span class="coin xrp">✕</span><b style="font-weight:500">XRP</b><small>XRP</small></div></td><td>$2.3184</td><td class="up">+5.61%</td><td>$132.7B</td><td>$6.1B</td><td><svg class="spark" width="96" height="28"><path d="M0 24 L16 22 L32 18 L48 19 L64 12 L80 8 L96 3" fill="none" stroke="#149e61" stroke-width="2"/></svg></td><td><span class="btn p" style="padding:8px 14px;font-size:14px">Buy</span></td></tr>
+      <tr><td><div class="asset"><span class="coin usdc">$</span><b style="font-weight:500">USD Coin</b><small>USDC</small></div></td><td>$1.0001</td><td style="color:var(--silver)">0.00%</td><td>$41.2B</td><td>$5.3B</td><td><svg class="spark" width="96" height="28"><path d="M0 14 L16 14 L32 13 L48 14 L64 14 L80 15 L96 14" fill="none" stroke="#9497a9" stroke-width="2"/></svg></td><td><span class="btn p" style="padding:8px 14px;font-size:14px">Buy</span></td></tr>
+      <tr><td><div class="asset"><span class="coin dot">●</span><b style="font-weight:500">Polkadot</b><small>DOT</small></div></td><td>$7.842</td><td class="dn">−2.18%</td><td>$11.9B</td><td>$412M</td><td><svg class="spark" width="96" height="28"><path d="M0 6 L16 8 L32 12 L48 10 L64 16 L80 20 L96 22" fill="none" stroke="#d1344b" stroke-width="2"/></svg></td><td><span class="btn p" style="padding:8px 14px;font-size:14px">Buy</span></td></tr>
+    </table>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="shead"><div><h2 class="brand">Built for security from day one</h2><p>We've never been hacked. Your assets are protected by industry-leading cold storage and proof of reserves audits.</p></div></div>
+  <div class="feat">
+    <div class="fcard"><div class="ficon"><svg width="24" height="24" fill="none" stroke="#7132f5" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg></div><h3>95% cold storage</h3><p>The vast majority of client funds are held offline in geographically distributed, air-gapped vaults.</p><a>How we secure funds →</a></div>
+    <div class="fcard"><div class="ficon"><svg width="24" height="24" fill="none" stroke="#7132f5" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M8 15h3"/></svg></div><h3>Proof of reserves</h3><p>Independently verify that your balances are fully backed 1:1 with our cryptographic audit tool.</p><a>Verify your balance →</a></div>
+    <div class="fcard"><div class="ficon"><svg width="24" height="24" fill="none" stroke="#7132f5" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h3>24/7 human support</h3><p>Reach a real person any time by chat, email or phone — in 20+ languages, no bots in the way.</p><a>Contact support →</a></div>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <div class="pro tnum">
+    <div><span class="badge" style="background:rgba(133,91,251,.16);color:#b9a1ff">Kraken Pro</span><h2 class="brand" style="margin-top:16px">Advanced trading,<br>low fees.</h2><p>Real-time order books, advanced charting and margin up to 5x. Maker fees from 0.00% with volume tiers.</p><div style="display:flex;gap:12px"><span class="btn p">Try Kraken Pro</span><span class="btn w">Compare fees</span></div></div>
+    <div class="book">
+      <div class="row hd"><span>Price (USD)</span><span>Size (BTC)</span><span>Total</span></div>
+      <div class="row"><i class="bar" style="width:62%;background:rgba(209,52,75,.12)"></i><span class="dn">98,431.50</span><span>0.8421</span><span>4.2130</span></div>
+      <div class="row"><i class="bar" style="width:44%;background:rgba(209,52,75,.12)"></i><span class="dn">98,428.00</span><span>1.2004</span><span>3.3709</span></div>
+      <div class="row"><i class="bar" style="width:30%;background:rgba(209,52,75,.12)"></i><span class="dn">98,420.10</span><span>0.5530</span><span>2.1705</span></div>
+      <div class="row"><i class="bar" style="width:18%;background:rgba(209,52,75,.12)"></i><span class="dn">98,415.80</span><span>1.6175</span><span>1.6175</span></div>
+      <div class="mid">98,412.36 <span style="font-size:14px;color:var(--silver);font-weight:400">Spread 3.44</span></div>
+      <div class="row"><i class="bar" style="width:22%;background:rgba(20,158,97,.16)"></i><span class="up">98,410.00</span><span>0.9120</span><span>0.9120</span></div>
+      <div class="row"><i class="bar" style="width:38%;background:rgba(20,158,97,.16)"></i><span class="up">98,402.40</span><span>2.0410</span><span>2.9530</span></div>
+      <div class="row"><i class="bar" style="width:55%;background:rgba(20,158,97,.16)"></i><span class="up">98,396.90</span><span>1.3300</span><span>4.2830</span></div>
+      <div class="row"><i class="bar" style="width:74%;background:rgba(20,158,97,.16)"></i><span class="up">98,388.00</span><span>2.6105</span><span>6.8935</span></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="alt"><div class="wrap">
+  <div class="shead"><div><h2 class="brand">Earn rewards on your crypto</h2><p>Opt in to staking and get rewards paid out twice a week. Unstake whenever you want on flexible assets.</p></div><span class="btn p">Start earning</span></div>
+  <div class="stake tnum">
+    <div class="stile" style="background:#fff"><div class="asset"><span class="coin eth">Ξ</span><b style="font-weight:500">Ethereum</b></div><div class="apy brand">up to 4.12%</div><small>Annual rewards · Flexible</small></div>
+    <div class="stile" style="background:#fff"><div class="asset"><span class="coin sol">◎</span><b style="font-weight:500">Solana</b></div><div class="apy brand">up to 7.40%</div><small>Annual rewards · Flexible</small></div>
+    <div class="stile" style="background:#fff"><div class="asset"><span class="coin dot">●</span><b style="font-weight:500">Polkadot</b></div><div class="apy brand">up to 12.0%</div><small>Annual rewards · Bonded 28 days</small></div>
+    <div class="stile" style="background:#fff"><div class="asset"><span class="coin ada">₳</span><b style="font-weight:500">Cardano</b></div><div class="apy brand">up to 3.25%</div><small>Annual rewards · Flexible</small></div>
+  </div>
+</div></section>
+<div class="foot"><div class="wrap"><span>© 2011–2026 Payward, Inc. Crypto trading involves risk of loss.</span><span>Legal · Privacy · Disclosures · Status</span></div></div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">kraken</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

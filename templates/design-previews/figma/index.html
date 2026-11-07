@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Figma — DESIGN.md preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=JetBrains+Mono:wght@400&display=block">
+<style>
+:root{--primary:#000;--canvas:#fff;--hair:#e6e6e6;--hair-soft:#f1f1f1;--soft:#f7f7f5;--lime:#dceeb1;--lilac:#c5b0f4;--cream:#f4ecd6;--pink:#efd4d4;--mint:#c8e6cd;--coral:#f3c9b6;--navy:#1f1d3d;--magenta:#ff3d8b;--success:#1ea64a;
+--sans:"Inter","SF Pro Display",system-ui,helvetica,sans-serif;--mono:"JetBrains Mono","SF Mono",menlo,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{font-family:var(--sans);font-feature-settings:"kern";font-size:18px;font-weight:320;line-height:1.43;letter-spacing:-.26px;color:#000;background:#fff}
+.wrap{max-width:1376px;margin:0 auto;padding:0 48px}
+/* line-heights reduced ~0.02 for Inter substitute */
+.dxl{font-size:86px;font-weight:340;line-height:.98;letter-spacing:-1.72px}
+.dlg{font-size:64px;font-weight:340;line-height:1.08;letter-spacing:-.96px}
+.hl{font-size:26px;font-weight:540;line-height:1.33;letter-spacing:-.26px}
+.sh{font-size:26px;font-weight:340;line-height:1.33;letter-spacing:-.26px}
+.ct{font-size:24px;font-weight:700;line-height:1.43;letter-spacing:0}
+.blg{font-size:20px;font-weight:330;line-height:1.38;letter-spacing:-.14px}
+.bsm{font-size:16px;font-weight:330;line-height:1.43;letter-spacing:-.14px}
+.eb{font-family:var(--mono);font-size:18px;font-weight:400;line-height:1.3;letter-spacing:.54px;text-transform:uppercase}
+.cap{font-family:var(--mono);font-size:12px;font-weight:400;line-height:1;letter-spacing:.6px;text-transform:uppercase}
+.btn{display:inline-flex;align-items:center;font-size:20px;font-weight:480;line-height:1.4;letter-spacing:-.1px;border-radius:50px;white-space:nowrap}
+.btn.p{background:#000;color:#fff;padding:10px 20px}
+.btn.s{background:#fff;color:#000;padding:8px 18px 10px}
+.btn.mg{background:var(--magenta);color:#fff;padding:10px 18px}
+.btn.sm{font-size:16px;padding:6px 16px 8px}
+nav{height:56px;display:flex;align-items:center;gap:28px;font-size:16px;font-weight:330}
+nav .lg{display:flex;align-items:center;gap:8px;font-size:22px;font-weight:540;letter-spacing:-.4px;margin-right:12px}
+nav .sp{flex:1}
+.marquee{height:36px;background:#000;color:#fff;display:flex;align-items:center;justify-content:space-around;font-size:16px;font-weight:480;letter-spacing:-.14px;white-space:nowrap;overflow:hidden}
+.hero{padding:96px 0 0;text-align:center}
+.hero .blg{max-width:640px;margin:28px auto 36px}
+.pair{display:flex;gap:12px;justify-content:center}
+/* editor mock */
+.ed{margin:72px auto 0;width:1200px;border:1px solid var(--hair);border-radius:24px;overflow:hidden;display:grid;grid-template-columns:240px 1fr 260px;grid-template-rows:44px 520px;text-align:left;background:#fff}
+.tb{grid-column:1/-1;background:#2c2c2c;color:#fff;display:flex;align-items:center;gap:16px;padding:0 14px;font-size:13px;font-weight:450;letter-spacing:0}
+.tb .tool{width:28px;height:28px;border-radius:6px;display:grid;place-items:center;color:#fff;opacity:.85}
+.tb .tool.on{background:#0d99ff;opacity:1}
+.panel{border-right:1px solid var(--hair);padding:12px 0;font-size:12.5px;letter-spacing:0;font-weight:400}
+.panel.r{border-right:0;border-left:1px solid var(--hair);padding:12px 16px}
+.panel .ph{font-size:11px;font-weight:600;padding:6px 14px;color:#000}
+.layer{padding:5px 14px;display:flex;gap:8px;align-items:center}
+.layer.sel{background:#e5f4ff}
+.layer i{width:10px;height:10px;border:1.5px solid #000;border-radius:2px;flex:none}
+.canvasA{background:#e5e5e5;position:relative;overflow:hidden}
+.frame{position:absolute;background:#fff;border-radius:8px}
+.flabel{position:absolute;font-size:11px;color:#666;font-weight:400;letter-spacing:0}
+.selbox{position:absolute;border:1.5px solid #0d99ff}
+.selbox b{position:absolute;width:7px;height:7px;background:#fff;border:1.5px solid #0d99ff}
+.cursor{position:absolute;font-size:11px;font-weight:500;color:#fff;padding:2px 8px;border-radius:4px 8px 8px 8px;letter-spacing:0}
+.prop{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0 14px}
+.prop span{background:var(--soft);border-radius:6px;padding:5px 8px;font-size:12px}
+.sw{display:flex;gap:8px;align-items:center;margin-bottom:6px;font-size:12px}
+.sw i{width:16px;height:16px;border-radius:4px;border:1px solid var(--hair)}
+section{padding:96px 0 0}
+.block{border-radius:24px;padding:48px}
+.btxt{max-width:760px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.lib{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.comp{background:#fff;border-radius:8px;padding:16px;height:120px;display:flex;flex-direction:column;justify-content:space-between}
+.comp .cap{font-size:11px}
+.feat3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+.tile{background:var(--soft);border-radius:8px;padding:24px;min-height:300px;display:flex;flex-direction:column;gap:12px}
+.tile .vis{margin-top:auto;height:130px;border-radius:8px;position:relative;overflow:hidden}
+.note{position:absolute;border-radius:6px;padding:10px;font-size:12px;font-weight:400;letter-spacing:0;box-shadow:0 4px 16px rgba(0,0,0,.06)}
+.code{background:#1e1e1e;color:#e6e6e6;border-radius:8px;padding:20px;font:13px/1.7 var(--mono);letter-spacing:0}
+.code .k{color:#c5b0f4}.code .s{color:#dceeb1}.code .c{color:#8a8a8a}
+.tpl{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:48px}
+.tc{background:var(--soft);border-radius:8px;padding:16px}
+.tc .th{height:170px;border-radius:8px;margin-bottom:14px;position:relative;overflow:hidden}
+.tabs{display:inline-flex;gap:4px;background:#fff;border:1px solid var(--hair);border-radius:50px;padding:4px}
+.tabs span{font-size:16px;font-weight:480;padding:8px 18px;border-radius:50px}
+.tabs span.on{background:#000;color:#fff}
+.pr{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:32px}
+.pc{border:1px solid var(--hair);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:10px}
+.pc .amt{font-size:48px;font-weight:340;letter-spacing:-.96px;line-height:1}
+.pc ul{list-style:none;font-size:16px;font-weight:330;display:grid;gap:8px;margin:8px 0 16px;border-top:1px solid var(--hair-soft);padding-top:16px}
+.ck{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;color:var(--success);font-size:13px;font-weight:700;margin-right:8px}
+.pc .btn{margin-top:auto;align-self:flex-start}
+.promo{background:var(--lilac);border-radius:8px;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;font-size:16px;font-weight:330}
+.foot{padding:96px 32px;max-width:1376px;margin:0 auto;display:grid;grid-template-columns:1.4fr repeat(5,1fr);gap:24px}
+.foot h6{margin-bottom:18px}
+.foot li{list-style:none;font-size:16px;font-weight:330;margin-bottom:10px}
+</style></head><body>
+<div class="wrap">
+<nav><span class="lg"><svg width="18" height="26" viewBox="3.6 0 16.8 24" aria-hidden="true"><path fill="#000" d="M15.852 8.981h-4.588V0h4.588c2.476 0 4.49 2.014 4.49 4.49s-2.014 4.491-4.49 4.491zM12.735 7.51h3.117c1.665 0 3.019-1.355 3.019-3.019s-1.355-3.019-3.019-3.019h-3.117V7.51zm0 1.471H8.148c-2.476 0-4.49-2.014-4.49-4.49S5.672 0 8.148 0h4.588v8.981zm-4.587-7.51c-1.665 0-3.019 1.355-3.019 3.019s1.354 3.02 3.019 3.02h3.117V1.471H8.148zm4.587 15.019H8.148c-2.476 0-4.49-2.014-4.49-4.49s2.014-4.49 4.49-4.49h4.588v8.98zM8.148 8.981c-1.665 0-3.019 1.355-3.019 3.019s1.355 3.019 3.019 3.019h3.117V8.981H8.148zM8.172 24c-2.489 0-4.515-2.014-4.515-4.49s2.014-4.49 4.49-4.49h4.588v4.441c0 2.503-2.047 4.539-4.563 4.539zm-.024-7.51a3.023 3.023 0 0 0-3.019 3.019c0 1.665 1.365 3.019 3.044 3.019 1.705 0 3.093-1.376 3.093-3.068v-2.97H8.148zm7.704 0h-.098c-2.476 0-4.49-2.014-4.49-4.49s2.014-4.49 4.49-4.49h.098c2.476 0 4.49 2.014 4.49 4.49s-2.014 4.49-4.49 4.49zm-.097-7.509c-1.665 0-3.019 1.355-3.019 3.019s1.355 3.019 3.019 3.019h.098c1.665 0 3.019-1.355 3.019-3.019s-1.355-3.019-3.019-3.019h-.098z"/></svg>Figma</span>
+<span>Products</span><span>Solutions</span><span>Community</span><span>Resources</span><span>Pricing</span><span class="sp"></span><span>Log in</span><span class="btn s sm" style="border:1px solid #e6e6e6">Contact sales</span><span class="btn p sm">Get started for free</span></nav>
+</div>
+<div class="marquee"><span>Microsoft</span><span>Airbnb</span><span>Duolingo</span><span>Netflix</span><span>Zoom</span><span>Uber</span><span>Dropbox</span><span>Slack</span><span>Stripe</span><span>GitHub</span></div>
+
+<div class="wrap">
+<header class="hero">
+  <div class="eb">Figma Design · Config 2026</div>
+  <h1 class="dxl" style="margin:24px auto 0;max-width:1100px">Make anything possible, all in Figma</h1>
+  <p class="blg">Figma helps design and development teams build great products, together — from first sketch to shipped code.</p>
+  <div class="pair"><span class="btn p">Get started for free</span><span class="btn s" style="border:1px solid #e6e6e6">Contact sales</span></div>
+  <div class="ed">
+    <div class="tb"><span class="tool on">▸</span><span class="tool">#</span><span class="tool">□</span><span class="tool">✎</span><span class="tool">T</span><span class="tool">◌</span><span style="margin-left:24px;opacity:.7">Checkout redesign</span><span style="opacity:.4">/</span><span>Mobile v4</span><span style="margin-left:auto;display:flex;gap:4px"><i style="width:24px;height:24px;border-radius:50%;background:#c5b0f4;display:block"></i><i style="width:24px;height:24px;border-radius:50%;background:#dceeb1;display:block"></i><i style="width:24px;height:24px;border-radius:50%;background:#f3c9b6;display:block"></i></span><span style="background:#0d99ff;border-radius:6px;padding:4px 10px">Share</span></div>
+    <div class="panel"><div class="ph">Layers</div>
+      <div class="layer"><i></i>Cart — 390</div><div class="layer sel" style="padding-left:28px"><i style="border-color:#0d99ff"></i>Order summary</div><div class="layer" style="padding-left:42px"><i></i>Line item / Default</div><div class="layer" style="padding-left:42px"><i></i>Line item / Default</div><div class="layer" style="padding-left:42px"><i></i>Promo field</div><div class="layer" style="padding-left:28px"><i></i>Pay button</div><div class="layer"><i></i>Payment — 390</div><div class="layer"><i></i>Confirmation — 390</div>
+      <div class="ph" style="margin-top:12px">Assets</div><div class="layer"><i style="border-radius:50%"></i>Button / Primary</div><div class="layer"><i style="border-radius:50%"></i>Input / Text</div><div class="layer"><i style="border-radius:50%"></i>Badge / Success</div></div>
+    <div class="canvasA">
+      <span class="flabel" style="left:60px;top:28px">Cart — 390</span>
+      <div class="frame" style="left:60px;top:46px;width:220px;height:440px;padding:16px">
+        <div style="font-size:15px;font-weight:600;letter-spacing:-.2px">Your cart</div>
+        <div style="margin-top:14px;display:grid;gap:10px;font-size:11px;letter-spacing:0">
+          <div style="display:flex;gap:8px"><i style="width:40px;height:40px;border-radius:8px;background:#f3c9b6;flex:none"></i><div>Ceramic mug<br><b>$24.00</b></div></div>
+          <div style="display:flex;gap:8px"><i style="width:40px;height:40px;border-radius:8px;background:#c8e6cd;flex:none"></i><div>Linen tote<br><b>$38.00</b></div></div>
+        </div>
+        <div style="position:absolute;left:16px;right:16px;bottom:16px;background:#000;color:#fff;border-radius:50px;text-align:center;font-size:12px;padding:9px 0">Pay $62.00</div>
+      </div>
+      <div class="selbox" style="left:72px;top:150px;width:196px;height:110px"><b style="left:-4px;top:-4px"></b><b style="right:-4px;top:-4px"></b><b style="left:-4px;bottom:-4px"></b><b style="right:-4px;bottom:-4px"></b></div>
+      <span class="flabel" style="left:320px;top:28px">Payment — 390</span>
+      <div class="frame" style="left:320px;top:46px;width:220px;height:440px;padding:16px"><div style="font-size:15px;font-weight:600">Payment</div><div style="margin-top:14px;height:30px;border:1px solid #e6e6e6;border-radius:8px"></div><div style="margin-top:8px;height:30px;border:1px solid #e6e6e6;border-radius:8px"></div><div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="height:30px;border:1px solid #e6e6e6;border-radius:8px"></div><div style="height:30px;border:1px solid #e6e6e6;border-radius:8px"></div></div></div>
+      <span class="cursor" style="left:470px;top:250px;background:#ff3d8b">Maya</span>
+      <span class="cursor" style="left:210px;top:300px;background:#1ea64a">Dev · Leo</span>
+    </div>
+    <div class="panel r"><div class="ph" style="padding:6px 0">Design &nbsp; <span style="color:#999;font-weight:400">Prototype</span></div>
+      <div class="cap" style="font-size:10px;margin-top:10px">Frame</div><div class="prop"><span>X 12</span><span>Y 104</span><span>W 196</span><span>H 110</span></div>
+      <div class="cap" style="font-size:10px">Auto layout</div><div class="prop"><span>↕ 10</span><span>⇆ 16</span></div>
+      <div class="cap" style="font-size:10px;margin-bottom:8px">Fill</div><div class="sw"><i style="background:#fff"></i>FFFFFF · 100%</div>
+      <div class="cap" style="font-size:10px;margin:14px 0 8px">Variables</div><div class="sw"><i style="background:#000"></i>color/primary</div><div class="sw"><i style="background:#dceeb1"></i>color/surface-lime</div><div class="sw"><i style="background:#1ea64a"></i>color/success</div></div>
+  </div>
+</header>
+
+<section><div class="block" style="background:var(--lime)"><div class="split">
+  <div><div class="eb">Design systems</div><h2 class="dlg" style="margin:20px 0">Build once, scale everywhere</h2><p class="sh">Components, variables and styles keep every team in sync — so a change in the library ripples through every file.</p><div class="pair" style="justify-content:flex-start;margin-top:32px"><span class="btn p">Explore design systems</span></div></div>
+  <div class="lib">
+    <div class="comp"><span class="cap">Button</span><span class="btn p sm" style="align-self:flex-start">Continue</span></div>
+    <div class="comp"><span class="cap">Toggle</span><span style="width:44px;height:24px;border-radius:9999px;background:#000;position:relative;display:block"><i style="position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff"></i></span></div>
+    <div class="comp"><span class="cap">Badge</span><span style="align-self:flex-start;background:#c8e6cd;border-radius:6px;padding:2px 8px;font-size:13px;font-weight:480">Shipped</span></div>
+    <div class="comp"><span class="cap">Input</span><span style="border:1px solid #e6e6e6;border-radius:8px;padding:6px 10px;font-size:13px">name@studio.com</span></div>
+    <div class="comp"><span class="cap">Avatar group</span><span style="display:flex"><i style="width:26px;height:26px;border-radius:50%;background:#c5b0f4;border:2px solid #fff"></i><i style="width:26px;height:26px;border-radius:50%;background:#f3c9b6;border:2px solid #fff;margin-left:-8px"></i><i style="width:26px;height:26px;border-radius:50%;background:#1f1d3d;border:2px solid #fff;margin-left:-8px"></i></span></div>
+    <div class="comp"><span class="cap">Variables</span><span style="font-size:13px;font-weight:480">142 tokens · 4 modes</span></div>
+  </div>
+</div></div></section>
+
+<section>
+  <div class="eb">Ideate · Design · Build</div>
+  <h2 class="dlg" style="margin-top:20px;max-width:900px">One platform from first idea to final product</h2>
+  <div class="feat3">
+    <div class="tile"><span class="eb" style="font-size:14px">FigJam</span><h3 class="ct">Brainstorm together</h3><p class="bsm">An online whiteboard for workshops, retros and planning.</p>
+      <div class="vis" style="background:var(--cream)"><span class="note" style="left:20px;top:18px;width:110px;background:#f4ecd6;border:1px solid #e6dcc0;transform:rotate(-4deg)">Onboarding is too long</span><span class="note" style="left:140px;top:34px;width:110px;background:#efd4d4;transform:rotate(3deg)">Add Apple Pay</span><span class="note" style="left:270px;top:14px;width:90px;background:#c8e6cd;transform:rotate(-2deg)">Saved carts ✓</span></div></div>
+    <div class="tile"><span class="eb" style="font-size:14px">Figma Make</span><h3 class="ct">Prompt to prototype</h3><p class="bsm">Turn an idea into a working, high-fidelity prototype with AI.</p>
+      <div class="vis" style="background:#fff;border:1px solid var(--hair);padding:14px"><div style="background:var(--soft);border-radius:8px;padding:10px;font-size:13px">Make a habit tracker with streaks and a weekly chart</div><div style="display:flex;gap:6px;align-items:flex-end;height:50px;margin-top:12px"><i style="flex:1;height:40%;background:#c5b0f4;border-radius:4px"></i><i style="flex:1;height:70%;background:#c5b0f4;border-radius:4px"></i><i style="flex:1;height:55%;background:#c5b0f4;border-radius:4px"></i><i style="flex:1;height:90%;background:#000;border-radius:4px"></i><i style="flex:1;height:65%;background:#c5b0f4;border-radius:4px"></i></div></div></div>
+    <div class="tile"><span class="eb" style="font-size:14px">Figma Sites</span><h3 class="ct">Publish to the web</h3><p class="bsm">Design and publish responsive websites without leaving Figma.</p>
+      <div class="vis" style="background:var(--mint);padding:14px"><div style="background:#fff;border-radius:8px;height:100%;padding:12px"><div style="font-size:16px;font-weight:540;letter-spacing:-.3px">studio.design</div><div style="height:8px;width:70%;background:var(--hair);border-radius:4px;margin-top:10px"></div><div style="height:8px;width:50%;background:var(--hair);border-radius:4px;margin-top:6px"></div></div></div></div>
+  </div>
+</section>
+
+<section><div class="block" style="background:var(--navy);color:#fff"><div class="split">
+  <div><div class="eb">Ship products</div><h2 class="dlg" style="margin:20px 0">Go from design to code, faster</h2><p class="sh">Dev Mode gives developers everything they need — specs, variables and ready-to-use code — linked to the exact frame that's ready for build.</p><div class="pair" style="justify-content:flex-start;margin-top:32px"><span class="btn s">Explore Dev Mode</span><span style="width:40px;height:40px;border-radius:9999px;background:rgba(255,255,255,.16);display:grid;place-items:center">→</span></div></div>
+  <div class="code"><span class="c">/* Order summary — Ready for dev */</span><br><span class="k">.order-summary</span> {<br>&nbsp;&nbsp;display: <span class="s">flex</span>;<br>&nbsp;&nbsp;flex-direction: <span class="s">column</span>;<br>&nbsp;&nbsp;gap: <span class="s">var(--space-10)</span>;<br>&nbsp;&nbsp;padding: <span class="s">16px</span>;<br>&nbsp;&nbsp;border-radius: <span class="s">var(--radius-md)</span>;<br>&nbsp;&nbsp;background: <span class="s">var(--color-surface)</span>;<br>}<br><br><span class="c">// React · from Code Connect</span><br>&lt;<span class="k">OrderSummary</span> items={cart} promo /&gt;</div>
+</div></div></section>
+
+<section>
+  <div class="eb">Explore what people are making</div>
+  <h2 class="dlg" style="margin-top:20px">Start with a template</h2>
+  <div class="tpl">
+    <div class="tc"><div class="th" style="background:var(--pink)"><span class="note" style="left:24px;top:30px;width:120px;height:80px;background:#fff"></span><span class="note" style="left:90px;top:70px;width:120px;height:70px;background:#ff3d8b;opacity:.8"></span></div><div class="bsm" style="font-weight:480">Mobile app UI kit</div><div class="cap" style="margin-top:8px">Design · Free</div></div>
+    <div class="tc"><div class="th" style="background:var(--cream)"><span class="note" style="left:20px;top:24px;width:70px;height:60px;background:#dceeb1;transform:rotate(-5deg)"></span><span class="note" style="left:100px;top:40px;width:70px;height:60px;background:#c5b0f4;transform:rotate(4deg)"></span><span class="note" style="left:180px;top:28px;width:70px;height:60px;background:#f3c9b6"></span></div><div class="bsm" style="font-weight:480">Sprint retrospective</div><div class="cap" style="margin-top:8px">FigJam · Free</div></div>
+    <div class="tc"><div class="th" style="background:var(--lilac)"><span class="note" style="left:24px;top:24px;right:24px;height:28px;background:#fff"></span><span class="note" style="left:24px;top:62px;width:120px;height:80px;background:#1f1d3d"></span></div><div class="bsm" style="font-weight:480">Portfolio website</div><div class="cap" style="margin-top:8px">Sites · Free</div></div>
+    <div class="tc"><div class="th" style="background:var(--coral)"><span class="note" style="left:30px;top:30px;width:200px;height:110px;background:#fff"></span></div><div class="bsm" style="font-weight:480">Pitch deck</div><div class="cap" style="margin-top:8px">Slides · Free</div></div>
+  </div>
+</section>
+
+<section>
+  <div class="promo"><span><b style="font-weight:540">Release Notes, live from Config.</b> See everything new in Figma on Nov 18.</span><span class="btn mg sm">Save your spot</span></div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:72px"><h2 class="dlg">Pick a plan</h2><div class="tabs"><span>Starter</span><span class="on">Professional</span><span>Organization</span><span>Enterprise</span></div></div>
+  <div class="pr">
+    <div class="pc"><h3 class="ct">Starter</h3><div class="amt">Free</div><p class="bsm">For individuals getting started.</p><ul><li><span class="ck">✓</span>3 Figma files</li><li><span class="ck">✓</span>Unlimited personal drafts</li><li><span class="ck">✓</span>Basic templates</li></ul><span class="btn s sm" style="border:1px solid #e6e6e6">Start for free</span></div>
+    <div class="pc"><h3 class="ct">Professional</h3><div class="amt">$16</div><p class="bsm">per full seat / month, billed annually</p><ul><li><span class="ck">✓</span>Unlimited files</li><li><span class="ck">✓</span>Team libraries</li><li><span class="ck">✓</span>Dev Mode</li></ul><span class="btn p sm">Get started</span></div>
+    <div class="pc"><h3 class="ct">Organization</h3><div class="amt">$55</div><p class="bsm">per full seat / month, billed annually</p><ul><li><span class="ck">✓</span>Org-wide libraries</li><li><span class="ck">✓</span>Design system analytics</li><li><span class="ck">✓</span>SSO</li></ul><span class="btn s sm" style="border:1px solid #e6e6e6">Get started</span></div>
+    <div class="pc"><h3 class="ct">Enterprise</h3><div class="amt">$90</div><p class="bsm">per full seat / month, billed annually</p><ul><li><span class="ck">✓</span>Dedicated workspaces</li><li><span class="ck">✓</span>Advanced security</li><li><span class="ck">✓</span>Guest controls</li></ul><span class="btn s sm" style="border:1px solid #e6e6e6">Contact sales</span></div>
+  </div>
+</section>
+</div>
+
+<div class="foot">
+  <div><div style="font-size:48px;font-weight:340;letter-spacing:-.96px;line-height:1">Figma</div></div>
+  <ul><h6 class="cap">Product</h6><li>Figma Design</li><li>Dev Mode</li><li>FigJam</li><li>Figma Make</li><li>Figma Slides</li></ul>
+  <ul><h6 class="cap">Plans</h6><li>Pricing</li><li>Enterprise</li><li>Education</li></ul>
+  <ul><h6 class="cap">Use cases</h6><li>UI design</li><li>Wireframing</li><li>Prototyping</li><li>Brainstorming</li></ul>
+  <ul><h6 class="cap">Resources</h6><li>Blog</li><li>Best practices</li><li>Community</li><li>Support</li></ul>
+  <ul><h6 class="cap">Company</h6><li>About us</li><li>Careers</li><li>Newsroom</li><li>Legal</li></ul>
+</div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">figma</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

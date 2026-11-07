@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mintlify — The intelligent knowledge platform</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=block">
+<style>
+:root{--primary:#0a0a0a;--green:#00d4a4;--gdeep:#00b48a;--gsoft:#7cebcb;--tag:#3772cf;--warn:#c37d0d;--annot:#1ba673;--err:#d45656;--skyA:#87a8c8;--skyB:#f5e9d8;--dA:#1a3d4a;--dB:#2d5a4f;--orange:#f55a3c;--orange2:#cc3a1f;--canvas:#fff;--surface:#f7f7f7;--ssoft:#fafafa;--code:#1c1c1e;--hair:#e5e5e5;--hsoft:#ededed;--hdark:#1f1f1f;--ink:#0a0a0a;--charcoal:#1c1c1e;--slate:#3a3a3c;--steel:#5a5a5c;--stone:#888;--muted:#a8a8aa;--odm:#b3b3b3;
+--sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--mono:"Geist Mono","SF Mono",Menlo,Consolas,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{max-width:1440px;margin:0 auto;overflow-x:hidden;background:var(--canvas);color:var(--charcoal);font-family:var(--sans);font-size:16px;line-height:1.5}
+.wrap{max-width:1280px;margin:0 auto;padding:0 32px}
+.promo{background:var(--primary);color:#fff;font:500 14px/1.5 var(--sans);text-align:center;padding:12px 16px}
+.promo u{text-decoration-color:var(--green);text-underline-offset:3px}
+nav{height:64px;display:flex;align-items:center;gap:28px;font-size:14px;color:var(--slate);border-bottom:1px solid var(--hsoft);background:#fff}
+.logo{display:flex;align-items:center;gap:8px;font:600 19px/1 var(--sans);letter-spacing:-.4px;color:var(--ink);margin-right:16px}
+nav .sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;font:500 14px/1.3 var(--sans);padding:10px 20px;border-radius:9999px;text-decoration:none;color:var(--ink);white-space:nowrap}
+.btn.p{background:var(--primary);color:#fff}
+.btn.g{background:var(--green);color:var(--primary)}
+.btn.s{border:1px solid var(--hair);background:rgba(255,255,255,.6)}
+.btn.w{background:#fff;color:var(--primary)}
+.ci{background:var(--surface);color:var(--charcoal);font:500 13px/1.3 var(--mono);border:1px solid var(--hair);border-radius:4px;padding:2px 6px}
+/* hero sky */
+.hero{position:relative;overflow:hidden;background:linear-gradient(180deg,var(--skyA) 0%,#b9c8d4 45%,var(--skyB) 100%);padding:120px 0 0;text-align:center}
+.cloud{position:absolute;border-radius:50%;background:#fff;filter:blur(18px);opacity:.75}
+.hero .in{position:relative;z-index:2}
+.pilltop{display:inline-flex;gap:8px;align-items:center;background:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.6);border-radius:9999px;padding:4px 12px 4px 4px;font:500 13px/1.4 var(--sans);color:#fff}
+.pilltop b{background:var(--green);color:var(--primary);border-radius:9999px;padding:2px 8px;font-weight:600}
+h1{font:600 72px/1.05 var(--sans);letter-spacing:-2px;color:#fff;max-width:900px;margin:24px auto 0;text-shadow:0 1px 24px rgba(40,70,100,.15)}
+.subt{font:400 18px/1.5 var(--sans);color:#fff;max-width:600px;margin:20px auto 32px;opacity:.95}
+.ctas{display:flex;gap:12px;justify-content:center}
+/* mockup */
+.mock{position:relative;z-index:2;margin:72px auto 0;width:1180px;background:#fff;border:1px solid var(--hsoft);border-radius:12px 12px 0 0;box-shadow:rgba(0,0,0,.12) 0 24px 48px -8px;text-align:left;overflow:hidden}
+.dnav{height:56px;display:flex;align-items:center;gap:20px;padding:0 24px;border-bottom:1px solid var(--hsoft);font-size:14px;color:var(--steel)}
+.dnav .lg2{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--ink)}
+.dnav .lg2 i{width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,#0ea5e9,#6366f1)}
+.search{flex:0 0 300px;height:36px;display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--hair);border-radius:8px;padding:8px 16px;color:var(--steel);font-size:14px;margin-left:24px}
+.search kbd{font:500 12px/1 var(--mono);color:var(--stone)}
+.dnav .sp{flex:1}
+.docs{display:grid;grid-template-columns:240px 1fr 200px;height:560px}
+.sb{padding:12px 12px;border-right:1px solid var(--hsoft);font-size:14px;color:var(--steel)}
+.sh{font:600 11px/1.4 var(--sans);letter-spacing:.5px;text-transform:uppercase;color:var(--steel);padding:16px 16px 8px}
+.ni{padding:6px 16px;border-radius:6px;display:flex;align-items:center;gap:8px}
+.ni.on{background:var(--surface);color:var(--ink);font-weight:500}
+.ni.on:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green)}
+.prose{padding:32px 48px;overflow:hidden}
+.crumb{font:500 13px/1.4 var(--sans);color:var(--gdeep);margin-bottom:6px}
+.prose h3{font:600 28px/1.25 var(--sans);color:var(--ink)}
+.prose p{font-size:16px;line-height:1.5;color:var(--slate);margin:10px 0 18px;max-width:640px}
+.tabs{display:flex;border-bottom:1px solid var(--hsoft);margin-bottom:0}
+.tabs span{padding:12px 16px;font:500 14px/1.5 var(--sans);color:var(--steel);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs .on{color:var(--ink);border-color:var(--ink)}
+.cb{background:var(--code);border-radius:8px;overflow:hidden;margin-top:14px}
+.cbh{display:flex;justify-content:space-between;align-items:center;padding:8px 16px;border-bottom:1px solid var(--hdark);font:400 13px/1.4 var(--sans);color:var(--odm)}
+.cbh span:last-child{border:1px solid var(--hdark);border-radius:6px;padding:4px 8px}
+.cb pre{font:400 14px/1.5 var(--mono);color:#fff;padding:16px;white-space:pre}
+.t{color:#7cb7ff}.a{color:var(--gsoft)}.sv{color:#f5c27a}.cm{color:var(--stone)}
+.prop{padding:16px 0;border-bottom:1px solid var(--hsoft);font-size:14px}
+.prop .r{display:flex;gap:8px;align-items:center}
+.ty{background:var(--surface);color:var(--steel);font:400 13px/1.4 var(--mono);border-radius:6px;padding:2px 6px}
+.req{background:var(--err);color:#fff;font:600 11px/1.4 var(--sans);letter-spacing:.5px;border-radius:6px;padding:2px 6px}
+.prop p{margin:6px 0 0;font-size:14px;color:var(--steel)}
+.toc{padding:32px 16px;font-size:14px;color:var(--steel);border-left:1px solid var(--hsoft)}
+.toc b{display:block;font:600 11px/1.4 var(--sans);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px}
+.toc div{padding:4px 0 4px 10px;border-left:2px solid transparent}
+.toc .on{color:var(--ink);font-weight:500;border-color:var(--green)}
+.ask{margin-top:24px;border:1px solid var(--hair);border-radius:12px;padding:12px;font-size:13px}
+.ask i{font-style:normal;display:block;color:var(--stone);margin-top:6px;border:1px solid var(--hair);border-radius:8px;padding:6px 10px}
+/* logos */
+.logos{display:grid;grid-template-columns:repeat(6,1fr);border-bottom:1px solid var(--hsoft)}
+.logos span{padding:20px;text-align:center;font:500 20px/1 var(--sans);letter-spacing:-.4px;color:var(--steel);height:96px;display:flex;align-items:center;justify-content:center}
+.lcap{text-align:center;font-size:14px;color:var(--stone);padding-top:56px}
+section{padding:96px 0}
+h2{font:600 56px/1.1 var(--sans);letter-spacing:-1.5px;color:var(--ink);max-width:820px}
+.lead{font:400 18px/1.5 var(--sans);color:var(--steel);max-width:580px;margin-top:16px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:56px}
+.fc{background:var(--surface);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:10px}
+.fc.wide{grid-column:span 2}
+.fc h4{font:600 22px/1.3 var(--sans);color:var(--ink);margin-top:auto}
+.fc p{font-size:14px;color:var(--steel)}
+.vis{background:#fff;border:1px solid var(--hair);border-radius:12px;padding:16px;margin-bottom:16px;font-size:13px}
+.chat .q{background:var(--surface);border-radius:8px;padding:8px 12px;align-self:flex-end;margin-left:auto;max-width:70%;width:max-content;margin-bottom:10px}
+.chat .r{color:var(--slate);line-height:1.5}
+.chat .r .ci{font-size:12px}
+.src{display:flex;gap:6px;margin-top:10px}
+.src span{border:1px solid var(--hair);border-radius:9999px;padding:2px 10px;font-size:12px;color:var(--steel)}
+.mcp{font:400 13px/1.5 var(--mono);color:var(--slate)}
+.mcp .ok{color:var(--annot)}
+.meter{display:flex;flex-direction:column;gap:8px}
+.meter div{display:flex;justify-content:space-between;font-size:13px}
+.bar{height:6px;border-radius:9999px;background:var(--hsoft);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ink);border-radius:9999px}
+/* testimonial */
+.tcard{background:var(--orange);color:#fff;border-radius:12px;padding:64px;display:grid;grid-template-columns:1.5fr 1fr;gap:56px;align-items:center}
+.tcard q{font:600 28px/1.25 var(--sans);quotes:"“" "”"}
+.tcard .att{margin-top:24px;font:500 14px/1.5 var(--sans)}
+.tcard .att span{opacity:.8;font-weight:400}
+.portrait{aspect-ratio:1;border-radius:8px;background:radial-gradient(circle at 50% 38%,#ffd2c2 0 16%,transparent 16.5%),radial-gradient(ellipse at 50% 92%,#3a2a24 0 34%,transparent 34.5%),linear-gradient(160deg,#ff8a6e,var(--orange2))}
+/* pricing */
+.ptop{display:flex;flex-direction:column;align-items:center;text-align:center}
+.ptabs{display:flex;gap:8px;margin-bottom:24px}
+.ptabs span{border:1px solid var(--hair);border-radius:9999px;padding:8px 16px;font:500 14px/1.5 var(--sans);color:var(--steel)}
+.ptabs .on{background:var(--primary);color:#fff;border-color:var(--primary)}
+.ptop h2{font-size:48px;letter-spacing:-1px;line-height:1.1}
+.toggle{display:inline-flex;align-items:center;gap:4px;background:var(--surface);border-radius:9999px;padding:4px;margin-top:24px;font:500 14px/1.5 var(--sans)}
+.toggle span{padding:6px 14px;border-radius:9999px;color:var(--steel)}
+.toggle .on{background:#fff;color:var(--ink);box-shadow:rgba(0,0,0,.04) 0 1px 2px}
+.disc{background:var(--green);color:var(--primary);font:600 13px/1.4 var(--sans);border-radius:9999px;padding:2px 8px}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px}
+.tier{border:1px solid var(--hair);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:12px}
+.tier.f{border:2px solid var(--green);box-shadow:rgba(0,212,164,.08) 0 8px 24px}
+.tier h4{font:600 28px/1.25 var(--sans);color:var(--ink)}
+.tier .pr{font:600 56px/1.1 var(--sans);letter-spacing:-1.5px;color:var(--ink)}
+.tier .pr small{font:400 14px/1.5 var(--sans);color:var(--steel);letter-spacing:0}
+.tier p{font-size:14px;color:var(--steel)}
+.tier ul{list-style:none;display:grid;gap:10px;font-size:14px;flex:1;align-content:start;margin:8px 0 16px}
+.tier li:before{content:"✓";color:var(--green);font-weight:600;margin-right:10px}
+.tier .btn{justify-content:center}
+.cmp{margin-top:48px;border:1px solid var(--hair);border-radius:8px;overflow:hidden;font-size:14px}
+.cr{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;padding:16px 20px;border-bottom:1px solid var(--hsoft);color:var(--ink)}
+.cr span:not(:first-child){text-align:center;color:var(--steel)}
+.cr.h{font:600 11px/1.4 var(--sans);letter-spacing:.5px;text-transform:uppercase;color:var(--steel);background:var(--ssoft)}
+.cr .y{color:var(--green)!important;font-weight:600}
+.cr:last-child{border:0}
+.lower{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:64px;align-items:start}
+.faq{display:grid;gap:8px}
+.fq{border:1px solid var(--hsoft);border-radius:8px;padding:24px}
+.fq b{display:flex;justify-content:space-between;font:600 18px/1.4 var(--sans);color:var(--ink)}
+.fq b span{color:var(--steel);font-weight:400}
+.fq p{font-size:16px;color:var(--steel);margin-top:8px}
+.spc{border:1px solid var(--hair);border-radius:12px;padding:32px}
+.spc h3{font:600 36px/1.2 var(--sans);letter-spacing:-.5px;color:var(--ink)}
+.perks{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:24px 0}
+.perk{border:1px solid var(--hair);border-radius:12px;padding:24px}
+.perk i{display:grid;place-items:center;width:32px;height:32px;border-radius:9999px;border:1px solid var(--hair);font-style:normal;margin-bottom:10px}
+.perk b{display:block;font:600 18px/1.4 var(--sans);color:var(--ink)}
+.perk span{font-size:14px;color:var(--steel)}
+.foot{border-top:1px solid var(--hair);padding:64px 32px;display:grid;grid-template-columns:1.6fr repeat(4,1fr);gap:24px;font-size:14px;color:var(--steel)}
+.foot h6{font:500 14px/1.5 var(--sans);color:var(--ink);margin-bottom:8px}
+.foot a{display:block;color:var(--steel);text-decoration:none;padding:4px 0}
+</style></head><body>
+<div class="promo">Mintlify raises $18M Series A led by a16z to build the knowledge layer for AI → <u>Read the announcement</u></div>
+<div class="wrap"><nav>
+  <span class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="#00d4a4" aria-hidden="true"><path d="M15.158.002a8.807 8.807 0 0 0-6.249 2.59l-.062.063h-.003L2.655 8.844a.605.605 0 0 0-.062.058 8.838 8.838 0 0 0-.83 11.55l6.251-6.249.065-.063a8.778 8.778 0 0 1-1.758-5.385 8.784 8.784 0 0 1 .283-2.151 8.993 8.993 0 0 1 2.151-.286 8.802 8.802 0 0 1 5.386 1.76 8.81 8.81 0 0 1 3.032 4.11 8.879 8.879 0 0 1 .225 5.21 8.784 8.784 0 0 0-.341.082 8.846 8.846 0 0 1-4.868-.303 8.679 8.679 0 0 1-2.323-1.25l-.064.065L3.55 22.24a8.85 8.85 0 0 0 11.548-.83l.06-.062 6.19-6.187a8.801 8.801 0 0 1-.367.337c.125-.11.247-.224.366-.341l.063-.058A8.817 8.817 0 0 0 24 8.844V.002Z"/></svg>Mintlify</span>
+  <span>Solutions</span><span>Pricing</span><span>Customers</span><span>Documentation</span><span>Changelog</span>
+  <span class="sp"></span><span class="btn s">Talk to sales</span><a class="btn p" href="#">Get Started</a>
+</nav></div>
+
+<header class="hero">
+  <span class="cloud" style="left:-80px;top:120px;width:420px;height:140px"></span>
+  <span class="cloud" style="left:180px;top:200px;width:300px;height:90px;opacity:.55"></span>
+  <span class="cloud" style="right:-60px;top:80px;width:460px;height:150px"></span>
+  <span class="cloud" style="right:220px;top:240px;width:260px;height:80px;opacity:.5"></span>
+  <span class="cloud" style="left:40px;top:560px;width:520px;height:160px;opacity:.6"></span>
+  <span class="cloud" style="right:0;top:600px;width:560px;height:170px;opacity:.6"></span>
+  <div class="in">
+    <span class="pilltop"><b>New</b>Agent that writes and maintains your docs</span>
+    <h1>The intelligent knowledge platform</h1>
+    <p class="subt">Meet the next generation of documentation. AI-native, beautiful out-of-the-box, and built for developers and teams.</p>
+    <div class="ctas"><a class="btn g" href="#">Get started</a><a class="btn s" href="#">Talk to us</a></div>
+  </div>
+  <div class="mock">
+    <div class="dnav"><span class="lg2"><i></i>Acme API</span><span class="search">Search or ask…<kbd>⌘K</kbd></span><span class="sp"></span><span style="color:var(--ink);font-weight:500">Documentation</span><span>Guides</span><span>API Reference</span><span>Changelog</span><span class="btn p" style="padding:6px 14px;font-size:13px">Dashboard</span></div>
+    <div class="docs">
+      <div class="sb">
+        <div class="sh">Get started</div><div class="ni">Introduction</div><div class="ni">Quickstart</div><div class="ni">Authentication</div>
+        <div class="sh">Components</div><div class="ni">Accordions</div><div class="ni">Cards</div><div class="ni">Code groups</div><div class="ni on">Tabs</div><div class="ni">Steps</div>
+        <div class="sh">Primitives</div><div class="ni">Callouts</div><div class="ni">Frames</div>
+      </div>
+      <div class="prose">
+        <div class="crumb">Components</div>
+        <h3>Tabs</h3>
+        <p>Use the <span class="ci">&lt;Tabs&gt;</span> component to toggle between different views of content, like code samples in several languages.</p>
+        <div class="tabs"><span class="on">First tab</span><span>Second tab</span><span>Third tab</span></div>
+        <div class="cb"><div class="cbh"><span>tabs.mdx</span><span>Copy</span></div>
+<pre>&lt;<span class="t">Tabs</span> <span class="a">defaultIndex</span>={<span class="sv">0</span>}&gt;
+  &lt;<span class="t">Tab</span> <span class="a">title</span>=<span class="sv">"First tab"</span>&gt;
+    ☝️ Welcome to the content that you can only see inside the first Tab.
+  &lt;/<span class="t">Tab</span>&gt;
+&lt;/<span class="t">Tabs</span>&gt;</pre></div>
+        <div class="prop"><div class="r"><span class="ci">title</span><span class="ty">string</span><span class="req">REQUIRED</span></div><p>The title of the tab. Short titles are easier to navigate.</p></div>
+        <div class="prop"><div class="r"><span class="ci">defaultIndex</span><span class="ty">number</span></div><p>Zero-based index of the tab selected on first render.</p></div>
+      </div>
+      <div class="toc"><b>On this page</b><div class="on">Tabs</div><div>Properties</div><div>title</div><div>defaultIndex</div>
+        <div class="ask"><b style="font-size:13px;text-transform:none;letter-spacing:0;color:var(--ink);margin:0">Ask AI</b><i>How do I sync tabs?</i></div></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="lcap">Powering documentation for the world's best teams</p>
+  <div class="logos"><span>Anthropic</span><span>Cognition</span><span>Vercel</span><span>Cursor</span><span>Lovable</span><span>Perplexity</span></div>
+</div>
+
+<section><div class="wrap">
+  <h2>Built for the intelligence age</h2>
+  <p class="lead">Your docs are read by humans and AI alike. Mintlify makes sure both get the right answer, every time.</p>
+  <div class="g3">
+    <div class="fc wide"><div class="vis chat"><div class="q">How do I rotate an API key without downtime?</div><div class="r">Create a second key with <span class="ci">POST /v1/keys</span>, deploy it alongside the old one, then revoke the original once traffic has moved over.</div><div class="src"><span>Authentication</span><span>Key management</span><span>API Reference</span></div></div><h4>AI assistant</h4><p>Answers grounded in your docs, with citations — embedded in your site, Slack, or Discord.</p></div>
+    <div class="fc"><div class="vis mcp">$ npx mint-mcp add acme<br><span class="ok">✓</span> MCP server generated<br><span class="ok">✓</span> 42 tools from OpenAPI<br><span class="ok">✓</span> llms.txt published</div><h4>Ready for agents</h4><p>Auto-generated MCP servers and llms.txt so AI tools can read your product.</p></div>
+    <div class="fc"><div class="vis meter"><div><span>Search queries answered</span><b>94%</b></div><div class="bar"><i style="width:94%"></i></div><div><span>Pages flagged stale</span><b>12</b></div><div class="bar"><i style="width:18%"></i></div></div><h4>Insights</h4><p>See what users search for, where they get stuck, and which pages need love.</p></div>
+    <div class="fc"><div class="vis" style="font-family:var(--mono);color:var(--slate)">docs/<br>├─ mint.json<br>├─ quickstart.mdx<br>└─ api-reference/</div><h4>Docs-as-code</h4><p>MDX in your repo, synced with GitHub. Or edit visually — your choice.</p></div>
+    <div class="fc"><div class="vis" style="display:flex;gap:8px;flex-wrap:wrap"><span class="src" style="margin:0"><span>Draft PR #418</span></span><span class="src" style="margin:0"><span>Updated 3 pages</span></span><span class="src" style="margin:0"><span>From release v2.4</span></span></div><h4>Agent</h4><p>An AI writer that drafts updates whenever your code ships.</p></div>
+  </div>
+  <div class="tcard" style="margin-top:96px">
+    <div><q>Every YC batch we consistently see the top performing startups use Mintlify to build their docs.</q><div class="att">Jared Friedman <span>· Managing Partner, Y Combinator</span></div></div>
+    <div class="portrait" role="img" aria-label="portrait illustration"></div>
+  </div>
+</div></section>
+
+<section style="background:var(--ssoft);border-top:1px solid var(--hsoft)"><div class="wrap">
+  <div class="ptop"><div class="ptabs"><span class="on">Pricing</span><span>Roadmap</span></div><h2>Pricing on your terms</h2><p class="lead" style="margin-top:12px">Start for free, scale as your docs grow.</p><div class="toggle"><span>Monthly</span><span class="on">Yearly</span><span class="disc">Save 20%</span></div></div>
+  <div class="tiers">
+    <div class="tier" style="background:#fff"><h4>Hobby</h4><div class="pr">$0</div><p>For individuals and side projects.</p><ul><li>Custom domain</li><li>Web editor &amp; GitHub sync</li><li>API playground</li><li>Basic analytics</li></ul><a class="btn s" href="#">Get started</a></div>
+    <div class="tier f" style="background:#fff"><h4>Pro</h4><div class="pr">$250<small> /month</small></div><p>For growing teams shipping docs weekly.</p><ul><li>AI assistant &amp; Agent</li><li>5 editor seats</li><li>Preview deployments</li><li>Advanced insights</li></ul><a class="btn g" href="#">Start free trial</a></div>
+    <div class="tier" style="background:#fff"><h4>Enterprise</h4><div class="pr" style="font-size:44px;line-height:1.4">Custom</div><p>For organizations with scale and compliance needs.</p><ul><li>SSO &amp; SCIM</li><li>SOC 2 Type II</li><li>99.99% SLA</li><li>Dedicated support</li></ul><a class="btn p" href="#">Talk to sales</a></div>
+  </div>
+  <div class="cmp" style="background:#fff">
+    <div class="cr h"><span>Features</span><span>Hobby</span><span>Pro</span><span>Enterprise</span></div>
+    <div class="cr"><span>Editor seats</span><span>1</span><span>5</span><span>Unlimited</span></div>
+    <div class="cr"><span>AI assistant messages</span><span>—</span><span>1,000 / mo</span><span>Custom</span></div>
+    <div class="cr"><span>MCP server</span><span class="y">✓</span><span class="y">✓</span><span class="y">✓</span></div>
+    <div class="cr"><span>Password-protected docs</span><span>—</span><span class="y">✓</span><span class="y">✓</span></div>
+  </div>
+  <div class="lower">
+    <div class="faq">
+      <div class="fq"><b>What counts as an editor?<span>⌃</span></b><p>Anyone who edits content in the web editor or merges docs changes from your repository.</p></div>
+      <div class="fq"><b>Can I self-host my docs?<span>⌄</span></b></div>
+      <div class="fq"><b>Do you offer discounts for open source?<span>⌄</span></b></div>
+    </div>
+    <div class="spc"><h3>Mintlify for Startups</h3><p style="color:var(--steel);font-size:14px;margin-top:6px">Early-stage teams get Pro free for six months.</p>
+      <div class="perks"><div class="perk"><i>%</i><b>Discounts &amp; credits</b><span>6 months of Pro included</span></div><div class="perk"><i>★</i><b>Priority support</b><span>Direct Slack channel</span></div></div>
+      <a class="btn p" href="#">Apply now</a></div>
+  </div>
+</div></section>
+
+<div class="wrap"><div class="foot">
+  <div><span class="logo">Mintlify</span><p style="margin-top:10px;max-width:220px">The intelligent knowledge platform.</p></div>
+  <div><h6>Explore</h6><a href="#">Startups</a><a href="#">Enterprise</a><a href="#">Switch</a></div>
+  <div><h6>Resources</h6><a href="#">Customers</a><a href="#">Blog</a><a href="#">Changelog</a></div>
+  <div><h6>Company</h6><a href="#">Careers</a><a href="#">Wall of love</a><a href="#">Contact</a></div>
+  <div><h6>Legal</h6><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Security</a></div>
+</div></div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">mintlify</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

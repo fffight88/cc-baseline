@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VoltAgent — Preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=block">
+<style>
+:root{--primary:#00d992;--psoft:#2fd6a1;--pdeep:#10b981;--onp:#101010;--ink:#f2f2f2;--strong:#fff;--body:#bdbdbd;--mute:#8b949e;--hair:#3d3a39;--canvas:#101010;--soft:#1a1a1a;--codetx:#f5f6f7;--dash:1px dashed rgba(79,93,117,.4);
+--mono:"JetBrains Mono",SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{background:var(--canvas);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-feature-settings:"calt","rlig";font-size:16px;line-height:26px}
+.wrap{max-width:1280px;margin:0 auto;padding:0 32px}
+.eb{font-size:14px;font-weight:600;line-height:20px;letter-spacing:2.52px;text-transform:uppercase;color:var(--primary)}
+h1{font-size:60px;font-weight:400;line-height:60px;letter-spacing:-.65px;color:var(--strong)}
+h2{font-size:36px;font-weight:400;line-height:40px;letter-spacing:-.9px;color:var(--strong)}
+h3{font-size:20px;font-weight:600;line-height:28px}
+.mono{font-family:var(--mono);font-size:13px;line-height:18px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 16px;border-radius:6px;font-size:16px;font-weight:600;line-height:24px}
+.b-p{background:var(--primary);color:var(--onp)}
+.b-o{background:var(--canvas);color:var(--ink);border:1px solid var(--hair)}
+.b-g{color:var(--psoft);padding-left:0;padding-right:0}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--hair);border-radius:9999px;padding:4px 12px;font-size:14px;line-height:20px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--primary)}
+.chip{font-family:var(--mono);font-size:13px;line-height:18px;background:var(--soft);color:var(--codetx);padding:2px 8px;border-radius:6px}
+/* nav */
+nav{border-bottom:1px solid var(--hair)}
+nav .wrap{display:flex;align-items:center;gap:28px;height:64px;font-size:14px;line-height:20px}
+.logo{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:700;color:var(--strong);letter-spacing:-.3px;margin-right:12px}
+nav a{color:var(--body)}
+nav .sp{flex:1}
+nav .gh{display:flex;align-items:center;gap:6px;color:var(--body);border:1px solid var(--hair);border-radius:6px;padding:6px 10px}
+/* hero */
+.hero{padding:96px 0 48px}
+.hgrid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.hero h1{margin:20px 0 20px}
+.hero .lead{font-size:18px;line-height:28px;color:var(--body);max-width:520px}
+.ctas{display:flex;gap:12px;align-items:center;margin-top:32px}
+.install{margin-top:28px;display:flex;align-items:center;gap:12px;color:var(--mute);font-size:14px}
+.code{border:1px solid var(--hair);border-radius:8px;background:var(--canvas)}
+.code .bar{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid var(--hair);font-size:12px;line-height:16px;color:var(--mute)}
+.code .tabs{display:flex;gap:16px}
+.code .tabs span.on{color:var(--ink);font-weight:500}
+.copy{border:1px solid var(--hair);border-radius:4px;padding:2px 8px;font-size:12px;color:var(--body)}
+.code pre{font-family:var(--mono);font-size:13px;line-height:20px;color:var(--codetx);padding:20px;white-space:pre}
+.ln{color:#4b4f55;display:inline-block;width:24px}
+.k{color:#c792ea}.s{color:var(--psoft)}.f{color:#82aaff}.c{color:var(--mute)}.t{color:#ffcb6b}
+/* sections */
+.band{padding:48px 0;border-top:var(--dash)}
+.sh{margin-bottom:40px;max-width:720px}
+.sh h2{margin-top:12px}
+.sh p{color:var(--body);margin-top:12px;font-size:18px;line-height:28px}
+.logos{display:flex;justify-content:space-between;align-items:center;padding:8px 0}
+.logos span{color:var(--mute);font-weight:600;font-size:18px;letter-spacing:-.2px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{border:1px solid var(--hair);border-radius:8px;padding:24px;background:var(--canvas)}
+.card.em{border-width:3px;padding:20px}
+.card.feat{border:2px solid var(--primary);box-shadow:0 0 15px rgba(92,88,85,.2)}
+.card .ic{width:36px;height:36px;border:1px solid var(--hair);border-radius:9999px;display:grid;place-items:center;margin-bottom:20px}
+.card p{color:var(--body);margin-top:8px;font-size:14px;line-height:20px}
+.card .chip{display:inline-block;margin-top:16px}
+/* green divider stats */
+.gband{border-top:2px solid var(--primary);border-bottom:2px solid var(--primary);padding:40px 0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr)}
+.stats div{padding:0 24px;border-left:1px solid var(--hair)}
+.stats div:first-child{border-left:0;padding-left:0}
+.stats b{display:block;font-family:var(--mono);font-size:36px;font-weight:500;line-height:40px;color:var(--strong);letter-spacing:-1px}
+.stats span{color:var(--mute);font-size:14px;line-height:20px}
+/* console */
+.console{border:1px solid var(--hair);border-radius:8px;overflow:hidden;display:grid;grid-template-columns:220px 1fr 360px;height:560px}
+.cside{border-right:1px solid var(--hair);padding:16px 12px;font-size:14px;line-height:20px}
+.cside .ws{display:flex;gap:8px;align-items:center;padding:4px 8px 16px;font-weight:600;color:var(--strong)}
+.cside .it{padding:8px 12px;border-radius:6px;color:var(--body);border-left:2px solid transparent}
+.cside .it.on{background:var(--soft);color:var(--strong);border-left-color:var(--primary);border-radius:0 6px 6px 0}
+.cside h6{font-size:12px;font-weight:500;line-height:16px;color:var(--mute);padding:16px 12px 6px}
+.cmain{display:flex;flex-direction:column;min-width:0}
+.ctool{display:flex;gap:8px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--hair)}
+.input{background:var(--soft);border:1px solid var(--hair);border-radius:6px;padding:6px 12px;font-size:14px;line-height:20px;color:var(--mute);flex:1}
+table{width:100%;border-collapse:collapse;font-size:14px;line-height:20px}
+th{background:var(--soft);color:var(--mute);font-size:12px;font-weight:400;line-height:16px;text-align:left;padding:10px 16px;border-bottom:1px solid var(--hair)}
+td{padding:10px 16px;border-bottom:1px solid var(--hair);color:var(--body);white-space:nowrap}
+td.n{font-family:var(--mono);font-size:13px;color:var(--codetx)}
+tr.sel td{background:#151a17}
+.st{display:inline-flex;align-items:center;gap:6px;border-radius:9999px;padding:0 8px;font-size:12px;border:1px solid var(--hair)}
+.st.ok{color:var(--primary)}.st.err{color:#f87171}.st.run{color:#e5c07b}
+.trace{border-left:1px solid var(--hair);padding:16px;font-size:13px;line-height:18px}
+.trace h4{font-size:14px;font-weight:600;color:var(--strong);margin-bottom:4px}
+.span{display:grid;grid-template-columns:120px 1fr;gap:8px;align-items:center;margin-top:10px;font-family:var(--mono);font-size:12px;color:var(--body)}
+.bar2{height:10px;border-radius:2px;background:var(--hair);position:relative}
+.bar2 i{position:absolute;top:0;bottom:0;border-radius:2px;background:var(--primary)}
+.kv{margin-top:20px;border-top:1px solid var(--hair);padding-top:12px}
+.kv div{display:flex;justify-content:space-between;padding:4px 0;color:var(--mute)}
+.kv b{font-family:var(--mono);font-weight:500;color:var(--codetx)}
+/* pricing */
+.tier{background:var(--soft);border:1px solid var(--hair);border-radius:8px;padding:24px;display:flex;flex-direction:column;gap:12px}
+.tier.f{background:var(--ink);color:var(--onp);border-color:var(--ink)}
+.tier .price{font-size:36px;font-weight:400;letter-spacing:-.9px;line-height:40px}
+.tier .price small{font-size:14px;color:var(--mute);letter-spacing:0}
+.tier ul{list-style:none;font-size:14px;line-height:23px;color:var(--body)}
+.tier.f ul{color:#3d3a39}
+.tier li::before{content:"✓  ";color:var(--pdeep)}
+.tier .btn{justify-content:center;margin-top:auto}
+.foot{border-top:1px solid var(--hair);padding:40px 0}
+.foot .wrap{display:grid;grid-template-columns:2fr repeat(4,1fr);gap:32px;font-size:14px;line-height:20px;color:var(--body)}
+.foot h6{font-size:12px;font-weight:600;letter-spacing:2.52px;text-transform:uppercase;color:var(--ink);margin-bottom:12px}
+.foot a{display:block;margin-bottom:8px}
+</style></head><body>
+<nav><div class="wrap">
+  <span class="logo"><svg width="22" height="22" viewBox="0 0 24 24"><rect x="1" y="1" width="22" height="22" rx="6" fill="none" stroke="#00d992" stroke-width="1.5"/><path d="M13.5 4 7 13.5h4.5L10 20l7-10h-4.6z" fill="#00d992"/></svg>VoltAgent</span>
+  <a>Docs</a><a>VoltOps</a><a>Examples</a><a>Blog</a><a>Pricing</a><a>Customers</a>
+  <span class="sp"></span>
+  <span class="gh"><svg width="14" height="14" viewBox="0 0 24 24" fill="#bdbdbd"><path d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.9 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.2c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5Z"/></svg>6.4k</span>
+  <a class="btn b-o" style="font-size:14px;line-height:20px;padding:8px 14px">Log in</a>
+  <a class="btn b-p" style="font-size:14px;line-height:20px;padding:8px 14px">Get started</a>
+</div></nav>
+
+<section class="hero"><div class="wrap"><div class="hgrid">
+  <div>
+    <span class="pill"><span class="dot"></span>v1.2 — Workflows &amp; guardrails are live</span>
+    <div class="eb" style="margin-top:28px">AI Agent Engineering Platform</div>
+    <h1>Build, observe and ship AI agents in TypeScript</h1>
+    <p class="lead">An open-source framework for building agents with memory, tools and multi-agent workflows — plus VoltOps, the console that lets you trace, evaluate and debug every step in production.</p>
+    <div class="ctas"><span class="btn b-p">Start building</span><span class="btn b-o">Read the docs</span><span class="btn b-g">Book a demo →</span></div>
+    <div class="install">Create an app in seconds <span class="chip">npm create voltagent-app@latest</span></div>
+  </div>
+  <div class="code">
+    <div class="bar"><div class="tabs"><span class="on">agent.ts</span><span>tools.ts</span><span>workflow.ts</span></div><span class="copy">Copy</span></div>
+<pre><span class="ln">1</span><span class="k">import</span> { Agent, VoltAgent } <span class="k">from</span> <span class="s">"@voltagent/core"</span>;
+<span class="ln">2</span><span class="k">import</span> { openai } <span class="k">from</span> <span class="s">"@ai-sdk/openai"</span>;
+<span class="ln">3</span><span class="k">import</span> { weatherTool, searchTool } <span class="k">from</span> <span class="s">"./tools"</span>;
+<span class="ln">4</span>
+<span class="ln">5</span><span class="k">const</span> <span class="t">support</span> = <span class="k">new</span> <span class="f">Agent</span>({
+<span class="ln">6</span>  name: <span class="s">"support-agent"</span>,
+<span class="ln">7</span>  instructions: <span class="s">"Resolve billing questions politely."</span>,
+<span class="ln">8</span>  model: <span class="f">openai</span>(<span class="s">"gpt-4o-mini"</span>),
+<span class="ln">9</span>  tools: [weatherTool, searchTool],
+<span class="ln">10</span>  memory: <span class="k">true</span>,
+<span class="ln">11</span>});
+<span class="ln">12</span>
+<span class="ln">13</span><span class="k">new</span> <span class="f">VoltAgent</span>({
+<span class="ln">14</span>  agents: { support },
+<span class="ln">15</span>  observability: <span class="k">true</span>, <span class="c">// → streams to VoltOps</span>
+<span class="ln">16</span>});
+<span class="ln">17</span>
+<span class="ln">18</span><span class="c">$ npm run dev</span>
+<span class="ln">19</span><span class="s">✓ VoltAgent server running on :3141</span></pre>
+  </div>
+</div></div></section>
+
+<section class="band" style="padding:32px 0"><div class="wrap logos">
+  <span class="eb" style="color:var(--mute);font-size:12px">Trusted by teams at</span><span>Vercel</span><span>Supabase</span><span>Retool</span><span>Neon</span><span>Upstash</span><span>Langfuse</span>
+</div></section>
+
+<section class="band"><div class="wrap">
+  <div class="sh"><div class="eb">Everything you need</div><h2>A framework that stays out of your way</h2><p>Typed primitives for every layer of an agent — compose them, swap providers, and keep full control of your code.</p></div>
+  <div class="grid3">
+    <div class="card feat"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M13.5 2 6 13h5l-1.5 9L18 10h-5z" fill="#00d992"/></svg></div><h3>Agents &amp; sub-agents</h3><p>Supervisor agents delegate to specialists with shared context and typed handoffs.</p><span class="chip">new Agent({ subAgents })</span></div>
+    <div class="card"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f2f2f2" stroke-width="1.6"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M9 6h6a3 3 0 0 1 3 3v6"/></svg></div><h3>Workflows</h3><p>Declarative steps with suspend, resume and human-in-the-loop approval.</p><span class="chip">createWorkflowChain()</span></div>
+    <div class="card"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f2f2f2" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 10h8M8 14h5"/></svg></div><h3>Memory</h3><p>Conversation, working and semantic memory on LibSQL, Postgres or Supabase.</p><span class="chip">memory: new LibSQLMemory()</span></div>
+    <div class="card"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f2f2f2" stroke-width="1.6"><path d="M14 4l6 6-10 10H4v-6z"/></svg></div><h3>Tools &amp; MCP</h3><p>Zod-typed tools and native Model Context Protocol servers in one line.</p><span class="chip">createTool({ parameters })</span></div>
+    <div class="card"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f2f2f2" stroke-width="1.6"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg></div><h3>Guardrails</h3><p>Validate inputs and outputs, redact PII and block unsafe tool calls.</p><span class="chip">guardrails: [piiFilter]</span></div>
+    <div class="card em"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f2f2f2" stroke-width="1.6"><path d="M4 18l5-6 4 3 7-9"/></svg></div><h3>Evals</h3><p>Score every run with LLM judges and regression suites before you deploy.</p><span class="chip">npx voltagent eval run</span></div>
+  </div>
+</div></section>
+
+<section class="gband"><div class="wrap stats">
+  <div><b>6,412</b><span>GitHub stars</span></div>
+  <div><b>48ms</b><span>median trace ingest latency</span></div>
+  <div><b>1.9M</b><span>agent runs traced last month</span></div>
+  <div><b>40+</b><span>model providers via AI SDK</span></div>
+</div></section>
+
+<section class="band" style="border-top:0;padding-top:64px"><div class="wrap">
+  <div class="sh"><div class="eb">VoltOps console</div><h2>See every step your agents take</h2><p>Traces, tool calls, token spend and latency — live, for every run, with a click-through timeline.</p></div>
+  <div class="console">
+    <div class="cside">
+      <div class="ws"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M13.5 2 6 13h5l-1.5 9L18 10h-5z" fill="#00d992"/></svg>acme / production</div>
+      <div class="it on">Traces</div><div class="it">Agents</div><div class="it">Workflows</div><div class="it">Evals</div><div class="it">Prompts</div>
+      <h6>Monitoring</h6><div class="it">Alerts</div><div class="it">Cost</div><div class="it">Settings</div>
+    </div>
+    <div class="cmain">
+      <div class="ctool"><span class="input">Filter by agent, status, user_id…</span><span class="pill" style="font-size:12px;line-height:16px"><span class="dot"></span>Live</span><span class="pill" style="font-size:12px;line-height:16px">Last 1h</span></div>
+      <table>
+        <tr><th>Trace</th><th>Agent</th><th>Status</th><th>Tokens</th><th>Latency</th><th>Cost</th></tr>
+        <tr class="sel"><td class="n">tr_8f21a</td><td>support-agent</td><td><span class="st ok">● Success</span></td><td class="n">3,412</td><td class="n">1.84s</td><td class="n">$0.0021</td></tr>
+        <tr><td class="n">tr_8f219</td><td>research-supervisor</td><td><span class="st run">● Running</span></td><td class="n">12,908</td><td class="n">6.20s</td><td class="n">$0.0184</td></tr>
+        <tr><td class="n">tr_8f218</td><td>support-agent</td><td><span class="st ok">● Success</span></td><td class="n">2,077</td><td class="n">1.12s</td><td class="n">$0.0013</td></tr>
+        <tr><td class="n">tr_8f217</td><td>invoice-workflow</td><td><span class="st err">● Error</span></td><td class="n">904</td><td class="n">0.48s</td><td class="n">$0.0004</td></tr>
+        <tr><td class="n">tr_8f216</td><td>sql-analyst</td><td><span class="st ok">● Success</span></td><td class="n">5,630</td><td class="n">2.71s</td><td class="n">$0.0047</td></tr>
+        <tr><td class="n">tr_8f215</td><td>support-agent</td><td><span class="st ok">● Success</span></td><td class="n">1,988</td><td class="n">0.97s</td><td class="n">$0.0012</td></tr>
+        <tr><td class="n">tr_8f214</td><td>research-supervisor</td><td><span class="st ok">● Success</span></td><td class="n">18,201</td><td class="n">9.03s</td><td class="n">$0.0261</td></tr>
+        <tr><td class="n">tr_8f213</td><td>sql-analyst</td><td><span class="st ok">● Success</span></td><td class="n">4,102</td><td class="n">2.05s</td><td class="n">$0.0035</td></tr>
+        <tr><td class="n">tr_8f212</td><td>invoice-workflow</td><td><span class="st ok">● Success</span></td><td class="n">1,240</td><td class="n">0.66s</td><td class="n">$0.0007</td></tr>
+      </table>
+    </div>
+    <div class="trace">
+      <h4>tr_8f21a · support-agent</h4><div style="color:var(--mute)">user_4821 · 1.84s total</div>
+      <div class="span"><span>agent.run</span><div class="bar2"><i style="left:0;width:100%"></i></div></div>
+      <div class="span"><span>memory.read</span><div class="bar2"><i style="left:0;width:10%"></i></div></div>
+      <div class="span"><span>llm.generate</span><div class="bar2"><i style="left:10%;width:38%"></i></div></div>
+      <div class="span"><span>tool.search</span><div class="bar2"><i style="left:48%;width:22%;background:#2fd6a1"></i></div></div>
+      <div class="span"><span>llm.generate</span><div class="bar2"><i style="left:70%;width:26%"></i></div></div>
+      <div class="span"><span>memory.write</span><div class="bar2"><i style="left:96%;width:4%"></i></div></div>
+      <div class="kv"><div>Model <b>gpt-4o-mini</b></div><div>Input tokens <b>2,901</b></div><div>Output tokens <b>511</b></div><div>Tool calls <b>1</b></div><div>Guardrails <b style="color:#00d992">passed</b></div></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="band"><div class="wrap">
+  <div class="sh"><div class="eb">Pricing</div><h2>Open-source framework. Pay only for VoltOps.</h2></div>
+  <div class="grid3">
+    <div class="tier"><h3>Free</h3><div class="price">$0 <small>/ month</small></div><ul><li>100K trace spans / month</li><li>7-day retention</li><li>1 project, 3 seats</li></ul><span class="btn b-o">Start free</span></div>
+    <div class="tier f"><h3>Pro</h3><div class="price">$50 <small style="color:#3d3a39">/ month</small></div><ul><li>5M trace spans / month</li><li>30-day retention</li><li>Evals, alerts and prompt management</li></ul><span class="btn b-p">Upgrade to Pro</span></div>
+    <div class="tier"><h3>Enterprise</h3><div class="price">Custom</div><ul><li>Self-hosted or VPC deployment</li><li>SSO, RBAC and audit logs</li><li>Dedicated support engineer</li></ul><span class="btn b-o">Contact sales</span></div>
+  </div>
+</div></section>
+
+<section class="foot"><div class="wrap">
+  <div><span class="logo"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M13.5 2 6 13h5l-1.5 9L18 10h-5z" fill="#00d992"/></svg>VoltAgent</span><p style="margin-top:12px;color:var(--mute)">Open-source TypeScript framework for AI agents. MIT licensed.</p></div>
+  <div><h6>Product</h6><a>Framework</a><a>VoltOps</a><a>Pricing</a></div>
+  <div><h6>Developers</h6><a>Docs</a><a>Examples</a><a>GitHub</a></div>
+  <div><h6>Community</h6><a>Discord</a><a>X / Twitter</a><a>Blog</a></div>
+  <div><h6>Company</h6><a>About</a><a>Careers</a><a>Privacy</a></div>
+</div></section>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">voltagent</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

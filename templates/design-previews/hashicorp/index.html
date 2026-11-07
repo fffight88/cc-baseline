@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HashiCorp — preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&display=block">
+<style>
+:root{--ink:#fff;--muted:#b2b6bd;--subtle:#656a76;--canvas:#000;--s1:#15181e;--s2:#1f232b;--s3:#3b3d45;--hair:#3b3d45;--hsoft:#252830;--line:rgba(178,182,189,.1);--blue:#2b89ff;
+--tf:#7b42bc;--tfb:#911ced;--vault:#ffcf25;--consul:#e62b1e;--wp:#14c6cb;--vagrant:#1868f2;--nomad:#00ca8e;--boundary:#f24c53;
+--sans:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',helvetica,arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{background:var(--canvas);color:var(--ink);font-family:var(--sans);font-weight:500;font-size:16px;line-height:1.48}
+.wrap{max-width:1376px;margin:0 auto;padding:0 48px}
+nav{height:64px;border-bottom:1px solid var(--line)}
+nav .wrap{height:64px;display:flex;align-items:center;gap:28px;font-size:14px;line-height:1.69}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:19px;letter-spacing:-.4px;margin-right:16px}
+nav .sp{flex:1}
+nav a{color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:8px;font-size:14px;font-weight:600;line-height:1.29;background:#fff;color:#000;white-space:nowrap}
+.btn.s{background:var(--s2);color:#fff}
+.btn.t{background:var(--canvas);color:#fff}
+.btn.tf{background:var(--tf);color:#fff}
+.btn.vault{background:var(--vault);color:#000}
+.eyebrow{font-size:12px;font-weight:600;line-height:1.23;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:8px;background:var(--s1);color:var(--muted);font-size:13px;line-height:1.36;letter-spacing:.2px;padding:4px 10px;border-radius:9999px;border:1px solid var(--line)}
+.pill i{width:8px;height:8px;border-radius:2px}
+/* hero */
+.hero{padding:96px 0}
+.hgrid{display:grid;grid-template-columns:1.25fr 1fr;gap:48px;align-items:center}
+h1{font-size:80px;font-weight:700;line-height:1.15;letter-spacing:-2.5px;margin:20px 0 24px}
+.lead{font-size:18px;line-height:1.67;color:var(--muted);max-width:600px}
+.ctas{display:flex;gap:12px;margin-top:32px}
+.cube{height:520px;position:relative}
+.cube svg{width:100%;height:100%}
+.marquee{display:grid;grid-template-columns:repeat(8,1fr);gap:12px;margin-top:80px}
+.marquee span{height:56px;border-radius:6px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:600;font-size:16px;letter-spacing:-.2px}
+/* sections */
+.sec{padding:96px 0;border-top:1px solid var(--line)}
+.sec.s1{background:var(--s1)}
+h2{font-size:56px;font-weight:700;line-height:1.16;letter-spacing:-1.6px;max-width:900px;margin-top:16px}
+h3.md{font-size:40px;font-weight:600;line-height:1.17;letter-spacing:-1px}
+.subhead{font-size:20px;font-weight:600;line-height:1.33;letter-spacing:-.2px;color:var(--muted);max-width:720px;margin-top:20px}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-top:48px}
+.pc{background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:12px;min-height:240px}
+.sec.s1 .pc{background:var(--canvas)}
+.pc .mk{width:40px;height:40px;border-radius:8px;background:var(--s2);display:flex;align-items:center;justify-content:center}
+.pc h4{font-size:22px;font-weight:600;line-height:1.16;letter-spacing:-.4px;margin-top:12px}
+.pc p{font-size:14px;line-height:1.69;color:var(--muted)}
+.pc a{margin-top:auto;font-size:14px;font-weight:600;color:#fff}
+/* terraform showcase */
+.tfcard{background:var(--tf);border-radius:12px;padding:24px;display:grid;grid-template-columns:1fr 1.25fr;gap:32px;margin-top:48px;align-items:stretch}
+.tfcard .copy{padding:24px;display:flex;flex-direction:column;gap:16px}
+.tfcard h3{font-size:40px;font-weight:600;line-height:1.17;letter-spacing:-1px}
+.tfcard p{font-size:18px;line-height:1.67;color:#eadff7}
+.tfcard .btn{align-self:flex-start;margin-top:auto}
+.run{background:var(--canvas);border-radius:12px;overflow:hidden;font-size:14px;line-height:1.69}
+.run .hd{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--hsoft)}
+.run .hd b{font-weight:600}
+.st{display:inline-flex;align-items:center;gap:6px;font-size:13px;line-height:1.36;padding:2px 8px;border-radius:4px;background:rgba(0,202,142,.14);color:var(--nomad)}
+.steps{padding:6px 0}
+.step{display:grid;grid-template-columns:22px 1fr auto;gap:12px;align-items:center;padding:10px 18px;border-bottom:1px solid var(--hsoft);color:var(--muted)}
+.step .ok{width:16px;height:16px;border-radius:50%;background:var(--nomad);display:flex;align-items:center;justify-content:center}
+.step b{color:#fff;font-weight:600}
+.diff{display:flex;gap:16px;padding:12px 18px;font-size:13px;line-height:1.36;letter-spacing:.2px}
+.diff span{padding:4px 10px;border-radius:4px;background:var(--s1);border:1px solid var(--line)}
+.res{padding:4px 18px 16px}
+.res table{width:100%;border-collapse:collapse;font-size:13px;letter-spacing:.2px}
+.res td{padding:7px 0;border-bottom:1px solid var(--hsoft);color:var(--muted)}
+.res td:first-child{color:#fff}
+.res td:last-child{text-align:right}
+.add{color:var(--nomad)}.chg{color:var(--vault)}.del{color:var(--consul)}
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:32px;margin-top:64px}
+.stats b{display:block;font-size:56px;font-weight:700;line-height:1.16;letter-spacing:-1.6px}
+.stats span{font-size:14px;line-height:1.69;color:var(--muted)}
+/* pricing */
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-top:48px}
+.tier{background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:16px}
+.tier.f{background:var(--s2);border-color:var(--hair)}
+.tier h4{font-size:28px;font-weight:600;line-height:1.19;letter-spacing:-.6px}
+.tier .p{font-size:20px;font-weight:600;line-height:1.33;letter-spacing:-.2px}
+.tier .p small{font-size:14px;color:var(--muted);font-weight:500}
+.tier p{font-size:14px;line-height:1.69;color:var(--muted)}
+.tier .btn{align-self:flex-start;margin-top:8px}
+.cmp{margin-top:48px;width:100%;border-collapse:collapse;font-size:14px;line-height:1.69}
+.cmp td{padding:14px 0;border-bottom:1px solid var(--hsoft);color:var(--muted);text-align:center}
+.cmp td:first-child{text-align:left;width:40%;color:#fff}
+.cmp thead td{font-size:12px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--hair)}
+.yes{color:#fff}
+/* vault resources */
+.rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:48px}
+.rc{background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.69}
+.rc .th{height:150px;border-radius:12px;background:var(--s2);position:relative;overflow:hidden}
+.rc h5{font-size:16px;font-weight:600;line-height:1.36}
+.rc .m{color:var(--subtle);font-size:13px}
+.cta{background:var(--s1);border:1px solid var(--line);border-radius:24px;padding:48px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center}
+.cta h3{font-size:28px;font-weight:600;line-height:1.19;letter-spacing:-.6px}
+.cta p{font-size:20px;font-weight:600;line-height:1.33;letter-spacing:-.2px;color:var(--muted);margin-top:8px}
+.inp{display:flex;gap:12px}
+.inp span.f{width:300px;padding:10px 14px;border-radius:8px;background:var(--canvas);border:1px solid var(--hair);color:var(--subtle)}
+footer.site{padding:64px 32px;color:var(--muted);font-size:13px;line-height:1.36;letter-spacing:.2px;border-top:1px solid var(--line)}
+.fcols{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1.4fr repeat(5,1fr);gap:24px}
+.fcols h6{font-size:12px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:#fff;margin-bottom:14px}
+.fcols span{display:block;margin-bottom:10px}
+</style></head><body>
+
+<nav><div class="wrap">
+  <span class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M10.114 4.094 4.215 7.5v13.09L.666 18.542V5.45L10.114 0v4.094zm3.772 13.37 3.549-2.049V2.05L13.885 0v10.426h-3.77v-3.89L6.562 8.585v13.357l3.551 2.054V13.599h3.772v3.865zM19.783 3.41V16.5l-5.897 3.405V24l9.448-5.45V5.458l-3.551-2.05z"/></svg>HashiCorp</span>
+  <a>Products</a><a>Solutions</a><a>Resources</a><a>Pricing</a><a>Company</a><a>Docs</a>
+  <span class="sp"></span><span class="btn s">Sign in</span><span class="btn">Get started</span>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <div class="hgrid">
+    <div>
+      <span class="pill"><i style="background:var(--tf)"></i>Terraform · HCP Terraform Stacks now GA</span>
+      <h1>Infrastructure cloud for the AI era</h1>
+      <p class="lead">Automate, secure and manage infrastructure and applications across every cloud with one unified workflow — from Day 0 to Day 2.</p>
+      <div class="ctas"><span class="btn">Try HCP Terraform free</span><span class="btn s">Talk to sales</span></div>
+    </div>
+    <div class="cube" aria-hidden="true">
+      <svg viewBox="0 0 520 520">
+        <defs>
+          <linearGradient id="t" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a56be0"/><stop offset="1" stop-color="#7b42bc"/></linearGradient>
+          <linearGradient id="l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7b42bc"/><stop offset="1" stop-color="#3d1f63"/></linearGradient>
+          <linearGradient id="r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a2d93"/><stop offset="1" stop-color="#1e0f33"/></linearGradient>
+        </defs>
+        <g transform="translate(260 260)">
+          <g opacity=".35"><path d="M0 -230 L200 -115 L200 115 L0 230 L-200 115 L-200 -115Z" fill="none" stroke="#3b3d45"/></g>
+          <path d="M0 -150 L130 -75 L0 0 L-130 -75Z" fill="url(#t)"/>
+          <path d="M-130 -75 L0 0 L0 150 L-130 75Z" fill="url(#l)"/>
+          <path d="M130 -75 L0 0 L0 150 L130 75Z" fill="url(#r)"/>
+          <path d="M0 -150 L130 -75 L0 0 L-130 -75Z" fill="none" stroke="#c9a2f2" stroke-opacity=".6"/>
+          <path d="M-65 -112 L65 -37 M65 -112 L-65 -37" stroke="#fff" stroke-opacity=".12"/>
+          <path d="M150 -150 L200 -121 L150 -92 L100 -121Z" fill="#911ced"/>
+          <path d="M100 -121 L150 -92 L150 -42 L100 -71Z" fill="#5a2d93"/>
+          <path d="M200 -121 L150 -92 L150 -42 L200 -71Z" fill="#3d1f63"/>
+          <path d="M-170 70 L-140 87 L-170 104 L-200 87Z" fill="#a56be0"/>
+          <path d="M-200 87 L-170 104 L-170 134 L-200 117Z" fill="#5a2d93"/>
+          <path d="M-140 87 L-170 104 L-170 134 L-140 117Z" fill="#3d1f63"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+  <div class="marquee"><span>Adobe</span><span>Comcast</span><span>Deutsche Bank</span><span>Mercedes</span><span>Starbucks</span><span>Roblox</span><span>Petco</span><span>Unilever</span></div>
+</div></header>
+
+<section class="sec s1"><div class="wrap">
+  <span class="eyebrow">Infrastructure Lifecycle Management</span>
+  <h2>Build, deploy and manage with one system of record</h2>
+  <p class="subhead">Standardize provisioning, image pipelines and internal developer platforms across AWS, Azure, Google Cloud and on-prem.</p>
+  <div class="pgrid">
+    <div class="pc"><span class="mk"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M1.44 0v7.575l6.561 3.79V3.787zm21.12 4.227-6.561 3.791v7.574l6.56-3.787zM8.72 4.23v7.575l6.561 3.787V8.018zm0 8.405v7.575L15.28 24v-7.578z"/></svg></span><h4>Terraform</h4><p>Provision and manage infrastructure on any cloud with infrastructure as code.</p><a>Learn more →</a></div>
+    <div class="pc"><span class="mk" style="font-weight:700">P</span><h4>Packer</h4><p>Build golden images for every platform from a single source configuration.</p><a>Learn more →</a></div>
+    <div class="pc"><span class="mk" style="font-weight:700">W</span><h4>Waypoint</h4><p>Give developers self-service templates and add-ons with guardrails built in.</p><a>Learn more →</a></div>
+  </div>
+</div></section>
+
+<section class="sec"><div class="wrap">
+  <span class="eyebrow">HCP Terraform</span>
+  <h2>Plan, review and apply with confidence</h2>
+  <div class="tfcard">
+    <div class="copy">
+      <span class="pill" style="align-self:flex-start;background:rgba(0,0,0,.25);color:#fff;border-color:rgba(255,255,255,.2)">Terraform</span>
+      <h3>Every change, policy-checked before it ships</h3>
+      <p>Speculative plans on every pull request, Sentinel policies, cost estimation and drift detection — managed for you in HCP Terraform.</p>
+      <span class="btn">Start with Terraform</span>
+    </div>
+    <div class="run">
+      <div class="hd"><b>acme-prod-network</b><span style="color:#b2b6bd;font-size:13px">Run run-8Kq2dYv · triggered by PR #482</span><span class="st" style="margin-left:auto">● Applied</span></div>
+      <div class="steps">
+        <div class="step"><span class="ok"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5.2 4 7.2 8 3" stroke="#000" stroke-width="1.6" fill="none"/></svg></span><span><b>Plan finished</b> · 4 to add, 2 to change, 1 to destroy</span><span>38s</span></div>
+        <div class="step"><span class="ok"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5.2 4 7.2 8 3" stroke="#000" stroke-width="1.6" fill="none"/></svg></span><span><b>Cost estimation</b> · +$212.40/mo</span><span>4s</span></div>
+        <div class="step"><span class="ok"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5.2 4 7.2 8 3" stroke="#000" stroke-width="1.6" fill="none"/></svg></span><span><b>Policy check</b> · 12 passed, 0 advisory failed</span><span>6s</span></div>
+        <div class="step"><span class="ok"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5.2 4 7.2 8 3" stroke="#000" stroke-width="1.6" fill="none"/></svg></span><span><b>Apply finished</b> · approved by j.ortiz</span><span>1m 52s</span></div>
+      </div>
+      <div class="diff"><span class="add">+4 add</span><span class="chg">~2 change</span><span class="del">−1 destroy</span></div>
+      <div class="res"><table>
+        <tr><td>aws_vpc.main</td><td class="chg">update in-place</td><td>us-east-1</td></tr>
+        <tr><td>aws_subnet.private["c"]</td><td class="add">create</td><td>us-east-1c</td></tr>
+        <tr><td>aws_nat_gateway.egress</td><td class="add">create</td><td>us-east-1c</td></tr>
+        <tr><td>aws_security_group.legacy_ssh</td><td class="del">destroy</td><td>us-east-1</td></tr>
+      </table></div>
+    </div>
+  </div>
+  <div class="stats">
+    <div><b>500M+</b><span>Terraform provider downloads per month</span></div>
+    <div><b>4,800+</b><span>providers in the Terraform Registry</span></div>
+    <div><b>85%</b><span>of the Fortune 500 use HashiCorp</span></div>
+    <div><b>99.9%</b><span>HCP uptime SLA</span></div>
+  </div>
+</div></section>
+
+<section class="sec s1"><div class="wrap">
+  <span class="eyebrow">Pricing</span>
+  <h2>HCP Terraform plans</h2>
+  <div class="tiers">
+    <div class="tier"><h4>Free</h4><div class="p">$0 <small>up to 500 resources</small></div><p>Get started with remote state, VCS-driven runs and the private registry.</p><span class="btn s">Start free</span></div>
+    <div class="tier f"><span class="pill" style="align-self:flex-start">Recommended</span><h4>Standard</h4><div class="p">$0.10 <small>per resource / month</small></div><p>Team management, policy as code, run tasks and drift detection.</p><span class="btn">Try Standard</span></div>
+    <div class="tier"><h4>Premium</h4><div class="p">Custom</div><p>Self-hosted agents, audit logging, ServiceNow and enterprise support.</p><span class="btn s">Contact sales</span></div>
+  </div>
+  <table class="cmp">
+    <thead><tr><td>Capability</td><td>Free</td><td>Standard</td><td>Premium</td></tr></thead>
+    <tr><td>Remote state &amp; VCS runs</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+    <tr><td>Sentinel &amp; OPA policies</td><td>—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+    <tr><td>Drift detection &amp; health</td><td>—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+    <tr><td>Self-hosted agents</td><td>—</td><td>—</td><td class="yes">✓</td></tr>
+    <tr><td>Audit logging</td><td>—</td><td>—</td><td class="yes">✓</td></tr>
+  </table>
+</div></section>
+
+<section class="sec"><div class="wrap">
+  <span class="eyebrow">Security Lifecycle Management</span>
+  <h2>Secure secrets with Vault</h2>
+  <p class="subhead">Centrally store, access and rotate secrets, certificates and encryption keys across every workload.</p>
+  <div class="rgrid">
+    <div class="rc"><div class="th" style="background:var(--vault)"><svg viewBox="0 0 200 150" width="100%" height="100%"><rect x="60" y="30" width="80" height="90" rx="6" fill="none" stroke="#000" stroke-width="3"/><circle cx="100" cy="75" r="18" fill="none" stroke="#000" stroke-width="3"/><path d="M100 57v8M100 85v8M82 75h8M110 75h8" stroke="#000" stroke-width="3"/></svg></div><span class="pill" style="align-self:flex-start">Vault · PDF</span><h5>The secrets sprawl report 2026</h5><span class="m">Whitepaper · 18 pages</span></div>
+    <div class="rc"><div class="th"><svg viewBox="0 0 200 150" width="100%" height="100%"><path d="M40 110 L80 70 L110 90 L160 40" stroke="#b2b6bd" stroke-width="3" fill="none"/></svg></div><span class="pill" style="align-self:flex-start">Vault · Guide</span><h5>Dynamic database credentials in 15 minutes</h5><span class="m">Tutorial · 15 min</span></div>
+    <div class="rc"><div class="th"><svg viewBox="0 0 200 150" width="100%" height="100%"><rect x="50" y="40" width="100" height="70" rx="8" fill="none" stroke="#b2b6bd" stroke-width="3"/><path d="M70 60h60M70 75h40M70 90h50" stroke="#656a76" stroke-width="3"/></svg></div><span class="pill" style="align-self:flex-start">Vault · E-book</span><h5>Zero trust security for multi-cloud</h5><span class="m">E-book · 32 pages</span></div>
+    <div class="rc"><div class="th"><svg viewBox="0 0 200 150" width="100%" height="100%"><circle cx="100" cy="75" r="34" fill="none" stroke="#b2b6bd" stroke-width="3"/><path d="M100 41v34l22 14" stroke="#656a76" stroke-width="3" fill="none"/></svg></div><span class="pill" style="align-self:flex-start">Vault · Webinar</span><h5>Automating certificate rotation at scale</h5><span class="m">On-demand · 45 min</span></div>
+  </div>
+  <div style="margin-top:32px"><span class="btn vault">Try HCP Vault</span></div>
+</div></section>
+
+<section class="sec" style="padding-top:0;border-top:0"><div class="wrap">
+  <div class="cta">
+    <div><h3>Ready to get started?</h3><p>Start building with HCP today, or talk to an expert about your environment.</p></div>
+    <div class="inp"><span class="f">Work email</span><span class="btn">Get started</span></div>
+  </div>
+</div></section>
+
+<footer class="site"><div class="fcols">
+  <div><span class="logo" style="color:#fff;margin-bottom:12px">HashiCorp</span><span>An IBM company</span><span style="color:#656a76">© 2026 HashiCorp, Inc.</span></div>
+  <div><h6>Products</h6><span>Terraform</span><span>Packer</span><span>Vault</span><span>Boundary</span><span>Consul</span></div>
+  <div><h6>Solutions</h6><span>Cloud operating model</span><span>Zero trust</span><span>Platform engineering</span></div>
+  <div><h6>Resources</h6><span>Docs</span><span>Tutorials</span><span>Registry</span><span>Blog</span></div>
+  <div><h6>Company</h6><span>About</span><span>Careers</span><span>Press</span></div>
+  <div><h6>Legal</h6><span>Privacy</span><span>Terms</span><span>Trademark</span></div>
+</div></footer>
+
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">hashicorp</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

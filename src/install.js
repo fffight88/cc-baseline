@@ -178,16 +178,31 @@ async function install(opts = {}) {
   }
 
   // ── 3. Overwrite files (memory, scripts, agents, commands) ───────────────
+  // files under an overwriteDirs entry are summarized as one line per directory
+  const dirTally = {};
   for (const relPath of manifest.overwriteFiles()) {
     const filePath = path.join(CLAUDE_DIR, relPath);
     const content = readTemplate(relPath);
     const action = diffAction(filePath, content);
-    if (action === 'unchanged') {
+    const dir = manifest.dirOf(relPath);
+    if (dir) {
+      const tally = dirTally[dir] || (dirTally[dir] = { created: 0, overwritten: 0, unchanged: 0 });
+      tally[action]++;
+    } else if (action === 'unchanged') {
       console.log(`  ⏭️  ${relPath} — no changes (already up to date)`);
       continue;
+    } else {
+      console.log(`  ✅ ${relPath} — ${action}`);
     }
-    changes.push({ label: relPath, path: filePath, content });
-    console.log(`  ✅ ${relPath} — ${action}`);
+    if (action !== 'unchanged') changes.push({ label: relPath, path: filePath, content });
+  }
+  for (const [dir, n] of Object.entries(dirTally)) {
+    const total = n.created + n.overwritten + n.unchanged;
+    if (n.created + n.overwritten === 0) {
+      console.log(`  ⏭️  ${dir}/ — no changes (${total} files up to date)`);
+    } else {
+      console.log(`  ✅ ${dir}/ — ${n.created} created, ${n.overwritten} overwritten, ${n.unchanged} unchanged`);
+    }
   }
 
   // ── 4. settings.json hooks merge ─────────────────────────────────────────

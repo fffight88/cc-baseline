@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pinterest — DESIGN.md preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700&display=block">
+<style>
+:root{--red:#e60023;--redp:#cc001f;--ink:#000;--inks:#211922;--body:#33332e;--char:#262622;--mute:#62625b;--ash:#91918c;--stone:#c8c8c1;--hair:#dadad3;--hs:#e5e5e0;--canvas:#fff;--soft:#fbfbf9;--card:#f6f6f3;--dark:#262622;--focus:#435ee5;--purple:#7e238b;--sp:#c7f0da;--sd:#103c25}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{font-family:Inter,-apple-system,system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:16px;line-height:1.4;color:var(--body);background:var(--canvas)}
+.disp{font-family:Manrope,Inter,system-ui,sans-serif}
+.w{max-width:1328px;margin:0 auto;padding:0 24px}
+nav{height:64px;display:flex;align-items:center;gap:16px;padding:0 24px;background:#fff;color:#000;font-weight:600;font-size:16px;position:relative;z-index:2}
+.logo{display:flex;align-items:center;gap:6px;color:var(--red);font-weight:700;font-size:20px;letter-spacing:-.5px}
+.search{flex:1;max-width:560px;margin:0 auto;height:48px;border-radius:9999px;background:var(--card);display:flex;align-items:center;gap:10px;padding:11px 15px;color:var(--ash);font-weight:400}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:6px 14px;border-radius:16px;font-size:14px;font-weight:700;line-height:1;white-space:nowrap}
+.btn.p{background:var(--red);color:#fff}
+.btn.s{background:var(--hs);color:#000}
+.btn.t{color:#000}
+.btn.lg{height:48px;padding:6px 20px;font-size:16px}
+/* hero */
+.hero{position:relative;height:720px;overflow:hidden;background:var(--soft)}
+.hero .copy{position:relative;z-index:2;text-align:center;padding-top:72px}
+h1{font-size:70px;font-weight:600;line-height:1.1;letter-spacing:-1.2px;color:#000}
+h1 span{color:#c28b00}
+.hero .dots{display:flex;gap:10px;justify-content:center;margin:28px 0}
+.hero .dots i{width:10px;height:10px;border-radius:50%;background:var(--stone)}
+.hero .dots i.on{background:#c28b00}
+.cols{position:absolute;left:0;right:0;top:330px;display:flex;gap:16px;justify-content:center}
+.col{display:flex;flex-direction:column;gap:16px;width:236px}
+.ph{border-radius:16px;overflow:hidden;position:relative;background:var(--card)}
+.fade{position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(rgba(251,251,249,0),#fbfbf9);z-index:1}
+.chev{position:absolute;bottom:24px;left:calc(50% - 24px);z-index:3;width:48px;height:48px;border-radius:50%;background:#c28b00;display:grid;place-items:center}
+/* feature rows */
+section.s{padding:64px 0}
+.feat{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;padding:32px;border-radius:16px}
+.feat.soft{background:var(--card)}
+.feat h2{font-size:44px;font-weight:700;line-height:1.15;letter-spacing:-.8px;color:#000;margin-bottom:16px}
+.feat p{font-size:22px;font-weight:400;line-height:1.4;color:var(--body);max-width:440px;margin:0 auto 24px}
+.feat .txt{text-align:center}
+.collage{position:relative;height:520px}
+.lg32{border-radius:32px;overflow:hidden;position:absolute}
+.opill{position:absolute;background:#fff;color:#000;font-size:12px;font-weight:700;line-height:1;padding:6px 12px;border-radius:9999px}
+.bigpill{position:absolute;background:#fff;color:#000;font-size:14px;font-weight:700;padding:8px 14px;border-radius:9999px;display:flex;gap:8px;align-items:center}
+/* search/masonry */
+.res{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px}
+h3.hx{font-size:28px;font-weight:700;line-height:1.2;letter-spacing:-1.2px;color:#000}
+.count{font-size:14px;font-weight:700;color:var(--mute)}
+.chips{display:flex;gap:8px;margin-bottom:16px}
+.chip{background:var(--card);color:#000;font-size:14px;font-weight:700;line-height:1;padding:12px 16px;border-radius:9999px}
+.chip.on{background:#000;color:#fff}
+.mason{columns:6;column-gap:8px}
+.pin{break-inside:avoid;margin-bottom:8px;border-radius:16px;overflow:hidden;position:relative;background:var(--card)}
+.pin .av{position:absolute;left:10px;bottom:10px;display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700;color:#fff}
+.pin .av i{width:24px;height:24px;border-radius:50%;border:2px solid #fff}
+.pin .tl{position:absolute;left:10px;top:10px}
+.pin .save{position:absolute;right:10px;top:10px;background:var(--red);color:#fff;font-size:14px;font-weight:700;padding:10px 14px;border-radius:16px;line-height:1}
+/* categories */
+.cats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:24px}
+.cat{background:var(--card);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;font-weight:600;color:#000}
+.cat .th{aspect-ratio:1;border-radius:16px;overflow:hidden}
+/* modal + business */
+.biz{position:relative;border-radius:0;overflow:hidden;background:var(--dark);color:#fff;padding:64px 0}
+.strip{display:flex;align-items:center;justify-content:space-between;padding:48px 32px}
+.strip h3{font-size:28px;font-weight:700;letter-spacing:-1.2px;line-height:1.2}
+.strip p{color:rgba(255,255,255,.7);margin-top:6px}
+.scrimwrap{position:relative;height:720px;overflow:hidden}
+.scrimwrap .bg{position:absolute;inset:0;display:flex;gap:8px;padding:8px}
+.scrimwrap .bg .ph{flex:1}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+.modal{position:absolute;left:calc(50% - 242px);top:56px;width:484px;background:#fff;border-radius:32px;padding:32px;text-align:center;box-shadow:0 0 16px rgba(0,0,0,.18);color:var(--body)}
+.modal h4{font-size:22px;font-weight:600;line-height:1.25;color:#000;margin:12px 0 4px}
+.field{text-align:left;margin-top:12px;font-size:12px;font-weight:500;color:var(--char)}
+.field span{display:block;margin-top:4px;height:44px;border:1px solid var(--ash);border-radius:16px;padding:11px 15px;font-size:16px;color:var(--ash);font-weight:400}
+.field.f span{border:2px solid #000;outline:4px solid var(--focus);color:#000}
+.modal .btn{width:100%;margin-top:16px}
+.or{font-size:14px;font-weight:700;color:#000;margin:10px 0}
+.tiny{font-size:12px;color:var(--mute);margin-top:14px}
+.tiny b{color:var(--inks)}
+footer.f{border-top:1px solid var(--hair);padding:32px 24px;color:var(--mute);font-size:14px}
+.fgrid{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.fgrid h6{font-size:14px;font-weight:700;color:#000;margin-bottom:10px}
+.fgrid a{display:block;margin-bottom:6px}
+.fbot{max-width:1280px;margin:32px auto 0;display:flex;align-items:center;gap:8px;font-size:12px}
+</style></head><body>
+
+<nav>
+  <span class="logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="#e60023"><path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.401.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.354-.629-2.758-1.379l-.749 2.848c-.269 1.045-1.004 2.352-1.498 3.146 1.123.345 2.306.535 3.55.535 6.607 0 11.985-5.365 11.985-11.987C23.97 5.39 18.592.026 11.985.026L12.017 0z"/></svg>Pinterest</span>
+  <span style="margin-left:8px">Explore</span>
+  <div class="search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#62625b" stroke-width="2"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.2 10.2 15 15"/></svg>Search for easy dinners, fashion, etc.</div>
+  <span>About</span><span>Businesses</span><span>Create</span><span>News</span>
+  <span class="btn s">Log in</span><span class="btn p">Sign up</span>
+</nav>
+
+<section class="hero">
+  <div class="copy">
+    <h1 class="disp">Get your next<br><span>weeknight dinner idea</span></h1>
+    <div class="dots"><i class="on"></i><i></i><i></i><i></i></div>
+  </div>
+  <div class="cols">
+    <div class="col" style="margin-top:220px"><div class="ph" style="height:320px;background:radial-gradient(circle at 50% 45%,#f2c46b 0 22%,#d9772b 23% 32%,#7a3b1b 33% 40%,#efe6d6 41%)"></div></div>
+    <div class="col" style="margin-top:110px"><div class="ph" style="height:340px;background:radial-gradient(circle at 40% 55%,#c0392b 0 18%,#e8b34a 19% 28%,#3a6b35 29% 34%,#f4ede0 35%)"></div></div>
+    <div class="col" style="margin-top:40px"><div class="ph" style="height:350px;background:linear-gradient(160deg,#e9d8b8 0 40%,#b25a2a 40% 55%,#e9d8b8 55%)"><span class="opill" style="left:12px;bottom:12px">Sheet-pan gnocchi</span></div></div>
+    <div class="col" style="margin-top:0"><div class="ph" style="height:350px;background:radial-gradient(ellipse at 50% 60%,#f7d488 0 20%,#e46f2c 21% 30%,#2e2a24 31% 38%,#d8cdb7 39%)"></div></div>
+    <div class="col" style="margin-top:40px"><div class="ph" style="height:350px;background:radial-gradient(circle at 60% 40%,#7fb069 0 15%,#e6c229 16% 22%,#f1e3c8 23% 46%,#a44a3f 47%)"><span class="opill" style="right:12px;top:12px">15-min ramen</span></div></div>
+    <div class="col" style="margin-top:110px"><div class="ph" style="height:340px;background:radial-gradient(circle at 50% 50%,#fff3d6 0 16%,#c9822e 17% 30%,#5b3a20 31% 36%,#e9e1d3 37%)"></div></div>
+    <div class="col" style="margin-top:220px"><div class="ph" style="height:320px;background:linear-gradient(200deg,#d4e2c6 0 35%,#8b2f2f 35% 52%,#f0dfc0 52%)"></div></div>
+  </div>
+  <div class="fade"></div>
+  <div class="chev"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg></div>
+</section>
+
+<section class="s"><div class="w">
+  <div class="feat">
+    <div class="collage">
+      <div class="lg32" style="left:40px;top:40px;width:300px;height:420px;background:radial-gradient(circle at 50% 38%,#e94b3c 0 18%,#f4b6a8 19% 30%,#f7efe6 31%)"></div>
+      <div class="lg32" style="left:280px;top:0;width:220px;height:280px;background:linear-gradient(170deg,#7a1f1f,#c43a3a 55%,#f2c0b0)"></div>
+      <div class="lg32" style="left:340px;top:300px;width:200px;height:200px;background:radial-gradient(circle at 50% 50%,#b3001b 0 30%,#f5dcd6 31%)"></div>
+      <span class="bigpill" style="left:110px;top:240px"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#000" stroke-width="2"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.2 10.2 15 15"/></svg>Cherry red nails</span>
+    </div>
+    <div class="txt"><h2 class="disp">Search for an idea</h2><p>What do you want to try next? Think of something you’re into — like “easy chicken dinner” — and see what you find.</p><span class="btn p lg">Explore</span></div>
+  </div>
+</div></section>
+
+<section style="padding:0 0 64px"><div class="w">
+  <div class="feat soft">
+    <div class="txt"><h2 class="disp">Save ideas you like</h2><p>Collect your favorites so you can get back to them later.</p><span class="btn s lg">Explore boards</span></div>
+    <div class="collage">
+      <div class="lg32" style="left:20px;top:20px;width:260px;height:320px;background:linear-gradient(180deg,#cfd8c4 0 60%,#8a9a6e 60%)"><span class="opill" style="left:16px;bottom:16px;font-size:14px;padding:8px 14px">Fern future home vibes</span></div>
+      <div class="lg32" style="left:300px;top:0;width:220px;height:220px;background:radial-gradient(circle at 50% 70%,#6b4f2a 0 25%,#e9dcc4 26%)"><span class="opill" style="left:14px;bottom:14px">My Scandinavian bedroom</span></div>
+      <div class="lg32" style="left:300px;top:240px;width:220px;height:260px;background:linear-gradient(135deg,#efe3cf,#c9a97a)"><span class="opill" style="left:14px;bottom:14px">The deck of my dreams</span></div>
+      <div class="lg32" style="left:60px;top:360px;width:200px;height:140px;background:linear-gradient(90deg,#3f5940,#7c9473)"><span class="opill" style="left:14px;bottom:14px">Serve my drinks in style</span></div>
+    </div>
+  </div>
+</div></section>
+
+<section style="padding:0 0 64px"><div class="w">
+  <div class="res"><div><h3 class="hx disp">bold lip</h3><div class="count" style="margin-top:4px">2,481 Pins · ideas for you</div></div><span class="btn s">All Pins ▾</span></div>
+  <div class="chips"><span class="chip on">Bold lip</span><span class="chip">Lipstick</span><span class="chip">Editorial makeup</span><span class="chip">Red lip makeup</span><span class="chip">Dark lipstick</span><span class="chip">Glossy lips</span><span class="chip">Beauty makeup</span><span class="chip">Matte</span></div>
+  <div class="mason">
+    <div class="pin" style="height:330px;background:radial-gradient(ellipse at 50% 62%,#a3001a 0 14%,#d39a85 15% 40%,#3b2420 41%)"><span class="save">Save</span><span class="av"><i style="background:#c28b00"></i>Maya L.</span></div>
+    <div class="pin" style="height:240px;background:linear-gradient(160deg,#f5d0c5,#c24d5b)"><span class="opill tl">Berry stain</span></div>
+    <div class="pin" style="height:300px;background:radial-gradient(ellipse at 45% 55%,#7a1531 0 12%,#e9c1a8 13% 45%,#f4ede4 46%)"></div>
+    <div class="pin" style="height:236px;background:radial-gradient(circle at 50% 50%,#e60023 0 16%,#111 17% 22%,#e5e5e0 23%)"></div>
+    <div class="pin" style="height:360px;background:linear-gradient(180deg,#2a1a1f 0 30%,#b0483e 30% 34%,#e8c5ae 34%)"><span class="av"><i style="background:#7e238b"></i>Studio Rouge</span></div>
+    <div class="pin" style="height:280px;background:radial-gradient(ellipse at 50% 70%,#9e0a0a 0 12%,#c8866c 13% 38%,#efd9c9 39%)"><span class="opill tl">Matte red</span></div>
+    <div class="pin" style="height:260px;background:linear-gradient(120deg,#4a1020,#a8324a 60%,#f0b8a0)"></div>
+    <div class="pin" style="height:320px;background:radial-gradient(circle at 50% 40%,#f6c8c0 0 24%,#5c2b2b 25% 30%,#f6f6f3 31%)"><span class="av"><i style="background:#435ee5"></i><b style="color:#000">Glossier fan</b></span></div>
+    <div class="pin" style="height:220px;background:linear-gradient(90deg,#cc001f 0 20%,#f2d6cd 20% 40%,#8c1b2b 40% 60%,#e4a990 60% 80%,#521220 80%)"><span class="opill tl">Swatches</span></div>
+    <div class="pin" style="height:340px;background:radial-gradient(ellipse at 52% 60%,#c2185b 0 11%,#e7b49a 12% 42%,#1e1414 43%)"></div>
+    <div class="pin" style="height:250px;background:linear-gradient(200deg,#f3e3d3,#d27b6a)"></div>
+    <div class="pin" style="height:300px;background:radial-gradient(circle at 50% 55%,#7e238b 0 13%,#d9a8b8 14% 40%,#f6f6f3 41%)"><span class="opill tl">Plum lip</span></div>
+  </div>
+</div></section>
+
+<section style="padding:0 0 64px"><div class="w">
+  <h3 class="hx disp">Bring your favorite ideas to life</h3>
+  <div class="cats">
+    <div class="cat"><div class="th" style="background:radial-gradient(circle at 50% 55%,#e8b34a 0 25%,#c0392b 26% 34%,#f4ede0 35%)"></div>Easy dinners</div>
+    <div class="cat"><div class="th" style="background:linear-gradient(180deg,#d9e4d0 0 55%,#8b6d4e 55%)"></div>Living room decor</div>
+    <div class="cat"><div class="th" style="background:linear-gradient(160deg,#f2d5c4,#b85c4a)"></div>Fall outfits</div>
+    <div class="cat"><div class="th" style="background:radial-gradient(circle at 50% 50%,#7fb069 0 30%,#3d6b4a 31% 40%,#ece6d8 41%)"></div>Garden ideas</div>
+  </div>
+</div></section>
+
+<section class="biz">
+  <div class="w"><div class="strip"><div><h3 class="disp">Pinterest for your brand</h3><p>Reach 570 million people who come to Pinterest to plan what’s next.</p></div><span class="btn p lg">Create a business account</span></div></div>
+</section>
+
+<section class="scrimwrap">
+  <div class="bg">
+    <div class="ph" style="background:linear-gradient(170deg,#e9d8b8,#b25a2a)"></div>
+    <div class="ph" style="background:radial-gradient(circle at 50% 40%,#f6c8c0 0 30%,#5c2b2b 31%)"></div>
+    <div class="ph" style="background:linear-gradient(180deg,#cfd8c4,#8a9a6e)"></div>
+    <div class="ph" style="background:radial-gradient(circle at 50% 50%,#e60023 0 20%,#efe6d6 21%)"></div>
+    <div class="ph" style="background:linear-gradient(200deg,#d4e2c6,#8b2f2f)"></div>
+    <div class="ph" style="background:radial-gradient(circle at 50% 60%,#f2c46b 0 26%,#7a3b1b 27%)"></div>
+  </div>
+  <div class="scrim"></div>
+  <div class="modal">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="#e60023"><path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.401.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.354-.629-2.758-1.379l-.749 2.848c-.269 1.045-1.004 2.352-1.498 3.146 1.123.345 2.306.535 3.55.535 6.607 0 11.985-5.365 11.985-11.987C23.97 5.39 18.592.026 11.985.026L12.017 0z"/></svg>
+    <h4>Welcome to Pinterest</h4>
+    <div>Find new ideas to try</div>
+    <div class="field f">Email<span>you@example.com</span></div>
+    <div class="field">Password<span>Create a password</span></div>
+    <div class="field">Birthdate<span>mm / dd / yyyy</span></div>
+    <span class="btn p">Continue</span>
+    <div class="or">OR</div>
+    <span class="btn s" style="margin-top:0">Continue with Google</span>
+    <div class="tiny">By continuing, you agree to Pinterest’s <b>Terms of Service</b> and acknowledge you’ve read our <b>Privacy Policy</b>.<br>Already a member? <b>Log in</b></div>
+  </div>
+</section>
+
+<footer class="f">
+  <div class="fgrid">
+    <div><h6>Get the app</h6><a>iOS</a><a>Android</a></div>
+    <div><h6>Quick links</h6><a>Explore</a><a>Shop</a><a>Users</a><a>Collections</a></div>
+    <div><h6>Pinterest for</h6><a>Businesses</a><a>Creators</a><a>Developers</a></div>
+    <div><h6>About</h6><a>Privacy</a><a>Terms of Service</a><a>Help Center</a></div>
+  </div>
+  <div class="fbot"><span style="color:#e60023;font-weight:700;font-size:16px">Pinterest</span><span>© 2026 Pinterest</span></div>
+</footer>
+
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">pinterest</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

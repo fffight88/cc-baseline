@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vodafone — Together we can</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=block">
+<style>
+:root{--primary:#e60000;--ink:#25282b;--body:#7e7e7e;--mute:#bebebe;--canvas:#fff;--soft:#f2f2f2;--on-dark:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,"Helvetica Neue",Arial,sans-serif;font-size:18px;line-height:28px;color:var(--ink);background:var(--canvas);overflow-x:hidden}
+.wrap{max-width:1400px;margin:0 auto;padding:0 32px}
+/* nav */
+.nav{background:var(--ink);color:var(--on-dark);padding:16px 32px;font-size:16px;line-height:20px}
+.nav .wrap{display:flex;align-items:center;gap:32px;padding:0}
+.logo{display:flex;align-items:center;gap:12px;font-weight:700;font-size:22px;letter-spacing:-.3px}
+.orb{display:inline-grid;place-items:center;background:var(--primary);border-radius:6px}
+.orb svg{fill:#fff}
+.nav .sp{flex:1}
+.nav .util{display:flex;gap:24px;color:var(--mute);font-size:14px;line-height:16px}
+.nav .util b{color:#fff;font-weight:700}
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;font:400 18px/28px Inter,"Helvetica Neue",Arial,sans-serif;padding:12px 24px;border-radius:60px;border:1px solid var(--primary);background:var(--primary);color:#fff;white-space:nowrap}
+.btn.or{background:var(--canvas);color:var(--primary)}
+.btn.od{background:var(--canvas);color:var(--ink);border-color:var(--ink)}
+.btn.ghost{background:transparent;color:#fff;border-color:#fff}
+.icb{width:52px;height:52px;border-radius:9999px;background:#fff;display:inline-grid;place-items:center}
+/* hero */
+.hero{position:relative;background:var(--ink);color:#fff;height:760px;overflow:hidden;padding:32px}
+.photo{position:absolute;inset:0}
+.photo .bg{position:absolute;inset:0;background:radial-gradient(120% 90% at 78% 40%,#5b4a42 0%,#3a3130 32%,#25282b 70%)}
+.photo .face{position:absolute;right:120px;top:90px;width:560px;height:720px;border-radius:48% 52% 44% 46%/40% 40% 60% 60%;background:radial-gradient(60% 50% at 40% 38%,#d7a98c 0%,#b07c62 38%,#6e4a3c 70%,#3a2c28 100%);filter:blur(1px)}
+.photo .hair{position:absolute;right:90px;top:40px;width:620px;height:300px;border-radius:50% 50% 30% 30%/70% 70% 30% 30%;background:linear-gradient(180deg,#1d1715 60%,rgba(29,23,21,0))}
+.photo .eye{position:absolute;width:74px;height:22px;border-radius:50%;background:radial-gradient(circle at 50% 50%,#1a1312 30%,#efe3da 34%,#c99e88 70%);top:360px}
+.photo .hand{position:absolute;right:430px;top:470px;width:250px;height:320px;border-radius:40% 40% 20% 20%;background:linear-gradient(160deg,#c48d71,#7c5243);transform:rotate(-14deg)}
+.photo .phone{position:absolute;right:470px;top:400px;width:150px;height:300px;border-radius:26px;background:linear-gradient(145deg,#2f3236,#0f1012);transform:rotate(-14deg);box-shadow:inset 0 0 0 5px #3c4045}
+.photo .phone i{position:absolute;inset:12px;border-radius:18px;background:linear-gradient(180deg,#e60000 0%,#7a0000 100%);opacity:.9}
+.photo .vig{position:absolute;inset:0;background:linear-gradient(90deg,rgba(37,40,43,.92) 0%,rgba(37,40,43,.55) 46%,rgba(37,40,43,0) 70%),linear-gradient(0deg,rgba(37,40,43,.85),transparent 40%)}
+.hero .wrap{position:relative;height:100%;display:flex;flex-direction:column;padding-top:56px}
+.eyebrow{font-size:16px;font-weight:800;line-height:24px;text-transform:uppercase}
+h1{font-size:144px;font-weight:800;line-height:114px;letter-spacing:-1px;text-transform:uppercase;margin:20px 0 32px;max-width:900px}
+.lead{font-size:22px;line-height:24px;max-width:520px;margin-bottom:32px;color:#fff}
+.row{display:flex;gap:12px;align-items:center}
+.hero .foot{margin-top:auto;display:flex;align-items:center;gap:16px;border-top:1px solid rgba(255,255,255,.25);padding-top:20px;font-size:14px;line-height:16px}
+.hero .foot .sp{flex:1}
+/* content band */
+.band{padding:96px 0}
+.dlg{font-size:48px;font-weight:300;line-height:52px;max-width:820px}
+.dmd{font-size:40px;font-weight:300;line-height:44px}
+.sub{color:var(--body);font-size:18px;line-height:28px;margin-top:12px;max-width:640px}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:32px;margin-bottom:48px}
+.stories{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+.card{background:var(--canvas);border-radius:6px;padding:16px}
+.thumb{aspect-ratio:16/9;border-radius:6px;position:relative;overflow:hidden;margin-bottom:16px}
+.chip{display:inline-block;background:var(--soft);color:var(--ink);font-size:14px;font-weight:700;line-height:21px;padding:4px 12px;border-radius:32px;margin-right:8px}
+.card h3{font-size:32px;font-weight:700;line-height:40px;margin:12px 0 8px}
+.card h4{font-size:24px;font-weight:700;line-height:24px;margin:12px 0 8px}
+.card p{color:var(--body)}
+.minis{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-top:32px}
+/* orb center */
+.anchor{display:flex;flex-direction:column;align-items:center;text-align:center;gap:24px;padding:24px 0 96px}
+/* red band */
+.red{background:var(--primary);color:#fff;padding:96px 32px}
+.red .wrap{display:grid;grid-template-columns:1.2fr 1fr;gap:64px;align-items:center;padding:0}
+.dxl{font-size:90px;font-weight:800;line-height:84px;text-transform:uppercase}
+.red .btn{background:#fff;color:var(--primary);border-color:#fff}
+.stats{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.25)}
+.stats div{padding:24px 0;border-bottom:1px solid rgba(255,255,255,.25)}
+.stats b{display:block;font-size:48px;font-weight:300;line-height:52px}
+.stats span{font-size:16px;line-height:20px}
+/* plans */
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.tier{background:var(--soft);border:1px solid var(--mute);border-radius:6px;padding:32px;display:flex;flex-direction:column;gap:16px}
+.tier.f{background:var(--ink);border-color:var(--ink);color:#fff}
+.tier .gb{font-size:90px;font-weight:800;line-height:84px;letter-spacing:-1px}
+.tier .gb small{font-size:32px;font-weight:700}
+.tier .pr{font-size:40px;font-weight:300;line-height:44px}
+.tier .pr small{font-size:16px;color:var(--body)}
+.tier.f .pr small{color:var(--mute)}
+.tier ul{list-style:none;font-size:16px;line-height:22px;display:grid;gap:10px;border-top:1px solid var(--mute);padding-top:16px}
+.tier.f ul{border-color:rgba(255,255,255,.25)}
+.tier li::before{content:"✓";color:var(--primary);font-weight:700;margin-right:10px}
+.tier .btn{align-self:flex-start;margin-top:auto}
+.tier.f .btn{background:#fff;color:var(--ink);border-color:#fff}
+.tier.f .chip{background:var(--primary);color:#fff}
+/* coverage table */
+.split{display:grid;grid-template-columns:420px 1fr;gap:48px;align-items:start}
+.inp{display:block;width:100%;font:400 16px/20px Inter,sans-serif;padding:12px 16px;border:1px solid var(--ink);border-radius:6px;margin:24px 0 12px;color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:16px;line-height:20px}
+th{background:var(--soft);font-size:12px;font-weight:600;line-height:16px;letter-spacing:.5691px;text-transform:uppercase;text-align:left;padding:12px 16px}
+td{padding:12px 16px;border-bottom:1px solid var(--mute)}
+td.n{font-variant-numeric:tabular-nums;text-align:right}
+th.n{text-align:right}
+.bar{display:inline-block;height:8px;border-radius:32px;background:var(--primary);vertical-align:middle;margin-right:8px}
+.st{font-size:14px;font-weight:700}
+/* brand footer */
+.bfoot{background:var(--ink);color:#fff;padding:64px 32px 32px;font-size:16px;line-height:20px}
+.bfoot .wrap{padding:0}
+.cols{display:grid;grid-template-columns:1.4fr repeat(4,1fr);gap:32px}
+.cols h6{font-size:12px;font-weight:600;line-height:16px;letter-spacing:.5691px;text-transform:uppercase;color:var(--mute);margin-bottom:16px}
+.cols p{margin-bottom:10px}
+.legal{margin-top:48px;padding-top:24px;border-top:1px solid rgba(255,255,255,.25);display:flex;justify-content:space-between;color:var(--mute);font-size:14px;line-height:16px}
+</style></head><body>
+
+<header class="nav"><div class="wrap">
+  <span class="logo"><span class="orb" style="width:40px;height:40px"><svg viewBox="0 0 24 24" width="28" height="28"><path d="M12 0A12 12 0 0 0 0 12A12 12 0 0 0 12 24A12 12 0 0 0 24 12A12 12 0 0 0 12 0M16.25 1.12C16.57 1.12 16.9 1.15 17.11 1.22C14.94 1.67 13.21 3.69 13.22 6C13.22 6.050 13.22 6.11 13.23 6.17C16.87 7.06 18.5 9.25 18.5 12.28C18.54 15.31 16.14 18.64 12.09 18.65C8.82 18.66 5.41 15.86 5.39 11.37C5.38 8.4 7 5.54 9.04 3.85C11.04 2.19 13.77 1.13 16.25 1.12Z"/></svg></span>vodafone</span>
+  <span>Mobile</span><span>Broadband</span><span>TV</span><span>Business</span><span>Deals</span><span>Help</span>
+  <span class="sp"></span>
+  <span class="util"><span>Search</span><span>Shop finder</span><b>My Vodafone</b></span>
+  <span class="btn" style="padding:6px 20px;font-size:16px">Log in</span>
+</div></header>
+
+<section class="hero">
+  <div class="photo"><div class="bg"></div><div class="face"></div><div class="hair"></div>
+    <div class="eye" style="right:440px"></div><div class="eye" style="right:270px"></div>
+    <div class="hand"></div><div class="phone"><i></i></div><div class="vig"></div></div>
+  <div class="wrap">
+    <span class="eyebrow">New · Vodafone 5G Ultra</span>
+    <h1>Stay<br>connected</h1>
+    <p class="lead">Unlimited 5G data, Wi‑Fi calling and EU roaming included — on the UK's most reliable network.</p>
+    <div class="row"><span class="btn">Shop SIM only plans</span><span class="btn ghost">Explore phones</span></div>
+    <div class="foot"><span class="icb"><svg width="14" height="16" viewBox="0 0 14 16"><path d="M0 0l14 8-14 8z" fill="#25282b"/></svg></span><span>Watch the film · “Everyone. Connected.” · 0:45</span><span class="sp"></span><span>Network awarded best for reliability, umlaut 2026</span></div>
+  </div>
+</section>
+
+<section class="band"><div class="wrap">
+  <div class="head"><div><span class="eyebrow" style="color:var(--primary)">Latest from Vodafone</span><h2 class="dlg" style="margin-top:8px">Technology that helps people get more out of life</h2></div><span class="btn od">All stories</span></div>
+  <div class="stories">
+    <article class="card"><div class="thumb" style="background:linear-gradient(180deg,#9fb7c9 0%,#d9c7b0 56%,#5a4a3e 57%,#2e2724 100%)"><div style="position:absolute;left:12%;bottom:30%;width:76%;height:6px;background:#25282b;opacity:.6"></div><div style="position:absolute;left:58%;bottom:43%;width:4px;height:42%;background:#25282b"></div><div style="position:absolute;left:52%;top:14%;width:16%;height:6px;background:#25282b"></div><div style="position:absolute;left:30%;bottom:10%;width:110px;height:150px;border-radius:50% 50% 8px 8px;background:linear-gradient(#e60000,#9a0000)"></div></div>
+      <span class="chip">Network</span><span class="chip">5G</span>
+      <h3>Switching on 5G Standalone in 120 more towns</h3><p>Lower latency and a dedicated slice for emergency services, now live from Cornwall to the Highlands.</p></article>
+    <article class="card"><div class="thumb" style="background:radial-gradient(60% 80% at 70% 50%,#7c6153,#2f2a29 80%)"><div style="position:absolute;right:16%;top:12%;width:34%;height:80%;border-radius:50% 50% 40% 40%;background:radial-gradient(50% 45% at 45% 35%,#e0b49a,#8d5c48 70%,#3a2c28)"></div><div style="position:absolute;left:10%;top:24%;width:30%;height:52%;border-radius:12px;background:#f2f2f2;box-shadow:inset 0 0 0 10px #25282b"></div></div>
+      <span class="chip">Sustainability</span>
+      <h3>Every phone we sell can now come back to us</h3><p>Trade in any device, any condition — we refurbish or recycle 100% of it, and you get credit on your bill.</p></article>
+  </div>
+  <div class="minis">
+    <article class="card"><div class="thumb" style="background:linear-gradient(135deg,#25282b,#4a4f55)"><div style="position:absolute;inset:30% 20%;border:3px solid #fff;border-radius:6px"></div></div><span class="chip">Business</span><h4>Private 5G for ports and plants</h4><p>Industrial-grade networks built on site.</p></article>
+    <article class="card"><div class="thumb" style="background:linear-gradient(160deg,#cfd7de,#7e8a94)"><div style="position:absolute;left:40%;top:20%;width:20%;height:60%;border-radius:8px;background:#25282b"></div></div><span class="chip">Devices</span><h4>Galaxy S26 from £30 a month</h4><p>With 6 months of Disney+ included.</p></article>
+    <article class="card"><div class="thumb" style="background:linear-gradient(180deg,#3a3f45,#25282b)"><div style="position:absolute;left:10%;right:10%;bottom:20%;height:40%;background:repeating-linear-gradient(90deg,#e60000 0 6px,transparent 6px 24px);opacity:.8"></div></div><span class="chip">Broadband</span><h4>Full Fibre 2 Gig, now in 1M homes</h4><p>Pro II Wi‑Fi 7 hub included.</p></article>
+  </div>
+</div></section>
+
+<div class="anchor wrap">
+  <span class="orb" style="width:96px;height:96px"><svg viewBox="0 0 24 24" width="66" height="66"><path d="M12 0A12 12 0 0 0 0 12A12 12 0 0 0 12 24A12 12 0 0 0 24 12A12 12 0 0 0 12 0M16.25 1.12C16.57 1.12 16.9 1.15 17.11 1.22C14.94 1.67 13.21 3.69 13.22 6C13.22 6.05 13.22 6.11 13.23 6.17C16.87 7.06 18.5 9.25 18.5 12.28C18.54 15.31 16.14 18.64 12.09 18.65C8.82 18.66 5.41 15.86 5.39 11.37C5.38 8.4 7 5.54 9.04 3.85C11.04 2.19 13.77 1.13 16.25 1.12Z"/></svg></span>
+  <p class="dmd" style="max-width:760px">We connect for a better future — 330 million customers across Europe and Africa.</p>
+</div>
+
+<section class="band" style="padding-top:0"><div class="wrap">
+  <div class="head"><div><span class="eyebrow" style="color:var(--primary)">SIM only</span><h2 class="dlg" style="margin-top:8px">Pick your data. Keep your phone.</h2><p class="sub">30-day or 24-month plans. Price rises fixed at £1.80 a year, written into your contract.</p></div>
+    <div class="row"><span class="chip" style="background:var(--ink);color:#fff">24 months</span><span class="chip">12 months</span><span class="chip">30 days</span></div></div>
+  <div class="plans">
+    <div class="tier"><span><span class="chip" style="background:#fff">Essentials</span></span><div class="gb">30<small>GB</small></div><div class="pr">£12<small> a month</small></div><ul><li>Unlimited UK calls &amp; texts</li><li>5G at no extra cost</li><li>Wi‑Fi calling</li></ul><span class="btn or">Choose 30GB</span></div>
+    <div class="tier f"><span><span class="chip">Most popular</span></span><div class="gb">Unlimited</div><div class="pr">£25<small> a month</small></div><ul><li>Unlimited 5G data, max speed</li><li>EU roaming in 77 destinations</li><li>Secure Net included</li><li>2 Entertainment extras</li></ul><span class="btn">Choose Unlimited</span></div>
+    <div class="tier"><span><span class="chip" style="background:#fff">Lite</span></span><div class="gb">100<small>GB</small></div><div class="pr">£16<small> a month</small></div><ul><li>Unlimited UK calls &amp; texts</li><li>5G at no extra cost</li><li>Data rollover</li></ul><span class="btn or">Choose 100GB</span></div>
+  </div>
+</div></section>
+
+<section class="red"><div class="wrap">
+  <div><span class="eyebrow">Vodafone Business</span><h2 class="dxl" style="margin:16px 0 32px">Ready for what's next</h2><span class="btn">Talk to an expert</span></div>
+  <div class="stats"><div><b>99.98%</b><span>core network availability</span></div><div><b>215M</b><span>IoT connections managed</span></div><div><b>17</b><span>markets with 5G SA</span></div><div><b>24/7</b><span>UK-based business support</span></div></div>
+</div></section>
+
+<section class="band"><div class="wrap split">
+  <div><span class="eyebrow" style="color:var(--primary)">Coverage checker</span><h2 class="dmd" style="margin-top:8px">See what you'll get at home</h2><input class="inp" value="EC2A 4BX" aria-label="postcode"><span class="btn">Check coverage</span><p class="sub" style="font-size:14px;line-height:16px">Predicted outdoor speeds. Indoor results vary with building materials.</p></div>
+  <table>
+    <thead><tr><th>Service</th><th>Availability</th><th class="n">Typical download</th><th class="n">Latency</th></tr></thead>
+    <tbody>
+      <tr><td><b>5G Standalone</b></td><td class="st"><span class="bar" style="width:80px"></span>Excellent</td><td class="n">612 Mbps</td><td class="n">11 ms</td></tr>
+      <tr><td><b>5G</b></td><td class="st"><span class="bar" style="width:80px"></span>Excellent</td><td class="n">288 Mbps</td><td class="n">19 ms</td></tr>
+      <tr><td><b>4G</b></td><td class="st"><span class="bar" style="width:64px"></span>Very good</td><td class="n">74 Mbps</td><td class="n">32 ms</td></tr>
+      <tr><td><b>Full Fibre 2 Gig</b></td><td class="st"><span class="bar" style="width:80px"></span>Available</td><td class="n">1,800 Mbps</td><td class="n">6 ms</td></tr>
+      <tr><td><b>Fibre 2</b></td><td class="st"><span class="bar" style="width:48px;background:#bebebe"></span>Limited</td><td class="n">67 Mbps</td><td class="n">14 ms</td></tr>
+      <tr><td><b>Wi‑Fi calling</b></td><td class="st"><span class="bar" style="width:80px"></span>Supported</td><td class="n">—</td><td class="n">—</td></tr>
+    </tbody>
+  </table>
+</div></section>
+
+<div class="bfoot"><div class="wrap">
+  <div class="cols">
+    <div><span class="logo"><span class="orb" style="width:40px;height:40px"><svg viewBox="0 0 24 24" width="28" height="28"><path d="M12 0A12 12 0 0 0 0 12A12 12 0 0 0 12 24A12 12 0 0 0 24 12A12 12 0 0 0 12 0M16.25 1.12C16.57 1.12 16.9 1.15 17.11 1.22C14.94 1.67 13.21 3.69 13.22 6C13.22 6.05 13.22 6.11 13.23 6.17C16.87 7.06 18.5 9.25 18.5 12.28C18.54 15.31 16.14 18.64 12.09 18.65C8.82 18.66 5.41 15.86 5.39 11.37C5.38 8.4 7 5.54 9.04 3.85C11.04 2.19 13.77 1.13 16.25 1.12Z"/></svg></span>vodafone</span><p style="color:var(--mute);margin-top:16px;max-width:260px">Together we can.</p></div>
+    <div><h6>Shop</h6><p>Phones</p><p>SIM only</p><p>Tablets</p><p>Broadband</p></div>
+    <div><h6>Help</h6><p>Track my order</p><p>Network status</p><p>Contact us</p></div>
+    <div><h6>Business</h6><p>Small business</p><p>Enterprise</p><p>IoT</p></div>
+    <div><h6>About us</h6><p>Newsroom</p><p>Careers</p><p>Investors</p></div>
+  </div>
+  <div class="legal"><span>© 2026 Vodafone Limited</span><span>Privacy · Cookies · Terms · Accessibility</span></div>
+</div></div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">vodafone</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

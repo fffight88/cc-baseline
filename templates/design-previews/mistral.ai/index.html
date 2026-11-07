@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mistral AI — DESIGN.md preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=block">
+<style>
+:root{--primary:#fa520f;--primary-deep:#cc3a05;--s300:#ffd06a;--s500:#ffb83e;--s700:#ffa110;--s800:#ff8105;--s900:#ff8a00;--yellow:#ffd900;--cream:#fff8e0;--cream-light:#fffaeb;--cream-deeper:#fff0c2;--beige:#e6d5a8;--b5:#ffe295;--ink:#1f1f1f;--ink-tint:#3d3d3d;--charcoal:#2c2c2c;--slate:#4a4a4a;--steel:#6a6a6a;--stone:#8a8a8a;--muted:#a8a8a8;--hair:#e5e5e5;--hair-soft:#ededed;--hair-strong:#c7c7c7;--surface:#fafafa;--code:#1c1c1e;
+--serif:"Libre Caslon Display","Times New Roman",Georgia,serif;--sans:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;--mono:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#fff;color:var(--ink);font:400 16px/1.55 var(--sans);overflow-x:hidden}
+.wrap{max-width:1280px;margin:0 auto;padding:0 32px}
+.hd{font-family:var(--serif);font-weight:400;font-size:84px;line-height:1.05;letter-spacing:-1.5px}
+.dl{font-family:var(--serif);font-weight:400;font-size:64px;line-height:1.1;letter-spacing:-1px}
+.h1{font-family:var(--serif);font-weight:400;font-size:52px;line-height:1.15;letter-spacing:-.5px}
+.h2{font:500 36px/1.2 var(--sans);letter-spacing:-.5px}
+.h3{font:500 28px/1.25 var(--sans)}
+.h4{font:500 22px/1.3 var(--sans)}
+.h5{font:500 18px/1.4 var(--sans)}
+.eb{font:600 11px/1.4 var(--sans);letter-spacing:1px;text-transform:uppercase;color:var(--steel)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:8px;font:500 14px/1.3 var(--sans);white-space:nowrap;background:var(--primary);color:#fff}
+.btn.d{background:var(--ink);color:#fff}
+.btn.s{background:transparent;color:var(--ink);border:1px solid var(--hair-strong);padding:9px 19px}
+.btn.c{background:var(--cream);color:var(--ink);border:1px solid var(--beige);padding:9px 19px}
+.btn.oc{background:#fff;color:var(--ink);border:1px solid var(--beige);padding:9px 19px}
+.lnk{color:var(--primary);font:500 14px/1.5 var(--sans)}
+.bdg{display:inline-flex;padding:4px 10px;border-radius:9999px;font:600 13px/1.4 var(--sans)}
+.bdg.o{background:var(--primary);color:#fff}.bdg.c{background:var(--cream-deeper);color:var(--ink)}.bdg.d{background:var(--ink);color:#fff}
+.promo{background:var(--ink);color:#fff;text-align:center;padding:12px 16px;font:500 14px/1.5 var(--sans)}
+.promo a{color:var(--s300);margin-left:8px}
+header{border-bottom:1px solid var(--hair-soft);background:#fff}
+nav{height:64px;display:flex;align-items:center;gap:28px;font:500 14px/1.5 var(--sans);color:var(--charcoal)}
+.wm{display:flex;align-items:center;gap:10px;font:600 17px/1 var(--sans);letter-spacing:1.5px;color:var(--ink);margin-right:16px}
+nav .sp{flex:1}
+/* sunset hero */
+.hero{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--s700) 0%,var(--s900) 60%,var(--primary) 100%);min-height:640px}
+.sky{position:absolute;inset:0;background:radial-gradient(60% 70% at 72% 38%,#ffe9a8 0%,rgba(255,208,106,.75) 22%,transparent 60%),linear-gradient(180deg,rgba(255,217,0,.25) 0%,transparent 50%)}
+.hero svg.mt{position:absolute;left:0;right:0;bottom:0;width:100%;height:360px}
+.hero .wrap{position:relative;padding-top:120px;padding-bottom:120px}
+.hero .copy{max-width:620px}
+.hero p{font:400 18px/1.5 var(--sans);color:var(--ink-tint);max-width:500px;margin:28px 0 36px}
+.ctas{display:flex;gap:12px}
+.hero .btn.s{border-color:rgba(31,31,31,.45)}
+.logos{display:flex;justify-content:space-between;padding:40px 0;border-bottom:1px solid var(--hair-soft)}
+.logos span{font:500 16px/1.55 var(--sans);color:var(--steel);padding:20px;font-size:19px;letter-spacing:-.2px}
+.sec{padding:96px 0}
+.head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:48px;gap:48px}
+.head p{max-width:420px;color:var(--slate);font-size:18px;line-height:1.5}
+.studio{display:grid;grid-template-columns:1fr 1.35fr;gap:48px;align-items:center}
+.segs{display:flex;border-bottom:1px solid var(--hair);margin-bottom:28px}
+.seg{padding:12px 16px;font:500 14px/1.5 var(--sans);color:var(--steel)}
+.seg.on{color:var(--primary);box-shadow:inset 0 -2px 0 var(--primary)}
+.ide{background:var(--code);border-radius:12px;overflow:hidden;box-shadow:rgba(0,0,0,.08) 0 12px 24px -4px;color:#fff}
+.ide .hdr{display:flex;justify-content:space-between;padding:8px 16px;font:400 13px/1.4 var(--sans);color:var(--muted);border-bottom:1px solid rgba(255,255,255,.08)}
+.ide .body{display:grid;grid-template-columns:200px 1fr}
+.ide .tree{padding:16px;font:400 13px/1.9 var(--mono);color:var(--muted);border-right:1px solid rgba(255,255,255,.08)}
+.ide .tree .on{color:#fff}
+.ide pre{padding:16px;font:400 14px/1.5 var(--mono);color:#e8e8e8;white-space:pre}
+.k{color:#ff8a00}.st{color:#ffd06a}.cm{color:#8a8a8a}.fn{color:#ffe295}
+.agent{margin:0 16px 16px;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:12px 14px;font:400 13px/1.5 var(--sans);color:#d0d0d0;display:flex;gap:10px;align-items:flex-start}
+.agent b{color:var(--s500);font-weight:600}
+.feats{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:64px}
+.feat{background:#fff;border:1px solid var(--hair-soft);border-radius:12px;padding:32px;box-shadow:rgba(0,0,0,.04) 0 4px 12px}
+.fit{width:56px;height:56px;background:var(--cream);border:1px solid var(--beige);border-radius:8px;padding:16px;margin-bottom:24px}
+.feat p{color:var(--slate);margin-top:8px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.stat{padding:20px 20px 28px}
+.stat b{display:block;font:400 56px/1.1 var(--serif);letter-spacing:-1px}
+.stat span{font-size:14px;color:var(--steel)}
+.tests{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:48px}
+.test{border:1px solid var(--hair-soft);border-radius:12px;padding:32px}
+.test q{display:block;quotes:none;font-size:16px;color:var(--charcoal);margin-bottom:20px}
+.test .who{font-size:14px;color:var(--steel)}
+.ptabs{display:flex;gap:8px}
+.ptab{padding:8px 16px;border-radius:9999px;border:1px solid var(--hair);font:500 14px/1.5 var(--sans);color:var(--steel)}
+.ptab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tier{border:1px solid var(--hair-soft);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:10px}
+.tier.f{background:var(--cream);border:2px solid var(--primary);padding:31px}
+.tier .pr{font:400 40px/1.1 var(--serif);letter-spacing:-.5px;margin:6px 0}
+.tier .pr small{font:400 14px var(--sans);color:var(--steel);letter-spacing:0}
+.tier ul{list-style:none;display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--slate);margin:10px 0 20px}
+.tier li::before{content:"■";color:var(--primary);font-size:8px;vertical-align:2px;margin-right:10px}
+.tier .btn{justify-content:center;margin-top:auto}
+.split{display:grid;grid-template-columns:1fr 520px;gap:64px;align-items:start}
+.faq div{border-bottom:1px solid var(--hair);padding:24px 0;display:flex;justify-content:space-between;font:500 18px/1.4 var(--sans)}
+.faq div span{color:var(--primary)}
+.form{background:var(--cream);border:1px solid var(--beige);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:16px}
+.form label{font:500 14px/1.5 var(--sans);color:var(--charcoal);display:block;margin-bottom:6px}
+.in{height:44px;background:#fff;border:1px solid var(--hair-strong);border-radius:8px;padding:12px 16px;font-size:16px;color:var(--muted);line-height:20px}
+.in.f{border:2px solid var(--primary);color:var(--ink);padding:11px 15px}
+.ta{height:110px;background:#fff;border:1px solid var(--hair-strong);border-radius:8px;padding:16px;color:var(--muted)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ctab{background:var(--cream);border-radius:12px;padding:64px;display:flex;justify-content:space-between;align-items:center;margin-top:96px}
+.stripe{height:64px;padding:20px 0;background:linear-gradient(90deg,var(--primary) 0%,var(--s800) 18%,var(--s700) 36%,var(--s500) 52%,var(--yellow) 70%,var(--b5) 84%,var(--cream) 100%);margin-top:96px}
+.stripe-blocks{display:flex;height:24px}
+.stripe-blocks i{flex:1}
+.bf{background:var(--cream);padding:64px 32px;font-size:14px}
+.bf .cols{max-width:1216px;margin:0 auto;display:grid;grid-template-columns:1.4fr repeat(4,1fr);gap:32px}
+.bf h6{font:600 11px/1.4 var(--sans);letter-spacing:1px;text-transform:uppercase;color:var(--ink);margin-bottom:12px}
+.bf a{display:block;color:var(--primary);padding:4px 0}
+.bf .bot{max-width:1216px;margin:48px auto 0;padding-top:24px;border-top:1px solid var(--beige);display:flex;justify-content:space-between;font:500 12px/1.4 var(--sans);color:var(--steel)}
+.store{display:inline-flex;background:var(--ink);color:#fff;border-radius:8px;padding:12px 16px;font:600 13px/1.4 var(--sans);margin-right:8px;margin-top:20px}
+</style></head><body>
+<div class="promo">Mistral Medium 3.5 and Vibe remote agents are now available in Le Studio.<a>Read the announcement →</a></div>
+<header><div class="wrap"><nav>
+  <span class="wm"><svg width="28" height="24" viewBox="0 0 7 6" shape-rendering="crispEdges"><rect x="0" y="0" width="1" height="1" fill="#ffd900"/><rect x="6" y="0" width="1" height="1" fill="#ffd900"/><rect x="0" y="1" width="2" height="1" fill="#ffb83e"/><rect x="5" y="1" width="2" height="1" fill="#ffb83e"/><rect x="0" y="2" width="7" height="1" fill="#ffa110"/><rect x="0" y="3" width="1" height="1" fill="#ff8105"/><rect x="2" y="3" width="3" height="1" fill="#ff8105"/><rect x="6" y="3" width="1" height="1" fill="#ff8105"/><rect x="0" y="4" width="1" height="1" fill="#fa520f"/><rect x="6" y="4" width="1" height="1" fill="#fa520f"/><rect x="0" y="5" width="2" height="1" fill="#e10500"/><rect x="5" y="5" width="2" height="1" fill="#e10500"/></svg>MISTRAL AI_</span>
+  <span>Products</span><span>Solutions</span><span>Research</span><span>Blog</span><span>Customers</span><span>Company</span><span class="sp"></span><span>Contact Sales</span><span class="btn d">Try Studio</span></nav></div></header>
+
+<section class="hero">
+  <div class="sky"></div>
+  <svg class="mt" viewBox="0 0 1440 360" preserveAspectRatio="none">
+    <path d="M520 360 L760 150 L840 210 L980 80 L1080 170 L1160 120 L1300 230 L1440 160 V360Z" fill="#e8742a" opacity=".55"/>
+    <path d="M380 360 L640 210 L760 260 L900 160 L1020 250 L1180 180 L1320 270 L1440 230 V360Z" fill="#c9501a" opacity=".75"/>
+    <path d="M0 360 L0 300 L220 250 L420 300 L620 260 L820 310 L1040 270 L1240 310 L1440 280 V360Z" fill="#8f2f0d" opacity=".85"/>
+    <path d="M980 80 L1010 108 L996 104 L980 116 L966 102 L954 106Z" fill="#fff0c2" opacity=".7"/>
+  </svg>
+  <div class="wrap"><div class="copy">
+    <span class="bdg d">Mistral Medium 3.5</span>
+    <h1 class="hd" style="margin-top:24px">Frontier AI.<br>In your hands.</h1>
+    <p>Configurable AI for all builders. Open-weight and premier models you can customize, deploy anywhere and keep fully under your control.</p>
+    <div class="ctas"><span class="btn d">Try Le Studio</span><span class="btn s">Talk to sales</span></div>
+  </div></div>
+</section>
+
+<div class="wrap">
+  <div class="logos"><span>BNP Paribas</span><span>CMA CGM</span><span>Stellantis</span><span>Orange</span><span>AXA</span><span>Helsing</span><span>Veolia</span></div>
+
+  <section class="sec">
+    <div class="studio">
+      <div>
+        <span class="eb">Le Studio</span>
+        <h2 class="dl" style="margin:16px 0 20px">Build, tune and ship agents.</h2>
+        <p style="color:var(--slate);font-size:18px;line-height:1.5;margin-bottom:28px">One platform to prototype with frontier models, fine-tune on your data, evaluate and deploy — on our cloud, yours, or on-premises.</p>
+        <div style="display:flex;gap:12px;align-items:center"><span class="btn">Start building</span><span class="lnk">Explore the docs →</span></div>
+      </div>
+      <div>
+        <div class="segs"><span class="seg on">Agents</span><span class="seg">Fine-tuning</span><span class="seg">Evaluation</span><span class="seg">Deployment</span></div>
+        <div class="ide">
+          <div class="hdr"><span>vibe · refactor-billing</span><span>codestral-2 · running</span></div>
+          <div class="body">
+            <div class="tree">▾ billing/<br>&nbsp;&nbsp;<span class="on">invoice.py</span><br>&nbsp;&nbsp;tax.py<br>&nbsp;&nbsp;retry.py<br>▸ tests/<br>▸ api/<br>pyproject.toml</div>
+            <pre><span class="k">from</span> mistralai <span class="k">import</span> Mistral
+
+client = Mistral(api_key=os.environ[<span class="st">"MISTRAL_API_KEY"</span>])
+
+<span class="cm"># Delegate a refactor to a remote coding agent</span>
+run = client.agents.<span class="fn">start</span>(
+    agent_id=<span class="st">"vibe-coder"</span>,
+    repo=<span class="st">"acme/billing"</span>,
+    task=<span class="st">"Split invoice.py and add tax tests"</span>,
+)
+<span class="k">print</span>(run.status)  <span class="cm"># → "in_progress"</span></pre>
+          </div>
+          <div class="agent"><b>●</b><div><b>Vibe</b> · Extracted <span style="color:#fff">compute_tax()</span> into tax.py, added 9 tests — all passing. Opening pull request #482.</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="feats">
+      <div class="feat"><div class="fit"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fa520f" stroke-width="1.6"><path d="M4 6h16M4 12h10M4 18h13"/></svg></div><h3 class="h4">Open-weight models</h3><p>Download Mistral Small, Devstral and Magistral under Apache 2.0 and run them anywhere.</p></div>
+      <div class="feat"><div class="fit"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fa520f" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg></div><h3 class="h4">Custom fine-tuning</h3><p>Adapt models to your domain with your own data, then evaluate against your benchmarks.</p></div>
+      <div class="feat"><div class="fit"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fa520f" stroke-width="1.6"><path d="M12 3l8 4v6c0 4-3.5 7-8 8-4.5-1-8-4-8-8V7z"/></svg></div><h3 class="h4">Deploy anywhere</h3><p>Serverless API, VPC, on-premises or edge — with full data sovereignty in Europe.</p></div>
+    </div>
+  </section>
+
+  <div class="stats">
+    <div class="stat"><b>75%</b><span>faster code review cycles with Vibe agents</span></div>
+    <div class="stat"><b>80%</b><span>lower inference cost vs. comparable frontier models</span></div>
+    <div class="stat"><b>100%</b><span>of your data stays in your environment</span></div>
+  </div>
+  <div class="tests">
+    <div class="test"><q>“Mistral let us deploy a sovereign assistant to 20,000 employees in weeks, running entirely within our own infrastructure.”</q><div class="who"><b style="color:var(--ink);font-weight:500">Claire Martin</b> · Chief Data Officer, Groupe Horizon</div></div>
+    <div class="test"><q>“Devstral handles most of our routine migrations. Our engineers now spend their time on architecture, not boilerplate.”</q><div class="who"><b style="color:var(--ink);font-weight:500">Lukas Weber</b> · VP Engineering, Nordwerk</div></div>
+  </div>
+
+  <section class="sec">
+    <div class="head"><div><span class="eb">Services</span><h2 class="h1" style="margin-top:12px">Choose how you work with Mistral.</h2></div><div class="ptabs"><span class="ptab on">Monthly</span><span class="ptab">Annual · save 20%</span></div></div>
+    <div class="tiers">
+      <div class="tier"><span class="h5">Free</span><div class="pr">€0</div><p style="font-size:14px;color:var(--steel)">Le Chat for everyone.</p><ul><li>Flash answers</li><li>Web search &amp; canvas</li><li>Limited image generation</li></ul><span class="btn s">Get started</span></div>
+      <div class="tier f"><span class="h5" style="display:flex;justify-content:space-between">Pro <span class="bdg o">Popular</span></span><div class="pr">€14.99 <small>/ month</small></div><p style="font-size:14px;color:var(--steel)">For power users.</p><ul><li>Unlimited messages</li><li>Deep research &amp; agents</li><li>Vibe coding in your IDE</li></ul><span class="btn">Upgrade to Pro</span></div>
+      <div class="tier"><span class="h5">Team</span><div class="pr">€24.99 <small>/ user</small></div><p style="font-size:14px;color:var(--steel)">Collaborate securely.</p><ul><li>Shared projects</li><li>Admin console</li><li>Data excluded from training</li></ul><span class="btn s">Start a trial</span></div>
+      <div class="tier"><span class="h5">Enterprise</span><div class="pr">Custom</div><p style="font-size:14px;color:var(--steel)">Self-hosted and sovereign.</p><ul><li>On-premises deployment</li><li>Custom models &amp; SSO</li><li>Dedicated solution team</li></ul><span class="btn d">Contact sales</span></div>
+    </div>
+  </section>
+
+  <div class="split">
+    <div><span class="eb">FAQ</span><h2 class="h1" style="margin:12px 0 24px">Get in touch with the team.</h2>
+      <div class="faq"><div>Can I deploy Mistral models on my own servers?<span>+</span></div><div>Which languages do your models support?<span>+</span></div><div>Is my data used to train your models?<span>+</span></div><div>Do you offer academic or startup programs?<span>+</span></div></div></div>
+    <div class="form">
+      <div class="row2"><div><label>First name</label><div class="in f">Camille</div></div><div><label>Last name</label><div class="in">Dupont</div></div></div>
+      <div><label>Work email</label><div class="in">camille@company.eu</div></div>
+      <div><label>How can we help?</label><div class="ta">Tell us about your project…</div></div>
+      <span class="btn d" style="justify-content:center">Submit</span>
+    </div>
+  </div>
+
+  <div class="ctab"><h2 class="h1">The next chapter of AI is yours.</h2><div style="display:flex;gap:12px"><span class="btn">Try Le Studio</span><span class="btn oc">Download Le Chat</span></div></div>
+</div>
+
+<div class="stripe"><div class="stripe-blocks"></div></div>
+<div class="bf" style="padding-top:64px">
+  <div class="cols">
+    <div><span class="wm">MISTRAL AI_</span><p style="color:var(--slate);margin-top:14px;max-width:260px">Frontier AI in your hands. Made in Europe.</p><span class="store">App Store</span><span class="store">Google Play</span></div>
+    <div><h6>Why Mistral</h6><a>About us</a><a>Customers</a><a>Careers</a><a>Contact</a></div>
+    <div><h6>Explore</h6><a>Le Chat</a><a>Le Studio</a><a>Vibe</a><a>Research</a></div>
+    <div><h6>Build</h6><a>Documentation</a><a>API pricing</a><a>Open models</a><a>Status</a></div>
+    <div><h6>Legal</h6><a>Terms of service</a><a>Privacy policy</a><a>Legal notice</a></div>
+  </div>
+  <div class="bot"><span>English ▾</span><span>Mistral AI © 2026</span></div>
+</div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">mistral.ai</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

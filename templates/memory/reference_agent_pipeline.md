@@ -28,7 +28,7 @@ The five agents form a **sequence**, not a flat fan-out, whenever a plan involve
    │
    ▼
 DIRECTION  (greenfield only — skipped whenever a design profile or design system exists)
-   └─ design-director   (greenfield gate → lane → 3 candidates + preview URLs → [orchestrator interviews]
+   └─ design-director   (greenfield gate → lane → 3 candidates → [orchestrator serves previews + interviews]
                          → seeds .cc-audits/design-profile.md with ## Design Direction)
    │
    ▼

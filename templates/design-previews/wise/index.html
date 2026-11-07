@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wise — Money for here, there and everywhere</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=block">
+<style>
+:root{--primary:#9fe870;--on-primary:#0e0f0c;--active:#cdffad;--pneutral:#c5edab;--pale:#e2f6d5;--ink:#0e0f0c;--ink-deep:#163300;--body:#454745;--mute:#868685;--soft:#e8ebe6;--pos:#2ead4b;--pos-deep:#054d28;--warn:#ffd11a;--warn-c:#4a3b1c;--neg:#d03238;--neg-bg:#320707;--orange:#ffc091;--cyan:#38c8ff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#fff;color:var(--ink);font-family:Inter,system-ui,-apple-system,sans-serif;font-feature-settings:"calt";font-size:16px;line-height:24px}
+.ws{font-family:'Wise Sans',Inter,system-ui,-apple-system,sans-serif;font-weight:900;letter-spacing:0}
+.mega{font-size:126px;line-height:107.1px}
+.xxl{font-size:96px;line-height:81.6px}
+.xl{font-size:64px;line-height:54.4px}
+.dmd{font-size:40px;line-height:34px}
+.dsm{font-size:32px;font-weight:600;line-height:38.4px;letter-spacing:-.96px}
+.dxs{font-size:24px;font-weight:600;line-height:31.2px;letter-spacing:-.48px}
+.blg{font-size:20px;line-height:30px}
+.sm{font-size:14px;line-height:20px}
+.cap{font-size:12px;line-height:16px}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border-radius:24px;font-size:16px;font-weight:600;line-height:24px;white-space:nowrap;border:1px solid transparent}
+.btn.p{background:var(--primary);color:var(--on-primary)}
+.btn.s{background:var(--soft);color:var(--ink)}
+.btn.t{background:#fff;color:var(--ink);border-color:var(--ink)}
+.icon-btn{width:40px;height:40px;border-radius:9999px;background:#fff;display:grid;place-items:center}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:9999px;font-size:14px;font-weight:600;line-height:20px}
+.badge.pos{background:var(--pale);color:var(--pos-deep)}
+.badge.neg{background:var(--neg-bg);color:#fff}
+.badge.warn{background:#fff3c4;color:var(--warn-c)}
+/* nav */
+nav{background:#fff;padding:12px 24px}
+nav .in{max-width:1392px;margin:0 auto;display:flex;align-items:center;gap:28px;font-size:14px;font-weight:600;line-height:20px}
+.logo{display:flex;align-items:center;gap:6px;font-weight:900;font-size:26px;letter-spacing:-.5px;color:var(--ink)}
+.logo svg{width:26px;height:26px}
+nav .sp{flex:1}
+/* hero */
+.hero{background:var(--soft);padding:48px 24px 96px}
+.hgrid{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 460px;gap:48px;align-items:center;padding-top:48px}
+.hero p{color:var(--body);max-width:520px;margin:32px 0}
+.conv{background:#fff;border:1px solid var(--ink);border-radius:24px;padding:24px}
+.row{border:1px solid var(--ink);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+.row label{display:block;font-size:14px;line-height:20px;color:var(--body)}
+.row .amt{font-size:32px;font-weight:600;line-height:38.4px;letter-spacing:-.96px}
+.cur{display:flex;align-items:center;gap:8px;font-weight:600;background:var(--soft);padding:8px 12px;border-radius:24px}
+.flag{width:24px;height:24px;border-radius:50%;flex:none;overflow:hidden;display:inline-block}
+.fees{padding:16px 4px 16px 20px;margin:4px 0 4px 18px;border-left:2px solid var(--soft);font-size:14px;line-height:20px;color:var(--body);display:flex;flex-direction:column;gap:10px}
+.fees div{display:flex;justify-content:space-between;position:relative}
+.fees div::before{content:"";position:absolute;left:-27px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--soft);border:2px solid #fff}
+.fees b{color:var(--ink);font-weight:600}
+/* content band */
+.band{padding:96px 24px}
+.fgrid{max-width:1200px;margin:48px auto 0;display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.card{border-radius:24px;padding:24px;min-height:380px;display:flex;flex-direction:column;gap:12px}
+.card .art{margin-top:auto;height:150px;border-radius:16px;position:relative;overflow:hidden}
+/* dark hero band */
+.dark{background:var(--ink);color:var(--primary);padding:96px 24px;overflow:hidden}
+.dark .in{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1.1fr 1fr;gap:48px;align-items:center}
+.dark p{color:var(--soft)}
+.stat{border-top:1px solid #2b2d29;padding:20px 0;display:flex;justify-content:space-between;align-items:baseline}
+.stat b{font-size:40px;line-height:34px}
+/* app shell */
+.shell{max-width:1200px;margin:48px auto 0;display:grid;grid-template-columns:240px 1fr;background:var(--soft);border-radius:24px;overflow:hidden;min-height:540px}
+.side{padding:24px 12px;display:flex;flex-direction:column;gap:4px}
+.side .r{padding:12px 16px;border-radius:8px;font-size:14px;font-weight:600;line-height:20px;display:flex;gap:10px;align-items:center}
+.side .r.on{background:#fff;box-shadow:inset 4px 0 0 var(--primary)}
+.main{background:#fff;margin:12px 12px 12px 0;border-radius:24px;padding:24px}
+.bals{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0 24px}
+.bal{background:var(--soft);border-radius:16px;padding:16px}
+.bal b{display:block;font-size:24px;font-weight:600;line-height:31.2px;letter-spacing:-.48px;margin-top:12px}
+table{width:100%;border-collapse:collapse}
+th{background:var(--soft);font-size:12px;line-height:16px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;text-align:left;padding:12px 16px;color:var(--body)}
+th:first-child{border-radius:12px 0 0 12px}th:last-child{border-radius:0 12px 12px 0;text-align:right}
+td{font-size:14px;line-height:20px;padding:12px 16px;border-bottom:1px solid var(--soft)}
+td:last-child{text-align:right;font-weight:600}
+.who{display:flex;align-items:center;gap:12px}
+.av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:600;font-size:14px;flex:none}
+/* pricing */
+.tiers{max-width:1200px;margin:48px auto 0;display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.tier{background:var(--soft);border:1px solid var(--mute);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:12px}
+.tier.f{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tier ul{list-style:none;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:20px;padding:8px 0 16px}
+.tier li::before{content:"✓";font-weight:900;margin-right:8px;color:var(--pos)}
+.tier.f li::before{color:var(--primary)}
+.tier .btn{margin-top:auto}
+.wfoot{background:var(--ink);color:var(--soft);padding:48px 24px 64px;font-size:14px;line-height:20px}
+.wfoot .in{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1.4fr repeat(4,1fr);gap:24px}
+.wfoot h6{font-size:14px;font-weight:600;color:#fff;margin-bottom:12px}
+.wfoot a{display:block;margin-bottom:8px;color:var(--soft)}
+.wfoot .lg{max-width:1200px;margin:40px auto 0;padding-top:24px;border-top:1px solid #2b2d29;color:var(--mute);font-size:12px;line-height:16px}
+</style></head><body>
+<nav><div class="in">
+  <span class="logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#0e0f0c" d="M6.488 7.469 0 15.05h11.585l1.301-3.576H7.922l3.033-3.507.01-.092L8.993 4.48h8.873l-6.878 18.925h4.706L24 .595H2.543l3.945 6.874Z"/></svg>wise</span>
+  <span>Personal</span><span>Business</span><span>Platform</span><span class="sp"></span>
+  <span>Features</span><span>Pricing</span><span>Help</span><span>EN</span><span>Log in</span><span class="btn p" style="padding:8px 16px">Register</span>
+</div></nav>
+
+<header class="hero"><div class="hgrid">
+  <div>
+    <span class="badge pos">● Trusted by 16 million customers</span>
+    <h1 class="ws xxl" style="margin-top:24px">MONEY FOR HERE, THERE AND EVERYWHERE</h1>
+    <p class="blg">Send, spend and receive money around the world with the real mid-market exchange rate. No hidden fees, ever.</p>
+    <div style="display:flex;gap:12px"><span class="btn p">Open an account</span><span class="btn t">Send money now</span></div>
+  </div>
+  <div class="conv">
+    <div class="row"><div><label>You send exactly</label><span class="amt">1,000.00</span></div><span class="cur"><svg class="flag" viewBox="0 0 24 24"><rect width="24" height="24" fill="#012169"/><path d="M0 0l24 24M24 0L0 24" stroke="#fff" stroke-width="5"/><path d="M0 0l24 24M24 0L0 24" stroke="#C8102E" stroke-width="2"/><path d="M12 0v24M0 12h24" stroke="#fff" stroke-width="7"/><path d="M12 0v24M0 12h24" stroke="#C8102E" stroke-width="4"/></svg>GBP ▾</span></div>
+    <div class="fees">
+      <div><span>Connected bank account (ACH) fee</span><b>– 3.69 GBP</b></div>
+      <div><span>Wise's fee</span><b>– 4.14 GBP</b></div>
+      <div><span>Total fees</span><b>7.83 GBP</b></div>
+      <div><span>Total amount we'll convert</span><b>992.17 GBP</b></div>
+      <div><span style="color:var(--pos-deep);font-weight:600">Guaranteed rate (24h)</span><b style="color:var(--pos-deep)">1.16842</b></div>
+    </div>
+    <div class="row"><div><label>Recipient gets</label><span class="amt">1,159.27</span></div><span class="cur"><svg class="flag" viewBox="0 0 24 24"><rect width="24" height="24" fill="#003399"/><g fill="#FFCC00"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="19" r="1.2"/><circle cx="5" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/><circle cx="7" cy="7" r="1.2"/><circle cx="17" cy="7" r="1.2"/><circle cx="7" cy="17" r="1.2"/><circle cx="17" cy="17" r="1.2"/></g></svg>EUR ▾</span></div>
+    <p class="sm" style="margin:16px 0;color:var(--body)">Should arrive <b style="color:var(--ink)">in seconds</b> · You could save up to <b style="color:var(--ink)">£23.40</b> vs. your bank</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><span class="btn s">Compare price</span><span class="btn p">Send money</span></div>
+  </div>
+</div></header>
+
+<section class="band">
+  <div class="wrap"><h2 class="ws dmd" style="max-width:700px">ONE ACCOUNT FOR ALL THE MONEY IN THE WORLD</h2><p class="blg" style="color:var(--body);margin-top:20px;max-width:620px">Hold 40+ currencies, get paid like a local and spend abroad without the stress.</p></div>
+  <div class="fgrid">
+    <div class="card" style="background:var(--soft)"><h3 class="dxs">Send money abroad</h3><p style="color:var(--body)">Fast, low-cost transfers to 160 countries. Most arrive within a day.</p>
+      <div class="art" style="background:#fff"><svg width="100%" height="150" viewBox="0 0 340 150"><circle cx="70" cy="75" r="34" fill="#9fe870"/><circle cx="270" cy="75" r="34" fill="#38c8ff"/><path d="M110 75 C160 20, 180 20, 230 75" fill="none" stroke="#0e0f0c" stroke-width="3" stroke-dasharray="6 6"/><path d="M222 64 l10 11 -14 4" fill="none" stroke="#0e0f0c" stroke-width="3"/><text x="70" y="82" text-anchor="middle" font-family="Inter" font-weight="900" font-size="20" fill="#163300">£</text><text x="270" y="82" text-anchor="middle" font-family="Inter" font-weight="900" font-size="20" fill="#0e0f0c">€</text></svg></div></div>
+    <div class="card" style="background:var(--pale)"><h3 class="dxs">Get paid like a local</h3><p style="color:var(--body)">Account details in 8 currencies — USD, EUR, GBP, AUD and more — for free.</p>
+      <div class="art" style="background:#fff;padding:16px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:20px">
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--body)">Routing number</span><b>026073150</b></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--body)">Account number</span><b>8310 4472 9615</b></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--body)">IBAN</span><b>BE71 9670 5531 0012</b></div>
+        <span class="badge pos" style="align-self:flex-start;margin-top:4px">Received $2,400.00</span></div></div>
+    <div class="card" style="background:var(--ink);color:var(--primary)"><h3 class="dxs">Spend with the Wise card</h3><p>Pay in the local currency in 150+ countries at the real exchange rate.</p>
+      <div class="art"><div style="position:absolute;left:40px;top:14px;width:210px;height:132px;border-radius:16px;background:#9fe870;transform:rotate(-6deg);padding:16px;color:#163300;font-weight:900;font-size:22px">wise<span style="position:absolute;right:16px;bottom:14px;font-size:14px;font-weight:600">VISA</span></div></div></div>
+  </div>
+</section>
+
+<section class="dark"><div class="in">
+  <div><h2 class="ws xxl">THE REAL EXCHANGE RATE</h2><p class="blg" style="margin:28px 0;max-width:500px">Banks hide fees in a marked-up rate. We show every fee upfront and use the rate you see on Google.</p><span class="btn p">See our pricing</span></div>
+  <div>
+    <div class="stat"><span class="dxs" style="color:#fff">Average saving vs. banks</span><b class="ws">7×</b></div>
+    <div class="stat"><span class="dxs" style="color:#fff">Transfers arriving instantly</span><b class="ws">65%</b></div>
+    <div class="stat"><span class="dxs" style="color:#fff">Currencies you can hold</span><b class="ws">40+</b></div>
+    <div class="stat" style="border-bottom:1px solid #2b2d29"><span class="dxs" style="color:#fff">Moved every month</span><b class="ws">£12B</b></div>
+  </div>
+</div></section>
+
+<section class="band" style="background:#fff">
+  <div class="wrap" style="display:flex;justify-content:space-between;align-items:end"><div><h2 class="dsm">Everything in one place</h2><p style="color:var(--body);margin-top:8px">Your balances, cards and transfers — on web and in the app.</p></div><span class="btn t">Explore the app</span></div>
+  <div class="shell">
+    <div class="side">
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 16px 20px"><span class="av" style="background:var(--primary);color:var(--ink-deep)">AK</span><div class="sm"><b>Aiko Kimura</b><div class="cap" style="color:var(--body)">Personal account</div></div></div>
+      <div class="r on">⌂ Home</div><div class="r">◔ Cards</div><div class="r">⇅ Transactions</div><div class="r">☺ Recipients</div><div class="r">↗ Payments</div><div class="r">✦ Insights</div>
+    </div>
+    <div class="main">
+      <div style="display:flex;justify-content:space-between;align-items:center"><div><span class="sm" style="color:var(--body)">Total balance</span><div class="dsm">£18,402.66</div></div><div style="display:flex;gap:8px"><span class="btn p">Send</span><span class="btn s">Add money</span><span class="btn s">Request</span></div></div>
+      <div class="bals">
+        <div class="bal"><span class="sm" style="color:var(--body)">🇬🇧 GBP</span><b>9,210.40</b></div>
+        <div class="bal"><span class="sm" style="color:var(--body)">🇪🇺 EUR</span><b>4,880.12</b></div>
+        <div class="bal"><span class="sm" style="color:var(--body)">🇺🇸 USD</span><b>3,605.00</b></div>
+        <div class="bal" style="background:var(--pale)"><span class="sm" style="color:var(--pos-deep)">Jar · Tokyo trip</span><b>¥118,400</b></div>
+      </div>
+      <table>
+        <tr><th>Recipient</th><th>Date</th><th>Status</th><th>Amount</th></tr>
+        <tr><td><div class="who"><span class="av" style="background:var(--orange)">ML</span><div><b>Marta López</b><div class="cap" style="color:var(--mute)">EUR · Spain</div></div></div></td><td>Today, 09:12</td><td><span class="badge pos">Delivered</span></td><td>− 450.00 EUR</td></tr>
+        <tr><td><div class="who"><span class="av" style="background:#d6f1ff">TS</span><div><b>Tanaka Sota</b><div class="cap" style="color:var(--mute)">JPY · Japan</div></div></div></td><td>Today, 08:40</td><td><span class="badge warn">In progress</span></td><td>− 64,200 JPY</td></tr>
+        <tr><td><div class="who"><span class="av" style="background:var(--soft)">GH</span><div><b>GitHub Inc.</b><div class="cap" style="color:var(--mute)">Card · USD</div></div></div></td><td>4 Nov</td><td><span class="badge pos">Completed</span></td><td>− 21.00 USD</td></tr>
+        <tr><td><div class="who"><span class="av" style="background:var(--pale)">AC</span><div><b>Acme Studio Ltd</b><div class="cap" style="color:var(--mute)">Incoming · GBP</div></div></div></td><td>3 Nov</td><td><span class="badge pos">Received</span></td><td style="color:var(--pos-deep)">+ 3,200.00 GBP</td></tr>
+        <tr><td><div class="who"><span class="av" style="background:#ffd9d9">RO</span><div><b>R. Oliveira</b><div class="cap" style="color:var(--mute)">BRL · Brazil</div></div></div></td><td>2 Nov</td><td><span class="badge neg">Cancelled</span></td><td>− 1,500.00 BRL</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="band" style="background:var(--soft)">
+  <div class="wrap" style="text-align:center"><h2 class="ws xl">PAY AS YOU GO</h2><p class="blg" style="color:var(--body);margin-top:20px">No monthly fees. No minimum balance. Just a small fee when you convert.</p></div>
+  <div class="tiers">
+    <div class="tier"><h3 class="dxs">Personal</h3><div class="ws dmd">£0</div><span class="sm" style="color:var(--body)">to open an account</span><ul><li>Hold 40+ currencies</li><li>Free local account details</li><li>Conversions from 0.33%</li></ul><span class="btn t">Open personal account</span></div>
+    <div class="tier f"><span class="badge pos" style="align-self:flex-start">Most chosen</span><h3 class="dxs">Business</h3><div class="ws dmd" style="color:var(--primary)">£45</div><span class="sm" style="color:var(--soft)">one-time setup fee</span><ul><li>Batch payments to 1,000 recipients</li><li>Xero &amp; QuickBooks sync</li><li>Multi-user access &amp; cards</li></ul><span class="btn p">Open business account</span></div>
+    <div class="tier"><h3 class="dxs">Platform</h3><div class="ws dmd">Custom</div><span class="sm" style="color:var(--body)">for banks &amp; enterprises</span><ul><li>Cross-border API</li><li>Dedicated integration team</li><li>Volume-based pricing</li></ul><span class="btn t">Talk to sales</span></div>
+  </div>
+</section>
+
+<div class="wfoot"><div class="in">
+  <div><span class="logo" style="color:#9fe870"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#9fe870" d="M6.488 7.469 0 15.05h11.585l1.301-3.576H7.922l3.033-3.507.01-.092L8.993 4.48h8.873l-6.878 18.925h4.706L24 .595H2.543l3.945 6.874Z"/></svg>wise</span></div>
+  <div><h6>Company</h6><a>About</a><a>Careers</a><a>Investor relations</a><a>Press</a></div>
+  <div><h6>Personal</h6><a>Send money</a><a>Wise card</a><a>Multi-currency</a><a>Rate alerts</a></div>
+  <div><h6>Business</h6><a>Business account</a><a>Batch payments</a><a>API</a><a>Pricing</a></div>
+  <div><h6>Help</h6><a>Help centre</a><a>Security</a><a>Complaints</a><a>Contact</a></div>
+</div><p class="lg">© Wise Payments Limited 2026. Wise is authorised by the Financial Conduct Authority under the Electronic Money Regulations 2011, Firm Reference 900507.</p></div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">wise</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

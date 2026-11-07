@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cal.com — Scheduling infrastructure for everyone</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cal+Sans&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=block">
+<style>
+:root{--primary:#111;--pact:#242424;--pdis:#e5e7eb;--ink:#111;--body:#374151;--muted:#6b7280;--msoft:#898989;--hair:#e5e7eb;--hsoft:#f3f4f6;--canvas:#fff;--ssoft:#f8f9fa;--card:#f5f5f5;--strong:#e5e7eb;--dark:#101010;--dark2:#1a1a1a;--ods:#a1a1aa;--blue:#3b82f6;--ok:#10b981;--orange:#fb923c;--pink:#ec4899;--violet:#8b5cf6;--emerald:#34d399;
+--disp:"Cal Sans",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace;
+--sh1:0 1px 2px rgba(0,0,0,.05);--sh2:0 4px 12px rgba(0,0,0,.08)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{max-width:1440px;margin:0 auto;overflow-x:hidden;background:var(--canvas);color:var(--body);font-family:var(--sans);font-size:16px;line-height:1.5;font-synthesis:none}
+.wrap{max-width:1200px;margin:0 auto}
+.d{font-family:var(--disp);font-weight:400;color:var(--ink);word-spacing:.1em} /* Cal Sans ships one (semibold-designed) weight; rendered as-is, no faux bold */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:12px 20px;border-radius:8px;font:600 14px/1 var(--sans);text-decoration:none;white-space:nowrap}
+.btn.p{background:var(--primary);color:#fff}
+.btn.s{background:#fff;color:var(--ink);border:1px solid var(--hair)}
+.icb{width:36px;height:36px;border-radius:50%;border:1px solid var(--hair);display:inline-grid;place-items:center;color:var(--ink);background:#fff;font-size:14px}
+.badge{display:inline-flex;align-items:center;gap:6px;font:500 13px/1.4 var(--sans);color:var(--ink);background:var(--card);border-radius:9999px;padding:4px 12px}
+.av{width:36px;height:36px;border-radius:50%;display:inline-grid;place-items:center;font:500 13px/1 var(--sans);color:var(--ink);flex:none}
+/* nav */
+nav{height:64px;display:flex;align-items:center;gap:32px;font:500 14px/1.4 var(--sans);color:var(--ink)}
+.logo{display:flex;align-items:center;margin-right:12px}
+nav .sp{flex:1}
+/* hero */
+.hero{display:grid;grid-template-columns:7fr 5fr;gap:56px;align-items:center;padding:96px 0}
+h1{font-size:64px;line-height:1.05;letter-spacing:-2px;margin:20px 0 20px}
+.lead{font-size:18px;color:var(--muted);max-width:520px;line-height:1.5}
+.ctas{display:flex;gap:12px;margin-top:32px}
+.google{display:inline-flex;align-items:center;gap:10px}
+.rating{display:flex;gap:28px;margin-top:40px;font:500 13px/1.4 var(--sans);color:var(--muted)}
+.rating b{color:var(--orange);letter-spacing:2px;font-weight:500;display:block}
+/* booking widget */
+.mock{background:#fff;border:1px solid var(--hair);border-radius:16px;box-shadow:var(--sh2);display:grid;grid-template-columns:170px 1fr;overflow:hidden}
+.bk1{padding:20px;border-right:1px solid var(--hair);font-size:13px}
+.bk1 .av{width:28px;height:28px;margin-bottom:8px}
+.bk1 .who{color:var(--muted);font-size:13px}
+.bk1 h4{font:600 18px/1.4 var(--sans);color:var(--ink);margin:4px 0 12px}
+.bk1 .m{display:flex;gap:8px;align-items:center;color:var(--body);margin:6px 0}
+.dur{display:flex;gap:4px;margin:4px 0 8px}
+.dur span{font:500 12px/1 var(--sans);padding:5px 7px;border-radius:6px;border:1px solid var(--hair)}
+.dur .on{background:var(--card);border-color:var(--card);color:var(--ink)}
+.bk2{padding:20px}
+.mh{display:flex;justify-content:space-between;align-items:center;font:600 14px/1.4 var(--sans);color:var(--ink);margin-bottom:12px}
+.mh span:last-child{color:var(--muted);font-weight:500;letter-spacing:6px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font:500 12px/1 var(--sans)}
+.cal .h{color:var(--muted);font-size:10px;padding:4px 0;text-transform:uppercase}
+.cal span{aspect-ratio:1;display:grid;place-items:center;border-radius:6px;color:var(--msoft)}
+.cal .a{background:var(--strong);color:var(--ink);font-weight:600}
+.cal .sel{background:var(--primary);color:#fff}
+.slots{margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.slots span{border:1px solid var(--hair);border-radius:6px;padding:7px 0;text-align:center;font:600 12px/1 var(--sans);color:var(--ink);display:flex;align-items:center;justify-content:center;gap:5px}
+.slots span i{width:6px;height:6px;border-radius:50%;background:var(--ok)}
+.slots .on{background:var(--primary);color:#fff;border-color:var(--primary)}
+.logos{display:flex;justify-content:space-between;align-items:center;padding:0 0 96px;color:var(--msoft);font:600 20px/1 var(--sans);letter-spacing:-.4px}
+/* sections */
+.band{padding:96px 0}
+.gray{background:var(--ssoft)}
+.sh{text-align:center;max-width:760px;margin:0 auto}
+h2{font-size:48px;line-height:1.1;letter-spacing:-1.5px;margin:16px 0 14px}
+.sh p{font-size:18px;color:var(--muted)}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:56px}
+.fc{background:var(--card);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:10px}
+.step{font:500 13px/1.4 var(--sans);color:var(--muted)}
+.fc h3{font:600 18px/1.4 var(--sans);color:var(--ink)}
+.fc p{font-size:16px;color:var(--body)}
+.frag{background:#fff;border-radius:8px;border:1px solid var(--hair);padding:14px;margin-top:12px;font-size:13px;box-shadow:var(--sh1)}
+.cons{display:flex;flex-direction:column;gap:8px}
+.cons div{display:flex;align-items:center;gap:10px;font-weight:500;color:var(--ink)}
+.cons div em{margin-left:auto;font-style:normal;font-size:12px;color:var(--ok)}
+.sq{width:22px;height:22px;border-radius:5px;flex:none}
+.tgl{width:28px;height:16px;border-radius:9999px;background:var(--primary);position:relative;margin-left:auto}
+.tgl:after{content:"";position:absolute;right:2px;top:2px;width:12px;height:12px;border-radius:50%;background:#fff}
+.tgl.off{background:var(--strong)}.tgl.off:after{right:auto;left:2px}
+.avail div{display:flex;align-items:center;gap:10px;padding:5px 0;color:var(--ink);font-weight:500}
+.avail small{color:var(--muted);font-weight:400;margin-left:auto;font-size:12px}
+.link{display:flex;align-items:center;gap:8px;border:1px solid var(--hair);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:12px;color:var(--ink)}
+.link b{margin-left:auto;font:600 12px/1 var(--sans);background:var(--primary);color:#fff;border-radius:6px;padding:6px 10px}
+/* pill group */
+.pg{display:inline-flex;background:var(--ssoft);border:1px solid var(--hsoft);border-radius:9999px;padding:6px;gap:2px;margin:32px auto 0}
+.pg span{padding:8px 14px;border-radius:8px;font:500 14px/1.4 var(--sans);color:var(--muted)}
+.pg span.on{background:#fff;color:var(--ink);box-shadow:var(--sh1);border-radius:9999px}
+.center{text-align:center}
+.g2{display:grid;grid-template-columns:1.25fr 1fr;gap:24px;margin-top:40px}
+.pm{background:#fff;border:1px solid var(--hair);border-radius:12px;padding:24px}
+.pm h3{font-size:28px;letter-spacing:-.5px;line-height:1.2;margin-bottom:6px}
+.pm > p{color:var(--muted);margin-bottom:18px}
+.wf{display:flex;flex-direction:column;align-items:stretch;gap:0}
+.node{border:1px solid var(--hair);border-radius:8px;padding:12px 14px;display:flex;gap:12px;align-items:center;font-size:14px;background:#fff}
+.node b{display:block;color:var(--ink);font-weight:600}
+.node small{color:var(--muted);font-size:13px}
+.node .badge{margin-left:auto}
+.conn{width:1px;height:18px;background:var(--hair);margin-left:28px}
+.ig{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.ig div{border:1px solid var(--hair);border-radius:8px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;font:500 12px/1.3 var(--sans);color:var(--ink);text-align:center}
+.ig i{width:28px;height:28px;border-radius:7px}
+/* testimonials */
+.tg{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:56px}
+.tc{background:var(--card);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:16px}
+.tc .top{display:flex;gap:12px;align-items:center}
+.tc .top b{display:block;font:600 16px/1.4 var(--sans);color:var(--ink)}
+.tc .top small{font-size:13px;color:var(--muted)}
+.tc .st{color:var(--orange);letter-spacing:2px;font-size:13px;margin-left:auto}
+.tc p{color:var(--body)}
+/* pricing */
+.tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:48px}
+.tier{background:#fff;border:1px solid var(--hair);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--sh1)}
+.tier.f{background:var(--dark);color:#fff;border-color:var(--dark);box-shadow:none}
+.tier h4{font:600 22px/1.3 var(--sans);letter-spacing:-.3px;color:inherit}
+.tier .pr{font-size:28px;letter-spacing:-.5px;line-height:1.2}
+.tier.f .pr{color:#fff}
+.tier .pr small{font:400 14px/1.5 var(--sans);color:var(--muted);letter-spacing:0}
+.tier.f .pr small,.tier.f p{color:var(--ods)}
+.tier p{font-size:14px;color:var(--muted)}
+.tier ul{list-style:none;display:grid;align-content:start;gap:8px;font-size:15px;flex:1;margin:8px 0 16px}
+.tier li:before{content:"✓";margin-right:10px;font-weight:600}
+.tier.f .btn.p{background:#fff;color:var(--ink)}
+.tier.f .in{background:var(--dark2);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--ods)}
+.ctaband{background:var(--card);border-radius:12px;padding:48px;text-align:center;margin:0 auto}
+.ctaband h2{font-size:28px;letter-spacing:-.5px;line-height:1.2;margin:0 0 8px}
+.ctaband p{color:var(--muted);margin-bottom:24px}
+.form{display:flex;gap:8px;justify-content:center}
+.inp{height:40px;width:300px;border:1px solid var(--ink);border-radius:8px;padding:10px 14px;font-size:16px;line-height:1.2;color:var(--msoft);background:#fff;text-align:left}
+.foot{background:var(--dark);color:var(--ods);padding:64px;font-size:14px}
+.foot .cols{display:grid;grid-template-columns:1.6fr repeat(4,1fr);gap:16px}
+.foot h6{font:600 14px/1.4 var(--sans);color:#fff;margin-bottom:14px}
+.foot a{display:block;color:var(--ods);text-decoration:none;line-height:2.1}
+.foot .bottom{display:flex;justify-content:space-between;border-top:1px solid #262626;margin-top:48px;padding-top:24px;font-size:13px;color:var(--msoft)}
+.foot .b2{display:flex;gap:8px;margin-top:20px}
+.foot .b2 span{background:var(--dark2);border-radius:8px;padding:8px 12px;font-size:12px;color:#fff}
+</style></head><body>
+<div class="wrap">
+<nav>
+  <span class="logo"><svg height="22" viewBox="0 0 24 5" style="width:105px;height:22px" fill="#111" aria-label="Cal.com"><g transform="translate(0,-9.5)"><path d="M2.408 14.488C1.035 14.488 0 13.4 0 12.058c0-1.346.982-2.443 2.408-2.443.758 0 1.282.233 1.691.765l-.66.55a1.343 1.343 0 0 0-1.03-.442c-.93 0-1.44.711-1.44 1.57 0 .86.559 1.557 1.44 1.557.413 0 .765-.147 1.043-.443l.651.573c-.391.51-.929.743-1.695.743zM6.948 10.913h.89v3.49h-.89v-.51c-.185.362-.493.604-1.083.604-.943 0-1.695-.82-1.695-1.826 0-1.007.752-1.825 1.695-1.825.585 0 .898.241 1.083.604zm.026 1.758c0-.546-.374-.998-.964-.998-.568 0-.938.457-.938.998 0 .528.37.998.938.998.586 0 .964-.456.964-.998zM8.467 9.503h.89v4.895h-.89zM9.752 13.937a.53.53 0 0 1 .542-.528c.313 0 .533.242.533.528a.527.527 0 0 1-.533.537.534.534 0 0 1-.542-.537zM14.23 13.839c-.33.403-.832.658-1.426.658a1.806 1.806 0 0 1-1.84-1.826c0-1.007.778-1.825 1.84-1.825.572 0 1.07.241 1.4.622l-.687.577c-.172-.215-.396-.376-.713-.376-.568 0-.938.456-.938.998 0 .541.37.997.938.997.343 0 .58-.179.757-.42zM14.305 12.671c0-1.007.78-1.825 1.84-1.825 1.061 0 1.84.818 1.84 1.825 0 1.007-.779 1.826-1.84 1.826-1.06-.005-1.84-.82-1.84-1.826zm2.778 0c0-.546-.37-.998-.938-.998-.568-.004-.937.452-.937.998 0 .542.37.998.937.998.568 0 .938-.456.938-.998zM24 12.269v2.13h-.89v-1.911c0-.604-.281-.864-.704-.864-.396 0-.678.197-.678.864v1.91h-.89v-1.91c0-.604-.285-.864-.704-.864-.396 0-.744.197-.744.864v1.91h-.89v-3.49h.89v.484c.185-.376.52-.564 1.035-.564.489 0 .898.241 1.123.649.224-.417.554-.65 1.153-.65.731.005 1.299.56 1.299 1.442z"/></g></svg></span>
+  <span>Solutions</span><span>Enterprise</span><span>Cal.ai</span><span>Developer</span><span>Resources</span><span>Pricing</span>
+  <span class="sp"></span><span>Sign in</span><a class="btn p" href="#">Get started →</a>
+</nav>
+
+<header class="hero">
+  <div>
+    <span class="badge"><span class="av" style="width:8px;height:8px;background:var(--emerald)"></span>Cal.ai is now live — your AI phone agent →</span>
+    <h1 class="d">The better way to schedule your meetings</h1>
+    <p class="lead">A fully customizable scheduling software for individuals, businesses taking calls and developers building scheduling platforms where users meet users.</p>
+    <div class="ctas"><a class="btn p google" href="#"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="#fff" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="#fff" d="M12 22c2.7 0 5-.9 6.6-2.5l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z" opacity=".75"/><path fill="#fff" d="M6.4 13.9a6 6 0 0 1 0-3.8V7.5H3.1a10 10 0 0 0 0 9z" opacity=".55"/><path fill="#fff" d="M12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.5l3.3 2.6C7.2 7.8 9.4 6 12 6z" opacity=".85"/></svg>Sign up with Google</a><a class="btn s" href="#">Sign up with email →</a></div>
+    <p style="font-size:13px;color:var(--msoft);margin-top:12px">No credit card required</p>
+    <div class="rating"><div><b>★★★★★</b>4.8 on Trustpilot</div><div><b>★★★★★</b>4.9 on Product Hunt</div><div><b>★★★★★</b>4.7 on G2</div></div>
+  </div>
+  <div class="mock">
+    <div class="bk1">
+      <span class="av" style="background:var(--orange)">PS</span>
+      <div class="who">Peer Richelsen</div>
+      <h4>Product demo</h4>
+      <div class="dur"><span>15m</span><span class="on">30m</span><span>45m</span></div>
+      <div class="m">◷ 30 min</div>
+      <div class="m">▣ Cal Video</div>
+      <div class="m">◎ Europe/Berlin</div>
+    </div>
+    <div class="bk2">
+      <div class="mh"><span>November 2026</span><span>‹ ›</span></div>
+      <div class="cal">
+        <span class="h">Sun</span><span class="h">Mon</span><span class="h">Tue</span><span class="h">Wed</span><span class="h">Thu</span><span class="h">Fri</span><span class="h">Sat</span>
+        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span class="a">6</span><span>7</span>
+        <span>8</span><span class="a">9</span><span class="a">10</span><span class="sel">11</span><span class="a">12</span><span class="a">13</span><span>14</span>
+        <span>15</span><span class="a">16</span><span class="a">17</span><span class="a">18</span><span class="a">19</span><span class="a">20</span><span>21</span>
+        <span>22</span><span class="a">23</span><span class="a">24</span><span class="a">25</span><span>26</span><span class="a">27</span><span>28</span>
+      </div>
+      <div class="slots"><span><i></i>9:00am</span><span><i></i>9:30am</span><span class="on">10:00am</span><span><i></i>11:30am</span><span><i></i>1:00pm</span><span><i></i>2:30pm</span></div>
+    </div>
+  </div>
+</header>
+<div class="logos"><span>Rho</span><span>Deel</span><span>Supabase</span><span>Framer</span><span>Ramp</span><span>Raycast</span><span>Storyblok</span></div>
+</div>
+
+<section class="band gray"><div class="wrap">
+  <div class="sh"><span class="badge" style="background:#fff;border:1px solid var(--hair)">How it works</span><h2 class="d">With us, appointment scheduling is easy</h2><p>Effortless scheduling for business and individuals, powerful solutions for fast-growing modern companies.</p></div>
+  <div class="g3">
+    <div class="fc"><span class="step">01</span><h3>Connect your calendar</h3><p>We'll handle all the cross-referencing, so you don't have to worry about double bookings.</p>
+      <div class="frag cons"><div><span class="sq" style="background:#4285f4"></span>Google Calendar<em>● Connected</em></div><div><span class="sq" style="background:#0078d4"></span>Outlook<em>● Connected</em></div><div><span class="sq" style="background:#111"></span>Apple Calendar<span class="tgl off"></span></div></div></div>
+    <div class="fc"><span class="step">02</span><h3>Set your availability</h3><p>Want to block off weekends? Set up any buffers? We make that easy.</p>
+      <div class="frag avail"><div>Mon<span class="tgl"></span><small>9:00 – 17:00</small></div><div>Tue<span class="tgl"></span><small>9:00 – 17:00</small></div><div>Wed<span class="tgl"></span><small>10:00 – 15:00</small></div><div>Sat<span class="tgl off"></span><small>Unavailable</small></div></div></div>
+    <div class="fc"><span class="step">03</span><h3>Choose how to meet</h3><p>It could be a video chat, phone call, or a walk in the park!</p>
+      <div class="frag" style="display:flex;flex-direction:column;gap:10px"><div class="link">cal.com/peer/30min<b>Copy</b></div><div style="display:flex;gap:6px"><span class="badge">Cal Video</span><span class="badge">Zoom</span><span class="badge">Google Meet</span></div></div></div>
+  </div>
+</div></section>
+
+<section class="band"><div class="wrap">
+  <div class="sh"><span class="badge">Features</span><h2 class="d">Your all-purpose scheduling app</h2><p>Discover a variety of our advanced features. Unlimited and free for individuals.</p></div>
+  <div class="center"><div class="pg"><span class="on">Personal</span><span>Teams</span><span>Enterprise</span><span>Platform</span></div></div>
+  <div class="g2">
+    <div class="pm"><h3 class="d">Workflows</h3><p>Automate reminders, follow-ups and notifications around every booking.</p>
+      <div class="wf">
+        <div class="node"><span class="av" style="background:var(--card)">⚡</span><div><b>When event is booked</b><small>Trigger · Product demo (30m)</small></div><span class="badge">Trigger</span></div>
+        <div class="conn"></div>
+        <div class="node"><span class="av" style="background:#ede4fe">✉</span><div><b>Send email to attendee</b><small>Template · Booking confirmed</small></div><span class="badge">Immediately</span></div>
+        <div class="conn"></div>
+        <div class="node"><span class="av" style="background:#fde3f1">☏</span><div><b>Send SMS reminder</b><small>“See you soon, {ATTENDEE_NAME}”</small></div><span class="badge">24h before</span></div>
+        <div class="conn"></div>
+        <div class="node"><span class="av" style="background:#d4f7e8">✓</span><div><b>Follow-up with notes</b><small>Cal.ai summary attached</small></div><span class="badge">1h after</span></div>
+      </div>
+    </div>
+    <div style="display:grid;gap:24px">
+      <div class="pm"><h3 class="d">App Store</h3><p>100+ integrations with the tools you already use.</p>
+        <div class="ig"><div><i style="background:#4285f4"></i>Google Meet</div><div><i style="background:#2d8cff"></i>Zoom</div><div><i style="background:#635bff"></i>Stripe</div><div><i style="background:#ff4a00"></i>Zapier</div><div><i style="background:#4a154b"></i>Slack</div><div><i style="background:#ff7a59"></i>HubSpot</div><div><i style="background:#111"></i>Notion</div><div><i style="background:#00a1e0"></i>Salesforce</div></div></div>
+      <div class="pm"><h3 class="d">Routing forms</h3><p>Qualify leads and route them to the right teammate.</p>
+        <div class="node"><span class="av" style="background:#ffe7d4">?</span><div><b>Company size &gt; 200</b><small>→ Enterprise AE round-robin</small></div><span class="badge">3 hosts</span></div></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="band gray"><div class="wrap">
+  <div class="sh"><h2 class="d">Don't just take our word for it</h2><p>Our users are our best ambassadors. Discover why we're the top choice for scheduling meetings.</p></div>
+  <div class="tg">
+    <div class="tc"><div class="top"><span class="av" style="background:var(--orange)">GR</span><div><b>Guillermo Rauch</b><small>CEO, Vercel</small></div><span class="st">★★★★★</span></div><p>“Cal.com is the scheduling infrastructure we use for every customer call. It's open, fast and it just works.”</p></div>
+    <div class="tc"><div class="top"><span class="av" style="background:var(--violet);color:#fff">AK</span><div><b>Aisha Kamara</b><small>Head of Sales, Ramp</small></div><span class="st">★★★★★</span></div><p>“Routing forms cut our speed-to-lead from hours to minutes. Every demo lands with the right AE.”</p></div>
+    <div class="tc"><div class="top"><span class="av" style="background:var(--emerald)">JM</span><div><b>Jonas Meyer</b><small>Founder, Storyblok</small></div><span class="st">★★★★★</span></div><p>“We self-host it, theme it, and embed it in our app. No other scheduler gives you that control.”</p></div>
+  </div>
+</div></section>
+
+<section class="band"><div class="wrap">
+  <div class="sh"><h2 class="d">Simple pricing based on your needs</h2><p>Free for individuals. Upgrade when your team grows.</p></div>
+  <div class="tiers">
+    <div class="tier"><h4>Free</h4><div class="pr d">$0<small> /month</small></div><p>Free for individuals forever.</p><ul><li>1 user</li><li>Unlimited calendars</li><li>Unlimited event types</li><li>Workflows</li></ul><a class="btn s" href="#">Get started</a></div>
+    <div class="tier f"><h4>Teams</h4><div class="pr d">$15<small> /user/month</small></div><p>For teams that want to collaborate.</p><ul><li>Round-robin & collective</li><li>Routing forms</li><li>Team workflows</li><li>Remove Cal.com branding</li></ul><div class="in">14-day free trial · cancel anytime</div><a class="btn p" href="#">Start free trial</a></div>
+    <div class="tier"><h4>Organizations</h4><div class="pr d">$37<small> /user/month</small></div><p>Robust scheduling for larger orgs.</p><ul><li>1 parent team, unlimited sub-teams</li><li>Organization workflows</li><li>Insights & analytics</li><li>SAML SSO & SCIM</li></ul><a class="btn s" href="#">Get started</a></div>
+    <div class="tier"><h4>Enterprise</h4><div class="pr d">Custom</div><p>Fully customizable for enterprises.</p><ul><li>Self-hosted or managed</li><li>Dedicated support</li><li>Compliance (HIPAA, SOC 2)</li><li>Custom SLA</li></ul><a class="btn p" href="#">Contact sales</a></div>
+  </div>
+  <div class="ctaband" style="margin-top:96px"><h2 class="d">Smarter, simpler scheduling</h2><p>Claim your Cal.com username and start sharing your link today.</p>
+    <div class="form"><div class="inp">cal.com/<span style="color:var(--ink)">yourname</span></div><a class="btn p" href="#">Claim username</a></div></div>
+</div></section>
+
+<footer class="foot"><div class="wrap">
+  <div class="cols">
+    <div><svg viewBox="0 0 24 5" style="width:96px;height:20px" fill="#fff" aria-label="Cal.com"><g transform="translate(0,-9.5)"><path d="M2.408 14.488C1.035 14.488 0 13.4 0 12.058c0-1.346.982-2.443 2.408-2.443.758 0 1.282.233 1.691.765l-.66.55a1.343 1.343 0 0 0-1.03-.442c-.93 0-1.44.711-1.44 1.57 0 .86.559 1.557 1.44 1.557.413 0 .765-.147 1.043-.443l.651.573c-.391.51-.929.743-1.695.743zM6.948 10.913h.89v3.49h-.89v-.51c-.185.362-.493.604-1.083.604-.943 0-1.695-.82-1.695-1.826 0-1.007.752-1.825 1.695-1.825.585 0 .898.241 1.083.604zm.026 1.758c0-.546-.374-.998-.964-.998-.568 0-.938.457-.938.998 0 .528.37.998.938.998.586 0 .964-.456.964-.998zM8.467 9.503h.89v4.895h-.89zM9.752 13.937a.53.53 0 0 1 .542-.528c.313 0 .533.242.533.528a.527.527 0 0 1-.533.537.534.534 0 0 1-.542-.537zM14.23 13.839c-.33.403-.832.658-1.426.658a1.806 1.806 0 0 1-1.84-1.826c0-1.007.778-1.825 1.84-1.825.572 0 1.07.241 1.4.622l-.687.577c-.172-.215-.396-.376-.713-.376-.568 0-.938.456-.938.998 0 .541.37.997.938.997.343 0 .58-.179.757-.42zM14.305 12.671c0-1.007.78-1.825 1.84-1.825 1.061 0 1.84.818 1.84 1.825 0 1.007-.779 1.826-1.84 1.826-1.06-.005-1.84-.82-1.84-1.826zm2.778 0c0-.546-.37-.998-.938-.998-.568-.004-.937.452-.937.998 0 .542.37.998.937.998.568 0 .938-.456.938-.998zM24 12.269v2.13h-.89v-1.911c0-.604-.281-.864-.704-.864-.396 0-.678.197-.678.864v1.91h-.89v-1.91c0-.604-.285-.864-.704-.864-.396 0-.744.197-.744.864v1.91h-.89v-3.49h.89v.484c.185-.376.52-.564 1.035-.564.489 0 .898.241 1.123.649.224-.417.554-.65 1.153-.65.731.005 1.299.56 1.299 1.442z"/></g></svg>
+      <p style="margin-top:14px;max-width:260px">Cal.com® is the open-source scheduling infrastructure for everyone.</p><div class="b2"><span>SOC 2</span><span>HIPAA</span><span>GDPR</span></div></div>
+    <div><h6>Solutions</h6><a href="#">Teams</a><a href="#">Enterprise</a><a href="#">Platform</a><a href="#">Cal.ai</a></div>
+    <div><h6>Use cases</h6><a href="#">Sales</a><a href="#">Recruiting</a><a href="#">Healthcare</a><a href="#">Education</a></div>
+    <div><h6>Resources</h6><a href="#">Docs</a><a href="#">App Store</a><a href="#">Blog</a><a href="#">Help</a></div>
+    <div><h6>Company</h6><a href="#">About</a><a href="#">Jobs</a><a href="#">Open Startup</a><a href="#">Privacy</a></div>
+  </div>
+  <div class="bottom"><span>© 2026 Cal.com, Inc. All rights reserved.</span><span>English ▾</span></div>
+</div></footer>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">cal</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

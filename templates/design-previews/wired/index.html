@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WIRED — The Latest in Technology, Science, Culture and Business</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400&family=Lora:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&display=block">
+<style>
+:root{--ink:#000;--ink-soft:#1a1a1a;--body:#757575;--hair:#e0e0e0;--canvas:#fff;--soft:#f5f5f5;--link:#057dbc;
+--disp:"Playfair Display","Times New Roman",Georgia,serif;--serif:Lora,Georgia,"Times New Roman",serif;--sans:Inter,"Helvetica Neue",Helvetica,Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--canvas);color:var(--ink);font:400 16px/24px var(--serif);letter-spacing:.09px;overflow-x:hidden}
+.wrap{max-width:1400px;margin:0 auto;padding:0 20px}
+.sans{font-family:var(--sans)}
+/* masthead */
+.top{border-bottom:1px solid var(--ink)}
+.mast{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:12px 20px;font:700 14px/18px var(--sans);letter-spacing:.4px}
+.burger{display:flex;align-items:center;gap:12px}
+.burger i{display:block;width:20px;height:2px;background:#000;box-shadow:0 6px 0 #000,0 -6px 0 #000}
+.wm{display:flex}
+.wm span{display:grid;place-items:center;width:34px;height:40px;font:700 30px/1 var(--sans);letter-spacing:0;border:2px solid #000;margin-left:-2px}
+.wm span:nth-child(odd){background:#000;color:#fff}
+.mast .r{display:flex;justify-content:flex-end;align-items:center;gap:20px}
+.btn{display:inline-block;font:700 16px/20px var(--sans);letter-spacing:.3px;padding:12px 20px;border-radius:0;background:#000;color:#fff;border:1px solid #000;white-space:nowrap}
+.btn.o{background:#fff;color:#000}
+.btn.sm{padding:8px 16px;font-size:14px}
+.secnav{display:flex;justify-content:center;gap:28px;padding:12px 20px;font:700 14px/18px var(--sans);letter-spacing:.4px;text-transform:uppercase;border-top:1px solid var(--hair)}
+/* eyebrow / byline */
+.eb{font:700 14px/18px var(--sans);letter-spacing:.4px;text-transform:uppercase}
+.by{font:700 12.73px/28px var(--serif);letter-spacing:.108px;color:var(--body);display:flex;align-items:center;gap:8px}
+.av{width:28px;height:28px;border-radius:9999px;display:inline-block}
+.dek{font:400 19px/27.93px var(--serif);letter-spacing:.108px}
+/* hero */
+.hero{padding:48px 20px;display:grid;grid-template-columns:1.55fr 1fr;gap:32px}
+.img{position:relative;overflow:hidden;background:#111}
+.cap{font:400 12px/16px var(--sans);color:var(--body);margin-top:8px}
+h1{font:400 64px/59.52px var(--disp);letter-spacing:-.5px;margin:16px 0 20px}
+.side{display:flex;flex-direction:column;border-left:1px solid var(--hair);padding-left:32px}
+.side .row{padding:16px 0;border-bottom:1px solid var(--hair)}
+.side .row h3{font:700 17px/22px var(--sans);letter-spacing:-.144px;margin:6px 0 2px}
+/* grid */
+.rule{border-top:2px solid #000;padding-top:12px;display:flex;justify-content:space-between;align-items:baseline;margin-bottom:24px}
+.rule h2{font:400 48px/50.4px var(--disp);letter-spacing:-.4px}
+.sec{padding:48px 20px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+.card{padding:12px 0}
+.card h3{font:400 32px/35.2px var(--disp);letter-spacing:-.3px;margin:12px 0 10px}
+.card h4{font:700 20px/24px var(--sans);letter-spacing:-.28px;margin:10px 0 6px}
+.four{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:32px;border-top:1px solid var(--hair);padding-top:24px}
+/* stack + popular */
+.split{display:grid;grid-template-columns:1fr 380px;gap:48px}
+.srow{display:grid;grid-template-columns:200px 1fr;gap:24px;padding:16px 0;border-bottom:1px solid var(--hair)}
+.srow h3{font:400 26px/28.08px var(--disp);margin:6px 0 8px}
+.srow p{color:var(--ink-soft)}
+.pop{border-top:2px solid #000;padding-top:12px}
+.pop ol{list-style:none;counter-reset:n}
+.pop li{counter-increment:n;display:grid;grid-template-columns:44px 1fr;padding:16px 0;border-bottom:1px solid var(--hair);font:700 17px/22px var(--sans);letter-spacing:-.144px}
+.pop li::before{content:counter(n);font:400 32px/32px var(--disp)}
+.pop li small{display:block;font:400 12px/16px var(--sans);color:var(--body);margin-top:6px;letter-spacing:0}
+/* longform excerpt */
+.article{display:grid;grid-template-columns:1fr 660px 1fr;padding:48px 20px;border-top:1px solid var(--hair)}
+.article .col{grid-column:2}
+.article h2{font:400 48px/50.4px var(--disp);letter-spacing:-.4px;margin:12px 0 16px}
+.article p{margin-bottom:20px}
+.article a{color:var(--link);text-decoration:underline}
+.article .lead::first-letter{font:400 72px/56px var(--disp);float:left;margin:6px 10px 0 0}
+.article h3{font:400 26px/28.08px var(--disp);margin:28px 0 12px}
+.pull{font:400 32px/35.2px var(--disp);letter-spacing:-.3px;border-top:2px solid #000;border-bottom:1px solid var(--hair);padding:20px 0;margin:28px 0}
+.share{display:flex;gap:8px;margin:8px 0 24px}
+.share span{width:36px;height:36px;border-radius:9999px;border:1px solid var(--hair);display:grid;place-items:center;font:700 12px/1 var(--sans)}
+/* subscribe */
+.subs{background:var(--soft);padding:48px 20px}
+.subs .wrap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;align-items:stretch}
+.tier{background:#fff;border:1px solid var(--hair);padding:24px;display:flex;flex-direction:column;gap:12px}
+.tier.f{background:#000;color:#fff;border-color:#000}
+.tier .p{font:400 48px/50.4px var(--disp);letter-spacing:-.4px}
+.tier ul{list-style:none;font:400 14px/18px var(--sans);letter-spacing:.4px;display:grid;gap:8px;color:inherit}
+.tier .btn{margin-top:auto;text-align:center}
+.tier.f .btn{background:#fff;color:#000;border-color:#fff}
+.nl{display:flex;margin-top:16px}
+.nl input{flex:1;font:400 17px/20px var(--sans);padding:12px 16px;border:1px solid #000;border-right:0;border-radius:0}
+/* brand footer */
+.bf{background:#000;color:#fff;padding:48px 20px;font:400 14px/18px var(--sans);letter-spacing:.4px}
+.bf .wm span{border-color:#fff}
+.bf .wm span:nth-child(odd){background:#fff;color:#000}
+.bf .wm span:nth-child(even){background:#000;color:#fff}
+.bf .cols{display:grid;grid-template-columns:2fr repeat(4,1fr);gap:24px;margin-top:32px}
+.bf h6{font:700 14px/18px var(--sans);letter-spacing:.4px;margin-bottom:12px}
+.bf p{margin-bottom:8px;color:#ccc}
+.bf .legal{border-top:1px solid #333;margin-top:32px;padding-top:20px;font-size:12px;line-height:16px;color:#999}
+</style></head><body>
+
+<header class="top">
+  <div class="mast"><span class="burger"><i></i><span>Menu</span><span style="margin-left:12px">Search</span></span>
+    <span class="wm" aria-label="WIRED"><span>W</span><span>I</span><span>R</span><span>E</span><span>D</span></span>
+    <span class="r"><span>Sign In</span><span class="btn sm">Subscribe</span></span></div>
+  <nav class="secnav"><span>Security</span><span>Politics</span><span>The Big Story</span><span>Business</span><span>Science</span><span>Culture</span><span>Ideas</span><span>Merch</span><span>Reviews</span><span>Podcasts</span></nav>
+</header>
+
+<section class="hero wrap">
+  <article>
+    <div class="img" style="aspect-ratio:16/9;background:radial-gradient(70% 90% at 60% 60%,#2a2f3a,#05060a 70%)">
+      <svg viewBox="0 0 800 450" width="100%" height="100%" style="position:absolute;inset:0"><g fill="none" stroke="#fff" stroke-opacity=".9"><circle cx="470" cy="250" r="150" stroke-width="1"/><circle cx="470" cy="250" r="110" stroke-width="1" stroke-opacity=".5"/><circle cx="470" cy="250" r="70" stroke-width="2"/></g><g fill="#fff">
+      <rect x="455" y="100" width="30" height="300" opacity=".08"/><rect x="320" y="235" width="300" height="30" opacity=".08"/></g><circle cx="470" cy="250" r="26" fill="#fff"/><path d="M80 380 L250 300 L330 330 L470 250" stroke="#fff" stroke-width="1.5" fill="none" stroke-dasharray="4 6"/><g font-family="Inter" font-size="11" fill="#bbb"><text x="90" y="400">GPU CLUSTER · 412,000 H200</text><text x="620" y="120">47 MW</text></g></svg>
+    </div>
+    <p class="cap">Illustration: WIRED Staff</p>
+    <div class="eb" style="margin-top:20px">The Big Story</div>
+    <h1>Inside the Desert Data Center Where the Next AI Is Being Born</h1>
+    <p class="dek" style="max-width:780px">Forty-seven megawatts, half a million chips, and a town of 3,000 that never asked for any of it. A rare look inside the race to build the machine that builds the machines.</p>
+    <div class="by"><span class="av" style="background:linear-gradient(135deg,#999,#333)"></span>By Lauren Goode &amp; Will Knight · Nov 5, 2026</div>
+  </article>
+  <aside class="side">
+    <div class="eb">Most Recent</div>
+    <div class="row"><span class="eb" style="font-size:12px">Security</span><h3>A Major Router Maker Shipped a Backdoor for Six Years</h3><div class="by">By Andy Greenberg</div></div>
+    <div class="row"><span class="eb" style="font-size:12px">Gear</span><h3>The Best Noise-Canceling Headphones, Tested in a Wind Tunnel</h3><div class="by">By Parker Hall</div></div>
+    <div class="row"><span class="eb" style="font-size:12px">Science</span><h3>Fusion's Startup Bubble Is About to Meet Physics</h3><div class="by">By Gregory Barber</div></div>
+    <div class="row"><span class="eb" style="font-size:12px">Politics</span><h3>The Election Is Over. The Deepfakes Aren't.</h3><div class="by">By Vittoria Elliott</div></div>
+    <div class="row"><span class="eb" style="font-size:12px">Culture</span><h3>Why Every Video Game Is Now 100 Hours Long</h3><div class="by">By Reece Rogers</div></div>
+    <div style="padding-top:20px"><span class="btn o">See more stories</span></div>
+  </aside>
+</section>
+
+<section class="sec wrap">
+  <div class="rule"><h2>Science</h2><span class="eb">More science ›</span></div>
+  <div class="two">
+    <article class="card"><div class="img" style="aspect-ratio:4/3;background:linear-gradient(180deg,#0b1d2a,#0a0a0a)"><svg viewBox="0 0 400 300" width="100%" height="100%" style="position:absolute;inset:0"><circle cx="200" cy="420" r="300" fill="#132634"/><circle cx="200" cy="420" r="300" fill="none" stroke="#5fa8d3" stroke-opacity=".5"/><g fill="#fff"><circle cx="60" cy="40" r="1.2"/><circle cx="320" cy="70" r="1"/><circle cx="250" cy="30" r="1.5"/><circle cx="120" cy="90" r="1"/><circle cx="360" cy="140" r="1.2"/></g><rect x="180" y="70" width="40" height="18" fill="#ddd"/><rect x="130" y="74" width="45" height="10" fill="#6a7d8c"/><rect x="225" y="74" width="45" height="10" fill="#6a7d8c"/></svg></div>
+      <div class="eb" style="margin-top:16px">Space</div><h3>The Satellite That Can See Methane Leaks From Orbit—and Name Who's Responsible</h3><p class="dek" style="font-size:16px;line-height:24px">A 400-kilogram spacecraft is turning climate pledges into evidence.</p><div class="by"><span class="av" style="background:#bbb"></span>By Ramin Skibba</div></article>
+    <article class="card"><div class="img" style="aspect-ratio:4/3;background:#e9e4dc"><svg viewBox="0 0 400 300" width="100%" height="100%" style="position:absolute;inset:0"><g fill="none" stroke="#000" stroke-width="2"><path d="M120 40 C 260 80, 140 140, 280 180 S 160 260, 280 280"/><path d="M280 40 C 140 80, 260 140, 120 180 S 240 260, 120 280"/></g><g stroke="#000" stroke-width="1"><line x1="160" y1="70" x2="240" y2="70"/><line x1="185" y1="110" x2="215" y2="110"/><line x1="160" y1="160" x2="240" y2="160"/><line x1="170" y1="215" x2="230" y2="215"/><line x1="160" y1="265" x2="240" y2="265"/></g></svg></div>
+      <div class="eb" style="margin-top:16px">Health</div><h3>Gene Editing Just Cured Its First Common Disease. Now Comes the Bill</h3><p class="dek" style="font-size:16px;line-height:24px">A one-time treatment for high cholesterol could cost less than a decade of statins.</p><div class="by"><span class="av" style="background:#888"></span>By Emily Mullin</div></article>
+  </div>
+  <div class="four">
+    <article><div class="eb" style="font-size:12px">Climate</div><h4 style="font:700 20px/24px var(--sans);letter-spacing:-.28px;margin:6px 0">Heat Pumps Outsold Furnaces Again. Here's Why</h4><div class="by">By Matt Simon</div></article>
+    <article><div class="eb" style="font-size:12px">Physics</div><h4 style="font:700 20px/24px var(--sans);letter-spacing:-.28px;margin:6px 0">A Quantum Computer Finally Did Something Useful</h4><div class="by">By Sophia Chen</div></article>
+    <article><div class="eb" style="font-size:12px">Biology</div><h4 style="font:700 20px/24px var(--sans);letter-spacing:-.28px;margin:6px 0">Octopuses Dream. Scientists Recorded It</h4><div class="by">By Max G. Levy</div></article>
+    <article><div class="eb" style="font-size:12px">Energy</div><h4 style="font:700 20px/24px var(--sans);letter-spacing:-.28px;margin:6px 0">The Grid Has a Battery Problem—It's Too Good</h4><div class="by">By Molly Taft</div></article>
+  </div>
+</section>
+
+<section class="sec wrap split">
+  <div>
+    <div class="rule"><h2>Business</h2><span class="eb">More business ›</span></div>
+    <div class="srow"><div class="img" style="aspect-ratio:4/3;background:linear-gradient(135deg,#d8d8d8,#8a8a8a)"><div style="position:absolute;left:30%;top:20%;width:40%;height:60%;background:#000"></div></div><div><span class="eb" style="font-size:12px">Artificial Intelligence</span><h3>OpenAI's Hardware Gamble Has a Release Date—and a Price</h3><p>The company's first device ships in spring. Insiders say it was nearly cancelled twice.</p><div class="by">By Paresh Dave · 4 hours ago</div></div></div>
+    <div class="srow"><div class="img" style="aspect-ratio:4/3;background:repeating-linear-gradient(0deg,#000 0 2px,#fff 2px 14px)"></div><div><span class="eb" style="font-size:12px">Big Tech</span><h3>The Antitrust Ruling That Could Break Up Ad Tech Is Finally Here</h3><p>What a court-ordered divestiture would actually look like for the open web.</p><div class="by">By Makena Kelly · 6 hours ago</div></div></div>
+    <div class="srow"><div class="img" style="aspect-ratio:4/3;background:radial-gradient(circle at 50% 50%,#fff 0 18%,#000 19% 30%,#fff 31% 42%,#000 43%)"></div><div><span class="eb" style="font-size:12px">Startups</span><h3>The Founders Who Quit AI to Build Boring Software Are Getting Rich</h3><p>Payroll, plumbing, procurement. VCs are rediscovering the unsexy middle.</p><div class="by">By Zoë Schiffer · Yesterday</div></div></div>
+    <div class="srow" style="border:0"><div class="img" style="aspect-ratio:4/3;background:linear-gradient(90deg,#000 50%,#e0e0e0 50%)"></div><div><span class="eb" style="font-size:12px">Transportation</span><h3>Robotaxis Are Everywhere Now. Nobody Is Making Money</h3><p>A ride-along with the companies betting their balance sheets on driverless.</p><div class="by">By Aarian Marshall · Yesterday</div></div></div>
+  </div>
+  <aside class="pop"><div class="eb" style="margin-bottom:4px">Most Popular</div><ol>
+    <li><span>The 47 Best Deals on Tech This Week<small>Gear · Brenda Stolyar</small></span></li>
+    <li><span>Your iPhone Has a Hidden Feature That Stops Spam Calls Cold<small>Security · Kate O'Flaherty</small></span></li>
+    <li><span>The Weird, Wonderful Return of Physical Media<small>Culture · Jason Parham</small></span></li>
+    <li><span>How to Actually Delete Yourself From the Internet<small>Security · Matt Burgess</small></span></li>
+    <li><span>Inside the Desert Data Center Where the Next AI Is Being Born<small>The Big Story · Lauren Goode</small></span></li></ol>
+    <div style="margin-top:32px;border:2px solid #000;padding:24px"><div class="eb">Newsletter</div><p class="dek" style="font-size:16px;line-height:24px;margin-top:8px">Get the best of WIRED in your inbox, every weekday.</p><div class="nl"><input value="Your email" aria-label="email"><span class="btn">Sign up</span></div></div>
+  </aside>
+</section>
+
+<section class="article">
+  <div class="col">
+    <div class="eb">Ideas</div>
+    <h2>The Internet Was Supposed to Make Us Smarter. What Happened?</h2>
+    <div class="by"><span class="av" style="background:linear-gradient(135deg,#ccc,#555)"></span>By Steven Levy · Nov 4, 2026 · 9 min read</div>
+    <div class="share sans"><span>X</span><span>f</span><span>in</span><span>✉</span></div>
+    <p class="lead dek">Thirty-three years ago, WIRED's first issue promised that digital technology would set off a revolution in how humans think. We were right about the revolution. We were wrong about which direction it would go.</p>
+    <p>The early web was a library with the doors propped open. Search engines indexed the world's knowledge and handed it back, ranked by something that loosely resembled merit. Then came the feed, and with it a new kind of ranking—one optimized not for what you needed to know but for what you couldn't stop looking at. <a href="#">Researchers at Stanford</a> now estimate that the average adult reads 40 percent less long-form text than in 2010.</p>
+    <div class="pull">“We built the most powerful learning machine in history and pointed it at our own attention.”</div>
+    <h3>The recommendation trap</h3>
+    <p>Large language models promise to fix this by answering questions directly. But an answer is not the same as understanding, and <a href="#">a growing body of evidence</a> suggests that outsourcing the struggle of finding things out may come at a cost we're only beginning to measure.</p>
+  </div>
+</section>
+
+<section class="subs"><div class="wrap">
+  <div class="tier" style="background:transparent;border:0;padding:0"><div class="eb">Subscribe to WIRED</div><h2 style="font:400 48px/50.4px var(--disp);letter-spacing:-.4px;margin:12px 0">Get unlimited access to the future.</h2><p class="dek" style="font-size:16px;line-height:24px">Ad-free reading, the print magazine, and every story from our archive back to 1993.</p></div>
+  <div class="tier"><div class="eb">Digital</div><div class="p">$2.50<span class="sans" style="font-size:14px;letter-spacing:.4px"> /month</span></div><ul><li>Unlimited WIRED.com access</li><li>Exclusive subscriber newsletters</li><li>Billed $30 annually</li></ul><span class="btn o">Choose Digital</span></div>
+  <div class="tier f"><div class="eb">Digital + Print</div><div class="p">$5<span class="sans" style="font-size:14px;letter-spacing:.4px"> /month</span></div><ul><li>Everything in Digital</li><li>Six print issues a year</li><li>Free WIRED tote</li><li>Billed $60 annually</li></ul><span class="btn">Choose Digital + Print</span></div>
+</div></section>
+
+<div class="bf"><div class="wrap">
+  <span class="wm"><span>W</span><span>I</span><span>R</span><span>E</span><span>D</span></span>
+  <div class="cols">
+    <div><p style="max-width:340px;color:#fff;font:400 16px/24px var(--serif)">WIRED is where tomorrow is realized. It is the essential source of information and ideas that make sense of a world in constant transformation.</p></div>
+    <div><h6>Sections</h6><p>Security</p><p>Politics</p><p>Business</p><p>Science</p></div>
+    <div><h6>More</h6><p>Podcasts</p><p>Video</p><p>Events</p><p>Newsletters</p></div>
+    <div><h6>Info</h6><p>Contact</p><p>Careers</p><p>Advertise</p><p>Press</p></div>
+    <div><h6>Follow</h6><p>Instagram</p><p>YouTube</p><p>TikTok</p><p>X</p></div>
+  </div>
+  <div class="legal">© 2026 Condé Nast. All rights reserved. Use of this site constitutes acceptance of our User Agreement and Privacy Policy.</div>
+</div></div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">wired</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

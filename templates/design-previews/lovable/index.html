@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lovable — Preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400..600&display=block">
+<style>
+:root{--cream:#f7f4ed;--char:#1c1c1c;--off:#fcfbf8;--c83:rgba(28,28,28,.83);--c82:rgba(28,28,28,.82);--muted:#5f5f5d;--c40:rgba(28,28,28,.4);--c04:rgba(28,28,28,.04);--c03:rgba(28,28,28,.03);--line:#eceae4;
+--inset:rgba(255,255,255,.2) 0 .5px 0 0 inset,rgba(0,0,0,.2) 0 0 0 .5px inset,rgba(0,0,0,.05) 0 1px 2px 0;--focus:rgba(0,0,0,.1) 0 4px 12px}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{background:var(--cream);color:var(--char);font-family:Figtree,ui-sans-serif,system-ui,sans-serif;font-size:16px;line-height:1.5;font-weight:400}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+h1{font-size:60px;font-weight:600;line-height:1.05;letter-spacing:-1.5px}
+h2{font-size:48px;font-weight:600;line-height:1;letter-spacing:-1.2px}
+h3{font-size:20px;font-weight:400;line-height:1.25}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:6px;font-size:16px;line-height:1.5;white-space:nowrap}
+.b-d{background:var(--char);color:var(--off);box-shadow:var(--inset)}
+.b-g{border:1px solid var(--c40);color:var(--char)}
+.b-c{background:var(--cream);color:var(--char)}
+.sm{font-size:14px;padding:6px 12px}
+.ipill{display:inline-flex;align-items:center;gap:6px;border-radius:9999px;background:var(--cream);box-shadow:var(--inset);padding:6px 12px;font-size:14px;color:var(--c83)}
+.ipill.ic{width:34px;height:34px;padding:0;justify-content:center}
+nav{position:relative;z-index:3}
+nav .wrap{display:flex;align-items:center;gap:28px;height:68px;font-size:15px}
+.wm{display:flex;align-items:center;gap:8px;font-size:21px;font-weight:600;letter-spacing:-.6px;margin-right:16px}
+nav .sp{flex:1}
+.hero{position:relative;overflow:hidden;padding:0 0 128px}
+.wash{position:absolute;left:50%;top:180px;width:1500px;height:900px;margin-left:-750px;filter:blur(90px);opacity:.55;pointer-events:none}
+.wash i{position:absolute;border-radius:50%}
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:220px;background:linear-gradient(rgba(247,244,237,0),#f7f4ed);z-index:1}
+.hc{position:relative;z-index:2;text-align:center;padding-top:128px}
+.hc p{font-size:18px;line-height:1.38;color:var(--muted);margin:20px auto 40px;max-width:560px}
+.prompt{max-width:760px;margin:0 auto;background:var(--cream);border:1px solid var(--line);border-radius:16px;padding:16px;text-align:left;box-shadow:var(--focus)}
+.prompt .tx{min-height:72px;font-size:18px;line-height:1.38;color:var(--muted);padding:4px 6px}
+.prompt .tx b{color:var(--char);font-weight:400}
+.prompt .bar{display:flex;align-items:center;gap:8px}
+.prompt .bar .sp{flex:1}
+.send{width:34px;height:34px;border-radius:9999px;background:var(--char);box-shadow:var(--inset);display:grid;place-items:center}
+.sugg{display:flex;gap:8px;justify-content:center;margin-top:20px;flex-wrap:wrap}
+.sugg span{border:1px solid var(--line);border-radius:9999px;padding:6px 14px;font-size:14px;color:var(--c83);background:rgba(247,244,237,.7)}
+.band{padding:96px 0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:32px;padding:56px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stats b{display:block;font-size:48px;font-weight:600;letter-spacing:-1.2px;line-height:1}
+.stats span{color:var(--muted);display:block;margin-top:8px}
+.sh{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:40px;gap:40px}
+.sh p{color:var(--muted);font-size:18px;line-height:1.38;max-width:440px;margin-top:16px}
+.cats{display:flex;gap:20px;font-size:14px;margin-bottom:24px}
+.cats a{color:var(--muted)}
+.cats a.on{color:var(--char);text-decoration:underline;text-underline-offset:4px}
+.gal{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.tpl{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--cream)}
+.shot{height:220px;border-bottom:1px solid var(--line);position:relative;overflow:hidden;padding:18px}
+.mini{background:var(--off);border-radius:8px;height:100%;box-shadow:0 0 0 1px var(--line);padding:12px;display:flex;flex-direction:column;gap:8px}
+.mini .l{height:8px;border-radius:4px;background:var(--c04)}
+.tpl .meta{padding:16px 18px;display:flex;justify-content:space-between;align-items:center}
+.tpl .meta span{font-size:14px;color:var(--muted)}
+/* editor mockup */
+.editor{border:1px solid var(--line);border-radius:16px;overflow:hidden;display:grid;grid-template-columns:380px 1fr;height:600px;background:var(--cream)}
+.chat{border-right:1px solid var(--line);display:flex;flex-direction:column}
+.ehd{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);font-size:14px}
+.ehd .sp{flex:1}
+.msgs{padding:16px;display:flex;flex-direction:column;gap:14px;font-size:14px;flex:1}
+.um{align-self:flex-end;background:var(--c04);border-radius:12px;padding:10px 14px;max-width:85%}
+.am{color:var(--c82)}
+.task{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)}
+.task div{display:flex;gap:8px;align-items:center}
+.task i{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--c40);flex:none}
+.task i.d{background:var(--char);border-color:var(--char)}
+.cin{margin:12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.cin .sp{flex:1}
+.prev{display:flex;flex-direction:column;background:var(--c03)}
+.url{display:flex;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
+.url span.u{flex:1;border:1px solid var(--line);border-radius:6px;padding:4px 10px;background:var(--cream)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg b{font-weight:400;padding:4px 10px}
+.seg b.on{background:var(--c04);color:var(--char)}
+.site{margin:20px;background:#fdfcf9;border:1px solid var(--line);border-radius:12px;flex:1;overflow:hidden}
+.site nav{display:flex;justify-content:space-between;padding:14px 20px;font-size:13px;border-bottom:1px solid var(--line)}
+.site .sbody{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:28px 24px}
+.site h4{font-size:30px;font-weight:600;letter-spacing:-.75px;line-height:1.05}
+.site table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+.site td,.site th{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left}
+.site th{color:var(--muted);font-weight:400}
+.chip{display:inline-block;border-radius:9999px;padding:0 8px;font-size:11px;background:var(--c04)}
+/* steps */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.card{border:1px solid var(--line);border-radius:12px;padding:24px}
+.card .n{font-size:14px;color:var(--muted)}
+.card h3{margin:40px 0 8px}
+.card p{font-size:14px;color:var(--muted)}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.tier{border:1px solid var(--line);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:12px}
+.tier.f{border-radius:16px;border-color:var(--c40)}
+.tier .price{font-size:36px;font-weight:600;letter-spacing:-.9px;line-height:1.1}
+.tier .price small{font-size:16px;font-weight:400;letter-spacing:0;color:var(--muted)}
+.tier ul{list-style:none;font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.tier li::before{content:"✓  ";color:var(--char)}
+.tier .btn{margin-top:auto;justify-content:center}
+.foot{margin:0 24px 24px;border:1px solid var(--line);border-radius:16px;position:relative;overflow:hidden;padding:64px 0 48px}
+.foot::before{content:"";position:absolute;left:0;right:0;bottom:-180px;height:360px;background:radial-gradient(ellipse at 30% 50%,rgba(255,170,140,.35),transparent 60%),radial-gradient(ellipse at 70% 50%,rgba(150,180,255,.3),transparent 60%);filter:blur(30px)}
+.foot .wrap{position:relative;display:grid;grid-template-columns:2fr repeat(4,1fr);gap:24px}
+.foot h6{font-size:14px;font-weight:600;margin-bottom:12px}
+.foot a{display:block;font-size:14px;color:var(--muted);margin-bottom:8px;text-decoration:underline;text-decoration-color:transparent}
+.cta{text-align:center;padding:128px 0}
+.cta .btn{margin-top:32px}
+</style></head><body>
+<section class="hero">
+  <div class="wash">
+    <i style="left:200px;top:120px;width:520px;height:420px;background:#ffb38a"></i>
+    <i style="left:520px;top:40px;width:520px;height:460px;background:#ff8fb1"></i>
+    <i style="left:860px;top:140px;width:500px;height:420px;background:#8fb4ff"></i>
+    <i style="left:600px;top:340px;width:420px;height:300px;background:#ffd59a"></i>
+  </div>
+  <nav><div class="wrap">
+    <span class="wm"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 21s-8-5.2-8-11.2A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 8 2.8C20 15.8 12 21 12 21Z" fill="#1c1c1c"/></svg>Lovable</span>
+    <span>Community</span><span>Pricing</span><span>Enterprise</span><span>Learn</span><span>Launched</span>
+    <span class="sp"></span><span class="btn b-g sm">Log in</span><span class="btn b-d sm">Get started</span>
+  </div></nav>
+  <div class="hc wrap">
+    <span class="ipill" style="opacity:1">✦ Lovable Cloud &amp; AI are now built in</span>
+    <h1 style="margin-top:24px">Build something Lovable</h1>
+    <p>Create apps and websites by chatting with AI. Describe your idea, and watch a real, full-stack product come to life.</p>
+    <div class="prompt">
+      <div class="tx"><b>Build a booking app for my yoga studio</b> with class schedules, a member login and Stripe payments…</div>
+      <div class="bar">
+        <span class="ipill ic">+</span><span class="ipill">◎ Plan</span><span class="ipill" style="opacity:.5">Public</span>
+        <span class="sp"></span><span class="ipill ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="2"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+        <span class="send"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fcfbf8" stroke-width="2.4"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
+      </div>
+    </div>
+    <div class="sugg"><span>Personal portfolio</span><span>SaaS landing page</span><span>CRM dashboard</span><span>Habit tracker</span><span>Recipe finder</span></div>
+  </div>
+</section>
+
+<div class="wrap"><div class="stats">
+  <div><b>8M+</b><span>builders on Lovable</span></div>
+  <div><b>100K+</b><span>projects created every day</span></div>
+  <div><b>180+</b><span>countries</span></div>
+  <div><b>$200M</b><span>ARR in under a year</span></div>
+</div></div>
+
+<section class="band"><div class="wrap">
+  <div class="sh"><div><h2>From idea to app in minutes</h2><p>Chat on the left, live preview on the right. Lovable writes the code, wires the database and deploys — you stay in the conversation.</p></div><span class="btn b-g">See how it works</span></div>
+  <div class="editor">
+    <div class="chat">
+      <div class="ehd"><b style="font-weight:600">zen-flow-studio</b><span class="sp"></span><span class="ipill" style="padding:3px 10px;font-size:13px">History</span></div>
+      <div class="msgs">
+        <div class="um">Add a weekly schedule page with class capacity and a “Book” button.</div>
+        <div class="am">I’ll create a schedule view backed by a <u>classes</u> table, show remaining spots, and connect booking to members.</div>
+        <div class="task">
+          <div><i class="d"></i>Created table <b style="font-weight:400;color:#1c1c1c">classes</b> in Lovable Cloud</div>
+          <div><i class="d"></i>Built <b style="font-weight:400;color:#1c1c1c">Schedule.tsx</b> with week view</div>
+          <div><i class="d"></i>Added booking with row-level security</div>
+          <div><i></i>Sending confirmation emails…</div>
+        </div>
+        <div class="am">Done — try booking “Vinyasa Flow” on Tuesday. Want a waitlist when a class is full?</div>
+      </div>
+      <div class="cin">Ask Lovable…<span class="sp"></span><span class="ipill ic" style="width:28px;height:28px">◎</span><span class="send" style="width:28px;height:28px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fcfbf8" stroke-width="2.4"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span></div>
+    </div>
+    <div class="prev">
+      <div class="url"><span class="seg"><b class="on">Preview</b><b>Code</b><b>Cloud</b></span><span class="u">zen-flow-studio.lovable.app/schedule</span><span class="btn b-d sm" style="font-size:13px;padding:4px 12px">Publish</span></div>
+      <div class="site">
+        <nav><b style="font-weight:600">Zen Flow</b><span style="color:#5f5f5d">Classes · Teachers · Pricing · Sign in</span></nav>
+        <div class="sbody">
+          <div><div class="chip">This week</div><h4 style="margin-top:12px">Find your flow, book your spot.</h4><p style="font-size:13px;color:#5f5f5d;margin-top:10px">14 classes · 4 teachers · Downtown studio</p><div style="margin-top:18px;height:150px;border-radius:12px;border:1px solid #eceae4;background:linear-gradient(160deg,#f3e3d3,#e9c9b4 50%,#d6b8c9)"></div></div>
+          <div><table>
+            <tr><th>Day</th><th>Class</th><th>Time</th><th>Spots</th><th></th></tr>
+            <tr><td>Mon</td><td>Sunrise Hatha</td><td>07:00</td><td>4/16</td><td><span class="chip">Book</span></td></tr>
+            <tr><td>Tue</td><td>Vinyasa Flow</td><td>18:30</td><td>0/20</td><td><span class="chip" style="background:#1c1c1c;color:#fcfbf8">Booked</span></td></tr>
+            <tr><td>Wed</td><td>Yin &amp; Breath</td><td>19:00</td><td>9/14</td><td><span class="chip">Book</span></td></tr>
+            <tr><td>Thu</td><td>Power Yoga</td><td>12:15</td><td>2/18</td><td><span class="chip">Book</span></td></tr>
+            <tr><td>Fri</td><td>Restorative</td><td>20:00</td><td>11/12</td><td><span class="chip">Book</span></td></tr>
+            <tr><td>Sat</td><td>Ashtanga Led</td><td>09:00</td><td>6/20</td><td><span class="chip">Book</span></td></tr>
+            <tr><td>Sun</td><td>Family Yoga</td><td>10:30</td><td>8/10</td><td><span class="chip">Book</span></td></tr>
+          </table></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<section class="band" style="padding-top:32px"><div class="wrap">
+  <div class="sh"><div><h2>Start from a template</h2><p>Remix projects built by the community and make them your own.</p></div><span class="btn b-g">Browse all</span></div>
+  <div class="cats"><a class="on">Popular</a><a>Websites</a><a>Internal tools</a><a>Consumer apps</a><a>Games</a><a>Dashboards</a></div>
+  <div class="gal">
+    <div class="tpl"><div class="shot" style="background:linear-gradient(150deg,#efe2d0,#e7c7a8)"><div class="mini"><div class="l" style="width:40%;height:14px;background:rgba(28,28,28,.82)"></div><div class="l" style="width:70%"></div><div class="l" style="width:55%"></div><div style="flex:1;border-radius:6px;background:linear-gradient(135deg,#f3d9c4,#e9b99a)"></div></div></div><div class="meta"><h3>Ceramics studio</h3><span>12.4K remixes</span></div></div>
+    <div class="tpl"><div class="shot" style="background:linear-gradient(150deg,#dfe6f3,#bccbe8)"><div class="mini" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px"><div style="background:rgba(28,28,28,.04);border-radius:6px"></div><div style="background:rgba(28,28,28,.04);border-radius:6px"></div><div style="background:rgba(28,28,28,.04);border-radius:6px"></div><div style="grid-column:span 3;background:rgba(28,28,28,.03);border-radius:6px"></div></div></div><div class="meta"><h3>SaaS analytics dashboard</h3><span>9.1K remixes</span></div></div>
+    <div class="tpl"><div class="shot" style="background:linear-gradient(150deg,#f2dbe2,#e6b8c6)"><div class="mini" style="align-items:center;justify-content:center"><div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#f6c8d4,#e39bb0)"></div><div class="l" style="width:50%;height:12px;background:rgba(28,28,28,.82)"></div><div class="l" style="width:35%"></div></div></div><div class="meta"><h3>Link-in-bio page</h3><span>21.7K remixes</span></div></div>
+    <div class="tpl"><div class="shot" style="background:linear-gradient(150deg,#e3ecdf,#c2d6b9)"><div class="mini"><div class="l" style="width:30%;height:12px;background:rgba(28,28,28,.82)"></div><div class="l"></div><div class="l"></div><div class="l" style="width:80%"></div><div class="l"></div><div class="l" style="width:60%"></div></div></div><div class="meta"><h3>Habit tracker</h3><span>7.8K remixes</span></div></div>
+    <div class="tpl"><div class="shot" style="background:linear-gradient(150deg,#ece6f5,#cdbfe6)"><div class="mini" style="flex-direction:row"><div style="width:30%;background:rgba(28,28,28,.04);border-radius:6px"></div><div style="flex:1;display:flex;flex-direction:column;gap:8px"><div class="l"></div><div class="l" style="width:70%"></div><div style="flex:1;background:rgba(28,28,28,.03);border-radius:6px"></div></div></div></div><div class="meta"><h3>Team CRM</h3><span>5.3K remixes</span></div></div>
+    <div class="tpl"><div class="shot" style="background:linear-gradient(150deg,#f5e9cf,#eacf98)"><div class="mini" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="background:#e9b99a;border-radius:4px"></div><div style="background:#cdbfe6;border-radius:4px"></div><div style="background:#c2d6b9;border-radius:4px"></div><div style="background:#bccbe8;border-radius:4px"></div><div style="background:#e6b8c6;border-radius:4px"></div><div style="background:#eacf98;border-radius:4px"></div><div style="background:#e9b99a;border-radius:4px"></div><div style="background:#cdbfe6;border-radius:4px"></div></div></div><div class="meta"><h3>Memory card game</h3><span>4.2K remixes</span></div></div>
+  </div>
+</div></section>
+
+<section class="band" style="padding-top:32px"><div class="wrap">
+  <div class="sh"><div><h2>How it works</h2></div></div>
+  <div class="grid3">
+    <div class="card"><span class="n">01</span><h3>Describe your idea</h3><p>Type, talk or drop in a screenshot. Plan mode helps you shape the scope before you build.</p></div>
+    <div class="card"><span class="n">02</span><h3>Watch it come to life</h3><p>Lovable writes React and TypeScript, sets up auth, a database and storage with Lovable Cloud.</p></div>
+    <div class="card"><span class="n">03</span><h3>Refine and ship</h3><p>Edit visually or in chat, sync to GitHub, connect your domain and publish in one click.</p></div>
+  </div>
+</div></section>
+
+<section class="band" style="padding-top:32px"><div class="wrap">
+  <div class="sh"><div><h2>Pricing</h2><p>Start for free. Upgrade when you’re ready to build more.</p></div></div>
+  <div class="tiers">
+    <div class="tier"><h3>Free</h3><div class="price">$0 <small>/ month</small></div><ul><li>5 daily credits</li><li>Public projects</li><li>Unlimited collaborators</li></ul><span class="btn b-g">Get started</span></div>
+    <div class="tier f"><h3>Pro</h3><div class="price">$25 <small>/ month</small></div><ul><li>100 monthly credits</li><li>Private projects</li><li>Custom domains</li><li>Remove the Lovable badge</li></ul><span class="btn b-d">Upgrade to Pro</span></div>
+    <div class="tier"><h3>Business</h3><div class="price">$50 <small>/ month</small></div><ul><li>Everything in Pro</li><li>SSO and team workspace</li><li>Data training opt-out</li></ul><span class="btn b-g">Contact sales</span></div>
+  </div>
+</div></section>
+
+<section class="cta"><div class="wrap"><h2>Ready to build?</h2><p style="color:#5f5f5d;font-size:18px;margin-top:16px">Turn your idea into an app today.</p><span class="btn b-d">Start building</span></div></section>
+
+<section class="foot"><div class="wrap">
+  <div><span class="wm">Lovable</span><p style="color:#5f5f5d;font-size:14px;margin-top:12px">© 2026 Lovable Labs Incorporated</p></div>
+  <div><h6>Product</h6><a>Pricing</a><a>Enterprise</a><a>Integrations</a><a>Changelog</a></div>
+  <div><h6>Resources</h6><a>Docs</a><a>Learn</a><a>Templates</a><a>Launched</a></div>
+  <div><h6>Company</h6><a>Blog</a><a>Careers</a><a>Brand</a></div>
+  <div><h6>Legal</h6><a>Privacy</a><a>Terms</a><a>Security</a></div>
+</div></section>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">lovable</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

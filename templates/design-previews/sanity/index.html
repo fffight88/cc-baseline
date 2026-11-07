@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sanity — The Content Operating System</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=IBM+Plex+Mono:wght@400;500&display=block">
+<style>
+:root{--black:#0b0b0b;--pure:#000;--red:#f36458;--blue:#0052ef;--lblue:#55beff;--lblue2:#afe3ff;--green:#19d600;--mag:#f500ff;--s1:#212121;--s2:#353535;--gray:#797979;--silver:#b9b9b9;--light:#ededed;--white:#fff;--err:#dd0000;
+--sans:"Space Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+@supports (color:color(display-p3 1 1 1)){:root{--green:color(display-p3 .270588 1 0);--mag:color(display-p3 .960784 0 1)}}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--black)}
+body{max-width:1440px;margin:0 auto;overflow-x:hidden;color:var(--white);font-family:var(--sans);font-size:16px;line-height:1.5;font-weight:400;font-feature-settings:"calt" 0}
+.wrap{max-width:1440px;margin:0 auto;padding:0 32px}
+.mono{font-family:var(--mono);text-transform:uppercase;font-size:13px;line-height:1.3;letter-spacing:normal}
+.disp{font-feature-settings:"cv01","cv11","cv12","cv13","ss07"}
+/* nav */
+nav{position:sticky;top:0;z-index:5;background:rgba(11,11,11,.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--s1)}
+nav .wrap{display:flex;align-items:center;gap:28px;height:64px}
+.logo{display:flex;align-items:center;gap:10px;color:var(--white);font-size:20px;font-weight:500;letter-spacing:-.4px;margin-right:12px}
+nav a{color:var(--silver);text-decoration:none;font-size:16px}
+nav a:hover{color:var(--blue)}
+nav .sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;border:0;font:inherit;font-size:16px;line-height:1.5;text-decoration:none;cursor:pointer;border-radius:99999px}
+.btn:hover{background:var(--blue)!important;color:#fff!important}
+.btn.red{background:var(--red);color:#fff;padding:8px 16px}
+.btn.dark{background:var(--black);color:var(--silver);padding:8px 12px}
+.btn.lite{background:#fff;color:var(--black);padding:8px 16px;border:1px solid var(--black)}
+.ghost{display:inline-flex;align-items:center;height:32px;background:var(--s1);color:var(--silver);padding:0 12px;border-radius:5px;border:1px solid var(--s1);font-size:14px}
+/* hero */
+.hero{padding:120px 0 64px}
+.kicker{display:inline-flex;align-items:center;gap:10px;color:var(--silver);margin-bottom:40px}
+.kicker b{font-weight:500;background:var(--white);color:var(--black);border-radius:99999px;padding:4px 8px;font-size:11px}
+h1{font-size:112px;font-weight:400;line-height:1;letter-spacing:-4.48px;max-width:1180px}
+h1 em{font-style:normal;color:var(--gray)}
+.hero .row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:48px;gap:48px}
+.lead{font-size:18px;letter-spacing:-.18px;color:var(--silver);max-width:520px}
+.ctas{display:flex;gap:8px;align-items:center}
+.npm{font-family:var(--mono);font-size:13px;color:var(--silver);background:var(--black);border:1px solid var(--s1);border-radius:3px;padding:8px 12px}
+.npm i{font-style:normal;color:var(--gray)}
+/* studio mockup */
+.studio{margin-top:72px;border:1px solid var(--s2);border-radius:12px;overflow:hidden;background:var(--black)}
+.stbar{display:flex;align-items:center;gap:16px;height:48px;padding:0 16px;border-bottom:1px solid var(--s1);background:var(--black);font-size:13px;color:var(--silver)}
+.stbar .ws{display:flex;align-items:center;gap:8px;color:#fff;font-weight:500}
+.stbar .ws i{width:22px;height:22px;border-radius:4px;background:var(--red)}
+.tab{padding:4px 10px;border-radius:5px}.tab.on{background:var(--s1);color:#fff}
+.stbar .sp{flex:1}
+.pres{display:flex}.pres i{width:22px;height:22px;border-radius:50%;border:2px solid var(--black);margin-left:-6px}
+.panes{display:grid;grid-template-columns:220px 340px 1fr 300px;height:560px}
+.pane{border-right:1px solid var(--s1);overflow:hidden}
+.pane:last-child{border-right:0}
+.ph{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--s1);font-size:13px;color:#fff;font-weight:500}
+.ph .mono{font-size:11px;color:var(--gray)}
+.li{display:flex;align-items:center;gap:10px;padding:8px 14px;font-size:14px;color:var(--silver)}
+.li.on{background:var(--s1);color:#fff}
+.li .ic{width:16px;height:16px;border:1.5px solid var(--gray);border-radius:3px}
+.li .ct{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--gray)}
+.doc{display:flex;gap:12px;padding:10px 14px;border-bottom:1px solid var(--s1)}
+.doc.on{background:#072227}
+.thumb{width:40px;height:40px;border-radius:3px;flex:none}
+.doc b{display:block;font-weight:400;font-size:14px;color:#fff;letter-spacing:-.15px}
+.doc small{display:flex;gap:8px;font-size:12px;color:var(--gray);letter-spacing:-.12px;align-items:center}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.form{padding:20px 28px}
+.form h3{font-size:24px;font-weight:425;letter-spacing:-.24px;line-height:1.24;margin-bottom:4px}
+.form .meta{font-size:12px;color:var(--gray);margin-bottom:20px}
+.fld{margin-bottom:16px}
+.fld label{display:block;font-size:13px;font-weight:500;color:#fff;margin-bottom:6px}
+.fld label span{color:var(--gray);font-weight:400}
+.inp{background:var(--black);border:1px solid var(--s1);border-radius:3px;padding:8px 12px;font-size:14px;color:var(--silver)}
+.inp.focus{box-shadow:0 0 0 2px var(--blue);background:#072227;color:#fff}
+.pt{min-height:96px;line-height:1.6}
+.pt mark{background:none;color:#fff;border-bottom:1px dashed var(--lblue)}
+.cursor{display:inline-block;width:2px;height:16px;background:var(--lblue);vertical-align:-3px;position:relative}
+.cursor:after{content:"Ada";position:absolute;top:-18px;left:0;background:var(--lblue);color:var(--black);font-size:10px;font-family:var(--mono);padding:0 4px;border-radius:3px}
+.imgfld{height:110px;border-radius:3px;border:1px solid var(--s1);background:radial-gradient(circle at 70% 40%,#f36458 0 18%,transparent 19%),linear-gradient(135deg,#353535,#0b0b0b);position:relative}
+.imgfld .hot{position:absolute;left:66%;top:28%;width:42px;height:42px;border:1.5px solid #fff;border-radius:50%}
+.refs{display:flex;gap:6px;flex-wrap:wrap}
+.refs span{font-size:13px;border-radius:99999px;padding:4px 10px;background:var(--s1);color:var(--silver)}
+.side{padding:14px}
+.side .mono{font-size:11px;color:var(--gray);margin:6px 0 10px}
+.ev{display:flex;gap:10px;font-size:13px;color:var(--silver);padding:6px 0;line-height:1.3}
+.ev b{color:#fff;font-weight:500}
+.ev small{display:block;color:var(--gray);font-size:12px}
+.av{width:20px;height:20px;border-radius:50%;flex:none}
+.pubbar{display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--s1)}
+.pub{flex:1;justify-content:center;font-size:14px}
+/* logos */
+.logos{display:flex;justify-content:space-between;align-items:center;padding:64px 0;border-bottom:1px solid var(--s1);color:var(--gray);font-size:22px;letter-spacing:-.5px;font-weight:500}
+/* sections */
+section{padding:120px 0}
+.eyebrow{color:var(--gray);margin-bottom:24px;display:flex;gap:10px;align-items:center}
+.eyebrow i{width:8px;height:8px;background:var(--green);border-radius:50%}
+h2{font-size:72px;font-weight:400;line-height:1.05;letter-spacing:-2.88px;max-width:1000px}
+h2.sm{font-size:48px;letter-spacing:-1.68px;line-height:1.08}
+.sub{font-size:18px;color:var(--silver);letter-spacing:-.18px;max-width:560px;margin-top:20px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:64px}
+.card{background:var(--s1);border:1px solid var(--s2);border-radius:6px;padding:24px;display:flex;flex-direction:column;gap:12px;min-height:280px}
+.card .mono{color:var(--gray)}
+.card h3{font-size:24px;font-weight:425;letter-spacing:-.24px;line-height:1.24;margin-top:auto}
+.card p{font-size:13px;color:var(--silver);letter-spacing:-.13px;line-height:1.5}
+.vis{height:110px;border-radius:3px;background:var(--black);border:1px solid var(--s2);padding:12px;font-family:var(--mono);font-size:12px;color:var(--silver);line-height:1.5;overflow:hidden}
+/* code split */
+.split{display:grid;grid-template-columns:1fr 1.15fr;gap:64px;align-items:center}
+.feature{background:var(--black);border:1px solid var(--s1);border-radius:12px;padding:0;overflow:hidden}
+.ftabs{display:flex;gap:0;border-bottom:1px solid var(--s1)}
+.ftabs span{font-family:var(--mono);font-size:11px;font-weight:500;text-transform:uppercase;color:var(--silver);padding:12px 16px}
+.ftabs span.on{color:#fff;box-shadow:inset 0 -1px 0 #fff}
+pre{font-family:var(--mono);font-size:15px;line-height:1.5;color:var(--silver);padding:24px 28px;white-space:pre}
+.k{color:var(--lblue)}.s{color:var(--green)}.c{color:var(--gray)}.f{color:var(--red)}.w{color:#fff}
+.out{border-top:1px solid var(--s1);padding:16px 28px;font-family:var(--mono);font-size:13px;color:var(--gray);display:flex;justify-content:space-between}
+.out b{color:var(--green);font-weight:400}
+.checks{margin-top:32px;display:grid;gap:12px}
+.checks div{display:flex;gap:12px;font-size:16px;color:var(--silver);padding-bottom:12px;border-bottom:1px solid var(--s1)}
+.checks div span{font-family:var(--mono);font-size:13px;color:var(--gray);width:28px}
+/* inverted */
+.inv{background:var(--light);color:var(--s1)}
+.inv .eyebrow{color:var(--gray)}
+.inv h2{color:var(--black)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);margin-top:64px;border-top:1px solid #b9b9b9}
+.stats div{padding:24px 24px 0 0}
+.stats b{display:block;font-size:72px;font-weight:400;letter-spacing:-2.88px;line-height:1.05;color:var(--black)}
+.stats span{font-size:15px;color:var(--s1);letter-spacing:-.15px}
+.quote{margin-top:80px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.qcard{background:#fff;border-radius:12px;padding:40px;display:flex;flex-direction:column;gap:32px}
+.qcard p{font-size:24px;font-weight:425;letter-spacing:-.24px;line-height:1.24;color:var(--black)}
+.qcard .who{display:flex;gap:12px;align-items:center;font-size:13px;color:var(--gray)}
+.qcard .who b{display:block;color:var(--black);font-weight:500}
+.qcard.d{background:var(--black)}
+.qcard.d p{color:#fff}
+/* cta */
+.cta{text-align:center;padding:160px 0}
+.cta h2{margin:0 auto;font-size:112px;letter-spacing:-4.48px;line-height:1}
+.cta .ctas{justify-content:center;margin-top:40px}
+.foot{border-top:1px solid var(--s1);padding:64px 0;display:grid;grid-template-columns:2fr repeat(4,1fr);gap:32px}
+.foot h6{font-family:var(--mono);font-size:13px;font-weight:400;text-transform:uppercase;color:#fff;margin-bottom:16px}
+.foot a{display:block;color:var(--silver);text-decoration:none;font-size:15px;line-height:2}
+.foot a:hover{color:var(--blue)}
+</style></head><body>
+<nav><div class="wrap">
+  <span class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M7.394 7.31a5.745 5.745 0 0 1-.833-.68c-.913-.91-1.38-2.067-1.38-3.568v-.575C6.699.929 9.039 0 11.828 0c5.394 0 8.515 2.8 9.285 6.74H16.22c-.54-1.554-1.89-2.764-4.352-2.764-2.422 0-4.136 1.276-4.473 3.334h-.002ZM4.683 3.062c0 3.236 2.034 5.162 6.106 6.177l4.316.983c3.854.87 6.2 3.03 6.2 6.55a6.61 6.61 0 0 1-1.436 4.239c0-3.511-1.85-5.409-6.31-6.55l-4.236-.946c-3.393-.76-6.011-2.536-6.011-6.36a6.578 6.578 0 0 1 1.37-4.093ZM17.18 16.484c-.292 2.235-2.092 3.495-4.698 3.495-2.314 0-4.048-.946-4.703-2.99H2.694C3.518 21.44 7.224 24 12.519 24c2.828 0 5.277-.87 6.85-2.439v-.55c0-1.66-.433-2.876-1.342-3.816a5.508 5.508 0 0 0-.847-.71v-.001Z"/></svg>Sanity</span>
+  <a href="#">Product</a><a href="#">Solutions</a><a href="#">Developers</a><a href="#">Customers</a><a href="#">Pricing</a>
+  <span class="sp"></span><a href="#">Contact sales</a><a href="#">Log in</a><a class="btn red" href="#">Get started</a>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <div class="kicker mono"><b>NEW</b>Content Agent is now generally available →</div>
+  <h1 class="disp">The Content Operating System <em>for the AI era</em></h1>
+  <div class="row">
+    <p class="lead">Model your content as data, edit it together in real time, and deliver it anywhere through APIs. Sanity is the backbone for teams that ship content at scale.</p>
+    <div class="ctas"><a class="btn red" href="#">Start building for free</a><a class="btn dark" href="#">Talk to sales</a><span class="npm"><i>$</i> npm create sanity@latest</span></div>
+  </div>
+
+  <div class="studio">
+    <div class="stbar"><span class="ws"><i></i>Northwind Media</span><span class="tab on">Structure</span><span class="tab">Vision</span><span class="tab">Presentation</span><span class="tab">Releases</span><span class="sp"></span><span class="mono" style="font-size:11px;color:var(--gray)">production</span><span class="pres"><i style="background:#55beff"></i><i style="background:#f36458"></i><i style="background:#19d600"></i></span></div>
+    <div class="panes">
+      <div class="pane">
+        <div class="ph">Content <span class="mono">⌘K</span></div>
+        <div class="li on"><span class="ic"></span>Articles<span class="ct">1,284</span></div>
+        <div class="li"><span class="ic"></span>Authors<span class="ct">96</span></div>
+        <div class="li"><span class="ic"></span>Products<span class="ct">4,021</span></div>
+        <div class="li"><span class="ic"></span>Landing pages<span class="ct">58</span></div>
+        <div class="li"><span class="ic"></span>Campaigns<span class="ct">12</span></div>
+        <div class="li"><span class="ic"></span>Navigation<span class="ct">3</span></div>
+        <div class="li"><span class="ic"></span>Site settings</div>
+        <div class="li" style="margin-top:12px;color:var(--gray)"><span class="mono" style="font-size:11px">Releases</span></div>
+        <div class="li"><span class="dot" style="background:var(--lblue)"></span>Black Friday 2026<span class="ct">41</span></div>
+        <div class="li"><span class="dot" style="background:var(--green)"></span>Spring launch<span class="ct">17</span></div>
+      </div>
+      <div class="pane">
+        <div class="ph">Articles <span class="mono">Last edited ↓</span></div>
+        <div class="doc on"><span class="thumb" style="background:linear-gradient(135deg,#f36458,#353535)"></span><div><b>Why structured content wins</b><small><span class="dot" style="background:var(--lblue)"></span>Edited 2m ago · Ada L.</small></div></div>
+        <div class="doc"><span class="thumb" style="background:linear-gradient(135deg,#0052ef,#0b0b0b)"></span><div><b>The 2026 composable stack report</b><small><span class="dot" style="background:var(--green)"></span>Published · 1h ago</small></div></div>
+        <div class="doc"><span class="thumb" style="background:linear-gradient(135deg,#797979,#212121)"></span><div><b>Localizing at 40 markets</b><small><span class="dot" style="background:#f5a623"></span>In review · Kenji T.</small></div></div>
+        <div class="doc"><span class="thumb" style="background:linear-gradient(135deg,#afe3ff,#353535)"></span><div><b>GROQ for content teams</b><small><span class="dot" style="background:var(--green)"></span>Published · Yesterday</small></div></div>
+        <div class="doc"><span class="thumb" style="background:linear-gradient(135deg,#19d600,#0b0b0b)"></span><div><b>Visual editing, finally</b><small><span class="dot" style="background:var(--gray)"></span>Draft · Mar 3</small></div></div>
+        <div class="doc"><span class="thumb" style="background:linear-gradient(135deg,#ededed,#797979)"></span><div><b>Agents that respect your schema</b><small><span class="dot" style="background:var(--lblue)"></span>Scheduled · Nov 12</small></div></div>
+        <div class="doc"><span class="thumb" style="background:linear-gradient(135deg,#f36458,#0052ef)"></span><div><b>Migrating 2M documents in a weekend</b><small><span class="dot" style="background:var(--green)"></span>Published · Oct 30</small></div></div>
+      </div>
+      <div class="pane form">
+        <h3 class="disp">Why structured content wins</h3>
+        <div class="meta">article · drafts.a7c1-9f02 · 3 people editing</div>
+        <div class="fld"><label>Title</label><div class="inp">Why structured content wins</div></div>
+        <div class="fld"><label>Slug <span>/ blog/</span></label><div class="inp">why-structured-content-wins</div></div>
+        <div class="fld"><label>Body <span>· Portable Text</span></label><div class="inp focus pt">Content isn't pages. It's <mark>data</mark> — and when you treat it that way, every channel becomes a<span class="cursor"></span> rendering target instead of a copy-paste job.</div></div>
+        <div class="fld"><label>Hero image <span>· hotspot</span></label><div class="imgfld"><span class="hot"></span></div></div>
+      </div>
+      <div class="pane side">
+        <div class="mono">Review changes</div>
+        <div class="ev"><span class="av" style="background:#55beff"></span><div><b>Ada Lovelace</b> edited Body<small>2 minutes ago</small></div></div>
+        <div class="ev"><span class="av" style="background:#f36458"></span><div><b>Kenji Tanaka</b> replaced Hero image<small>14 minutes ago</small></div></div>
+        <div class="ev"><span class="av" style="background:#19d600"></span><div><b>Content Agent</b> translated to de-DE, ja-JP<small>1 hour ago</small></div></div>
+        <div class="ev"><span class="av" style="background:#797979"></span><div><b>Maya Chen</b> created document<small>Yesterday</small></div></div>
+        <div class="mono" style="margin-top:20px">References</div>
+        <div class="refs"><span>Ada Lovelace</span><span>Engineering</span><span>CMS</span><span>Black Friday 2026</span></div>
+        <div class="pubbar"><span class="ghost">•••</span><a class="btn red pub" href="#">Publish</a></div>
+      </div>
+    </div>
+  </div>
+  <div class="logos"><span>Figma</span><span>Linear</span><span>Puma</span><span>Skims</span><span>Burger King</span><span>Shopify</span><span>Cloudflare</span></div>
+</div></header>
+
+<section><div class="wrap">
+  <div class="eyebrow mono"><i></i>Platform</div>
+  <h2 class="disp">Everything is content. Every content is data.</h2>
+  <p class="sub">One platform to model, author, automate and deliver — with the schema living in your code, not someone else's admin panel.</p>
+  <div class="grid3">
+    <div class="card"><span class="mono">01 / Model</span><div class="vis"><span class="k">defineType</span>({<br>&nbsp;name: <span class="s">'product'</span>,<br>&nbsp;fields: [title, price, <span class="w">variants</span>]<br>})</div><h3>Schema as code</h3><p>Define content types in TypeScript. Version them in git. Ship schema changes like any other deploy.</p></div>
+    <div class="card"><span class="mono">02 / Author</span><div class="vis" style="display:flex;flex-direction:column;gap:8px"><span style="color:#fff">● 3 editors live</span><span>Ada → Body ▍</span><span>Kenji → Hero image</span><span style="color:var(--green)">✓ Draft saved</span></div><h3>Real-time Studio</h3><p>A fully customizable editing environment with presence, comments, review history and Releases.</p></div>
+    <div class="card"><span class="mono">03 / Deliver</span><div class="vis"><span class="c">GET</span> /v2026-11-01/data/query<br><span class="c">200 OK · </span><span class="s">18ms</span> · edge cache HIT<br><span class="c">regions:</span> 34</div><h3>Content Lake APIs</h3><p>Query anything with GROQ or GraphQL, served from a global CDN with live, sub-second updates.</p></div>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap split">
+  <div>
+    <div class="eyebrow mono"><i style="background:var(--lblue)"></i>GROQ</div>
+    <h2 class="sm disp">Ask your content exactly what you need</h2>
+    <p class="sub">GROQ joins, filters and projects your documents in one query — no resolvers, no over-fetching, no schema stitching.</p>
+    <div class="checks"><div><span>01</span>Follow references across document types</div><div><span>02</span>Shape the response to match your component</div><div><span>03</span>Subscribe to live changes with one flag</div></div>
+  </div>
+  <div class="feature">
+    <div class="ftabs"><span class="on">query.groq</span><span>page.tsx</span><span>Result</span></div>
+<pre><span class="c">// Latest articles with author + image</span>
+*[_type == <span class="s">"article"</span> &amp;&amp; defined(publishedAt)]
+  | <span class="k">order</span>(publishedAt <span class="k">desc</span>)[<span class="f">0</span>...<span class="f">6</span>]{
+    <span class="w">title</span>,
+    <span class="w">"slug"</span>: slug.current,
+    <span class="w">"author"</span>: author-&gt;{ name, <span class="w">"avatar"</span>: image.asset-&gt;url },
+    <span class="w">"tags"</span>: categories[]-&gt;title,
+    <span class="w">readingTime</span>
+  }</pre>
+    <div class="out"><span>6 documents · 1.4 kB</span><b>● 18ms</b></div>
+  </div>
+</div></section>
+
+<section class="inv"><div class="wrap">
+  <div class="eyebrow mono">Customers</div>
+  <h2 class="disp">Teams that outgrew their CMS end up here</h2>
+  <div class="stats">
+    <div><b>1.2B</b><span>API requests served per day</span></div>
+    <div><b>99.99%</b><span>uptime SLA on Enterprise</span></div>
+    <div><b>4×</b><span>faster content releases at Puma</span></div>
+    <div><b>40</b><span>markets localized from one Studio</span></div>
+  </div>
+  <div class="quote">
+    <div class="qcard"><p>"We went from a dozen disconnected tools to a single content backbone. Our editors ship campaigns in hours, not sprints."</p><div class="who"><span class="av" style="background:#f36458;width:36px;height:36px"></span><div><b>Head of Digital, Puma</b>Global e-commerce</div></div></div>
+    <div class="qcard d"><p>"Schema-as-code means content modeling goes through the same review as the rest of our product. That changed everything."</p><div class="who"><span class="av" style="background:#55beff;width:36px;height:36px"></span><div><b style="color:#fff">Staff Engineer, Linear</b>Product & marketing site</div></div></div>
+  </div>
+</div></section>
+
+<div class="cta"><div class="wrap">
+  <div class="mono" style="color:var(--gray);margin-bottom:24px">Free to start · No credit card</div>
+  <h2 class="disp">Build with structure.</h2>
+  <div class="ctas"><a class="btn red" href="#">Get started</a><a class="btn lite" href="#">Read the docs</a></div>
+</div></div>
+
+<div class="wrap"><div class="foot">
+  <div><span class="logo">Sanity</span><p style="color:var(--gray);font-size:13px;margin-top:12px;max-width:260px">The Content Operating System. Made for developers, loved by editors.</p></div>
+  <div><h6>Product</h6><a href="#">Studio</a><a href="#">Content Lake</a><a href="#">Visual editing</a><a href="#">Content Agent</a></div>
+  <div><h6>Developers</h6><a href="#">Docs</a><a href="#">GROQ</a><a href="#">Templates</a><a href="#">Changelog</a></div>
+  <div><h6>Company</h6><a href="#">About</a><a href="#">Careers</a><a href="#">Blog</a><a href="#">Events</a></div>
+  <div><h6>Legal</h6><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Security</a><a href="#">Status</a></div>
+</div></div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">sanity</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cursor — Preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=block">
+<style>
+:root{--primary:#f54e00;--pact:#d04200;--ink:#26251e;--body:#5a5852;--muted:#807d72;--msoft:#a09c92;--hair:#e6e5e0;--hsoft:#efeee8;--hstrong:#cfcdc4;--canvas:#f7f7f4;--csoft:#fafaf7;--card:#fff;--strong:#e6e5e0;
+--think:#dfa88f;--grep:#9fc9a2;--read:#9fbbe0;--edit:#c0a8dd;--done:#c08532;--err:#cf2d56;--ok:#1f8a65;--mono:"JetBrains Mono","Fira Code",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{background:var(--canvas);color:var(--body);font-family:Inter,system-ui,"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:16px;line-height:1.5;letter-spacing:-.015em}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.cap{font-size:11px;font-weight:600;line-height:1.4;letter-spacing:.88px;text-transform:uppercase;color:var(--muted)}
+h1{font-size:72px;font-weight:400;line-height:1.1;letter-spacing:-2.16px;color:var(--ink)}
+h2{font-size:36px;font-weight:400;line-height:1.2;letter-spacing:-.72px;color:var(--ink)}
+h3{font-size:18px;font-weight:600;line-height:1.4;letter-spacing:0;color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:10px 18px;border-radius:8px;font-size:14px;font-weight:500;line-height:1;letter-spacing:0;white-space:nowrap}
+.b-p{background:var(--primary);color:#fff}
+.b-s{background:#fff;color:var(--ink);border:1px solid var(--hstrong);padding:9px 17px}
+.b-d{background:var(--ink);color:var(--canvas);height:44px;padding:12px 20px}
+.b-t{color:var(--ink);padding-left:0;padding-right:0}
+.badge{display:inline-flex;align-items:center;gap:6px;background:var(--strong);color:var(--ink);border-radius:9999px;padding:4px 10px;font-size:11px;font-weight:600;letter-spacing:.88px;text-transform:uppercase;line-height:1.4}
+.tp{display:inline-flex;border-radius:9999px;padding:4px 10px;font-size:11px;font-weight:600;letter-spacing:.88px;text-transform:uppercase;line-height:1.4;color:var(--ink);font-family:Inter,sans-serif}
+.t-think{background:var(--think)}.t-grep{background:var(--grep)}.t-read{background:var(--read)}.t-edit{background:var(--edit)}.t-done{background:var(--done);color:#fff}
+nav{height:64px}
+nav .wrap{display:flex;align-items:center;height:64px;gap:28px;font-size:14px;font-weight:500;line-height:1.4;color:var(--ink);letter-spacing:0}
+.wm{display:flex;align-items:center;gap:8px;font-size:19px;font-weight:600;letter-spacing:-.4px;margin-right:16px}
+nav .sp{flex:1}
+.hero{padding:80px 0 0;text-align:center}
+.hero p{font-size:18px;max-width:620px;margin:20px auto 32px}
+.hero .ctas{display:flex;justify-content:center;gap:20px;align-items:center}
+/* IDE */
+.ide{margin:64px auto 0;background:#fff;border:1px solid var(--hair);border-radius:12px;overflow:hidden;text-align:left;display:grid;grid-template-columns:220px 1fr 380px;grid-template-rows:36px 1fr 150px;height:640px}
+.tbar{grid-column:1/-1;border-bottom:1px solid var(--hair);display:flex;align-items:center;gap:8px;padding:0 14px;font-size:12px;color:var(--muted);letter-spacing:0}
+.tbar i{width:10px;height:10px;border-radius:50%;background:var(--hstrong)}
+.tbar span{margin-left:auto;margin-right:auto}
+.pane{background:var(--csoft);font-family:var(--mono);font-size:13px;line-height:1.5;letter-spacing:0;color:var(--body)}
+.tree{grid-column:1;grid-row:2/4;border-right:1px solid var(--hair);padding:12px 8px}
+.tree div{padding:2px 8px;border-radius:6px;white-space:nowrap}
+.tree .on{background:var(--hair);color:var(--ink)}
+.tree .d{color:var(--muted)}
+.editor{grid-column:2;grid-row:2;background:#fff;padding:0;overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--hair);font-size:12px;font-family:Inter,sans-serif;letter-spacing:0}
+.tabs span{padding:8px 14px;border-right:1px solid var(--hair);color:var(--muted)}
+.tabs span.on{color:var(--ink);background:var(--csoft)}
+.code{font-family:var(--mono);font-size:13px;line-height:1.5;padding:12px 0;letter-spacing:0;white-space:pre;color:var(--ink)}
+.code div{padding:0 16px}
+.code .n{display:inline-block;width:28px;color:var(--msoft)}
+.code .add{background:rgba(31,138,101,.09)}
+.code .del{background:rgba(207,45,86,.08);color:var(--muted);text-decoration:line-through}
+.k{color:#a2559c}.s{color:#1f8a65}.f{color:#3b6ec2}.c{color:var(--msoft)}
+.term{grid-column:2;grid-row:3;border-top:1px solid var(--hair);padding:12px 16px;font-size:12px}
+.chat{grid-column:3;grid-row:2/4;border-left:1px solid var(--hair);background:var(--csoft);display:flex;flex-direction:column;font-family:Inter,sans-serif;font-size:13px;letter-spacing:0}
+.chat .hd{display:flex;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--hair);font-weight:500;color:var(--ink)}
+.chat .hd .cap{margin-left:auto}
+.msg{padding:14px}
+.umsg{background:#fff;border:1px solid var(--hair);border-radius:8px;padding:10px 12px;color:var(--ink)}
+.step{display:flex;gap:10px;align-items:center;padding:6px 0;color:var(--body)}
+.step code{font-family:var(--mono);font-size:12px;color:var(--ink)}
+.tl{border-left:1px solid var(--hstrong);margin:12px 0 0 6px;padding-left:14px}
+.reply{margin-top:12px;color:var(--ink);line-height:1.5}
+.cin{margin:auto 14px 14px;background:#fff;border:1px solid var(--hstrong);border-radius:8px;padding:10px 12px;color:var(--msoft);display:flex;justify-content:space-between}
+.cin b{font-weight:500;color:var(--muted);font-size:12px}
+/* sections */
+.logos{display:flex;justify-content:space-between;align-items:center;padding:64px 0;color:var(--muted);font-size:20px;font-weight:600;letter-spacing:-.4px}
+.band{padding:80px 0;border-top:1px solid var(--hair)}
+.sh{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:end;margin-bottom:48px}
+.sh p{max-width:480px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.fc{background:#fff;border:1px solid var(--hair);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:8px}
+.fc .demo{background:var(--csoft);border:1px solid var(--hsoft);border-radius:8px;padding:16px;font-family:var(--mono);font-size:12.5px;line-height:1.6;letter-spacing:0;color:var(--ink);margin-bottom:16px;height:170px;overflow:hidden}
+.ghost{color:var(--msoft)}
+.kbd{display:inline-block;border:1px solid var(--hstrong);border-radius:4px;padding:0 5px;font-size:11px;background:#fff;color:var(--muted);font-family:Inter,sans-serif}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.tc{background:#fff;border:1px solid var(--hair);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:20px}
+.tc q{font-size:22px;font-weight:400;line-height:1.3;letter-spacing:-.11px;color:var(--ink);quotes:none}
+.who{display:flex;gap:12px;align-items:center;font-size:14px}
+.who i{width:36px;height:36px;border-radius:9999px;background:var(--hair)}
+.who b{display:block;color:var(--ink);font-weight:600}
+.tier{background:#fff;border:1px solid var(--hair);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:12px}
+.tier.f{background:var(--ink);color:var(--canvas);border-color:var(--ink)}
+.tier.f h3,.tier.f .price{color:var(--canvas)}
+.tier .price{font-size:36px;font-weight:400;letter-spacing:-.72px;color:var(--ink);line-height:1.2}
+.tier .price small{font-size:14px;color:var(--muted);letter-spacing:0}
+.tier ul{list-style:none;font-size:14px;display:flex;flex-direction:column;gap:6px;margin:8px 0 16px}
+.tier li::before{content:"✓ ";color:var(--ok)}
+.tier.f li::before{color:var(--grep)}
+.tier .btn{margin-top:auto;justify-content:center}
+.cta{padding:96px 0;text-align:center;border-top:1px solid var(--hair)}
+.cta .btn{margin-top:28px}
+.foot{padding:64px 0 48px;border-top:1px solid var(--hair)}
+.foot .wrap{display:grid;grid-template-columns:1.4fr repeat(5,1fr);gap:24px;font-size:14px}
+.foot h6{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:12px;letter-spacing:0}
+.foot a{display:block;margin-bottom:8px}
+</style></head><body>
+<nav><div class="wrap">
+  <span class="wm"><svg width="20" height="22" viewBox="0 0 20 22"><path d="M10 1 19 6v10l-9 5-9-5V6z" fill="none" stroke="#26251e" stroke-width="1.6"/><path d="M10 1v10l9 5M10 11 1 16" stroke="#26251e" stroke-width="1.2" fill="none"/><path d="M10 11 19 6" stroke="#f54e00" stroke-width="1.6"/></svg>Cursor</span>
+  <span>Features</span><span>Enterprise</span><span>Pricing</span><span>Blog</span><span>Forum</span><span>Careers</span>
+  <span class="sp"></span><span>Sign in</span><span class="btn b-p">Download</span>
+</div></nav>
+
+<section class="hero"><div class="wrap">
+  <span class="badge">New · Cursor 2.0 with Composer</span>
+  <h1 style="margin-top:24px">The AI code editor,<br>built to make you extraordinarily productive</h1>
+  <p>Cursor understands your codebase, plans multi-file changes and runs agents in parallel — while you stay in control of every diff.</p>
+  <div class="ctas"><span class="btn b-d"><svg width="14" height="16" viewBox="0 0 14 16" fill="#f7f7f4"><path d="M11.6 8.5c0-2 1.6-2.9 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7s-1.6-.7-2.6-.7C3.5 4 2.2 4.8 1.5 6c-1.5 2.6-.4 6.4 1 8.5.7 1 1.5 2.1 2.6 2.1 1 0 1.4-.7 2.700-.7s1.600.7 2.600.7c1.100 0 1.800-1 2.500-2 .8-1.200 1.100-2.300 1.100-2.400-.1 0-2.400-.9-2.400-3.700zM9.6 2.5c.5-.7.9-1.600.8-2.500-.8 0-1.800.5-2.300 1.200-.5.600-.9 1.500-.8 2.400.9.1 1.800-.4 2.300-1.100z"/></svg>Download for macOS</span><span class="btn b-t">Explore features →</span></div>
+
+  <div class="ide">
+    <div class="tbar"><i></i><i></i><i></i><span>acme-web — checkout.ts</span></div>
+    <div class="pane tree">
+      <div class="d">▾ src</div><div>&nbsp;&nbsp;▸ components</div><div>&nbsp;&nbsp;▾ lib</div><div class="on">&nbsp;&nbsp;&nbsp;&nbsp;checkout.ts</div><div>&nbsp;&nbsp;&nbsp;&nbsp;pricing.ts</div><div>&nbsp;&nbsp;&nbsp;&nbsp;stripe.ts</div><div>&nbsp;&nbsp;▸ routes</div><div class="d">▸ tests</div><div>&nbsp;&nbsp;package.json</div><div>&nbsp;&nbsp;tsconfig.json</div><div>&nbsp;&nbsp;.cursorrules</div>
+    </div>
+    <div class="editor">
+      <div class="tabs"><span class="on">checkout.ts</span><span>pricing.ts</span><span>checkout.test.ts</span></div>
+      <div class="code"><div><span class="n">12</span><span class="k">export async function</span> <span class="f">createCheckout</span>(cart: Cart) {</div><div class="del"><span class="n">13</span>  const total = cart.items.reduce((s, i) =&gt; s + i.price, 0);</div><div class="add"><span class="n">13</span>  <span class="k">const</span> subtotal = <span class="f">sumLineItems</span>(cart.items);</div><div class="add"><span class="n">14</span>  <span class="k">const</span> discount = <span class="k">await</span> <span class="f">applyPromo</span>(cart.promoCode, subtotal);</div><div class="add"><span class="n">15</span>  <span class="k">const</span> total = <span class="f">roundCents</span>(subtotal - discount);</div><div><span class="n">16</span></div><div><span class="n">17</span>  <span class="k">if</span> (total &lt;= <span class="s">0</span>) {</div><div><span class="n">18</span>    <span class="k">throw new</span> <span class="f">CheckoutError</span>(<span class="s">"EMPTY_CART"</span>);</div><div><span class="n">19</span>  }</div><div><span class="n">20</span></div><div><span class="n">21</span>  <span class="k">return</span> stripe.checkout.sessions.<span class="f">create</span>({</div><div><span class="n">22</span>    mode: <span class="s">"payment"</span>,</div><div><span class="n">23</span>    line_items: <span class="f">toStripeItems</span>(cart.items),</div><div><span class="n">24</span>    discounts: discount ? [{ coupon: cart.promoCode }] : [],</div><div><span class="n">25</span>  });</div><div><span class="n">26</span>}</div></div>
+    </div>
+    <div class="chat">
+      <div class="hd">Agent <span class="cap">Composer 1</span></div>
+      <div class="msg">
+        <div class="umsg">Support promo codes in checkout and fix the rounding bug in totals. Add tests.</div>
+        <div class="tl">
+          <div class="step"><span class="tp t-think">Thinking</span> planned 3 edits</div>
+          <div class="step"><span class="tp t-grep">Grepping</span> <code>promoCode</code> · 7 results</div>
+          <div class="step"><span class="tp t-read">Reading</span> <code>pricing.ts</code></div>
+          <div class="step"><span class="tp t-edit">Editing</span> <code>checkout.ts</code> <span style="color:var(--ok)">+3</span> <span style="color:var(--err)">−1</span></div>
+          <div class="step"><span class="tp t-edit">Editing</span> <code>checkout.test.ts</code> <span style="color:var(--ok)">+28</span></div>
+          <div class="step"><span class="tp t-done">Done</span> 12 tests passed</div>
+        </div>
+        <div class="reply">Added <code style="font-family:var(--mono);font-size:12px">applyPromo</code> before computing the total and switched to integer-cent rounding. All checkout tests pass.</div>
+      </div>
+      <div class="cin">Plan, search, build anything… <b>⌘I</b></div>
+    </div>
+    <div class="pane term"><span style="color:var(--muted)">$</span> pnpm test checkout<br><span style="color:var(--ok)">✓</span> createCheckout applies promo (14 ms)<br><span style="color:var(--ok)">✓</span> createCheckout rounds to cents (3 ms)<br><span style="color:var(--ok)">Tests: 12 passed</span>, 12 total</div>
+  </div>
+</div></section>
+
+<div class="wrap logos"><span class="cap">Trusted by engineers at</span><span>OpenAI</span><span>Stripe</span><span>Shopify</span><span>Instacart</span><span>Perplexity</span><span>Ramp</span></div>
+
+<section class="band"><div class="wrap">
+  <div class="sh"><div><span class="cap">Features</span><h2 style="margin-top:12px">Build software faster</h2></div><p>Intelligent, fast and familiar. Cursor is the best way to code with AI — from a single keystroke to an autonomous agent.</p></div>
+  <div class="grid3">
+    <div class="fc"><div class="demo"><span class="c">// Tab predicts your next edit</span><br><span class="k">function</span> <span class="f">formatPrice</span>(cents) {<br>&nbsp;&nbsp;<span class="ghost">return new Intl.NumberFormat("en", {</span><br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="ghost">style: "currency",</span><br>&nbsp;&nbsp;<span class="ghost">}).format(cents/100);</span><br>}&nbsp;&nbsp;<span class="kbd">Tab</span></div><h3>Tab, the fastest autocomplete</h3><p style="font-size:14px">Predicts multi-line edits and jumps you to the next change.</p></div>
+    <div class="fc"><div class="demo" style="font-family:Inter,sans-serif;font-size:13px;letter-spacing:0"><div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between"><span>Agent 1 · refactor auth</span><span class="tp t-edit">Editing</span></div><div style="display:flex;justify-content:space-between"><span>Agent 2 · add billing tests</span><span class="tp t-read">Reading</span></div><div style="display:flex;justify-content:space-between"><span>Agent 3 · migrate to Vite</span><span class="tp t-think">Thinking</span></div><div style="display:flex;justify-content:space-between"><span>Agent 4 · fix flaky e2e</span><span class="tp t-done">Done</span></div></div></div><h3>Parallel agents</h3><p style="font-size:14px">Run up to eight agents at once in isolated worktrees, then compare.</p></div>
+    <div class="fc"><div class="demo"><span class="c">@codebase</span> where do we validate<br>webhook signatures?<br><br><span style="color:var(--muted)">→ src/routes/webhooks.ts:42</span><br><span style="color:var(--muted)">→ src/lib/stripe.ts:118</span><br><span style="color:var(--muted)">→ tests/webhooks.test.ts:9</span></div><h3>Knows your codebase</h3><p style="font-size:14px">Semantic search across millions of lines, with cited answers.</p></div>
+  </div>
+</div></section>
+
+<section class="band"><div class="wrap">
+  <div class="sh"><div><span class="cap">Loved by developers</span><h2 style="margin-top:12px">The new way to build software</h2></div></div>
+  <div class="grid2">
+    <div class="tc"><q>“Cursor is at least a 2x improvement over Copilot. It’s amazing having an AI pair programmer.”</q><div class="who"><i style="background:var(--think)"></i><div><b>Ben Bernard</b>Instacart</div></div></div>
+    <div class="tc"><q>“The most useful AI tool that I currently pay for, hands down, is Cursor. It’s fast, autocompletes when and where you need it to.”</q><div class="who"><i style="background:var(--read)"></i><div><b>Shadcn</b>Creator of shadcn/ui</div></div></div>
+  </div>
+</div></section>
+
+<section class="band"><div class="wrap">
+  <div class="sh"><div><span class="cap">Pricing</span><h2 style="margin-top:12px">Simple, usage-friendly plans</h2></div></div>
+  <div class="grid3">
+    <div class="tier"><h3>Hobby</h3><div class="price">Free</div><ul><li>Limited agent requests</li><li>Limited Tab completions</li><li>Two-week Pro trial</li></ul><span class="btn b-s">Download</span></div>
+    <div class="tier f"><h3>Pro</h3><div class="price">$20 <small style="color:#a09c92">/ month</small></div><ul><li>Extended agent limits</li><li>Unlimited Tab completions</li><li>Background agents</li><li>Maximum context windows</li></ul><span class="btn b-p">Get Pro</span></div>
+    <div class="tier"><h3>Teams</h3><div class="price">$40 <small>/ user / month</small></div><ul><li>Everything in Pro</li><li>Centralized billing</li><li>SAML/OIDC SSO</li><li>Usage analytics</li></ul><span class="btn b-s">Contact sales</span></div>
+  </div>
+</div></section>
+
+<section class="cta"><div class="wrap"><h2>Try Cursor now.</h2><span class="btn b-p">Download for free</span></div></section>
+
+<section class="foot"><div class="wrap">
+  <div><span class="wm" style="color:var(--ink)">Cursor</span><p style="margin-top:12px;color:var(--muted)">© 2026 Anysphere, Inc.</p></div>
+  <div><h6>Product</h6><a>Pricing</a><a>Features</a><a>Enterprise</a><a>Downloads</a></div>
+  <div><h6>Resources</h6><a>Docs</a><a>Blog</a><a>Changelog</a><a>Forum</a></div>
+  <div><h6>Company</h6><a>Careers</a><a>Community</a><a>Customers</a></div>
+  <div><h6>Legal</h6><a>Terms</a><a>Security</a><a>Privacy</a></div>
+  <div><h6>Connect</h6><a>X</a><a>GitHub</a><a>YouTube</a></div>
+</div></section>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">cursor</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

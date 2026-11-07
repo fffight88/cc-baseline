@@ -1141,11 +1141,13 @@ t('project install + uninstall round-trip: removes everything installed', async 
     console.log = () => {};
     try {
       await install({ project: true, yes: true, skipScanners: true });
+      assert.ok(fs.existsSync(path.join(tmp, '.claude', 'design-previews', 'stripe', 'index.html')), 'design-previews not installed');
       await uninstall({ project: true, yes: true });
     } finally {
       console.log = origLog;
     }
-    // harness files gone
+    // harness files gone, and the overwriteDirs folder with them
+    assert.ok(!fs.existsSync(path.join(tmp, '.claude', 'design-previews')), 'design-previews/ left behind');
     assert.ok(!fs.existsSync(path.join(tmp, '.claude', 'agents', 'e2e-tester.md')));
     assert.ok(!fs.existsSync(path.join(tmp, '.claude', 'memory', 'all_session_basic_rules.md')));
     // CLAUDE.md / MEMORY.md were "empty after removal" → deleted
@@ -1157,6 +1159,77 @@ t('project install + uninstall round-trip: removes everything installed', async 
       assert.ok(!mcp.mcpServers || !mcp.mcpServers['playwright-test-1']);
     }
   });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// design-previews — DESIGN.md catalog preview pages + local server
+// ──────────────────────────────────────────────────────────────────────────
+
+const PREVIEWS = path.join(ROOT, 'templates', 'design-previews');
+const designPreview = require(path.join(ROOT, 'templates', 'scripts', 'design-preview.js'));
+
+function catalogSlugs() {
+  const src = fs.readFileSync(path.join(ROOT, 'templates', 'memory', 'reference_design_md_index.md'), 'utf8');
+  return [...src.matchAll(/^\| `([^`]+)` \|/gm)].map(m => m[1]).sort();
+}
+
+t('manifest: overwriteDirs expands design-previews into its files', () => {
+  assert.deepEqual(manifest.overwriteDirs(), ['design-previews']);
+  const files = manifest.overwriteFiles();
+  assert.ok(files.includes('design-previews/index.html'));
+  assert.ok(files.includes('design-previews/stripe/index.html'));
+  assert.ok(files.includes('scripts/design-preview.js'));
+  assert.equal(manifest.dirOf('design-previews/stripe/index.html'), 'design-previews');
+  assert.equal(manifest.dirOf('scripts/design-preview.js'), null);
+});
+
+t('design-previews: one page per catalog slug, no extras', () => {
+  const pages = fs.readdirSync(PREVIEWS, { withFileTypes: true })
+    .filter(d => d.isDirectory()).map(d => d.name).sort();
+  assert.deepEqual(pages, catalogSlugs());
+  for (const s of pages) assert.ok(fs.existsSync(path.join(PREVIEWS, s, 'index.html')), `${s}/index.html missing`);
+});
+
+t('design-previews: pages are self-contained and carry the preview footer', () => {
+  for (const s of catalogSlugs()) {
+    const html = fs.readFileSync(path.join(PREVIEWS, s, 'index.html'), 'utf8');
+    assert.ok(html.includes('DESIGN.md preview'), `${s}: missing preview footer`);
+    assert.ok(html.includes('name="viewport"'), `${s}: missing viewport meta`);
+    assert.doesNotMatch(html, /<(?:img|script|iframe)[^>]+src="https?:/i, `${s}: loads remote media or script`);
+  }
+});
+
+t('design-previews: gallery links every catalog slug', () => {
+  const html = fs.readFileSync(path.join(PREVIEWS, 'index.html'), 'utf8');
+  for (const s of catalogSlugs()) assert.ok(html.includes(`href="${s}/"`), `gallery missing ${s}`);
+});
+
+t('design-preview.js: resolveFile maps folders to index.html and blocks traversal', () => {
+  const { resolveFile } = designPreview;
+  assert.equal(resolveFile(PREVIEWS, '/'), path.join(PREVIEWS, 'index.html'));
+  assert.equal(resolveFile(PREVIEWS, '/stripe/'), path.join(PREVIEWS, 'stripe', 'index.html'));
+  assert.equal(resolveFile(PREVIEWS, '/stripe/?x=1'), path.join(PREVIEWS, 'stripe', 'index.html'));
+  assert.equal(resolveFile(PREVIEWS, '/../manifest.json'), null);
+  assert.equal(resolveFile(PREVIEWS, '/%2e%2e/manifest.json'), null);
+  assert.equal(resolveFile(PREVIEWS, '/no-such-brand/'), null);
+});
+
+t('design-preview.js: server serves pages, redirects bare folders, 404s the rest', async () => {
+  const server = designPreview.createServer(PREVIEWS);
+  await new Promise(r => server.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const page = await fetch(`${base}/stripe/`);
+    assert.equal(page.status, 200);
+    assert.match(page.headers.get('content-type'), /text\/html/);
+    assert.match(await page.text(), /DESIGN\.md preview/);
+    const bare = await fetch(`${base}/stripe`, { redirect: 'manual' });
+    assert.equal(bare.status, 301);
+    assert.equal(bare.headers.get('location'), '/stripe/');
+    assert.equal((await fetch(`${base}/../manifest.json`)).status, 404);
+  } finally {
+    await new Promise(r => server.close(r));
+  }
 });
 
 // ──────────────────────────────────────────────────────────────────────────

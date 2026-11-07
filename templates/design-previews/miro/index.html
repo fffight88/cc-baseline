@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Miro — DESIGN.md preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&display=block">
+<style>
+:root{--primary:#1c1c1e;--yellow:#ffd02f;--yellow-deep:#fcb900;--yellow-light:#fff4c4;--yellow-dark:#746019;--blue:#4262ff;--coral:#ff9999;--coral-light:#ffc6c6;--coral-dark:#600000;--rose:#ffd8f4;--rose-light:#fde0f0;--teal:#0fbcb0;--teal-light:#c3faf5;--moss:#187574;--orange-light:#ffe6cd;--success:#00b473;
+--surface:#f7f8fa;--surface-soft:#fafbfc;--surface-yellow:#fff8e0;--lav:#f5f3ff;--hair:#e0e2e8;--hair-soft:#eef0f3;--hair-strong:#c7cad5;--ink-deep:#050038;--ink:#1c1c1e;--charcoal:#2c2c34;--slate:#555a6a;--steel:#6b6f7e;--stone:#8e91a0;--muted:#a5a8b5;
+--sans:"Figtree","Noto Sans",-apple-system,BlinkMacSystemFont,sans-serif;
+--e2:rgba(5,0,56,.06) 0 4px 12px 0;--e3:rgba(5,0,56,.08) 0 12px 32px -4px}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{font-family:var(--sans);font-size:16px;line-height:1.5;color:var(--ink);background:#fff}
+.wrap{max-width:1280px;margin:0 auto;padding:0 32px}
+.hero-d{font-size:80px;font-weight:500;line-height:1.05;letter-spacing:-2px}
+.dlg{font-size:60px;font-weight:500;line-height:1.1;letter-spacing:-1.5px}
+.h1{font-size:48px;font-weight:500;line-height:1.15;letter-spacing:-1px}
+.h2{font-size:36px;font-weight:500;line-height:1.2;letter-spacing:-.5px}
+.h3{font-size:28px;font-weight:500;line-height:1.25}
+.h4{font-size:22px;font-weight:500;line-height:1.3}
+.h5{font-size:18px;font-weight:500;line-height:1.4}
+.subt{font-size:18px;font-weight:400;line-height:1.5}
+.bsm{font-size:14px}
+.cap{font-size:13px;line-height:1.4}
+.btn{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:500;line-height:1.3;padding:12px 24px;border-radius:9999px;white-space:nowrap}
+.btn.p{background:var(--primary);color:#fff}
+.btn.s{border:1px solid var(--hair-strong);color:var(--ink)}
+.btn.y{background:var(--yellow);color:var(--primary)}
+.btn.w{background:#fff;color:var(--primary)}
+.badge{display:inline-block;font-size:13px;font-weight:600;line-height:1.4;padding:4px 10px;border-radius:9999px}
+.b-y{background:var(--surface-yellow);color:var(--yellow-dark)}.b-p{background:var(--lav);color:var(--blue)}.b-c{background:var(--coral-light);color:var(--coral-dark)}.b-ok{background:var(--success);color:#fff}
+.promo{background:var(--primary);color:#fff;font-size:14px;font-weight:500;padding:12px 16px;display:flex;justify-content:center;align-items:center;gap:14px}
+.promo .badge{background:var(--yellow);color:var(--primary);text-transform:uppercase;font-size:12px}
+nav{height:64px;display:flex;align-items:center;gap:28px;font-size:14px;font-weight:500}
+.wm{display:flex;align-items:center;gap:8px;font-size:24px;font-weight:600;letter-spacing:-.8px;margin-right:16px}
+.wm i{width:32px;height:32px;border-radius:8px;background:var(--yellow);display:grid;place-items:center}
+nav .sp{flex:1}
+.hero{text-align:center;padding:120px 0 0}
+.hero .subt{color:var(--slate);max-width:640px;margin:24px auto 32px}
+.row{display:flex;gap:12px;justify-content:center;align-items:center}
+/* whiteboard mockup */
+.wb{margin:72px auto 0;height:600px;background:#fff;border:1px solid var(--hair-soft);border-radius:16px;box-shadow:var(--e3);position:relative;overflow:hidden;text-align:left;
+background-image:radial-gradient(#dfe1e7 1px,transparent 1px);background-size:24px 24px}
+.wbbar{position:absolute;left:16px;top:16px;right:16px;display:flex;justify-content:space-between}
+.chipb{background:#fff;border-radius:8px;box-shadow:var(--e2);padding:8px 12px;font-size:14px;font-weight:500;display:flex;align-items:center;gap:12px}
+.tools{position:absolute;left:16px;top:84px;background:#fff;border-radius:8px;box-shadow:var(--e2);padding:8px;display:grid;gap:6px}
+.tools span{width:32px;height:32px;border-radius:6px;display:grid;place-items:center;font-size:15px;color:var(--charcoal)}
+.tools span.on{background:var(--lav);color:var(--blue)}
+.st{position:absolute;width:132px;height:120px;padding:12px;font-size:13px;line-height:1.35;color:var(--ink-deep);box-shadow:rgba(5,0,56,.12) 0 4px 10px -2px}
+.frame{position:absolute;background:#fff;border:1px solid var(--hair);border-radius:4px}
+.frame .ft{position:absolute;top:-22px;left:0;font-size:12px;color:var(--steel)}
+.kcol{display:grid;gap:8px;padding:10px;background:var(--surface);border-radius:8px}
+.kcol h6{font-size:12px;font-weight:600;color:var(--slate)}
+.kc{background:#fff;border-radius:6px;padding:8px;font-size:12px;border:1px solid var(--hair-soft)}
+.kc i{display:block;height:4px;width:32px;border-radius:2px;margin-bottom:6px}
+.cur{position:absolute;font-size:11px;font-weight:600;color:#fff;padding:2px 8px;border-radius:2px 10px 10px 10px}
+.ai{position:absolute;right:16px;top:84px;width:240px;background:#fff;border-radius:12px;box-shadow:var(--e3);padding:16px;font-size:13px}
+.logos{display:flex;justify-content:space-between;color:var(--steel);font-size:20px;font-weight:500;padding:56px 0 0}
+section{padding:96px 0 0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.stats div{padding:20px 20px 28px}
+.stats b{display:block;font-size:64px;font-weight:500;line-height:1.1;letter-spacing:-1.5px}
+.stats span{color:var(--slate)}
+.fg{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+.fc{border-radius:28px;padding:32px;display:flex;flex-direction:column;gap:12px;min-height:380px}
+.fc.w{border:1px solid var(--hair-soft);background:#fff}
+.fc .vis{margin-top:auto;background:#fff;border-radius:16px;padding:16px;font-size:13px}
+.fc.w .vis{background:var(--surface)}
+.fc p{color:var(--charcoal)}
+.mm{display:flex;align-items:center;gap:10px}
+.node{border-radius:9999px;padding:4px 12px;font-size:12px;font-weight:500;border:1.5px solid}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+.flow{background:#fff;border:1px solid var(--hair-soft);border-radius:16px;box-shadow:var(--e3);padding:24px;display:grid;gap:12px}
+.fstep{display:flex;align-items:center;gap:12px;border:1px solid var(--hair);border-radius:12px;padding:12px 14px;font-size:14px}
+.fstep i{width:28px;height:28px;border-radius:8px;flex:none}
+.filters{display:flex;gap:8px;margin:24px 0 32px}
+.fd{border:1px solid var(--hair-strong);border-radius:9999px;padding:8px 16px;font-size:14px;font-weight:500}
+.cs{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.csc{border:1px solid var(--hair-soft);border-radius:28px;overflow:hidden}
+.csc .img{height:240px;position:relative}
+.csc .txt{padding:24px 32px 32px}
+.toggle{display:inline-flex;background:var(--surface);border-radius:9999px;padding:4px;font-size:14px;font-weight:500}
+.toggle span{padding:8px 16px;border-radius:9999px}
+.toggle span.on{background:#fff;box-shadow:rgba(5,0,56,.04) 0 1px 2px}
+.pg{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:40px}
+.pc{border:1px solid var(--hair);border-radius:16px;padding:32px;display:flex;flex-direction:column;gap:12px}
+.pc.f{background:var(--lav);border:2px solid var(--blue)}
+.pc.e{background:var(--primary);color:#fff;border-color:var(--primary)}
+.pc .amt{font-size:48px;font-weight:500;letter-spacing:-1px;line-height:1.1}
+.pc .btn{justify-content:center;margin-top:auto}
+.pc ul{list-style:none;font-size:14px;display:grid;gap:6px;color:var(--charcoal);margin:4px 0 16px}
+.pc.e ul{color:#d6d7dd}
+.pc li:before{content:"✓ ";color:var(--success);font-weight:600}
+.ct{margin-top:48px;border:1px solid var(--hair);border-radius:8px;overflow:hidden;font-size:14px}
+.ct .r{display:grid;grid-template-columns:2fr repeat(4,1fr);padding:16px 20px;border-bottom:1px solid var(--hair-soft)}
+.ct .r>span:not(:first-child){text-align:center}
+.ct .sec{background:var(--surface-soft);font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--slate);padding:12px 20px;border-bottom:1px solid var(--hair-soft)}
+.ok{color:var(--success);font-weight:600}
+.ctab{background:var(--primary);color:#fff;border-radius:32px;padding:64px;text-align:center}
+.foot{background:#1c1c1e;color:#fff;margin-top:96px;padding:64px 32px}
+.fgrid{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr);gap:24px;font-size:14px}
+.fgrid h6{font-size:16px;font-weight:500;margin-bottom:12px}
+.fgrid li{list-style:none;color:#a5a8b5;padding:4px 0}
+.fbot{max-width:1280px;margin:48px auto 0;padding-top:24px;border-top:1px solid #2c2c34;display:flex;justify-content:space-between;align-items:center}
+.asb{background:#fff;color:var(--primary);font-size:13px;font-weight:600;border-radius:8px;padding:12px 16px}
+</style></head><body>
+<div class="promo">Miro Canvas 26 — the AI innovation event for teams that move fast · Nov 19, NYC <span class="badge">Get your spot</span></div>
+<div class="wrap">
+<nav><span class="wm"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="#1c1c1e" aria-hidden="true"><path d="M17.392 0H13.9L17 4.808 10.444 0H6.949l3.102 6.3L3.494 0H0l3.05 8.131L0 24h3.494L10.05 6.985 6.949 24h3.494L17 5.494 13.899 24h3.493L24 3.672 17.392 0z"/></svg></i>miro</span>
+<span>Product ▾</span><span>Solutions ▾</span><span>Resources ▾</span><span class="sp"></span><span>Login</span><span>Pricing</span><span>Contact sales</span><span class="btn p">Get started free</span></nav>
+
+<header class="hero">
+  <span class="badge b-p">New · Miro AI Workflows</span>
+  <h1 class="hero-d" style="margin-top:24px">See how teams get<br>great done with Miro</h1>
+  <p class="subt">The AI innovation workspace where teams brainstorm, plan and ship — from first sticky note to final roadmap.</p>
+  <div class="row"><span class="btn p">Get started free</span><span class="btn s">Book a demo</span></div>
+  <p class="cap" style="color:var(--stone);margin-top:16px">Free forever — no credit card required</p>
+
+  <div class="wb">
+    <div class="wbbar"><div class="chipb"><b style="font-weight:600">Q1 Product Planning</b><span style="color:var(--stone)">☆ ⋯</span></div><div class="chipb"><span style="display:flex"><i style="width:24px;height:24px;border-radius:50%;background:#ff9999;border:2px solid #fff"></i><i style="width:24px;height:24px;border-radius:50%;background:#0fbcb0;border:2px solid #fff;margin-left:-6px"></i><i style="width:24px;height:24px;border-radius:50%;background:#4262ff;border:2px solid #fff;margin-left:-6px"></i></span><span class="btn" style="background:var(--blue);color:#fff;padding:6px 14px">Share</span></div></div>
+    <div class="tools"><span class="on">↖</span><span>▢</span><span>T</span><span>▤</span><span>✎</span><span>⋯</span></div>
+    <!-- brainstorm frame -->
+    <div class="frame" style="left:90px;top:110px;width:440px;height:420px"><span class="ft">Brainstorm · Onboarding</span></div>
+    <div class="st" style="left:110px;top:130px;background:#fff4c4;transform:rotate(-2deg)">Shorter signup — skip team step</div>
+    <div class="st" style="left:255px;top:136px;background:#ffd8f4;transform:rotate(1.5deg)">Template picker on first board</div>
+    <div class="st" style="left:395px;top:128px;background:#c3faf5;transform:rotate(-1deg);width:118px">AI summary of workshop</div>
+    <div class="st" style="left:120px;top:270px;background:#ffc6c6;transform:rotate(1deg)">Invite flow drops 38% on mobile</div>
+    <div class="st" style="left:265px;top:276px;background:#ffe6cd;transform:rotate(-2deg)">Guided tour v2</div>
+    <div class="st" style="left:395px;top:270px;background:#ffd02f;transform:rotate(2deg);width:118px">Weekly digest email</div>
+    <div class="st" style="left:180px;top:400px;width:200px;height:100px;background:#fff4c4;transform:rotate(-1deg)"><b style="font-weight:600">Cluster:</b> Activation (6)</div>
+    <span class="cur" style="left:360px;top:420px;background:#ff9999">Ana</span>
+    <!-- kanban frame -->
+    <div class="frame" style="left:570px;top:110px;width:380px;height:300px;padding:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px"><span class="ft">Sprint 14 board</span>
+      <div class="kcol"><h6>To do · 4</h6><div class="kc"><i style="background:#ff9999"></i>Mobile invite fix</div><div class="kc"><i style="background:#ffd02f"></i>Digest email copy</div><div class="kc"><i style="background:#0fbcb0"></i>Tour analytics</div></div>
+      <div class="kcol"><h6>In progress · 2</h6><div class="kc"><i style="background:#4262ff"></i>Template picker</div><div class="kc"><i style="background:#ffd8f4"></i>AI summary API</div></div>
+      <div class="kcol"><h6>Done · 5</h6><div class="kc"><i style="background:#00b473"></i>Signup A/B test</div><div class="kc"><i style="background:#00b473"></i>SSO for Business</div></div>
+    </div>
+    <span class="cur" style="left:860px;top:330px;background:#0fbcb0">Leo</span>
+    <!-- mind map -->
+    <div class="frame" style="left:570px;top:450px;width:380px;height:120px;padding:20px 12px;display:flex;align-items:center;gap:8px"><span class="ft">Roadmap themes</span>
+      <span class="node" style="border-color:#1c1c1e;background:#1c1c1e;color:#fff">FY26 Growth</span><span class="node" style="border-color:#ff9999">Activation</span><span class="node" style="border-color:#0fbcb0">Collaboration</span><span class="node" style="border-color:#4262ff">AI</span></div>
+    <div class="ai"><span class="badge b-p">AI agent</span><div class="h5" style="margin:10px 0 6px">Sidekick summary</div><p style="color:var(--slate)">18 stickies clustered into 3 themes. Top priority: fix the mobile invite flow.</p><div style="display:flex;gap:8px;margin-top:12px"><span class="btn p" style="padding:8px 14px;font-size:13px">Create tickets</span><span class="btn s" style="padding:8px 14px;font-size:13px">Make doc</span></div></div>
+  </div>
+  <div class="logos"><span>Walmart</span><span>Cisco</span><span>Volvo</span><span>Deloitte</span><span>Okta</span><span>Hewlett Packard</span><span>Atlassian</span></div>
+</header>
+
+<section>
+  <div class="stats"><div><b>100M+</b><span>users worldwide</span></div><div><b>250K</b><span>organizations</span></div><div><b>99%</b><span>of the Fortune 100</span></div><div><b>7,000+</b><span>community templates</span></div></div>
+</section>
+
+<section>
+  <h2 class="h1" style="max-width:760px">One workspace for every step of innovation</h2>
+  <div class="fg">
+    <div class="fc" style="background:var(--yellow)"><span class="badge" style="background:#fff;color:var(--primary);align-self:flex-start">Ideate</span><h3 class="h3" style="color:var(--ink-deep)">Brainstorm without limits</h3><p>Sticky notes, timers and voting keep every workshop moving.</p><div class="vis"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"><i style="height:40px;background:#fff4c4"></i><i style="height:40px;background:#ffd8f4"></i><i style="height:40px;background:#c3faf5"></i><i style="height:40px;background:#ffc6c6"></i><i style="height:40px;background:#ffe6cd"></i><i style="height:40px;background:#fff4c4"></i></div></div></div>
+    <div class="fc w"><span class="badge b-y" style="align-self:flex-start">Plan</span><h3 class="h3">Plan and track work</h3><p>Turn ideas into timelines, kanbans and roadmaps synced with Jira.</p><div class="vis"><div style="display:grid;gap:6px"><div style="display:flex;gap:8px;align-items:center"><span style="width:60px;color:var(--stone)">Jan</span><i style="height:14px;width:60%;border-radius:4px;background:#4262ff"></i></div><div style="display:flex;gap:8px;align-items:center"><span style="width:60px;color:var(--stone)">Feb</span><i style="height:14px;width:40%;margin-left:20%;border-radius:4px;background:#0fbcb0"></i></div><div style="display:flex;gap:8px;align-items:center"><span style="width:60px;color:var(--stone)">Mar</span><i style="height:14px;width:45%;margin-left:40%;border-radius:4px;background:#ff9999"></i></div></div></div></div>
+    <div class="fc" style="background:var(--rose-light)"><span class="badge b-c" style="align-self:flex-start">Research</span><h3 class="h3" style="color:var(--ink-deep)">Synthesize research</h3><p>Cluster interview notes and pull out insights with AI.</p><div class="vis"><div class="mm"><span class="node" style="border-color:#ff9999">Pain points</span><span class="node" style="border-color:#0fbcb0">Delighters</span></div><p class="cap" style="margin-top:10px;color:var(--slate)">42 notes · 6 clusters</p></div></div>
+    <div class="fc w"><span class="badge b-p" style="align-self:flex-start">Diagram</span><h3 class="h3">Map systems</h3><p>Flowcharts and architecture diagrams with smart shapes.</p><div class="vis"><svg width="100%" height="70" viewBox="0 0 300 70"><rect x="2" y="20" width="70" height="30" rx="6" fill="#fff" stroke="#4262ff"/><rect x="115" y="20" width="70" height="30" rx="6" fill="#fff" stroke="#0fbcb0"/><rect x="228" y="20" width="70" height="30" rx="6" fill="#fff" stroke="#ff9999"/><path d="M72 35h43M185 35h43" stroke="#555a6a"/></svg></div></div>
+    <div class="fc" style="background:var(--teal-light)"><span class="badge" style="background:#fff;color:var(--moss);align-self:flex-start">Present</span><h3 class="h3" style="color:var(--ink-deep)">Present to stakeholders</h3><p>Turn any frame into slides — no exporting.</p><div class="vis" style="display:flex;gap:8px"><i style="flex:1;height:54px;border-radius:6px;background:#c3faf5"></i><i style="flex:1;height:54px;border-radius:6px;background:#0fbcb0"></i><i style="flex:1;height:54px;border-radius:6px;background:#187574"></i></div></div>
+    <div class="fc" style="background:var(--coral-light)"><span class="badge" style="background:#fff;color:var(--coral-dark);align-self:flex-start">Prototype</span><h3 class="h3" style="color:var(--ink-deep)">Prototype fast</h3><p>Click-through wireframes from a prompt.</p><div class="vis" style="display:flex;gap:10px"><i style="width:56px;height:80px;border:1.5px solid #c7cad5;border-radius:8px"></i><i style="width:56px;height:80px;border:1.5px solid #c7cad5;border-radius:8px"></i><i style="width:56px;height:80px;border:1.5px solid #1c1c1e;border-radius:8px"></i></div></div>
+  </div>
+</section>
+
+<section><div class="split">
+  <div><span class="badge b-p">AI Workflows</span><h2 class="h1" style="margin:16px 0">Put your team's best practices on autopilot</h2><p class="subt" style="color:var(--slate)">Chain AI steps right on the canvas — summarize research, generate PRDs, and push tickets to Jira in one click.</p><div class="row" style="justify-content:flex-start;margin-top:32px"><span class="btn p">Try AI Workflows</span><span class="btn s">Watch demo</span></div></div>
+  <div class="flow">
+    <div class="fstep"><i style="background:#fff4c4"></i>Input: 24 interview stickies<span class="badge b-y" style="margin-left:auto">Yellow</span></div>
+    <div class="fstep"><i style="background:#f5f3ff"></i>Cluster into themes<span class="badge b-p" style="margin-left:auto">AI agent</span></div>
+    <div class="fstep"><i style="background:#ffc6c6"></i>Draft PRD from top theme<span class="badge b-p" style="margin-left:auto">AI agent</span></div>
+    <div class="fstep"><i style="background:#c3faf5"></i>Create 8 Jira tickets<span class="badge b-ok" style="margin-left:auto">Done</span></div>
+  </div>
+</div></section>
+
+<section>
+  <h2 class="h1">Customer stories</h2>
+  <div class="filters"><span class="fd">Company use ▾</span><span class="fd">Industry ▾</span><span class="fd">Use case ▾</span></div>
+  <div class="cs">
+    <div class="csc"><div class="img" style="background:linear-gradient(160deg,#2c2c34,#050038)"><span style="position:absolute;left:32px;bottom:24px;color:#fff;font-size:28px;font-weight:500">Cisco</span><span class="st" style="right:40px;top:40px;background:#ffd02f;transform:rotate(4deg)">−40% planning time</span></div><div class="txt"><h3 class="h4">How Cisco runs PI planning for 2,000 engineers on one board</h3><p class="bsm" style="color:var(--slate);margin-top:8px">Enterprise · Technology · Agile</p></div></div>
+    <div class="csc"><div class="img" style="background:linear-gradient(160deg,#187574,#0b3b3a)"><span style="position:absolute;left:32px;bottom:24px;color:#fff;font-size:28px;font-weight:500">Volvo</span><span class="st" style="right:40px;top:40px;background:#ffd8f4;transform:rotate(-3deg)">3× faster workshops</span></div><div class="txt"><h3 class="h4">Volvo Cars aligns global design sprints across 9 time zones</h3><p class="bsm" style="color:var(--slate);margin-top:8px">Enterprise · Automotive · Product design</p></div></div>
+  </div>
+</section>
+
+<section>
+  <div style="display:flex;justify-content:space-between;align-items:flex-end"><h2 class="h1">Plans for every team</h2><div class="toggle"><span>Monthly</span><span class="on">Annual <span class="badge" style="background:var(--yellow);border-radius:6px;padding:2px 6px;color:var(--primary)">Save 18%</span></span></div></div>
+  <div class="pg">
+    <div class="pc"><h3 class="h4">Free</h3><div class="amt">$0</div><p class="bsm" style="color:var(--slate)">For individuals exploring Miro</p><ul><li>3 editable boards</li><li>2,500+ templates</li><li>10 AI credits</li></ul><span class="btn s">Sign up free</span></div>
+    <div class="pc"><h3 class="h4">Starter</h3><div class="amt">$8</div><p class="bsm" style="color:var(--slate)">per member / month</p><ul><li>Unlimited boards</li><li>Private boards</li><li>25 AI credits</li></ul><span class="btn p">Get started</span></div>
+    <div class="pc f"><span class="badge b-p" style="align-self:flex-start;background:#fff">Most popular</span><h3 class="h4">Business</h3><div class="amt">$16</div><p class="bsm" style="color:var(--slate)">per member / month</p><ul><li>Unlimited guests</li><li>SSO</li><li>50 AI credits</li></ul><span class="btn p">Try free</span></div>
+    <div class="pc e"><h3 class="h4">Enterprise</h3><div class="amt" style="font-size:36px;letter-spacing:-.5px;padding:7px 0">Custom</div><p class="bsm" style="color:#a5a8b5">for 30+ members</p><ul><li>Enterprise security</li><li>Data residency</li><li>100 AI credits</li></ul><span class="btn w">Contact sales</span></div>
+  </div>
+  <div class="ct">
+    <div class="r" style="font-weight:500;background:#fff"><span>Features</span><span>Free</span><span>Starter</span><span>Business</span><span>Enterprise</span></div>
+    <div class="sec">Collaboration</div>
+    <div class="r"><span>Editable boards</span><span>3</span><span>Unlimited</span><span>Unlimited</span><span>Unlimited</span></div>
+    <div class="r"><span>Board guests</span><span>—</span><span>—</span><span class="ok">✓</span><span class="ok">✓</span></div>
+    <div class="r"><span>Video chat & timers</span><span class="ok">✓</span><span class="ok">✓</span><span class="ok">✓</span><span class="ok">✓</span></div>
+    <div class="sec">Security & admin</div>
+    <div class="r"><span>SSO (SAML)</span><span>—</span><span>—</span><span class="ok">✓</span><span class="ok">✓</span></div>
+    <div class="r" style="border-bottom:0"><span>Data residency</span><span>—</span><span>—</span><span>—</span><span class="ok">✓</span></div>
+  </div>
+</section>
+
+<section><div class="ctab"><h2 class="dlg">Get great done</h2><p class="subt" style="color:#a5a8b5;margin:16px 0 32px">Join 100M+ people already working in Miro.</p><span class="btn w">Get started free</span></div></section>
+</div>
+<div class="foot">
+  <div class="fgrid">
+    <ul><h6>Product</h6><li>Online whiteboard</li><li>AI Workflows</li><li>Integrations</li><li>Templates</li></ul>
+    <ul><h6>Solutions</h6><li>Agile</li><li>Product management</li><li>UX research</li><li>Engineering</li></ul>
+    <ul><h6>Tools</h6><li>Mind map</li><li>Flowchart</li><li>Kanban board</li><li>Wireframe</li></ul>
+    <ul><h6>Resources</h6><li>Academy</li><li>Events</li><li>Help center</li><li>Customer stories</li></ul>
+    <ul><h6>Company</h6><li>About us</li><li>Careers</li><li>Trust center</li><li>Press</li></ul>
+    <ul><h6>Plans & Pricing</h6><li>Pricing</li><li>Business</li><li>Enterprise</li><li>Education</li></ul>
+  </div>
+  <div class="fbot"><span class="wm" style="font-size:20px"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="#1c1c1e" aria-hidden="true"><path d="M17.392 0H13.9L17 4.808 10.444 0H6.949l3.102 6.3L3.494 0H0l3.05 8.131L0 24h3.494L10.05 6.985 6.949 24h3.494L17 5.494 13.899 24h3.493L24 3.672 17.392 0z"/></svg></i>miro</span><span style="display:flex;gap:12px"><span class="asb">App Store</span><span class="asb">Google Play</span><span class="asb" style="border:1px solid #e0e2e8;font-weight:400">Capterra ★ 4.7</span></span></div>
+</div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">miro</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

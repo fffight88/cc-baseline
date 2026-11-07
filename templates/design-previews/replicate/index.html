@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Replicate — DESIGN.md preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@400&display=block">
+<style>
+:root{--primary:#ea2804;--primary-deep:#c01f00;--ink:#202020;--body:#3a3a3a;--charcoal:#575757;--mute:#646464;--ash:#8d8d8d;--stone:#bbb;--on-dark:#fcfcfc;--on-dark-mute:rgba(252,252,252,.72);--canvas:#f9f7f3;--bone:#f3f0e8;--card:#fff;--dark:#202020;--deep:#000;--hair:rgba(32,32,32,.12);--hair-strong:#202020;--div-dark:rgba(255,255,255,.2);--glow:#ff6a3d;--pink:#f4a8a0;--ok:#2b9a66;--gh:#24292e;
+--display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;--sans:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--canvas);color:var(--ink);font:400 16px/1.5 var(--sans);overflow-x:hidden}
+.wrap{max-width:1280px;margin:0 auto;padding:0 32px}
+/* substitute metric adjustment: -3% tracking on xxl/xl, line-height clamped to 1.0 */
+.dxxl{font:700 128px/1 var(--display);letter-spacing:-3.84px}
+.dxl{font:700 72px/1 var(--display);letter-spacing:-2.16px}
+.dlg{font:700 48px/1 var(--display);letter-spacing:-1px}
+.dmd{font:600 30px/1.2 var(--display);letter-spacing:-.5px}
+.hmd{font:600 24px/1.33 var(--sans);letter-spacing:-.35px}
+.hsm{font:600 20px/1.4 var(--sans);letter-spacing:-.3px}
+.sub{font:600 18px/1.56 var(--display)}
+.blg{font:400 18px/1.56 var(--sans);color:var(--body)}
+.btn{display:inline-flex;align-items:center;gap:8px;height:44px;padding:12px 24px;border-radius:9999px;font:600 16px/1 var(--sans);white-space:nowrap;background:var(--primary);color:#fff}
+.btn.d{background:var(--dark);color:var(--on-dark)}
+.btn.o{background:var(--card);color:var(--ink);border:1px solid var(--hair-strong);padding:11px 23px}
+.btn.g{background:var(--canvas);color:var(--ink);height:36px;padding:8px 16px}
+.ib{width:36px;height:36px;border-radius:50%;background:var(--card);border:1px solid var(--hair);display:grid;place-items:center}
+header{border-bottom:1px solid var(--hair)}
+nav{height:60px;display:flex;align-items:center;font:600 14px/1 var(--sans)}
+.wm{display:flex;align-items:center;gap:10px;font:700 22px/1 var(--display);letter-spacing:-.6px;flex:1}
+.menu{display:flex;gap:32px}
+.right{flex:1;display:flex;justify-content:flex-end;align-items:center;gap:16px}
+/* hero band */
+.hero{position:relative;overflow:hidden;background:radial-gradient(60% 80% at 30% 30%,var(--primary) 0%,transparent 70%),radial-gradient(50% 70% at 75% 20%,var(--glow) 0%,transparent 70%),linear-gradient(180deg,var(--primary) 0%,var(--primary) 55%,var(--glow) 82%,var(--pink) 100%);color:var(--on-dark);padding:160px 0 96px}
+.hero .grid{display:grid;grid-template-columns:1.25fr 1fr;gap:48px;align-items:end}
+.hero p{font:600 18px/1.56 var(--display);max-width:520px;margin:32px 0 32px;color:var(--on-dark)}
+.hero .ctas{display:flex;gap:12px}
+.ill{background:var(--card);border-radius:10px;height:440px;position:relative;overflow:hidden}
+.mosaic{display:flex;gap:12px;align-items:center;padding:48px 0;overflow:hidden}
+.mosaic i{width:40px;height:40px;border-radius:50%;flex:none;border:2px solid var(--card)}
+.mosaic span{font:400 14px/1.43 var(--sans);color:var(--charcoal);margin-left:12px;white-space:nowrap}
+.sec{padding:96px 0}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:48px;margin-bottom:32px}
+.pills{display:flex;gap:8px;margin-bottom:24px}
+.pill{padding:6px 14px;border-radius:9999px;background:var(--card);font:600 14px/1.5 var(--sans);border:1px solid var(--hair)}
+.pill.on{background:var(--dark);color:var(--on-dark);border-color:var(--dark)}
+.models{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.mc{background:var(--card);border:1px solid var(--hair);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.th{aspect-ratio:1/1;border-radius:10px;margin:-4px -4px 6px;position:relative;overflow:hidden}
+.mc .own{font:400 14px/1.43 var(--sans);color:var(--charcoal)}
+.mc .own b{color:var(--ink);font-weight:600}
+.mc .ds{font:400 14px/1.43 var(--sans);color:var(--charcoal)}
+.mc .ft{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:6px}
+.bs{display:inline-flex;padding:4px 10px;border-radius:9999px;background:var(--ok);color:var(--on-dark);font:400 12px/1.33 var(--sans)}
+.bt{display:inline-flex;padding:4px 10px;border-radius:9999px;background:var(--canvas);border:1px solid var(--hair);font:400 12px/1.33 var(--sans)}
+.runs{font:400 12px/1.33 var(--mono);color:var(--ash)}
+/* dark code story */
+.story{background:var(--dark);color:var(--on-dark);padding:96px 0}
+.story .grid{display:grid;grid-template-columns:1fr 1px 1.2fr;gap:48px}
+.story .vr{background:var(--div-dark)}
+.steps{margin-top:40px;display:flex;flex-direction:column}
+.step{display:grid;grid-template-columns:48px 1fr;padding:20px 0;border-top:1px solid var(--div-dark)}
+.step b{font:700 30px/1 var(--display);color:var(--on-dark)}
+.step p{color:var(--on-dark-mute);font-size:16px}
+.step h4{font:600 20px/1.4 var(--sans);letter-spacing:-.3px;margin-bottom:4px}
+.code{background:var(--dark);border:1px solid var(--div-dark);border-radius:10px;padding:24px}
+.ctabs{display:flex;gap:6px;background:var(--deep);padding:6px;border-radius:4px;width:max-content;margin-bottom:20px}
+.ctab{padding:6px 12px;border-radius:4px;font:400 11px/1.5 var(--mono);color:var(--on-dark-mute)}
+.ctab.on{color:var(--on-dark);box-shadow:inset 0 -2px 0 var(--primary)}
+.code pre{font:400 14px/1.43 var(--mono);color:var(--on-dark);white-space:pre}
+.k{color:#ff8a6a}.s{color:#f4a8a0}.c{color:#8d8d8d}
+.out{margin-top:20px;display:grid;grid-template-columns:120px 1fr;gap:16px;align-items:center;border-top:1px solid var(--div-dark);padding-top:20px}
+.out .img{height:120px;border-radius:10px;background:linear-gradient(160deg,#1d2b4a 0%,#3e4f7a 35%,#e9a46b 70%,#f6d6a8 100%);position:relative;overflow:hidden}
+.out .meta{font:400 12px/1.6 var(--mono);color:var(--on-dark-mute)}
+/* collections */
+.bone{background:var(--bone);padding:96px 0}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.ct{background:var(--canvas);border-radius:10px;padding:24px;border:1px solid var(--hair);display:flex;flex-direction:column;gap:12px;min-height:200px}
+.ct .sw{display:flex;margin-top:auto}.ct .sw i{width:44px;height:44px;border-radius:10px;margin-right:-10px;border:2px solid var(--canvas)}
+.ct p{font:400 14px/1.43 var(--sans);color:var(--charcoal)}
+/* pricing */
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.tier{background:var(--card);border:1px solid var(--hair);border-radius:16px;padding:32px;display:flex;flex-direction:column;gap:12px}
+.tier.f{background:var(--dark);color:var(--on-dark);border-color:var(--dark)}
+.tier .pr{font:600 30px/1.2 var(--display);letter-spacing:-.5px}
+.tier p{color:var(--charcoal)}.tier.f p{color:var(--on-dark-mute)}
+.hw{border-top:1px solid var(--hair);margin-top:8px}
+.tier.f .hw{border-color:var(--div-dark)}
+.hw div{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--hair);font:600 14px/1.43 var(--sans);letter-spacing:-.35px}
+.tier.f .hw div{border-color:var(--div-dark)}
+.hw span{font:400 13px/1.43 var(--mono);color:var(--mute);letter-spacing:0}
+.tier.f .hw span{color:var(--on-dark-mute)}
+.tier .btn{justify-content:center;margin-top:auto}
+.close{padding:160px 0;text-align:center}
+.close .in{display:flex;gap:8px;justify-content:center;margin-top:32px}
+.inp{height:44px;width:380px;border-radius:9999px;background:var(--card);border:1px solid var(--hair);padding:12px 20px;font:400 16px/20px var(--sans);color:var(--ash);text-align:left}
+.bf{background:var(--deep);color:var(--on-dark);padding:64px 32px;font:400 14px/1.43 var(--sans)}
+.bf .g{max-width:1216px;margin:0 auto;display:grid;grid-template-columns:2fr repeat(4,1fr);gap:32px;padding-bottom:40px;border-bottom:1px solid var(--div-dark)}
+.bf h6{font:600 14px/1 var(--sans);margin-bottom:16px}
+.bf a{display:block;color:var(--on-dark-mute);margin-bottom:10px}
+.bf .cp{max-width:1216px;margin:24px auto 0;display:flex;justify-content:space-between;font:400 12px/1.33 var(--sans);color:var(--on-dark-mute)}
+</style></head><body>
+<header><div class="wrap"><nav>
+  <span class="wm"><svg width="20" height="20" fill="#202020" style="flex:none;display:block" aria-label="replicate" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 10.262v2.712h-9.518V24h-3.034V10.262zm0-5.131v2.717H8.755V24H5.722V5.131zM24 0v2.717H3.034V24H0V0z"/></svg>replicate</span>
+  <div class="menu"><span>Explore</span><span>Pricing</span><span>Docs</span><span>Blog</span><span>Changelog</span></div>
+  <div class="right"><span class="ib"><svg width="18" height="18" viewBox="0 0 24 24" fill="#24292e"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.62 1.58.23 2.75.11 3.04.74.81 1.18 1.83 1.18 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg></span><span>Sign in</span><span class="btn">Get started</span></div>
+</nav></div></header>
+
+<section class="hero"><div class="wrap grid">
+  <div>
+    <h1 class="dxxl">Run AI<br>with an API.</h1>
+    <p>Run and fine-tune open-source models. Deploy custom models at scale. All with one line of code.</p>
+    <div class="ctas"><span class="btn d">Explore models</span><span class="btn o">Read the docs</span></div>
+  </div>
+  <div class="ill">
+    <svg width="100%" height="440" viewBox="0 0 480 440" fill="none" stroke="#202020" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M40 330 H440"/><path d="M70 330 V410 M410 330 V410"/>
+      <rect x="250" y="210" width="150" height="104" rx="6"/><path d="M300 314 l-10 16 M350 314 l10 16"/>
+      <path d="M266 232 h60 M266 252 h96 M266 272 h44" stroke="#ea2804"/>
+      <circle cx="150" cy="170" r="34"/><path d="M130 168 q20 14 40 0"/>
+      <path d="M150 204 C 120 220 110 260 118 330 M150 204 C 180 222 200 250 248 262"/>
+      <path d="M118 250 C 150 262 180 270 214 286"/>
+      <path d="M96 330 l18 -60 h60 l18 60"/>
+      <path d="M60 330 v-24 h30 v24 M66 306 c0-12 18-12 18 0"/>
+      <path d="M420 330 l-24 -50 l10 -6 l26 52"/><circle cx="398" cy="270" r="8"/>
+      <path d="M120 120 q30 -40 60 0" stroke-dasharray="4 6"/>
+    </svg>
+  </div>
+</div></section>
+
+<div class="wrap">
+  <div class="mosaic">
+    <i style="background:#d9b8a0"></i><i style="background:#9c8a7a"></i><i style="background:#f4a8a0"></i><i style="background:#575757"></i><i style="background:#c9b99a"></i><i style="background:#8d8d8d"></i><i style="background:#e0cfc0"></i><i style="background:#3a3a3a"></i><i style="background:#bba58c"></i><i style="background:#f3f0e8"></i><i style="background:#6e5a4a"></i><i style="background:#d4c4b0"></i><i style="background:#a89080"></i><i style="background:#202020"></i><i style="background:#e8d5c4"></i><i style="background:#7a6a5a"></i>
+    <span>Thousands of models contributed by the community — Black Forest Labs, Stability, Meta, ByteDance and more</span>
+  </div>
+</div>
+
+<section class="wrap sec" style="padding-top:48px">
+  <div class="head"><h2 class="dxl">Explore models</h2><span class="btn g">View all 50,000+ →</span></div>
+  <div class="pills"><span class="pill on">Featured</span><span class="pill">Image generation</span><span class="pill">Video</span><span class="pill">Language</span><span class="pill">Audio</span><span class="pill">Upscaling</span></div>
+  <div class="models">
+    <div class="mc"><div class="th" style="background:radial-gradient(circle at 30% 30%,#f6d6a8,transparent 50%),linear-gradient(140deg,#7a3b2e,#e9a46b 60%,#2a1d3a)"></div><div class="own">black-forest-labs / <b>flux-1.1-pro</b></div><div class="ds">Faster, better FLUX Pro. Text-to-image with excellent prompt adherence.</div><div class="ft"><span class="bt">text-to-image</span><span class="runs">48.2M runs</span></div></div>
+    <div class="mc"><div class="th" style="background:linear-gradient(180deg,#1d2b4a 0%,#3e4f7a 45%,#9fb3c8 100%)"><svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 75 L25 55 L40 65 L60 45 L80 60 L100 50 V100 H0Z" fill="#0f1a2e"/></svg></div><div class="own">google / <b>veo-3</b></div><div class="ds">Text-to-video with native audio, dialogue and sound effects.</div><div class="ft"><span class="bs">Running</span><span class="runs">2.1M runs</span></div></div>
+    <div class="mc"><div class="th" style="background:#202020;display:grid;place-items:center"><pre style="font:400 11px/1.5 var(--mono);color:#fcfcfc;opacity:.8">&gt; Explain quantum
+  tunneling simply.
+
+Imagine a ball
+rolling at a hill…</pre></div><div class="own">meta / <b>llama-4-maverick</b></div><div class="ds">17B active-parameter multimodal model with 128 experts.</div><div class="ft"><span class="bt">language</span><span class="runs">9.7M runs</span></div></div>
+    <div class="mc"><div class="th" style="background:linear-gradient(135deg,#f3f0e8,#f4a8a0)"><svg width="100%" height="100%" viewBox="0 0 100 100"><g fill="#202020"><rect x="18" y="40" width="4" height="20" rx="2"/><rect x="26" y="30" width="4" height="40" rx="2"/><rect x="34" y="36" width="4" height="28" rx="2"/><rect x="42" y="22" width="4" height="56" rx="2"/><rect x="50" y="32" width="4" height="36" rx="2"/><rect x="58" y="26" width="4" height="48" rx="2"/><rect x="66" y="38" width="4" height="24" rx="2"/><rect x="74" y="44" width="4" height="12" rx="2"/></g></svg></div><div class="own">resemble-ai / <b>chatterbox</b></div><div class="ds">Expressive open-source TTS with emotion exaggeration control.</div><div class="ft"><span class="bs">Running</span><span class="runs">1.4M runs</span></div></div>
+    <div class="mc"><div class="th" style="background:radial-gradient(circle at 60% 40%,#ff6a3d,transparent 45%),linear-gradient(160deg,#f9f7f3,#bbbbbb)"></div><div class="own">bytedance / <b>seedream-4</b></div><div class="ds">Unified text-to-image and precise single-sentence editing up to 4K.</div><div class="ft"><span class="bt">image editing</span><span class="runs">6.3M runs</span></div></div>
+    <div class="mc"><div class="th" style="background:linear-gradient(120deg,#2b9a66 0%,#a7d7b8 50%,#f3f0e8 100%)"></div><div class="own">nightmareai / <b>real-esrgan</b></div><div class="ds">Real-ESRGAN with optional face correction and adjustable upscale.</div><div class="ft"><span class="bt">upscaling</span><span class="runs">71.9M runs</span></div></div>
+    <div class="mc"><div class="th" style="background:linear-gradient(200deg,#3a3a3a,#8d8d8d 60%,#e8d5c4)"></div><div class="own">openai / <b>whisper</b></div><div class="ds">Convert speech in audio to text, in 99 languages.</div><div class="ft"><span class="bt">speech-to-text</span><span class="runs">120M runs</span></div></div>
+    <div class="mc"><div class="th" style="background:radial-gradient(circle at 40% 60%,#f4a8a0,transparent 55%),linear-gradient(40deg,#ea2804,#202020)"></div><div class="own">ideogram-ai / <b>ideogram-v3</b></div><div class="ds">Stunningly realistic images with crisp, legible typography.</div><div class="ft"><span class="bs">Running</span><span class="runs">3.8M runs</span></div></div>
+  </div>
+</section>
+
+<section class="story"><div class="wrap grid">
+  <div>
+    <h2 class="dxl">How it works</h2>
+    <p class="blg" style="color:var(--on-dark-mute);margin-top:24px">You don't need to understand machine learning. Find a model, call it from your code, and pay only for the compute you use.</p>
+    <div class="steps">
+      <div class="step"><b>1</b><div><h4>Pick a model</h4><p>Browse thousands of models published by the community and the labs that built them.</p></div></div>
+      <div class="step"><b>2</b><div><h4>Call the API</h4><p>Every model has a production-ready HTTP API, plus clients for Python and Node.js.</p></div></div>
+      <div class="step"><b>3</b><div><h4>Scale automatically</h4><p>We spin up GPUs when traffic arrives and scale to zero when it doesn't.</p></div></div>
+    </div>
+  </div>
+  <div class="vr"></div>
+  <div>
+    <div class="code">
+      <div class="ctabs"><span class="ctab on">Python</span><span class="ctab">Node.js</span><span class="ctab">cURL</span><span class="ctab">HTTP</span></div>
+<pre><span class="k">import</span> replicate
+
+output = replicate.run(
+    <span class="s">"black-forest-labs/flux-1.1-pro"</span>,
+    input={
+        <span class="s">"prompt"</span>: <span class="s">"a lighthouse at dusk, 35mm film"</span>,
+        <span class="s">"aspect_ratio"</span>: <span class="s">"3:2"</span>,
+        <span class="s">"output_format"</span>: <span class="s">"webp"</span>,
+    },
+)
+
+<span class="c"># Save the generated image</span>
+<span class="k">with</span> open(<span class="s">"lighthouse.webp"</span>, <span class="s">"wb"</span>) <span class="k">as</span> f:
+    f.write(output.read())</pre>
+      <div class="out"><div class="img"><svg width="120" height="120" viewBox="0 0 120 120"><rect x="68" y="44" width="10" height="46" fill="#202020"/><path d="M66 44 h14 l-3 -10 h-8z" fill="#202020"/><path d="M80 38 L120 26 V50Z" fill="#f6d6a8" opacity=".7"/><path d="M0 90 Q30 84 60 90 T120 90 V120 H0Z" fill="#1d2b4a"/></svg></div><div class="meta">status: <span style="color:#7fd1a7">succeeded</span><br>predict_time: 2.41s<br>hardware: nvidia-h100<br>cost: $0.04</div></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="bone"><div class="wrap">
+  <div class="head"><h2 class="dlg">Collections</h2><p class="blg" style="max-width:420px">Curated groups of models for the things people build most.</p></div>
+  <div class="cols">
+    <div class="ct"><span class="hmd">Generate images</span><p>FLUX, Ideogram, Seedream, Imagen and SDXL — compared side by side.</p><div class="sw"><i style="background:linear-gradient(140deg,#7a3b2e,#e9a46b)"></i><i style="background:linear-gradient(40deg,#ea2804,#202020)"></i><i style="background:linear-gradient(160deg,#f9f7f3,#bbb)"></i></div></div>
+    <div class="ct"><span class="hmd">Generate videos</span><p>Veo, Kling, Hailuo and Wan for text-to-video and image-to-video.</p><div class="sw"><i style="background:linear-gradient(180deg,#1d2b4a,#9fb3c8)"></i><i style="background:linear-gradient(120deg,#3a3a3a,#8d8d8d)"></i><i style="background:linear-gradient(200deg,#f4a8a0,#ff6a3d)"></i></div></div>
+    <div class="ct"><span class="hmd">Edit images</span><p>Inpainting, background removal, relighting and instruction-based editing.</p><div class="sw"><i style="background:linear-gradient(120deg,#2b9a66,#a7d7b8)"></i><i style="background:linear-gradient(140deg,#e8d5c4,#6e5a4a)"></i><i style="background:linear-gradient(40deg,#202020,#575757)"></i></div></div>
+  </div>
+</div></section>
+
+<section class="wrap sec">
+  <div class="head"><h2 class="dxl">Pricing</h2><p class="blg" style="max-width:440px">Pay for what you use, billed by the second. No idle costs on public models.</p></div>
+  <div class="tiers">
+    <div class="tier"><span class="dlg">Free</span><span class="pr">$0 to start</span><p>Try any public model in the browser or via the API.</p><div class="hw"><div>Public models<span>pay per run</span></div><div>Playground<span>included</span></div><div>Community support<span>Discord</span></div></div><span class="btn o">Sign in with GitHub</span></div>
+    <div class="tier f"><span class="dlg">Pro</span><span class="pr">Per second</span><p>Deploy private models with dedicated hardware.</p><div class="hw"><div>Nvidia T4<span>$0.000225/s</span></div><div>Nvidia L40S<span>$0.000975/s</span></div><div>Nvidia A100 (80GB)<span>$0.001400/s</span></div><div>Nvidia H100<span>$0.001525/s</span></div></div><span class="btn">Get started</span></div>
+    <div class="tier"><span class="dlg">Enterprise</span><span class="pr">Custom</span><p>Volume discounts, SLAs and dedicated support.</p><div class="hw"><div>Reserved capacity<span>committed</span></div><div>SSO &amp; audit logs<span>included</span></div><div>Support<span>dedicated</span></div></div><span class="btn d">Talk to us</span></div>
+  </div>
+</section>
+
+<section class="close bone" style="background:var(--canvas)"><div class="wrap">
+  <h2 class="dxl">Imagine what<br>you can build.</h2>
+  <p class="blg" style="margin-top:20px">Get updates on new models and features, about once a week.</p>
+  <div class="in"><div class="inp">you@example.com</div><span class="btn d">Subscribe</span></div>
+</div></section>
+
+<div class="bf">
+  <div class="g">
+    <div><span class="wm" style="color:#fcfcfc"><svg width="18" height="18" fill="#fcfcfc" style="flex:none;display:block" aria-label="replicate" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 10.262v2.712h-9.518V24h-3.034V10.262zm0-5.131v2.717H8.755V24H5.722V5.131zM24 0v2.717H3.034V24H0V0z"/></svg>replicate</span><p style="color:var(--on-dark-mute);margin-top:16px;max-width:280px">Run AI with an API. Now part of Cloudflare.</p></div>
+    <div><h6>Product</h6><a>Explore</a><a>Pricing</a><a>Deployments</a><a>Fine-tuning</a></div>
+    <div><h6>Developers</h6><a>Docs</a><a>API reference</a><a>Cog</a><a>Status</a></div>
+    <div><h6>Company</h6><a>About</a><a>Blog</a><a>Careers</a><a>Changelog</a></div>
+    <div><h6>Community</h6><a>GitHub</a><a>Discord</a><a>X</a></div>
+  </div>
+  <div class="cp"><span>© 2026 Replicate, Inc.</span><span>Terms · Privacy · Acceptable use</span></div>
+</div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">replicate</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

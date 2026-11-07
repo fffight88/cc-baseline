@@ -27,11 +27,30 @@ function buildLayout(target) {
     UNINSTALL_BACKUP_ROOT: target.uninstallBackupRoot,
     LOG_FILE: target.installLog,
     HARNESS_FILES: manifest.overwriteFiles().map(f => path.join(target.claudeDir, f)),
+    HARNESS_DIRS: manifest.overwriteDirs().map(d => path.join(target.claudeDir, d)),
     CLAUDE_MD_PATH: path.join(target.claudeDir, 'CLAUDE.md'),
     MEMORY_MD_PATH: path.join(target.claudeDir, 'memory', 'MEMORY.md'),
     SETTINGS_PATH: path.join(target.claudeDir, 'settings.json'),
     CLAUDE_JSON_PATH: target.mcpJsonPath,
   };
+}
+
+// Removes dir and its subdirectories bottom-up, but only those that are empty.
+function removeEmptyDirs(dir) {
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (ent.isDirectory()) removeEmptyDirs(path.join(dir, ent.name));
+  }
+  if (fs.readdirSync(dir).length === 0) fs.rmdirSync(dir);
+}
+
+// Stops a running design-preview server (scripts/design-preview.js) before its files go.
+function stopDesignPreview(claudeDir) {
+  const stateFile = path.join(claudeDir, '.design-preview.json');
+  try {
+    const { pid } = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+    if (pid) process.kill(pid);
+  } catch {}
+  try { fs.unlinkSync(stateFile); } catch {}
 }
 
 function readJson(filePath) {
@@ -78,10 +97,15 @@ function buildSummary(layout) {
   const { target, HARNESS_FILES, CLAUDE_MD_PATH, MEMORY_MD_PATH, SETTINGS_PATH, CLAUDE_JSON_PATH, LOG_FILE } = layout;
   const lines = [];
 
+  const inDir = f => layout.HARNESS_DIRS.some(d => f.startsWith(d + path.sep));
   for (const f of HARNESS_FILES) {
-    if (fs.existsSync(f)) {
+    if (!inDir(f) && fs.existsSync(f)) {
       lines.push(`  🗑️  ${shortPath(f, target)}`);
     }
+  }
+  for (const d of layout.HARNESS_DIRS) {
+    const n = HARNESS_FILES.filter(f => f.startsWith(d + path.sep) && fs.existsSync(f)).length;
+    if (n > 0) lines.push(`  🗑️  ${shortPath(d, target)}/ (${n} files)`);
   }
 
   for (const p of [CLAUDE_MD_PATH, MEMORY_MD_PATH]) {
@@ -172,7 +196,7 @@ async function uninstall(opts = {}) {
   const layout = buildLayout(target);
   const {
     CLAUDE_DIR, BACKUP_ROOT, UNINSTALL_BACKUP_ROOT, LOG_FILE,
-    HARNESS_FILES, CLAUDE_MD_PATH, MEMORY_MD_PATH, SETTINGS_PATH, CLAUDE_JSON_PATH,
+    HARNESS_FILES, HARNESS_DIRS, CLAUDE_MD_PATH, MEMORY_MD_PATH, SETTINGS_PATH, CLAUDE_JSON_PATH,
   } = layout;
 
   console.log('\n🔧 cc-baseline — Uninstall\n');
@@ -249,11 +273,13 @@ async function uninstall(opts = {}) {
   }
 
   // ── 7. Delete harness files ────────────────────────────────────────────────
+  stopDesignPreview(CLAUDE_DIR);
+  const inHarnessDir = f => HARNESS_DIRS.some(d => f.startsWith(d + path.sep));
   for (const f of HARNESS_FILES) {
     try {
       if (fs.existsSync(f)) {
         fs.unlinkSync(f);
-        console.log(`  ✅ Deleted: ${shortPath(f, target)}`);
+        if (!inHarnessDir(f)) console.log(`  ✅ Deleted: ${shortPath(f, target)}`);
         successCount++;
       } else {
         skipCount++;
@@ -261,6 +287,14 @@ async function uninstall(opts = {}) {
     } catch (e) {
       failures.push(`${shortPath(f, target)}: ${e.message}`);
     }
+  }
+  // directories the installer created: drop the ones left empty, keep anything the user added
+  for (const d of HARNESS_DIRS) {
+    if (!fs.existsSync(d)) continue;
+    removeEmptyDirs(d);
+    console.log(fs.existsSync(d)
+      ? `  ⚠️  Kept: ${shortPath(d, target)}/ (contains files not installed by cc-baseline)`
+      : `  ✅ Deleted: ${shortPath(d, target)}/`);
   }
 
   // ── 8. Remove marker blocks (CLAUDE.md, MEMORY.md) ────────────────────────

@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BUGATTI — Tourbillon</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@400&family=Cormorant+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400&display=block">
+<style>
+:root{--white:#fff;--body:#ccc;--body-strong:#e6e6e6;--muted:#999;--muted-soft:#666;--hair:#262626;--hair-strong:#3a3a3a;--canvas:#000;--soft:#0d0d0d;--card:#141414;--el:#1f1f1f;--link:#c3d9f3;
+--disp:"Saira Condensed",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--text:"Cormorant Garamond",Garamond,"Times New Roman",serif;--mono:"JetBrains Mono",ui-monospace,"SF Mono","Cascadia Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--canvas);color:var(--body);font:400 16px/1.5 var(--text);overflow-x:hidden}
+.wrap{max-width:1280px;margin:0 auto;padding:0 40px}
+.d{font-family:var(--disp);font-weight:400;text-transform:uppercase;color:#fff}
+.xl{font-size:64px;line-height:1.1;letter-spacing:calc(4px + .05em)}
+.lg{font-size:48px;line-height:1.15;letter-spacing:calc(3px + .05em)}
+.md{font-size:32px;line-height:1.2;letter-spacing:calc(2px + .05em)}
+.sm{font-size:24px;line-height:1.3;letter-spacing:calc(1.5px + .05em)}
+.tmd{font-family:var(--disp);font-size:20px;line-height:1.3;letter-spacing:calc(1px + .05em);color:#fff;text-transform:uppercase}
+.cap{font:400 11px/1.4 var(--mono);letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;height:44px;padding:14px 32px;border:1px solid #fff;border-radius:9999px;background:transparent;color:#fff;font:400 14px/1 var(--mono);letter-spacing:2.5px;text-transform:uppercase;white-space:nowrap}
+.ib{width:40px;height:40px;border:1px solid #fff;border-radius:9999px;display:inline-grid;place-items:center;color:#fff;font:400 14px/1 var(--mono)}
+a.tl{color:var(--link);font:400 14px/1 var(--mono);letter-spacing:2.5px;text-transform:uppercase;text-decoration:underline;text-underline-offset:4px}
+/* nav */
+.nav{position:absolute;top:0;left:0;right:0;height:56px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 40px;font:400 12px/1.4 var(--mono);letter-spacing:2px;text-transform:uppercase;color:#fff;z-index:3}
+.nav .r{justify-self:end;display:flex;align-items:center;gap:10px}
+.wm{font:400 14px/1 var(--disp);letter-spacing:calc(6px + .05em);text-transform:uppercase;color:#fff}
+.nav .wm{font-size:18px}
+/* hero */
+.hero{position:relative;height:900px;overflow:hidden;background:#000}
+.hero svg.ph{position:absolute;inset:0;width:100%;height:100%}
+.hero .copy{position:absolute;top:150px;left:0;right:0;text-align:center}
+.hero .copy .cap{color:#fff;margin-top:20px}
+.hero .bot{position:absolute;bottom:64px;left:0;right:0;text-align:center}
+.career{position:absolute;right:40px;bottom:64px;width:320px;background:var(--card);padding:16px;z-index:2}
+.career .th{height:120px;background:#1f1f1f;margin-bottom:12px;position:relative;overflow:hidden}
+.career p{font-size:14px;color:var(--body);margin-bottom:12px}
+/* sections */
+.sec{padding:120px 0}
+.intro{text-align:center;max-width:760px;margin:0 auto}
+.intro p{font-size:20px;color:var(--body-strong);margin-top:24px;line-height:1.5}
+.models{display:grid;grid-template-columns:1fr 1fr;gap:64px 40px;margin-top:64px}
+.mpc .ph{aspect-ratio:16/9;background:#0a0a0a;position:relative;overflow:hidden}
+.mpc .ph svg{position:absolute;inset:0;width:100%;height:100%}
+.mpc h3{margin:24px 0 8px}
+.mpc .cap{margin-bottom:20px}
+.specs{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);margin-top:64px}
+.specs div{padding:24px 0 24px 24px;border-left:1px solid var(--hair)}
+.specs div:first-child{border-left:0;padding-left:0}
+.specs b{display:block;font:400 20px/1.3 var(--disp);letter-spacing:calc(1px + .05em);color:#fff;margin-bottom:6px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+.split p{font-size:18px;margin:24px 0 32px;color:var(--body)}
+.split p a{color:var(--link)}
+.news{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:64px}
+.nac{border:1px solid var(--hair);padding:24px}
+.nac .th{aspect-ratio:16/9;background:#0d0d0d;margin-bottom:24px;position:relative;overflow:hidden}
+.nac .th svg{position:absolute;inset:0;width:100%;height:100%}
+.nac h3{margin:12px 0 12px}
+.rows{margin-top:48px;border-top:1px solid var(--hair)}
+.row{display:grid;grid-template-columns:1fr 380px 40px;align-items:center;padding:24px 0;border-bottom:1px solid var(--hair)}
+.head{display:flex;justify-content:space-between;align-items:flex-end}
+.field{display:flex;gap:40px;align-items:flex-end;margin-top:40px;max-width:720px}
+.field input{flex:1;height:44px;padding:12px 0;background:transparent;border:0;border-bottom:1px solid var(--hair-strong);color:#fff;font:400 16px/1.5 var(--text);border-radius:0}
+.cta{position:relative;height:640px;overflow:hidden;text-align:center}
+.cta svg{position:absolute;inset:0;width:100%;height:100%}
+.cta .in{position:relative;padding-top:80px}
+.foot{padding:64px 0;border-top:1px solid var(--hair);color:var(--muted);font-size:14px}
+.foot .cols{display:grid;grid-template-columns:repeat(4,1fr);gap:40px}
+.foot h6{margin-bottom:20px}
+.foot p{margin-bottom:10px}
+.foot .end{text-align:center;margin-top:96px;display:grid;justify-items:center;gap:20px}
+.foot .end small{color:var(--muted-soft);font-size:14px}
+</style></head><body>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+ <radialGradient id="key" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#2a2a2a"/><stop offset="1" stop-color="#000"/></radialGradient>
+ <linearGradient id="bodyL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b4048"/><stop offset=".55" stop-color="#15171a"/><stop offset="1" stop-color="#050505"/></linearGradient>
+ <linearGradient id="bodyB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f4a6e"/><stop offset=".55" stop-color="#0e1a2a"/><stop offset="1" stop-color="#030508"/></linearGradient>
+ <symbol id="hyperB" viewBox="0 0 1000 420">
+  <ellipse cx="500" cy="380" rx="470" ry="26" fill="#000"/>
+  <path d="M60 330 C70 280 120 250 200 236 L330 200 C390 150 470 118 560 116 C650 116 720 140 790 190 L900 214 C950 226 975 262 972 300 L966 336 Z" fill="url(#bodyB)"/>
+  <path d="M370 196 C420 152 490 132 560 132 C630 132 690 154 740 194 Z" fill="#0b0c0e"/>
+  <path d="M470 330 C470 250 520 200 600 196 C640 196 660 230 650 330" fill="none" stroke="#9aa4b0" stroke-opacity=".35" stroke-width="3"/>
+  <path d="M120 262 L250 250" stroke="#e8eef5" stroke-width="5" stroke-linecap="round"/>
+  <path d="M800 226 L930 246" stroke="#e8eef5" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+  <path d="M290 262 C300 236 340 232 350 262 L350 300 C340 316 300 316 290 300 Z" fill="#050505" stroke="#c9d1da" stroke-width="3"/>
+  <circle cx="220" cy="336" r="52" fill="#050505"/><circle cx="220" cy="336" r="34" fill="none" stroke="#6b7280" stroke-width="4"/>
+  <circle cx="800" cy="336" r="56" fill="#050505"/><circle cx="800" cy="336" r="37" fill="none" stroke="#6b7280" stroke-width="4"/>
+  <path d="M120 300 L960 300" stroke="#fff" stroke-opacity=".08"/>
+ </symbol>
+<symbol id="hyperL" viewBox="0 0 1000 420">
+  <ellipse cx="500" cy="380" rx="470" ry="26" fill="#000"/>
+  <path d="M60 330 C70 280 120 250 200 236 L330 200 C390 150 470 118 560 116 C650 116 720 140 790 190 L900 214 C950 226 975 262 972 300 L966 336 Z" fill="url(#bodyL)"/>
+  <path d="M370 196 C420 152 490 132 560 132 C630 132 690 154 740 194 Z" fill="#0b0c0e"/>
+  <path d="M470 330 C470 250 520 200 600 196 C640 196 660 230 650 330" fill="none" stroke="#9aa4b0" stroke-opacity=".35" stroke-width="3"/>
+  <path d="M120 262 L250 250" stroke="#e8eef5" stroke-width="5" stroke-linecap="round"/>
+  <path d="M800 226 L930 246" stroke="#e8eef5" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+  <path d="M290 262 C300 236 340 232 350 262 L350 300 C340 316 300 316 290 300 Z" fill="#050505" stroke="#c9d1da" stroke-width="3"/>
+  <circle cx="220" cy="336" r="52" fill="#050505"/><circle cx="220" cy="336" r="34" fill="none" stroke="#6b7280" stroke-width="4"/>
+  <circle cx="800" cy="336" r="56" fill="#050505"/><circle cx="800" cy="336" r="37" fill="none" stroke="#6b7280" stroke-width="4"/>
+  <path d="M120 300 L960 300" stroke="#fff" stroke-opacity=".08"/>
+ </symbol>
+</defs></svg>
+
+<section class="hero">
+  <svg class="ph" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice"><rect width="1440" height="900" fill="url(#key)"/><rect y="640" width="1440" height="260" fill="#050505"/><path d="M0 640 L1440 640" stroke="#1a1a1a"/><use href="#hyperB" x="170" y="300" width="1100" height="462"/></svg>
+  <nav class="nav"><span>Menu</span><span class="wm">Bugatti</span><span class="r">Store <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff"><path d="M2 4h10l-1 9H3z"/><path d="M5 4a2 2 0 0 1 4 0"/></svg></span></nav>
+  <div class="copy"><h1 class="d xl">Tourbillon</h1><p class="cap">An automotive icon — pour l'éternité</p></div>
+  <div class="bot"><span class="btn">Discover the Tourbillon</span></div>
+  <aside class="career"><div class="th"><svg viewBox="0 0 288 120" width="288" height="120"><rect width="288" height="120" fill="#1f1f1f"/><rect x="0" y="84" width="288" height="36" fill="#141414"/><rect x="40" y="30" width="60" height="54" fill="#262626"/><rect x="120" y="20" width="128" height="64" fill="#2b2b2b"/></svg></div><p>Are you ready for a new adventure? Join the team in Molsheim.</p><span class="cap" style="color:#fff">Explore our opportunities →</span></aside>
+</section>
+
+<section class="sec"><div class="wrap">
+  <div class="intro"><span class="cap">Molsheim · Since 1909</span><h2 class="d lg" style="margin-top:16px">Art, forme, technique</h2><p>For more than a century, every Bugatti has been conceived as a single object — engineered without compromise and finished by hand in Alsace. The Tourbillon continues that lineage with a naturally aspirated V16 and an analogue instrument cluster built by Swiss watchmakers.</p></div>
+  <div class="specs"><div><b>1,800 PS</b><span class="cap">Combined output</span></div><div><b>8.3 L V16</b><span class="cap">Naturally aspirated</span></div><div><b>445 km/h</b><span class="cap">Top speed</span></div><div><b>250 units</b><span class="cap">Production run</span></div></div>
+</div></section>
+
+<section class="sec" style="padding-top:0"><div class="wrap">
+  <div class="head"><h2 class="d lg">Models</h2><span class="ib">→</span></div>
+  <div class="models">
+    <article class="mpc"><div class="ph"><svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMid slice"><rect width="800" height="450" fill="#0a0a0a"/><rect y="330" width="800" height="120" fill="#050505"/><use href="#hyperB" x="60" y="120" width="680" height="286"/></svg></div><h3 class="d md">Tourbillon</h3><p class="cap">V16 hybrid · 1,800 PS · 0–100 km/h 2.0 s</p><a class="tl">Discover</a></article>
+    <article class="mpc"><div class="ph"><svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMid slice"><rect width="800" height="450" fill="#0d0d0d"/><path d="M0 300 L800 260 L800 450 L0 450Z" fill="#070707"/><use href="#hyperL" x="70" y="110" width="660" height="277"/></svg></div><h3 class="d md">W16 Mistral</h3><p class="cap">Roadster · 1,600 PS · 453.91 km/h record</p><a class="tl">Discover</a></article>
+    <article class="mpc"><div class="ph"><svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMid slice"><rect width="800" height="450" fill="#080808"/><g stroke="#1f1f1f"><path d="M0 360 L800 300"/><path d="M0 400 L800 340"/></g><use href="#hyperL" x="80" y="120" width="640" height="269"/></svg></div><h3 class="d md">Bolide</h3><p class="cap">Track-only · 1,600 PS · 40 units</p><a class="tl">Discover</a></article>
+    <article class="mpc"><div class="ph"><svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMid slice"><rect width="800" height="450" fill="#0b0b0b"/><circle cx="640" cy="90" r="40" fill="#141414"/><use href="#hyperL" x="60" y="120" width="680" height="286"/></svg></div><h3 class="d md">Brouillard</h3><p class="cap">Solitaire programme · one of one</p><a class="tl">Discover</a></article>
+  </div>
+</div></section>
+
+<section class="sec" style="padding-top:0"><div class="wrap split">
+  <div style="aspect-ratio:4/5;background:#0d0d0d;position:relative;overflow:hidden"><svg viewBox="0 0 400 500" width="100%" height="100%" style="position:absolute;inset:0"><rect width="400" height="500" fill="#0d0d0d"/><circle cx="200" cy="230" r="130" fill="none" stroke="#3a3a3a" stroke-width="2"/><circle cx="200" cy="230" r="96" fill="none" stroke="#262626"/><g stroke="#e6e6e6" stroke-width="2"><line x1="200" y1="230" x2="200" y2="140"/><line x1="200" y1="230" x2="262" y2="262"/></g><g fill="#999"><circle cx="200" cy="110" r="3"/><circle cx="320" cy="230" r="3"/><circle cx="200" cy="350" r="3"/><circle cx="80" cy="230" r="3"/></g><circle cx="200" cy="230" r="6" fill="#fff"/></svg></div>
+  <div><span class="cap">Instrument cluster</span><h2 class="d lg" style="margin-top:16px">Time, made visible</h2><p>Over 600 parts in titanium and sapphire, assembled by Swiss watchmakers. The cluster stays fixed while the steering wheel rotates around it — a mechanical answer in an age of screens. <a href="#">Read the design story</a>.</p><span class="btn">Explore the interior</span></div>
+</div></section>
+
+<section class="sec" style="padding-top:0"><div class="wrap">
+  <div class="head"><h2 class="d lg">Newsroom</h2><span style="display:flex;gap:12px"><span class="ib">←</span><span class="ib">→</span></span></div>
+  <div class="news">
+    <article class="nac"><div class="th"><svg viewBox="0 0 640 360" preserveAspectRatio="xMidYMid slice"><rect width="640" height="360" fill="#0d0d0d"/><use href="#hyperL" x="70" y="80" width="500" height="210"/></svg></div><span class="cap">12. November 2026 · Heritage</span><h3 class="tmd">The F.K.P. Hommage honours the Veyron and its visionary creator</h3><p>Twenty years after the Veyron redefined what a road car could be, a one-off tribute revisits Ferdinand Karl Piëch's original brief.</p></article>
+    <article class="nac"><div class="th"><svg viewBox="0 0 640 360" preserveAspectRatio="xMidYMid slice"><rect width="640" height="360" fill="#0a0a0a"/><rect x="0" y="240" width="640" height="120" fill="#141414"/><g fill="#1f1f1f"><rect x="80" y="110" width="120" height="130"/><rect x="230" y="80" width="180" height="160"/><rect x="440" y="130" width="120" height="110"/></g></svg></div><span class="cap">28. October 2026 · Atelier</span><h3 class="tmd">Inside the Molsheim atelier: twenty hands, one Tourbillon</h3><p>From chassis marriage to final water test, every car spends eight weeks in the hands of the same small team.</p></article>
+  </div>
+</div></section>
+
+<section class="sec" style="padding-top:0"><div class="wrap">
+  <div class="head"><h2 class="d lg">Careers</h2><span class="cap">14 open positions</span></div>
+  <div class="rows">
+    <div class="row"><span class="tmd">Senior Chassis Engineer</span><span class="cap">Molsheim · Engineering</span><span class="ib">→</span></div>
+    <div class="row"><span class="tmd">Colour &amp; Trim Designer</span><span class="cap">Molsheim · Design</span><span class="ib">→</span></div>
+    <div class="row"><span class="tmd">Client Relationship Manager</span><span class="cap">Dubai · Sales</span><span class="ib">→</span></div>
+    <div class="row"><span class="tmd">Powertrain Calibration Specialist</span><span class="cap">Wolfsburg · Engineering</span><span class="ib">→</span></div>
+  </div>
+  <div class="field"><input value="Your e-mail address" aria-label="email"><span class="btn">Subscribe to job alerts</span></div>
+</div></section>
+
+<section class="cta">
+  <svg viewBox="0 0 1440 640" preserveAspectRatio="xMidYMid slice"><rect width="1440" height="640" fill="#000"/><g stroke="#1a1a1a" stroke-width="2"><path d="M0 520 L1440 470"/><path d="M0 580 L1440 520"/></g><g stroke="#262626"><path d="M0 470 L300 466"/><path d="M200 560 L600 540"/><path d="M900 500 L1400 478"/></g><use href="#hyperL" x="320" y="230" width="800" height="336"/></svg>
+  <div class="in"><h2 class="d md">Discover Bugatti</h2><p class="cap" style="margin:16px 0 32px;color:#fff">Find your nearest Bugatti showroom</p><span class="btn">Find a dealer</span></div>
+</section>
+
+<div class="foot"><div class="wrap">
+  <div class="cols">
+    <div><h6 class="cap" style="color:#fff">Bugatti</h6><p>About us</p><p>Careers</p><p>Newsroom</p></div>
+    <div><h6 class="cap" style="color:#fff">Models</h6><p>Tourbillon</p><p>W16 Mistral</p><p>Bolide</p></div>
+    <div><h6 class="cap" style="color:#fff">Heritage</h6><p>Ettore Bugatti</p><p>La Maison Pur Sang</p><p>Certified pre-owned</p></div>
+    <div><h6 class="cap" style="color:#fff">Connect</h6><p>Dealer locator</p><p>Instagram</p><p>YouTube</p></div>
+  </div>
+  <div class="end"><svg viewBox="0 0 24 24" width="28" height="28" fill="#fff" aria-hidden="true"><path d="M0 2.978h18.593c.021.004.042.012.063.013.436.019.863.09 1.279.218 1.459.451 2.507 1.367 3.117 2.772.454 1.046.5 2.259.316 3.156a4.634 4.634 0 0 1-1.37 2.482c-.014.014-.027.03-.04.045.021.026.052.04.077.061a4.774 4.774 0 0 1 1.951 3.564c.001.021.01.042.014.063v.79c-.005.027-.012.053-.014.08-.004.046-.002.093-.007.14a5.501 5.501 0 0 1-.21 1.047c-.398 1.278-1.167 2.262-2.336 2.924-.836.474-1.744.686-2.7.687-6.24.004-12.48.002-18.72.002v-4.740h2.988l.001 1.738c.134.016 7.226.01 7.286-.006v-4.668h-3.06v1.425c-.102.019-2.928.014-2.986-.004V8.912h2.986v1.424c.103.019 3.003.014 3.06-.003V5.976H3V7.51H.008Zm13.753 15.05h4.744c.254 0 .505-.023.75-.09.77-.21 1.3-.683 1.546-1.447a2.605 2.605 0 0 0-.007-1.636 2.068 2.068 0 0 0-1.12-1.274 2.553 2.553 0 0 0-1.092-.239h-4.82zm.003-12.058v4.377h4.397a2.5 2.5 0 0 0 .723-.103c.678-.203 1.147-.63 1.376-1.304.145-.428.163-.868.068-1.308-.161-.742-.598-1.251-1.313-1.515a2.711 2.711 0 0 0-.947-.147Z"/></svg><span class="wm">Bugatti</span><small>© 2026 Bugatti Automobiles S.A.S. · Imprint · Privacy · Cookies</small></div>
+</div></div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">bugatti</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

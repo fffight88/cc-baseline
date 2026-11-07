@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Apple — DESIGN.md preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=block">
+<style>
+:root{--primary:#0066cc;--focus:#0071e3;--sky:#2997ff;--ink:#1d1d1f;--muted:#cccccc;--m80:#333333;--m48:#7a7a7a;--soft:#f0f0f0;--hair:#e0e0e0;--canvas:#fff;--parch:#f5f5f7;--pearl:#fafafc;--t1:#272729;--t2:#2a2a2c;--t3:#252527;--black:#000;--chip:#d2d2d7;
+--pshadow:rgba(0,0,0,.22) 3px 5px 30px 0;
+--disp:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{font-family:var(--disp);font-feature-settings:"ss03";font-size:17px;font-weight:400;line-height:1.44;letter-spacing:-.374px;color:var(--ink);background:var(--canvas)}
+a{color:inherit;text-decoration:none}
+/* nav */
+.gnav{background:var(--black);height:44px;color:#fff}
+.gnav .in{max-width:1024px;margin:0 auto;height:44px;display:flex;align-items:center;justify-content:space-between;font-size:12px;letter-spacing:-.12px;line-height:1;opacity:.92}
+.gnav svg{display:block}
+.subnav{position:sticky;top:0;z-index:5;height:52px;background:rgba(245,245,247,.8);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid rgba(0,0,0,.08)}
+.subnav .in{max-width:980px;margin:0 auto;height:52px;display:flex;align-items:center;gap:24px}
+.subnav .cat{font-size:21px;font-weight:600;letter-spacing:.231px;line-height:1.19;margin-right:auto}
+.subnav .lk{font-size:12px;letter-spacing:-.12px;color:var(--m80)}
+.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:9999px;padding:11px 22px;font-size:17px;font-weight:400;line-height:1;letter-spacing:-.374px;background:var(--primary);color:#fff;border:1px solid var(--primary)}
+.btn.g{background:transparent;color:var(--primary)}
+.btn.sm{padding:6px 14px;font-size:12px;letter-spacing:-.12px}
+.btn:active{transform:scale(.95)}
+.dk .btn.g,.dk2 .btn.g{color:var(--sky);border-color:var(--sky)}
+.ctas{display:flex;gap:14px;justify-content:center}
+/* tiles */
+.tile{text-align:center;padding:80px 0 0;overflow:hidden;position:relative}
+.tile h1{font-size:56px;font-weight:600;line-height:1.07;letter-spacing:calc(-.28px - .01em)}
+.tile h2{font-size:40px;font-weight:600;line-height:1.1;letter-spacing:-.01em}
+.tile .lead{font-size:28px;font-weight:400;line-height:1.14;letter-spacing:.196px;margin:8px 0 22px}
+.tile .tag{font-size:21px;font-weight:600;letter-spacing:.231px;line-height:1.19;margin-bottom:10px}
+.lt{background:var(--canvas)}.pa{background:var(--parch)}
+.dk{background:var(--t1);color:#fff}.dk2{background:var(--t2);color:#fff}.dk3{background:var(--t3);color:#fff}
+.dk .lead,.dk2 .lead{color:#fff}
+.newtag{color:#bf4800;font-size:17px;font-weight:600;margin-bottom:6px;letter-spacing:-.374px}
+.dk .newtag{color:var(--sky)}
+/* iPhone render */
+.stage{position:relative;height:430px;margin-top:56px}
+.phone{position:absolute;bottom:-60px;width:250px;height:510px;border-radius:46px;box-shadow:var(--pshadow)}
+.phone.back{left:calc(50% - 40px);background:linear-gradient(160deg,#e9772f 0%,#d65a1b 45%,#b9470f 100%);transform:rotate(6deg)}
+.phone.front{left:calc(50% - 230px);background:#1d1d1f;padding:10px;transform:rotate(-4deg)}
+.phone.front .scr{width:100%;height:100%;border-radius:37px;background:radial-gradient(120% 70% at 30% 20%,#f9a15a 0%,#c4401a 40%,#3b0d08 85%)}
+.phone.front .scr::before{content:"";position:absolute;top:22px;left:calc(50% - 46px);width:92px;height:26px;border-radius:14px;background:#000}
+.plate{position:absolute;top:20px;left:20px;width:210px;height:150px;border-radius:30px;background:linear-gradient(160deg,#ef8a47,#c9531a)}
+.lens{position:absolute;width:62px;height:62px;border-radius:50%;background:radial-gradient(circle at 50% 50%,#0a0a12 0 30%,#2b2b35 31% 52%,#5b5b66 53% 60%,#1b1b20 61%);box-shadow:0 0 0 4px #d8692b}
+.applemark{position:absolute;left:calc(50% - 20px);top:250px;width:40px;opacity:.55}
+/* macbook */
+.mac{position:relative;width:820px;margin:56px auto 0;height:440px}
+.mac .lid{position:absolute;left:70px;top:0;width:680px;height:420px;border-radius:22px 22px 4px 4px;background:#0b0b0d;padding:16px;box-shadow:var(--pshadow)}
+.mac .disp{width:100%;height:100%;border-radius:8px;background:linear-gradient(135deg,#1e3a8a 0%,#3b82c4 35%,#7dd3fc 55%,#a5b4fc 75%,#312e81 100%);position:relative;overflow:hidden}
+.mac .disp::after{content:"";position:absolute;left:-10%;top:40%;width:120%;height:70%;border-radius:50%;background:rgba(15,23,60,.55)}
+.mac .base{position:absolute;left:0;top:420px;width:820px;height:20px;border-radius:0 0 18px 18px;background:linear-gradient(#cfd2d6,#9ea2a8)}
+.mac .base::before{content:"";position:absolute;left:340px;top:0;width:140px;height:7px;border-radius:0 0 8px 8px;background:#8a8e94}
+/* split tiles */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px;background:var(--canvas)}
+.split .tile{padding-top:56px;height:580px}
+.split .tile h2{font-size:40px}
+.split .tile .lead{font-size:21px;font-weight:400;letter-spacing:.231px;margin:6px 0 18px}
+.watch{position:absolute;left:calc(50% - 95px);bottom:-30px;width:190px;height:230px;border-radius:52px;background:#1d1d1f;box-shadow:var(--pshadow);padding:14px}
+.watch .face{width:100%;height:100%;border-radius:40px;background:#000;display:grid;place-items:center;color:#fff;font-size:44px;font-weight:600;letter-spacing:-1px;position:relative}
+.watch .face small{position:absolute;top:30px;font-size:13px;font-weight:600;color:#ff9f0a;letter-spacing:0}
+.watch .face i{position:absolute;bottom:34px;width:60px;height:6px;border-radius:3px;background:#30d158}
+.band{position:absolute;left:calc(50% - 70px);width:140px;height:120px;background:#c9b8a3}
+.band.t{bottom:190px;border-radius:30px 30px 0 0}
+.pods{position:absolute;left:calc(50% - 130px);bottom:40px;width:260px;height:190px;border-radius:70px;background:linear-gradient(180deg,#ffffff,#e4e4e8);box-shadow:var(--pshadow)}
+.pods::after{content:"";position:absolute;left:0;right:0;top:66px;height:2px;background:#cfcfd4}
+.pods::before{content:"";position:absolute;left:calc(50% - 6px);top:110px;width:12px;height:12px;border-radius:50%;background:#bcbcc2}
+/* store */
+.store{background:var(--parch);padding:80px 0}
+.store .in{max-width:1240px;margin:0 auto}
+.store .hd{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px}
+.store h3{font-size:34px;font-weight:600;line-height:1.47;letter-spacing:-.374px}
+.store h3 span{color:var(--m48)}
+.search{display:flex;align-items:center;gap:10px;width:340px;height:44px;padding:12px 20px;border-radius:9999px;background:#fff;border:1px solid rgba(0,0,0,.08);color:var(--m48);font-size:17px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:20px}
+.card{background:#fff;border:1px solid var(--hair);border-radius:18px;padding:24px;display:flex;flex-direction:column;gap:4px}
+.card .img{aspect-ratio:1;border-radius:8px;background:var(--parch);display:grid;place-items:center;margin-bottom:16px;position:relative}
+.card b{font-size:17px;font-weight:600;line-height:1.24;letter-spacing:-.374px}
+.card .pr{font-size:17px}
+.card a{color:var(--primary);font-size:17px}
+.card .sw{display:flex;gap:6px;margin:4px 0 6px}.card .sw i{width:10px;height:10px;border-radius:50%}
+.pearl{align-self:flex-start;margin-top:10px;background:var(--pearl);color:var(--m80);font-size:14px;letter-spacing:-.224px;border:3px solid var(--soft);border-radius:11px;padding:8px 14px}
+/* configurator */
+.conf{background:var(--canvas);padding:80px 0 0}
+.conf .in{max-width:980px;margin:0 auto}
+.conf h3{font-size:34px;font-weight:600;line-height:1.47;letter-spacing:-.374px}
+.conf h3 span{color:var(--m48)}
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0 16px}
+.chip{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--hair);border-radius:9999px;padding:12px 16px;font-size:14px;letter-spacing:-.224px;line-height:1.43}
+.chip.on{border:2px solid var(--focus);padding:11px 15px}
+.chip .dot{width:26px;height:26px;border-radius:50%;flex:none}
+.chip small{display:block;color:var(--m48);font-size:12px;letter-spacing:-.12px}
+.cap{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.sticky{margin-top:40px;height:64px;padding:12px 32px;background:rgba(245,245,247,.8);backdrop-filter:saturate(180%) blur(20px);border-top:1px solid rgba(0,0,0,.08);display:flex;align-items:center;justify-content:space-between}
+.sticky .in2{max-width:980px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.sticky p{font-size:17px}.sticky p span{color:var(--m48);font-size:14px;letter-spacing:-.224px;margin-left:10px}
+/* environment */
+.env{position:relative;padding:80px 0;text-align:center;color:#fff;background:var(--t1);overflow:hidden}
+.env .vista{position:absolute;inset:0}
+.env .in{position:relative;max-width:980px;margin:0 auto}
+.env h2{font-size:40px;font-weight:600;line-height:1.1;letter-spacing:-.01em;margin:18px 0 18px}
+.env p{font-size:24px;font-weight:300;line-height:1.5;letter-spacing:0;color:var(--muted);max-width:760px;margin:0 auto 28px}
+.env p a{color:var(--sky)}
+/* footer */
+.foot{background:var(--parch);color:var(--m80);padding:64px 0 40px}
+.foot .in{max-width:980px;margin:0 auto}
+.foot .note{font-size:12px;letter-spacing:-.12px;line-height:1.5;color:var(--m48);padding-bottom:16px;border-bottom:1px solid #d2d2d7}
+.cols{display:grid;grid-template-columns:repeat(5,1fr);gap:20px;padding:24px 0}
+.cols h6{font-size:14px;font-weight:600;letter-spacing:-.224px;line-height:1.29;color:var(--ink);margin-bottom:4px}
+.cols a{display:block;font-size:17px;line-height:2.41;letter-spacing:0;color:var(--m80)}
+.legal{display:flex;justify-content:space-between;font-size:12px;letter-spacing:-.12px;line-height:1;color:var(--m48);padding-top:18px;border-top:1px solid #d2d2d7}
+</style></head><body>
+
+<div class="gnav"><div class="in">
+  <svg width="15" height="18" viewBox="0 0 24 24" fill="#fff" aria-label="Apple"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg>
+  <a>Store</a><a>Mac</a><a>iPad</a><a>iPhone</a><a>Watch</a><a>Vision</a><a>AirPods</a><a>TV &amp; Home</a><a>Entertainment</a><a>Accessories</a><a>Support</a>
+  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.4"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.2 10.2 15 15"/></svg>
+  <svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="#fff" stroke-width="1.3"><rect x="1" y="4.5" width="12" height="10.5" rx="2"/><path d="M4 6V3.8a3 3 0 0 1 6 0V6"/></svg>
+</div></div>
+
+<div class="subnav"><div class="in">
+  <span class="cat">iPhone 17 Pro</span>
+  <a class="lk">Overview</a><a class="lk">Why iPhone</a><a class="lk">Tech Specs</a><a class="lk">Compare</a>
+  <span class="btn sm">Buy</span>
+</div></div>
+
+<!-- hero: product-tile-light -->
+<section class="tile lt">
+  <div class="newtag">New</div>
+  <h1>iPhone 17 Pro</h1>
+  <p class="lead">All out Pro. Forged in aluminum.</p>
+  <div class="ctas"><span class="btn">Learn more</span><span class="btn g">Buy</span></div>
+  <div class="stage">
+    <div class="phone front"><div class="scr"></div></div>
+    <div class="phone back">
+      <div class="plate">
+        <i class="lens" style="left:18px;top:12px"></i>
+        <i class="lens" style="left:18px;top:78px"></i>
+        <i class="lens" style="left:86px;top:45px"></i>
+        <i style="position:absolute;right:22px;top:20px;width:16px;height:16px;border-radius:50%;background:#f6e7c8"></i>
+        <i style="position:absolute;right:24px;bottom:22px;width:12px;height:12px;border-radius:50%;background:#2b1a12"></i>
+      </div>
+      <svg class="applemark" viewBox="0 0 24 24" fill="#7a2c08"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg>
+    </div>
+  </div>
+</section>
+
+<!-- product-tile-dark -->
+<section class="tile dk" style="padding-bottom:80px">
+  <h2>MacBook Air</h2>
+  <p class="lead">Sky blue. Supercharged by M5.</p>
+  <div class="ctas"><span class="btn">Learn more</span><span class="btn g">Buy</span></div>
+  <div class="mac"><div class="lid"><div class="disp"></div></div><div class="base"></div></div>
+</section>
+
+<!-- split tiles -->
+<div class="split">
+  <section class="tile pa">
+    <svg width="20" height="24" viewBox="0 0 24 24" fill="#1d1d1f" style="display:inline-block;vertical-align:-3px"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg>
+    <h2 style="display:inline;margin-left:4px">WATCH</h2>
+    <div class="tag" style="font-weight:400;font-size:21px;margin:10px 0 18px">Series 11</div>
+    <div class="ctas"><span class="btn">Learn more</span><span class="btn g">Buy</span></div>
+    <i class="band t"></i>
+    <div class="watch"><div class="face"><small>WED 5</small>10:09<i></i></div></div>
+  </section>
+  <section class="tile dk2">
+    <h2>AirPods Pro 3</h2>
+    <p class="lead" style="color:#ccc">The world’s best in‑ear Active Noise Cancellation.</p>
+    <div class="ctas"><span class="btn">Learn more</span><span class="btn g">Buy</span></div>
+    <div class="pods"></div>
+  </section>
+</div>
+
+<!-- configurator -->
+<section class="conf">
+  <div class="in">
+    <h3>Model. <span>Which is best for you?</span></h3>
+    <div class="chips">
+      <div class="chip on"><i class="dot" style="background:#d65a1b"></i><div>Cosmic Orange<small>From $1099</small></div></div>
+      <div class="chip"><i class="dot" style="background:#2f3c55"></i><div>Deep Blue<small>From $1099</small></div></div>
+      <div class="chip"><i class="dot" style="background:#e3e4e6;box-shadow:inset 0 0 0 1px #d2d2d7"></i><div>Silver<small>From $1099</small></div></div>
+      <div class="chip"><i class="dot" style="background:#3b3b3d"></i><div>Pro Max<small>From $1199</small></div></div>
+    </div>
+    <h3 style="margin-top:28px">Storage. <span>How much space do you need?</span></h3>
+    <div class="cap" style="margin-top:20px">
+      <div class="chip"><div><b style="font-weight:600">256GB</b><small>$1099 or $45.79/mo.</small></div></div>
+      <div class="chip on"><div><b style="font-weight:600">512GB</b><small>$1299 or $54.12/mo.</small></div></div>
+      <div class="chip"><div><b style="font-weight:600">1TB</b><small>$1499 or $62.45/mo.</small></div></div>
+      <div class="chip"><div><b style="font-weight:600">2TB</b><small>Pro Max only</small></div></div>
+    </div>
+  </div>
+  <div class="sticky"><div class="in2"><p>iPhone 17 Pro 512GB Cosmic Orange — $1299.00<span>or $54.12/mo. for 24 mo.</span></p><span class="btn">Add to Bag</span></div></div>
+</section>
+
+<!-- store utility grid -->
+<section class="store">
+  <div class="in">
+    <div class="hd"><h3>Accessories. <span>Essentials that pair perfectly.</span></h3><div class="search"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#7a7a7a" stroke-width="1.6"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.2 10.2 15 15"/></svg>Search accessories</div></div>
+    <div class="grid">
+      <div class="card"><div class="img"><i style="width:110px;height:200px;border-radius:26px;background:#d65a1b;box-shadow:var(--pshadow)"></i></div><span style="color:#bf4800;font-size:12px;font-weight:600;letter-spacing:-.12px">New</span><b>iPhone 17 Pro TechWoven Case with MagSafe</b><div class="sw"><i style="background:#3c4a3e"></i><i style="background:#8a6f55"></i><i style="background:#2f3c55"></i></div><span class="pr">$59.00</span><a>Buy ›</a></div>
+      <div class="card"><div class="img"><i style="width:120px;height:120px;border-radius:50%;background:#fff;box-shadow:var(--pshadow);border:10px solid #f0f0f0"></i></div><b>MagSafe Charger (1 m)</b><span class="pr">$39.00</span><a>Buy ›</a></div>
+      <div class="card"><div class="img"><i style="width:150px;height:96px;border-radius:12px;background:#fff;box-shadow:var(--pshadow)"></i></div><b>Magic Keyboard with Touch ID</b><span class="pr">$149.00</span><a>Buy ›</a></div>
+      <div class="card"><div class="img"><i style="width:90px;height:150px;border-radius:44px;background:#f4f4f6;box-shadow:var(--pshadow)"></i></div><b>Magic Mouse — USB‑C</b><span class="pr">$79.00</span><a>Buy ›</a></div>
+      <div class="card"><div class="img"><i style="width:90px;height:90px;border-radius:50%;background:#fff;box-shadow:var(--pshadow)"></i></div><b>AirTag 4 Pack</b><span class="pr">$99.00</span><a>Buy ›</a><span class="pearl">Engrave for free</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- environment-quote-card -->
+<section class="env">
+  <svg class="vista" viewBox="0 0 1440 520" preserveAspectRatio="none" width="100%" height="100%">
+    <rect width="1440" height="520" fill="#272729"/>
+    <path d="M0 330 L180 240 L320 300 L520 190 L700 280 L880 210 L1080 300 L1260 220 L1440 280 V520 H0Z" fill="#2f3431"/>
+    <path d="M0 400 L240 330 L420 380 L640 310 L860 380 L1100 320 L1300 370 L1440 340 V520 H0Z" fill="#23302a"/>
+    <path d="M0 460 L300 420 L600 450 L900 410 L1200 450 L1440 430 V520 H0Z" fill="#1b2420"/>
+  </svg>
+  <div class="in">
+    <svg width="44" height="44" viewBox="0 0 24 24" fill="#30d158"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg>
+    <h2>Apple 2030. Our plan to be carbon neutral across our entire footprint.</h2>
+    <p>We’ve already cut emissions by more than 60 percent. Every product we make is part of the plan — from the recycled aluminum in MacBook Air to the clean energy in our supply chain. <a>Read the Environmental Progress Report ›</a></p>
+    <span class="btn">Learn more</span>
+  </div>
+</section>
+
+<footer class="foot"><div class="in">
+  <p class="note">1. Trade‑in values will vary based on the condition, year and configuration of your eligible trade‑in device. Monthly pricing is available when you select Apple Card Monthly Installments, subject to credit approval.</p>
+  <div class="cols">
+    <div><h6>Shop and Learn</h6><a>Store</a><a>Mac</a><a>iPad</a><a>iPhone</a><a>Watch</a><a>AirPods</a></div>
+    <div><h6>Apple Wallet</h6><a>Wallet</a><a>Apple Card</a><a>Apple Pay</a><a>Apple Cash</a></div>
+    <div><h6>Account</h6><a>Manage Your Apple Account</a><a>Apple Store Account</a><a>iCloud.com</a></div>
+    <div><h6>Apple Store</h6><a>Find a Store</a><a>Genius Bar</a><a>Today at Apple</a><a>Apple Trade In</a><a>Order Status</a></div>
+    <div><h6>Apple Values</h6><a>Accessibility</a><a>Environment</a><a>Privacy</a><a>Supply Chain</a></div>
+  </div>
+  <div class="legal"><span>Copyright © 2026 Apple Inc. All rights reserved.</span><span>Privacy Policy · Terms of Use · Sales and Refunds · Legal · Site Map</span><span>United States</span></div>
+</div></footer>
+
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">apple</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

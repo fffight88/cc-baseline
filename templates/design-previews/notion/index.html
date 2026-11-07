@@ -1,0 +1,97 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=block">
+<style>
+:root{--primary:#5645d4;--navy:#0a1530;--navy-mid:#1a2a52;--link:#0075de;--orange:#dd5b00;--pink:#ff64c8;--purple:#7b3ff2;--teal:#2a9d99;--green:#1aae39;--yellow:#f5d75e;--brown:#523410;
+--peach:#ffe8d4;--rose:#fde0ec;--mint:#d9f3e1;--lav:#e6e0f5;--sky:#dcecfa;--ybold:#f9e79f;--surface:#f6f5f4;--hair:#e5e3df;--hair2:#c8c4be;--ink:#1a1a1a;--charcoal:#37352f;--slate:#5d5b54;--steel:#787671;--stone:#a4a097}
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1440px;overflow-x:hidden;background:#fff;color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:16px;line-height:1.55}
+.wrap{width:1280px;margin:0 auto;padding:0 32px}
+.promo{background:var(--surface);text-align:center;font-size:14px;font-weight:500;padding:8px 12px}
+.promo a{color:var(--link)}
+nav{display:flex;align-items:center;gap:24px;padding:14px 0;font-size:15px;font-weight:500}
+.wm{display:flex;gap:8px;align-items:center;font-weight:700;font-size:17px;margin-right:12px}
+.wm i{width:24px;height:24px;border:2px solid var(--ink);border-radius:5px;display:grid;place-items:center;font-style:normal;font-size:13px;font-weight:700}
+nav .sp{flex:1}
+.btn{display:inline-flex;align-items:center;padding:10px 18px;border-radius:8px;font-size:15px;font-weight:500;line-height:1.2}
+.btn.p{background:var(--primary);color:#fff}
+.btn.sec{border:1px solid var(--hair2);color:var(--ink)}
+.btn.sod{border:1px solid var(--stone);color:#fff}
+.btn.sm{padding:7px 12px;font-size:14px}
+.heroband{background:var(--navy);color:#fff;position:relative;overflow-x:clip;padding:88px 0 0;text-align:center}
+.dot{position:absolute;border-radius:6px;transform:rotate(var(--r,0deg));box-shadow:0 6px 14px rgba(0,0,0,.25)}
+.wire{position:absolute;border:1.5px dashed rgba(255,255,255,.22);border-radius:50%}
+h1{font-size:80px;font-weight:600;line-height:1.05;letter-spacing:-2px}
+.lead{font-size:20px;color:#c9cfdc;margin:20px auto 32px;max-width:620px}
+.ctas{display:flex;gap:12px;justify-content:center}
+.mock{position:relative;margin:64px auto -120px;width:1060px;background:#fff;color:var(--ink);border:1px solid var(--hair);border-radius:12px;box-shadow:rgba(15,15,15,.2) 0 24px 48px -8px;text-align:left;overflow:hidden}
+.mtop{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--hair);font-size:13px;color:var(--steel)}
+.mtop b{color:var(--ink);font-weight:600}
+.mbody{padding:22px 28px 28px}
+.mbody h3{font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px}
+.tabs{display:flex;gap:16px;font-size:14px;color:var(--steel);border-bottom:1px solid var(--hair);margin:12px 0 16px}
+.tabs span{padding-bottom:8px}.tabs .on{color:var(--ink);box-shadow:0 -2px 0 0 var(--ink) inset}
+.kan{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.col h5{font-size:13px;font-weight:500;color:var(--slate);margin-bottom:8px;display:flex;gap:6px;align-items:center}
+.chip{font-size:12px;font-weight:600;padding:1px 8px;border-radius:6px}
+.kc{border:1px solid var(--hair);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:14px;font-weight:500;box-shadow:rgba(15,15,15,.04) 0 1px 2px}
+.kc small{display:block;color:var(--steel);font-weight:400;font-size:12px;margin-top:4px}
+.after{padding-top:184px}
+h2{font-size:48px;font-weight:600;letter-spacing:-1.2px;line-height:1.1;text-align:center}
+.sub2{text-align:center;color:var(--slate);font-size:18px;margin:12px 0 48px}
+.yb{background:var(--ybold);border-radius:12px;padding:48px;display:grid;grid-template-columns:1fr 1.1fr;gap:40px;align-items:center;color:var(--charcoal)}
+.yb h3{font-size:40px;font-weight:700;letter-spacing:-1px;line-height:1.1;color:var(--ink)}
+.chat{background:#fff;border-radius:12px;padding:20px;box-shadow:rgba(15,15,15,.08) 0 4px 12px;font-size:14px}
+.chat .q{background:var(--surface);border-radius:8px;padding:10px 12px;margin-bottom:10px}
+.chat .a{display:flex;gap:10px}.chat .a i{width:22px;height:22px;border-radius:50%;background:var(--ink);flex:none}
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:20px}
+.tc{border-radius:12px;padding:32px;color:var(--charcoal);min-height:260px;display:flex;flex-direction:column;gap:10px}
+.tc h4{font-size:22px;font-weight:600;letter-spacing:-.3px;color:var(--ink)}
+.tc .ui{margin-top:auto;background:#fff;border-radius:8px;padding:12px;font-size:13px;box-shadow:rgba(15,15,15,.04) 0 1px 2px}
+.tag{font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px;align-self:flex-start}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--hair);margin:72px 0 80px;padding-top:32px}
+.stats b{display:block;font-size:40px;font-weight:700;letter-spacing:-1px}
+.stats span{color:var(--steel);font-size:14px}
+</style></head><body>
+<div class="promo">Developers: get a first look at the new Notion Developer Platform on Nov 13. <a>Register →</a></div>
+<div class="wrap"><nav><span class="wm"><svg width="24" height="24" fill="#1a1a1a" style="flex:none" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.139c-.093-.514.28-.887.747-.933zM1.936 1.035l13.31-.98c1.634-.14 2.055-.047 3.082.7l4.249 2.986c.7.513.934.653.934 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.839.374-1.54 1.447-1.632z"/></svg>Notion</span><span>Product</span><span>AI</span><span>Solutions</span><span>Resources</span><span>Pricing</span><span class="sp"></span><span>Request a demo</span><span>Log in</span><span class="btn p sm">Get Notion free</span></nav></div>
+<section class="heroband">
+  <span class="dot" style="left:150px;top:90px;width:46px;height:46px;background:#f5d75e;--r:-8deg"></span>
+  <span class="dot" style="left:240px;top:260px;width:34px;height:34px;background:#ff64c8;--r:10deg"></span>
+  <span class="dot" style="left:90px;top:400px;width:40px;height:40px;background:#2a9d99;--r:4deg"></span>
+  <span class="dot" style="right:170px;top:110px;width:42px;height:42px;background:#dd5b00;--r:12deg"></span>
+  <span class="dot" style="right:260px;top:300px;width:36px;height:36px;background:#7b3ff2;--r:-6deg"></span>
+  <span class="dot" style="right:110px;top:430px;width:30px;height:30px;background:#1aae39;--r:-14deg"></span>
+  <span class="wire" style="left:-80px;top:180px;width:420px;height:420px"></span>
+  <span class="wire" style="right:-120px;top:40px;width:480px;height:480px"></span>
+  <div class="wrap" style="position:relative">
+    <h1>Meet the night shift.</h1>
+    <p class="lead">Agents that keep work moving while you sleep — in the same workspace where your docs, projects and wikis live.</p>
+    <div class="ctas"><span class="btn p">Get Notion free</span><span class="btn sod">Request a demo</span></div>
+    <div class="mock">
+      <div class="mtop"><b>Ramp HQ</b> / Product launches <span style="margin-left:auto">Share · ⋯</span></div>
+      <div class="mbody"><h3>🚀 Q4 Launch Board</h3>
+        <div class="tabs"><span class="on">Board</span><span>Timeline</span><span>Table</span><span>Calendar</span></div>
+        <div class="kan">
+          <div class="col"><h5><span class="chip" style="background:#f0eeec;color:#5d5b54">Not started</span> 3</h5><div class="kc">Pricing page refresh<small>Design · Nov 18</small></div><div class="kc">Partner FAQ<small>Docs · Nov 20</small></div></div>
+          <div class="col"><h5><span class="chip" style="background:#dcecfa;color:#0b5394">In progress</span> 4</h5><div class="kc">Launch blog post<small>Marketing · Nov 12</small></div><div class="kc">Onboarding checklist<small>Product · Nov 14</small></div></div>
+          <div class="col"><h5><span class="chip" style="background:#ffe8d4;color:#793400">In review</span> 2</h5><div class="kc">Security whitepaper<small>Legal · Nov 9</small></div></div>
+          <div class="col"><h5><span class="chip" style="background:#d9f3e1;color:#107a29">Done</span> 6</h5><div class="kc">Beta feedback synthesis<small>Research · Oct 31</small></div><div class="kc">Demo video<small>Brand · Nov 2</small></div></div>
+        </div></div>
+    </div>
+  </div>
+</section>
+<div class="wrap after">
+  <h2>Ask your on-demand assistants</h2>
+  <p class="sub2">Find answers, draft docs and automate busywork — all with context from your workspace.</p>
+  <div class="yb"><div><span class="tag" style="background:#fff;color:#391c57">New · Agents</span><h3 style="margin:14px 0 10px">Hand off the work, not the context</h3><p>Agents read the same pages your team does, so their output fits how you already work.</p></div>
+    <div class="chat"><div class="q">Summarize this week's launch blockers and assign owners</div><div class="a"><i></i><div><b>3 blockers found</b><br>• Security review pending — <span style="color:#0075de">@Mina</span><br>• Pricing copy unapproved — <span style="color:#0075de">@Leo</span><br>• Demo env flaky — <span style="color:#0075de">@Sam</span></div></div></div></div>
+  <div class="trio">
+    <div class="tc" style="background:var(--peach)"><span class="tag" style="background:#fff;color:#793400">Docs</span><h4>Write with AI</h4><p>Drafts that pull facts from your pages.</p><div class="ui">✍️ Draft: Launch announcement…</div></div>
+    <div class="tc" style="background:var(--rose)"><span class="tag" style="background:#fff;color:#a02e6d">Search</span><h4>Find anything</h4><p>Across your workspace and connected apps.</p><div class="ui">🔎 "Q3 churn analysis" — 4 results</div></div>
+    <div class="tc" style="background:var(--mint)"><span class="tag" style="background:#fff;color:#107a29">Projects</span><h4>Track every launch</h4><p>Boards, timelines and owners in one view.</p><div class="ui">✅ 14 of 21 tasks complete</div></div>
+  </div>
+  <div class="stats"><div><b>100M+</b><span>users worldwide</span></div><div><b>62%</b><span>of Fortune 100 teams</span></div><div><b>4M+</b><span>templates shared</span></div><div><b>50+</b><span>native integrations</span></div></div>
+</div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">notion</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

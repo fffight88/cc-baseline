@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sentry — Application monitoring software for developers</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=block">
+<style>
+:root{--primary:#150f23;--ink:#1f1633;--white:#fff;--lime:#c2ef4e;--pink:#fa7faa;--violet:#6a5fc1;--vdeep:#422082;--vmid:#79628c;--night:#150f23;--press:#f0f0f0;--press2:#efefef;--hv:#362d59;--hcool:#cfcfdb;--hcloud:#e5e7eb;--muted:#bdb8c0;--faint:rgba(255,255,255,.18);--ring:#9dc1f5;
+--ui:Rubik,-apple-system,system-ui,"Segoe UI",Helvetica,Arial,sans-serif;--disp:"Space Grotesk",Rubik,system-ui,sans-serif;--code:Monaco,Menlo,"Ubuntu Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--ink)}
+body{max-width:1440px;margin:0 auto;overflow-x:hidden;background:var(--ink);color:var(--white);font-family:var(--ui);font-size:16px;font-weight:500;line-height:1.5}
+.wrap{max-width:1152px;margin:0 auto}
+.cap{text-transform:uppercase;letter-spacing:.2px}
+.btn{display:inline-flex;align-items:center;gap:8px;font:700 14px/1.14 var(--ui);text-transform:uppercase;letter-spacing:.2px;padding:12px 16px;border-radius:8px;text-decoration:none;border:0;white-space:nowrap}
+.btn.p{background:var(--primary);color:#fff}
+.btn.inv{background:#fff;color:var(--ink);box-shadow:rgba(0,0,0,.08) 0 2px 8px 0}
+.btn.inv.glow{box-shadow:rgb(21,15,35) 0 0 8px 6px}
+.btn.ghost{background:var(--faint);color:#fff;padding:8px;border-radius:12px;padding:12px 16px}
+.tok{display:inline-flex;font:500 14px/1.29 var(--ui);text-transform:uppercase;letter-spacing:.2px;background:var(--vmid);color:#fff;padding:8px 16px;border-radius:12px;border:1px solid #5d4a6e}
+.pill{display:inline-block;background:var(--night);color:#fff;font:400 12px/1.43 var(--ui);padding:4px 8px;border-radius:4px}
+.eyebrow{font:500 15px/1.4 var(--ui);text-transform:uppercase;letter-spacing:.2px;color:var(--muted)}
+/* hero */
+.hero{position:relative;background-color:var(--ink);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cg fill='%23fff'%3E%3Ccircle cx='12' cy='30' r='1' opacity='.35'/%3E%3Ccircle cx='80' cy='14' r='.8' opacity='.25'/%3E%3Ccircle cx='150' cy='60' r='1.2' opacity='.3'/%3E%3Ccircle cx='210' cy='22' r='.7' opacity='.4'/%3E%3Ccircle cx='40' cy='120' r='.8' opacity='.2'/%3E%3Ccircle cx='120' cy='150' r='1' opacity='.35'/%3E%3Ccircle cx='190' cy='130' r='.8' opacity='.25'/%3E%3Ccircle cx='60' cy='200' r='1.1' opacity='.3'/%3E%3Ccircle cx='170' cy='210' r='.7' opacity='.35'/%3E%3Ccircle cx='230' cy='180' r='1' opacity='.2'/%3E%3C/g%3E%3C/svg%3E");padding-bottom:140px}
+nav{display:flex;align-items:center;gap:32px;padding:16px 24px;font-size:16px;font-weight:500}
+nav .logo{display:flex;align-items:center;gap:10px;font:700 24px/1 var(--disp);letter-spacing:-.3px;margin-right:16px;color:#fff}
+nav .lk{color:#fff;opacity:.9}
+nav .lk:after{content:" ▾";font-size:10px;opacity:.6}
+nav .sp{flex:1}
+.hgrid{display:grid;grid-template-columns:1.25fr 1fr;gap:48px;align-items:center;padding-top:88px}
+h1{font:700 88px/1.15 var(--disp);letter-spacing:0}
+.chip{background:var(--lime);color:var(--ink);border-radius:4px;padding:0 12px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.lead{font:400 16px/2 var(--ui);color:var(--muted);max-width:520px;margin:24px 0 36px}
+.lead a{color:#fff;text-decoration:underline}
+.ctas{display:flex;gap:16px;align-items:center}
+.sticker{position:absolute;z-index:3}
+/* tilted UI mock */
+.mockwrap{position:relative;margin-top:96px}
+.mock{border-radius:18px;background:#fff;color:var(--ink);overflow:hidden;transform:rotate(-2deg);border:1px solid var(--hv);position:relative;z-index:2}
+.mbar{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--night);color:var(--muted);font-size:13px}
+.mbar i{width:10px;height:10px;border-radius:50%;background:var(--hv)}
+.mbar span{margin-left:16px;background:#2a2340;border-radius:6px;padding:3px 12px;font-weight:400}
+.app{display:grid;grid-template-columns:200px 1fr;min-height:470px}
+.aside{background:var(--ink);color:var(--muted);padding:16px 10px;font-size:14px;font-weight:400}
+.aside .org{display:flex;gap:8px;align-items:center;color:#fff;font-weight:600;padding:4px 8px 16px}
+.aside .org i{width:24px;height:24px;border-radius:6px;background:var(--vdeep)}
+.aside div.it{padding:7px 10px;border-radius:6px}
+.aside div.on{background:var(--vdeep);color:#fff}
+.aside h6{font:600 10px/1.8 var(--ui);letter-spacing:.25px;text-transform:uppercase;color:var(--vmid);padding:16px 10px 4px}
+.main{padding:18px 22px;font-size:14px}
+.mh{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.mh h4{font:500 24px/1.25 var(--ui);margin-right:auto}
+.fbar{display:flex;gap:8px;margin-bottom:12px}
+.fbar span{border:1px solid var(--hcool);border-radius:6px;padding:5px 10px;font-size:13px;color:var(--ink);font-weight:400}
+.fbar .q{flex:1;color:#80708f}
+table{width:100%;border-collapse:collapse}
+th{font:600 10px/1.8 var(--ui);letter-spacing:.25px;text-transform:uppercase;color:#80708f;text-align:left;padding:6px 8px;border-bottom:1px solid var(--hcloud)}
+td{padding:10px 8px;border-bottom:1px solid var(--hcloud);vertical-align:top;font-weight:400}
+td b{display:block;font-weight:600;color:var(--ink)}
+td small{color:#80708f;font-size:12px;font-family:var(--code)}
+.lvl{display:inline-block;width:3px;height:30px;border-radius:2px;background:var(--pink)}
+.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
+.spark{display:block}
+.tag2{font-size:11px;font-weight:600;letter-spacing:.25px;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:#f3eef8;color:var(--vdeep)}
+/* features */
+.band{padding:96px 0;position:relative}
+.night{background:var(--night)}
+h2{font:500 60px/1.05 var(--disp);max-width:820px;margin:16px 0 20px}
+.sub{font:400 16px/2 var(--ui);color:var(--muted);max-width:560px}
+.fgrid{display:grid;grid-template-columns:1.3fr 1fr;gap:24px;margin-top:56px}
+.fcard{background:var(--ink);border:1px solid var(--hv);border-radius:18px;padding:32px;display:flex;flex-direction:column;gap:14px}
+.fcard h3{font:500 27px/1.25 var(--ui)}
+.fcard p{font:400 16px/2 var(--ui);color:var(--muted)}
+.spot{background:var(--vdeep);border-color:var(--vdeep)}
+.spot p{color:#e0d6f0}
+.code{background:var(--night);border-radius:8px;padding:16px;font:400 14px/1.5 var(--code);color:#fff;overflow:hidden;white-space:pre}
+.code .k{font-weight:700;color:var(--pink)}.code .c{color:var(--muted)}
+.trace{background:var(--night);border-radius:8px;border:1px solid var(--hv);font:400 13px/1.5 var(--code);overflow:hidden}
+.trace div{padding:6px 14px;border-bottom:1px solid var(--hv);color:var(--muted)}
+.trace .hl{background:#2a1f45;color:#fff}
+.trace .hl b{color:var(--pink);font-weight:700}
+.trace div:last-child{border:0}
+.chart{display:flex;gap:4px;align-items:flex-end;height:90px}
+.chart i{flex:1;background:var(--vmid);border-radius:2px}
+.chart i.p{background:var(--pink)}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:24px}
+.logos{display:flex;justify-content:space-between;color:var(--muted);font:600 20px/1 var(--ui);opacity:.7;padding:8px 0 0}
+/* light pricing */
+.light{background:#fff;color:var(--ink);padding:96px 0 64px;position:relative}
+.light h2{font:500 30px/1.2 var(--ui);margin:12px 0 8px;max-width:none}
+.light .eyebrow{color:var(--vmid)}
+.toggle{display:inline-flex;border:1px solid var(--hcool);border-radius:8px;padding:3px;margin-top:20px;font-size:14px}
+.toggle span{padding:6px 14px;border-radius:6px}
+.toggle .on{background:var(--ink);color:#fff}
+.tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:40px}
+.tier{background:#fff;border:1px solid var(--hcloud);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:12px}
+.tier.f{background:var(--night);color:#fff;border-color:var(--night)}
+.tier h4{font:500 24px/1.25 var(--ui)}
+.tier .pr{font:500 60px/1.1 var(--disp)}
+.tier .pr small{font:400 14px/1.43 var(--ui);color:#80708f}
+.tier.f .pr small{color:var(--muted)}
+.tier p{font:400 14px/1.43 var(--ui);color:#5b5068}
+.tier.f p{color:var(--muted)}
+.tier ul{list-style:none;font:500 15px/1.5 var(--ui);display:grid;gap:8px;margin:8px 0 16px;flex:1}
+.tier li:before{content:"✓  ";color:var(--violet);font-weight:700}
+.tier.f li:before{color:var(--pink)}
+.tier .btn{justify-content:center}
+.cmp{margin-top:48px;width:100%;border-collapse:collapse;font-size:15px}
+.cmp th{font:600 10px/1.8 var(--ui);color:#80708f;padding:10px 12px;border-bottom:1px solid var(--hcloud)}
+.cmp td{padding:12px;border-bottom:1px solid var(--hcloud);font-weight:500}
+.cmp td:not(:first-child){text-align:center;color:#5b5068;font-weight:400}
+.cmp td.on{background:#faf8fc}
+.contact{margin-top:64px;display:grid;grid-template-columns:1fr 1.1fr;gap:48px;align-items:start;border-top:1px solid var(--hcloud);padding-top:56px}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form label{display:block;font:500 14px/1.43 var(--ui);margin-bottom:6px}
+.inp{border:1px solid var(--hcool);border-radius:6px;padding:8px 12px;font:500 16px/1.5 var(--ui);color:var(--ink);background:#fff}
+.inp.f{box-shadow:rgba(0,0,0,.15) 0 2px 10px inset}
+.inp.ph{color:#9a90a6}
+.sel{background:var(--vdeep);color:#fff;border-radius:8px;padding:8px 16px;font:500 16px/1.5 var(--ui);display:flex;justify-content:space-between}
+.full{grid-column:1/-1}
+.squig{display:block;width:100%;height:28px;margin-top:72px}
+.foot{display:grid;grid-template-columns:1.5fr repeat(4,1fr);gap:24px;padding:32px 24px;font:400 14px/1.43 var(--ui)}
+.foot h6{font:600 10px/1.8 var(--ui);letter-spacing:.25px;text-transform:uppercase;color:var(--vmid);margin-bottom:8px}
+.foot a{display:block;color:var(--ink);text-decoration:underline;text-decoration-color:var(--hcool);line-height:2}
+.legal{display:flex;justify-content:space-between;padding:16px 24px 32px;font:400 14px/1.43 var(--ui);color:#80708f;border-top:1px solid var(--hcloud)}
+</style></head><body>
+
+<div class="hero">
+  <div class="wrap">
+    <nav>
+      <span class="logo"><svg width="30" height="30" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M13.91 2.505c-.873-1.448-2.972-1.448-3.844 0L6.904 7.92a15.478 15.478 0 0 1 8.53 12.811h-2.221A13.301 13.301 0 0 0 5.784 9.814l-2.926 5.06a7.65 7.65 0 0 1 4.435 5.848H2.194a.365.365 0 0 1-.298-.534l1.413-2.402a5.16 5.16 0 0 0-1.614-.913L.296 19.275a2.182 2.182 0 0 0 .812 2.999 2.24 2.24 0 0 0 1.086.288h6.983a9.322 9.322 0 0 0-3.845-8.318l1.11-1.922a11.47 11.47 0 0 1 4.95 10.24h5.915a17.242 17.242 0 0 0-7.885-15.28l2.244-3.845a.37.37 0 0 1 .504-.13c.255.14 9.75 16.708 9.928 16.9a.365.365 0 0 1-.327.543h-2.287c.029.612.029 1.223 0 1.831h2.297a2.206 2.206 0 0 0 1.922-3.31z"/></svg>SENTRY</span>
+      <span class="lk">Product</span><span class="lk">Solutions</span><span class="lk">Developers</span><span>Pricing</span><span>Docs</span>
+      <span class="sp"></span><span>Sign In</span><a class="btn ghost" href="#">Get Demo</a><a class="btn inv" href="#">Get Started</a>
+    </nav>
+    <div class="hgrid">
+      <div>
+        <h1>Code breaks, <span class="chip">fix it</span> faster</h1>
+        <p class="lead">Application monitoring that doesn't suck. Sentry shows you the line of code, the commit, and the user behind every error and slow transaction — so you can stop guessing and <a href="#">start shipping</a>.</p>
+        <div class="ctas"><a class="btn inv glow" href="#">Try Sentry for free</a><a class="btn ghost" href="#">Get Demo</a></div>
+        <div style="display:flex;gap:8px;margin-top:40px"><span class="pill">JavaScript</span><span class="pill">Python</span><span class="pill">Next.js</span><span class="pill">React Native</span><span class="pill">Go</span><span class="pill">+100 SDKs</span></div>
+      </div>
+      <div style="position:relative;height:420px">
+        <!-- sticker astronaut -->
+        <svg class="sticker" style="left:40px;top:10px" width="380" height="400" viewBox="0 0 380 400" aria-hidden="true">
+          <g stroke="#150f23" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+            <path d="M60 330 q-30 -40 10 -70" fill="none" stroke="#fff" stroke-width="12"/>
+            <ellipse cx="190" cy="250" rx="110" ry="120" fill="#fff"/>
+            <circle cx="190" cy="140" r="96" fill="#fff"/>
+            <ellipse cx="190" cy="145" rx="70" ry="58" fill="#422082"/>
+            <path d="M150 120 q20 -24 52 -14" fill="none" stroke="#fff" stroke-width="7"/>
+            <rect x="140" y="250" width="100" height="62" rx="10" fill="#fa7faa"/>
+            <circle cx="165" cy="281" r="10" fill="#c2ef4e"/><circle cx="215" cy="281" r="10" fill="#150f23"/>
+            <path d="M84 230 q-60 -10 -64 -70" fill="none" stroke="#fff" stroke-width="30"/>
+            <path d="M84 230 q-60 -10 -64 -70" fill="none"/>
+            <circle cx="20" cy="150" r="22" fill="#fa7faa"/>
+            <path d="M296 230 q50 20 54 80" fill="none" stroke="#fff" stroke-width="30"/>
+            <circle cx="350" cy="318" r="22" fill="#fa7faa"/>
+          </g>
+          <g fill="#fff"><circle cx="330" cy="60" r="4"/><circle cx="40" cy="60" r="3"/><circle cx="350" cy="160" r="2"/></g>
+          <path d="M300 40 l8 16 l16 8 l-16 8 l-8 16 l-8 -16 l-16 -8 l16 -8z" fill="#fa7faa" stroke="#150f23" stroke-width="4"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="mockwrap">
+      <div class="mock">
+        <div class="mbar"><i></i><i></i><i></i><span>acme.sentry.io/issues/?project=web-frontend&amp;statsPeriod=24h</span></div>
+        <div class="app">
+          <div class="aside">
+            <div class="org"><i></i>acme-corp</div>
+            <div class="it on">Issues</div><div class="it">Explore</div><div class="it">Traces</div><div class="it">Session Replay</div><div class="it">Insights</div><div class="it">Dashboards</div><div class="it">Releases</div>
+            <h6>Projects</h6><div class="it">web-frontend</div><div class="it">api-gateway</div><div class="it">ios-app</div>
+          </div>
+          <div class="main">
+            <div class="mh"><h4>Issues</h4><span class="tag2">Unresolved</span><span class="tag2" style="background:#fff0f5;color:#b8346a">For review · 4</span></div>
+            <div class="fbar"><span class="q">is:unresolved issue.priority:[high, medium] firstRelease:latest</span><span>All Envs</span><span>24H</span></div>
+            <table>
+              <tr><th></th><th>Issue</th><th>Trend</th><th class="num">Events</th><th class="num">Users</th><th>Assignee</th></tr>
+              <tr><td><span class="lvl"></span></td><td><b>TypeError: Cannot read properties of undefined (reading 'items')</b><small>CartDrawer.tsx in renderLineItems · 2m ago · new</small></td><td><svg class="spark" width="110" height="28"><polyline fill="none" stroke="#fa7faa" stroke-width="2" points="0,24 15,22 30,23 45,18 60,20 75,10 90,6 110,2"/></svg></td><td class="num">8.2k</td><td class="num">1,412</td><td>@maya</td></tr>
+              <tr><td><span class="lvl"></span></td><td><b>ChunkLoadError: Loading chunk 742 failed</b><small>webpack/runtime/jsonp · 18m ago · regressed</small></td><td><svg class="spark" width="110" height="28"><polyline fill="none" stroke="#79628c" stroke-width="2" points="0,20 15,18 30,22 45,14 60,16 75,15 90,12 110,14"/></svg></td><td class="num">3.9k</td><td class="num">804</td><td>#frontend</td></tr>
+              <tr><td><span class="lvl" style="background:#79628c"></span></td><td><b>Slow DB Query: SELECT * FROM orders WHERE customer_id = %s</b><small>/api/orders · p95 2.4s · performance</small></td><td><svg class="spark" width="110" height="28"><polyline fill="none" stroke="#79628c" stroke-width="2" points="0,14 15,16 30,12 45,14 60,10 75,14 90,12 110,10"/></svg></td><td class="num">1.1k</td><td class="num">322</td><td>@dev-ops</td></tr>
+              <tr><td><span class="lvl" style="background:#79628c"></span></td><td><b>Error: Stripe webhook signature verification failed</b><small>payments/webhook.py in verify · 1h ago</small></td><td><svg class="spark" width="110" height="28"><polyline fill="none" stroke="#79628c" stroke-width="2" points="0,22 15,22 30,20 45,22 60,18 75,20 90,20 110,19"/></svg></td><td class="num">417</td><td class="num">96</td><td>@jules</td></tr>
+              <tr><td><span class="lvl" style="background:#cfcfdb"></span></td><td><b>N+1 API Call: GET /v2/products/{id}</b><small>ProductGrid.tsx · 3h ago · performance</small></td><td><svg class="spark" width="110" height="28"><polyline fill="none" stroke="#cfcfdb" stroke-width="2" points="0,20 15,21 30,19 45,20 60,21 75,19 90,20 110,20"/></svg></td><td class="num">208</td><td class="num">51</td><td>—</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <!-- traffic cone sticker overlapping boundary -->
+      <svg class="sticker" style="right:-60px;bottom:-110px;transform:rotate(12deg)" width="170" height="200" viewBox="0 0 170 200" aria-hidden="true">
+        <g stroke="#150f23" stroke-width="5" stroke-linejoin="round"><path d="M85 10 L140 170 H30 Z" fill="#fa7faa"/><path d="M66 66 H104 L112 92 H58 Z" fill="#fff"/><path d="M50 122 H120 L128 146 H42 Z" fill="#fff"/><rect x="10" y="166" width="150" height="24" rx="8" fill="#fa7faa"/></g>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<section class="band night"><div class="wrap">
+  <div class="eyebrow">Error Monitoring · Tracing · Session Replay</div>
+  <h2>See what broke, where, and who it hit</h2>
+  <p class="sub">Every issue comes with the stack trace, breadcrumbs, release, suspect commit and a replay of what the user actually did. Less log diving, more fixing.</p>
+  <div class="fgrid">
+    <div class="fcard">
+      <span class="pill" style="align-self:flex-start;background:var(--ink);border:1px solid var(--hv)">Stack trace</span>
+      <div class="trace">
+        <div>at renderLineItems (src/cart/CartDrawer.tsx:84:19)</div>
+        <div class="hl">84 │ const total = cart.<b>items</b>.reduce((s, i) =&gt; s + i.price, 0)</div>
+        <div>at CartDrawer (src/cart/CartDrawer.tsx:41:7)</div>
+        <div>at renderWithHooks (react-dom.production.js:1640:22)</div>
+        <div>Suspect commit · a91f3c2 "refactor cart hydration" · @maya · 3h ago</div>
+      </div>
+      <h3>Get to the root cause in one click</h3>
+      <p>Source-mapped stack traces, local variables and the exact commit that introduced the bug.</p>
+    </div>
+    <div class="fcard spot">
+      <span class="pill" style="align-self:flex-start;background:rgba(21,15,35,.5)">Seer · AI debugger</span>
+      <div class="code"><span class="c"># Root cause found</span>
+cart is <span class="k">undefined</span> before hydration
+completes on slow 3G connections.
+
+<span class="c"># Suggested fix</span>
+- cart.items.reduce(...)
++ (cart?.items ?? []).reduce(...)</div>
+      <h3>Seer writes the fix with you</h3>
+      <p>Our AI agent uses Sentry context to find the root cause and open a pull request.</p>
+    </div>
+  </div>
+  <div class="row3">
+    <div class="fcard"><div class="chart"><i style="height:30%"></i><i style="height:42%"></i><i style="height:38%"></i><i style="height:55%"></i><i class="p" style="height:92%"></i><i style="height:48%"></i><i style="height:40%"></i><i style="height:36%"></i></div><h3 style="font-size:24px">Tracing</h3><p>Follow a slow request from the browser to the database and back.</p></div>
+    <div class="fcard"><div class="code" style="font-size:14px"><span class="k">npx</span> @sentry/wizard@latest \
+  -i nextjs</div><h3 style="font-size:24px">Five-minute setup</h3><p>One command, 100+ SDKs. Source maps and releases configured for you.</p></div>
+    <div class="fcard"><div style="display:flex;gap:8px;flex-wrap:wrap"><span class="tok">Replays</span><span class="tok">Profiling</span><span class="tok">Crons</span><span class="tok">Uptime</span><span class="tok">Logs</span></div><h3 style="font-size:24px">One platform</h3><p>Everything your team needs to keep code healthy, priced by usage.</p></div>
+  </div>
+  <div class="logos" style="margin-top:72px"><span>Disney</span><span>Microsoft</span><span>Atlassian</span><span>Cloudflare</span><span>GitHub</span><span>Vercel</span><span>Duolingo</span></div>
+</div>
+<!-- monster sticker crossing into light band -->
+<svg class="sticker" style="left:80px;bottom:-70px" width="150" height="140" viewBox="0 0 150 140" aria-hidden="true"><g stroke="#150f23" stroke-width="5" stroke-linejoin="round"><path d="M20 130 V60 a55 55 0 0 1 110 0 V130 l-18 -14 l-18 14 l-18 -14 l-18 14 l-18 -14z" fill="#c2ef4e"/><circle cx="55" cy="62" r="14" fill="#fff"/><circle cx="95" cy="62" r="14" fill="#fff"/><circle cx="58" cy="65" r="6" fill="#150f23"/><circle cx="92" cy="65" r="6" fill="#150f23"/><path d="M55 92 q20 14 40 0" fill="none"/></g></svg>
+</section>
+
+<section class="light"><div class="wrap">
+  <div class="eyebrow">Pricing</div>
+  <h2>Pricing plans for dev teams of all sizes</h2>
+  <p style="font:400 16px/1.5 var(--ui);color:#5b5068">Start free, pay as you grow. Reserve volume for discounts or use pay-as-you-go.</p>
+  <div class="toggle"><span class="on">Annual</span><span>Monthly</span></div>
+  <div class="tiers">
+    <div class="tier"><h4>Developer</h4><div class="pr">$0</div><p>For solo devs working on side projects.</p><ul><li>1 user</li><li>5k errors / mo</li><li>10k performance units</li><li>50 replays</li></ul><a class="btn p" href="#">Get Started</a></div>
+    <div class="tier"><h4>Team</h4><div class="pr">$26<small> /mo</small></div><p>For growing teams that need full visibility.</p><ul><li>Unlimited users</li><li>50k errors / mo</li><li>Third-party integrations</li><li>Seer add-on</li></ul><a class="btn p" href="#">Get Started</a></div>
+    <div class="tier f"><h4>Business</h4><div class="pr">$80<small> /mo</small></div><p>For teams that need insights across the org.</p><ul><li>Everything in Team</li><li>Advanced quota management</li><li>Custom dashboards</li><li>90-day lookback</li></ul><a class="btn inv" href="#">Get Started</a></div>
+    <div class="tier"><h4>Enterprise</h4><div class="pr" style="font-size:44px;line-height:1.5">Custom</div><p>For orgs with scale, security and compliance needs.</p><ul><li>SAML + SCIM</li><li>Technical account manager</li><li>Single-tenant option</li><li>Custom terms</li></ul><a class="btn p" href="#">Contact Sales</a></div>
+  </div>
+  <table class="cmp">
+    <tr><th style="text-align:left">Feature</th><th>Developer</th><th>Team</th><th>Business</th><th>Enterprise</th></tr>
+    <tr><td>Data retention</td><td>30 days</td><td>90 days</td><td class="on">90 days</td><td>Custom</td></tr>
+    <tr><td>Session Replay</td><td>50</td><td>500</td><td class="on">500</td><td>Custom</td></tr>
+    <tr><td>Uptime monitors</td><td>1</td><td>1</td><td class="on">1 + PAYG</td><td>Custom</td></tr>
+    <tr><td>SSO / SAML</td><td>—</td><td>Google, GitHub</td><td class="on">SAML</td><td>SAML + SCIM</td></tr>
+  </table>
+  <div class="contact">
+    <div><div class="eyebrow">Enterprise</div><h2>Talk to a human</h2><p style="font:400 16px/1.5 var(--ui);color:#5b5068;max-width:420px">Need a custom quote, a security review or help migrating from another tool? Our team will get back within one business day.</p></div>
+    <div class="form">
+      <div><label>First name</label><div class="inp">Jules</div></div>
+      <div><label>Last name</label><div class="inp">Okafor</div></div>
+      <div class="full"><label>Work email</label><div class="inp f">jules@acme.dev</div></div>
+      <div class="full"><label>Monthly error volume</label><div class="sel"><span>1M – 10M events</span><span>▾</span></div></div>
+      <div class="full"><a class="btn p" href="#">Submit</a></div>
+    </div>
+  </div>
+  <svg class="squig" viewBox="0 0 1152 28" preserveAspectRatio="none" aria-hidden="true"><path d="M0 14 q12 -12 24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0" fill="none" stroke="#c2ef4e" stroke-width="3" stroke-linecap="round"/></svg>
+  <div class="foot">
+    <div><b style="font:700 20px/1 var(--disp)">SENTRY</b><p style="color:#5b5068;margin-top:10px;max-width:220px">Code breaks. Fix it faster.</p></div>
+    <div><h6>Product</h6><a href="#">Error Monitoring</a><a href="#">Tracing</a><a href="#">Session Replay</a><a href="#">Seer</a></div>
+    <div><h6>Developers</h6><a href="#">Documentation</a><a href="#">Changelog</a><a href="#">Open Source</a><a href="#">Self-hosted</a></div>
+    <div><h6>Company</h6><a href="#">About</a><a href="#">Blog</a><a href="#">Careers</a><a href="#">Contact</a></div>
+    <div><h6>Resources</h6><a href="#">Status</a><a href="#">Security</a><a href="#">Customers</a><a href="#">Syntax.fm</a></div>
+  </div>
+  <div class="legal"><span>© 2026 Functional Software, Inc.</span><span>Terms · Privacy · Security & Compliance</span></div>
+</div></section>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">sentry</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BMW — The New BMW iX3</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=block">
+<style>
+:root{--primary:#1c69d4;--primary-active:#0653b6;--ink:#262626;--body:#3c3c3c;--body-strong:#1a1a1a;--muted:#6b6b6b;--muted-soft:#9a9a9a;--hair:#e6e6e6;--hair-strong:#ccc;--canvas:#fff;--soft:#f7f7f7;--card:#fafafa;--strong:#ebebeb;--dark:#1a2129;--dark-el:#262e38;--on-dark-soft:#bbb;--mbl:#0066b1;--mbd:#1c69d4;--mred:#e22718;--success:#22c55e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-weight:300;font-size:16px;line-height:1.55;color:var(--body);background:var(--canvas);overflow-x:hidden}
+.wrap{max-width:1440px;margin:0 auto;padding:0 80px}
+h1,h2,h3,h4{color:var(--ink);font-weight:700;letter-spacing:0}
+/* nav */
+.nav{height:64px;background:#fff;border-bottom:1px solid var(--hair)}
+.nav .wrap{height:100%;display:flex;align-items:center;gap:32px;font-size:14px;font-weight:400;letter-spacing:.3px;color:var(--ink)}
+.nav .sp{flex:1}
+.nav .on{color:var(--primary);font-weight:700}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:48px;padding:14px 32px;font:700 14px/1 Inter,system-ui,sans-serif;letter-spacing:.5px;border-radius:0;background:var(--primary);color:#fff;white-space:nowrap}
+.btn.sec{background:#fff;color:var(--ink);border:1px solid var(--hair-strong);padding:13px 31px}
+.btn.dark{background:transparent;color:#fff;border:1px solid #fff;padding:13px 31px}
+.lm{font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink);white-space:nowrap}
+.lm::after{content:" ›"}
+.lm.b{color:var(--primary)}
+.lab{font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;line-height:1.3}
+.cap{font-size:12px;font-weight:400;letter-spacing:.5px;line-height:1.4;color:var(--muted)}
+/* hero */
+.hero{background:var(--dark);color:#fff;padding:80px 0 0;position:relative;overflow:hidden}
+.hero h1{color:#fff;font-size:64px;line-height:1.05}
+.hero .sub{color:var(--on-dark-soft);font-size:18px;max-width:520px;margin:16px 0 32px}
+.hero .grid{display:grid;grid-template-columns:480px 1fr;align-items:end;gap:24px}
+.stage{position:relative;height:440px}
+.stage .floor{position:absolute;left:-200px;right:-200px;bottom:0;height:200px;background:radial-gradient(50% 60% at 50% 0%,#3a4654,transparent 70%)}
+.stage .glow{position:absolute;right:40px;top:20px;width:700px;height:300px;background:radial-gradient(closest-side,rgba(28,105,212,.35),transparent);filter:blur(10px)}
+.stage svg{position:absolute;right:0;bottom:30px}
+.specs{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid #3a4450;margin-top:0}
+.specs div{padding:24px;border-right:1px solid #3a4450}
+.specs div:last-child{border:0}
+.specs b{display:block;color:#fff;font-size:24px;font-weight:700;line-height:1.25}
+.specs span{color:var(--on-dark-soft);font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}
+/* models */
+.sec{padding:80px 0}
+.sh{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:32px}
+.sh h2{font-size:48px;line-height:1.1}
+.tabs{display:flex;gap:32px;border-bottom:1px solid var(--hair);margin-bottom:32px}
+.tabs span{padding:12px 0;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.tabs .on{color:var(--ink);box-shadow:inset 0 -2px 0 var(--ink)}
+.models{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.mc{background:#fff}
+.mc .ph{background:var(--card);aspect-ratio:16/10;display:grid;place-items:center;position:relative}
+.mc .tx{padding:24px 0}
+.mc h3{font-size:18px;line-height:1.4}
+.mc p{font-size:14px;margin:4px 0 16px}
+.mbadge{position:absolute;left:16px;top:16px;display:flex;align-items:center;gap:6px;font:700 12px/1 Inter,sans-serif;color:var(--ink)}
+.mstripe{display:inline-block;width:28px;height:4px;background:linear-gradient(90deg,var(--mbl) 0 33%,var(--mbd) 33% 66%,var(--mred) 66%)}
+/* feature */
+.feat{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.fc .ph{aspect-ratio:16/9;position:relative;overflow:hidden}
+.fc .tx{padding:24px 0}
+.fc h3{font-size:18px;line-height:1.4;margin:8px 0 6px}
+/* configurator */
+.conf{background:var(--soft);padding:80px 0}
+.cgrid{display:grid;grid-template-columns:1fr 420px;gap:48px;align-items:start}
+.panel{background:#fff;border:1px solid var(--hair)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;padding:16px;border-bottom:1px solid var(--hair)}
+.chip{font-size:12px;font-weight:400;letter-spacing:.5px;padding:8px 14px;border:1px solid var(--hair-strong);color:var(--ink);background:#fff}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.inv{display:grid;grid-template-columns:repeat(3,1fr)}
+.ic{padding:16px;border-right:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.ic:nth-child(3n){border-right:0}
+.ic .ph{background:var(--card);aspect-ratio:16/9;display:grid;place-items:center;margin-bottom:12px}
+.ic h4{font-size:16px;line-height:1.4}
+.ic .pr{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px}
+.ic .pr b{color:var(--ink);font-weight:700;font-size:16px}
+.avail{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:400;letter-spacing:.5px;color:var(--muted)}
+.avail i{width:8px;height:8px;border-radius:50%;background:var(--success)}
+.opt h3{font-size:20px;line-height:1.3;margin-bottom:4px}
+.tiles{display:grid;gap:8px;margin:16px 0 24px}
+.tile{display:flex;align-items:center;gap:16px;background:#fff;border:1px solid var(--hair);padding:16px 24px;color:var(--ink)}
+.tile.sel{border:2px solid var(--primary);padding:15px 23px}
+.tile .sw{width:32px;height:32px;border-radius:50%;flex:none}
+.tile .p{margin-left:auto;font-weight:400;font-size:14px}
+.tile small{display:block;color:var(--muted);font-size:12px;letter-spacing:.5px;font-weight:400}
+.sum{border-top:1px solid var(--hair);padding-top:16px;display:grid;gap:8px;font-size:14px}
+.sum div{display:flex;justify-content:space-between}
+.sum .t{border-top:1px solid var(--hair-strong);padding-top:12px;margin-top:4px;color:var(--ink);font-weight:700;font-size:20px}
+.inp{width:100%;height:48px;padding:14px 16px;border:1px solid var(--hair);border-radius:0;font:300 16px Inter,sans-serif;color:var(--ink);margin:16px 0 12px}
+/* cta band */
+.cta{background:var(--dark);color:#fff;padding:80px 0;text-align:center;position:relative;overflow:hidden}
+.cta h2{color:#fff;font-size:32px;line-height:1.15;margin-bottom:12px}
+.cta p{color:var(--on-dark-soft);margin-bottom:32px}
+/* footer */
+.bf{background:var(--soft);padding:64px 0;font-size:14px}
+.bf .cols{display:grid;grid-template-columns:repeat(4,1fr) 1.2fr;gap:32px}
+.bf h4{font-size:16px;line-height:1.4;margin-bottom:16px}
+.bf p{color:var(--muted);margin-bottom:8px}
+.bf .legal{border-top:1px solid var(--hair);margin-top:48px;padding-top:24px;color:var(--muted);display:flex;justify-content:space-between;font-size:14px}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="car" viewBox="0 0 600 200"><ellipse cx="300" cy="186" rx="290" ry="10" fill="#000" opacity=".25"/><path d="M28 156 L26 126 Q30 104 78 98 L172 90 Q228 50 302 44 L384 44 Q438 48 488 90 L548 100 Q578 106 578 128 L576 156 Z" fill="currentColor"/><path d="M196 90 Q240 60 300 56 L334 56 L334 90 Z M344 56 L378 56 Q424 60 462 90 L344 90 Z" fill="#111a22" opacity=".9"/><path d="M40 122 L570 122" stroke="#fff" stroke-opacity=".18"/><path d="M92 106 L120 104" stroke="#fff" stroke-width="3" stroke-opacity=".6"/><rect x="548" y="108" width="24" height="8" fill="#e22718" opacity=".8"/><g><circle cx="132" cy="154" r="40" fill="#111"/><circle cx="132" cy="154" r="26" fill="#6d7680"/><circle cx="132" cy="154" r="8" fill="#222"/><circle cx="470" cy="154" r="40" fill="#111"/><circle cx="470" cy="154" r="26" fill="#6d7680"/><circle cx="470" cy="154" r="8" fill="#222"/></g></symbol>
+<symbol id="suv" viewBox="0 0 600 200"><ellipse cx="300" cy="186" rx="290" ry="10" fill="#000" opacity=".25"/><path d="M26 156 L24 116 Q28 96 70 90 L150 84 Q200 34 280 30 L420 30 Q470 34 510 84 L556 92 Q580 98 580 122 L578 156 Z" fill="currentColor"/><path d="M172 84 Q214 44 282 42 L340 42 L340 84 Z M350 42 L416 42 Q456 46 488 84 L350 84 Z" fill="#111a22" opacity=".9"/><path d="M36 118 L570 118" stroke="#fff" stroke-opacity=".18"/><g><circle cx="134" cy="152" r="42" fill="#111"/><circle cx="134" cy="152" r="28" fill="#6d7680"/><circle cx="134" cy="152" r="8" fill="#222"/><circle cx="472" cy="152" r="42" fill="#111"/><circle cx="472" cy="152" r="28" fill="#6d7680"/><circle cx="472" cy="152" r="8" fill="#222"/></g></symbol>
+</defs></svg>
+
+<header class="nav"><div class="wrap">
+  <svg viewBox="0 0 24 24" width="40" height="40" fill="#262626" aria-label="BMW"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 .78C18.196.78 23.219 5.803 23.219 12c0 6.196-5.022 11.219-11.219 11.219C5.803 23.219.781 18.196.781 12S5.804.78 12 .78zm-.678.63c-.33.014-.66.042-.992.078l-.107 2.944a9.950 9.950 0 0 1 .71-.094l.07-1.988-.013-.137.043.13.664 1.489h.606l.664-1.488.04-.131-.01.137.07 1.988c.232.022.473.054.71.094l-.109-2.944a14.746 14.746 0 0 0-.992-.078l-.653 1.625-.023.12-.023-.12-.655-1.625zm6.696 1.824l-1.543 2.428c.195.15.452.371.617.522l1.453-.754.092-.069-.069.094-.752 1.453c.163.175.398.458.53.63l2.430-1.544a16.135 16.135 0 0 0-.46-.568L18.777 6.44l-.105.092.078-.115.68-1.356-.48-.48-1.356.68-.115.078.091-.106 1.018-1.539c-.18-.152-.351-.291-.57-.46zM5.5 3.785c-.36.037-.638.283-1.393 1.125a18.97 18.97 0 0 0-.757.914l2.074 1.967c.687-.76.966-1.042 1.508-1.613.383-.405.6-.87.216-1.317-.208-.242-.558-.295-.85-.175l-.028.01.01-.026a.7.7 0 0 0-.243-.734.724.724 0 0 0-.537-.15zm.006.615c.136-.037.277.06.308.2.032.14-.056.272-.154.382-.22.25-1.031 1.098-1.031 1.098l-.402-.383c.417-.51.861-.974 1.062-1.158a.55.55 0 0 1 .217-.139zM12 4.883a7.114 7.114 0 0 0-7.08 6.388v.002a7.122 7.122 0 0 0 8.516 7.697 7.112 7.112 0 0 0 5.680-6.970A7.122 7.122 0 0 0 12 4.885v-.002zm-5.537.242c.047 0 .096.013.14.043.088.059.128.16.106.26-.026.119-.125.231-.205.318l-1.045 1.12-.42-.4s.787-.832 1.045-1.099c.102-.106.168-.17.238-.205a.331.331 0 0 1 .14-.037zM12 5.818A6.175 6.175 0 0 1 18.182 12H12v6.182A6.175 6.175 0 0 1 5.818 12H12V5.818Z"/></svg>
+  <span class="on">Models</span><span>Electric</span><span>Configurator</span><span>Pre-Owned</span><span>Offers</span><span>Find a Dealer</span><span>Test Drive</span>
+  <span class="sp"></span><span>EN</span><span>My BMW</span><span>Cart (0)</span>
+</div></header>
+
+<section class="hero"><div class="wrap">
+  <div class="grid">
+    <div style="padding-bottom:96px"><span class="lab" style="color:var(--on-dark-soft)">Neue Klasse · Fully electric</span>
+      <h1 style="margin-top:16px">THE NEW<br>BMW iX3.</h1>
+      <p class="sub">The first model of the Neue Klasse. Up to 805 km of range, 400 kW charging and BMW Panoramic iDrive.</p>
+      <div style="display:flex;gap:16px"><span class="btn">Configure now</span><span class="btn dark">Book a test drive</span></div></div>
+    <div class="stage"><div class="floor"></div><div class="glow"></div><svg width="820" height="273" style="color:#c9d2db"><use href="#suv"/></svg></div>
+  </div>
+  <div class="specs"><div><b>805 km</b><span>Range (WLTP)</span></div><div><b>400 kW</b><span>Peak charging</span></div><div><b>4.9 s</b><span>0–100 km/h</span></div><div><b>from €68,900</b><span>Base price</span></div></div>
+</div></section>
+
+<section class="sec"><div class="wrap">
+  <div class="sh"><h2>Find your BMW.</h2><span class="lm b">All models</span></div>
+  <div class="tabs"><span class="on">All</span><span>Electric</span><span>Plug-in hybrid</span><span>SUV</span><span>Sedan</span><span>Coupé</span><span>M Models</span></div>
+  <div class="models">
+    <div class="mc"><div class="ph"><svg width="260" height="87" style="color:#9fb3c8"><use href="#suv"/></svg></div><div class="tx"><h3>BMW iX3</h3><p>Fully electric · from €68,900</p><span class="lm">Learn more</span></div></div>
+    <div class="mc"><div class="ph"><svg width="260" height="87" style="color:#2d3b4b"><use href="#car"/></svg></div><div class="tx"><h3>BMW i5 Sedan</h3><p>Fully electric · from €70,200</p><span class="lm">Learn more</span></div></div>
+    <div class="mc"><div class="ph"><svg width="260" height="87" style="color:#d6d9dc"><use href="#suv"/></svg></div><div class="tx"><h3>BMW X5</h3><p>Plug-in hybrid · from €84,600</p><span class="lm">Learn more</span></div></div>
+    <div class="mc"><div class="ph"><span class="mbadge"><span class="mstripe"></span>M</span><svg width="260" height="87" style="color:#0066b1"><use href="#car"/></svg></div><div class="tx"><h3>BMW M3 Competition</h3><p>Petrol · 530 hp · from €102,500</p><span class="lm">Learn more</span></div></div>
+  </div>
+</div></section>
+
+<section class="sec" style="padding-top:0"><div class="wrap">
+  <div class="sh"><h2 style="font-size:32px;line-height:1.15">Sheer driving pleasure, redefined.</h2></div>
+  <div class="feat">
+    <div class="fc"><div class="ph" style="background:linear-gradient(180deg,#9db0c2 0%,#d8dde2 55%,#4b5560 56%,#2a3036 100%)"><svg width="340" height="113" style="position:absolute;left:8%;bottom:6%;color:#1c2733"><use href="#car"/></svg></div><div class="tx"><span class="lab" style="color:var(--muted)">Technology</span><h3>BMW Panoramic iDrive</h3><p>Information projected across the full width of the windshield, right in your line of sight.</p></div></div>
+    <div class="fc"><div class="ph" style="background:linear-gradient(135deg,#2b3037,#11151a)"><div style="position:absolute;inset:22% 18%;border:2px solid #4b6b93"></div><div style="position:absolute;left:30%;top:40%;width:40%;height:6px;background:#1c69d4"></div></div><div class="tx"><span class="lab" style="color:var(--muted)">Charging</span><h3>Charge 400 km in 10 minutes</h3><p>800-volt Gen6 eDrive technology.</p></div></div>
+    <div class="fc"><div class="ph" style="background:linear-gradient(180deg,#e8e4dc,#bfb8ab)"><div style="position:absolute;left:0;right:0;bottom:0;height:40%;background:#8a8274"></div><div style="position:absolute;left:20%;top:25%;width:60%;height:35%;background:#3c3c3c"></div></div><div class="tx"><span class="lab" style="color:var(--muted)">Sustainability</span><h3>Built in Debrecen</h3><p>Our first plant running fully without fossil fuels.</p></div></div>
+  </div>
+</div></section>
+
+<section class="conf"><div class="wrap">
+  <div class="sh"><div><span class="lab" style="color:var(--muted)">Stock locator</span><h2 style="margin-top:8px">Available now near Munich.</h2></div><span class="lm b">View all 214 vehicles</span></div>
+  <div class="cgrid">
+    <div class="panel">
+      <div class="chips"><span class="chip on">iX3</span><span class="chip">i5</span><span class="chip">X5</span><span class="chip">3 Series</span><span class="chip on">2026</span><span class="chip">€60k–€80k</span><span class="chip">Within 50 km</span><span class="chip">Electric</span><span class="chip">M Sport package</span></div>
+      <div class="inv">
+        <div class="ic"><div class="ph"><svg width="200" height="67" style="color:#e9eaeb"><use href="#suv"/></svg></div><h4>BMW iX3 50 xDrive</h4><p class="cap">Alpine White · 20" wheels · M Sport</p><div class="pr"><b>€71,450</b><span class="avail"><i></i>In stock</span></div></div>
+        <div class="ic"><div class="ph"><svg width="200" height="67" style="color:#2d3b4b"><use href="#suv"/></svg></div><h4>BMW iX3 50 xDrive</h4><p class="cap">Carbon Black · 21" wheels · Comfort</p><div class="pr"><b>€74,900</b><span class="avail"><i></i>In stock</span></div></div>
+        <div class="ic"><div class="ph"><svg width="200" height="67" style="color:#7f8d99"><use href="#suv"/></svg></div><h4>BMW iX3 40</h4><p class="cap">Frozen Grey · 19" wheels</p><div class="pr"><b>€68,900</b><span class="avail"><i style="background:#f59e0b"></i>In transit</span></div></div>
+        <div class="ic"><div class="ph"><svg width="200" height="67" style="color:#5b1f22"><use href="#suv"/></svg></div><h4>BMW iX3 50 xDrive</h4><p class="cap">Aventurine Red · 21" wheels</p><div class="pr"><b>€76,300</b><span class="avail"><i></i>In stock</span></div></div>
+        <div class="ic"><div class="ph"><svg width="200" height="67" style="color:#1c69d4"><use href="#suv"/></svg></div><h4>BMW iX3 40</h4><p class="cap">Portimao Blue · 20" wheels</p><div class="pr"><b>€70,100</b><span class="avail"><i></i>In stock</span></div></div>
+        <div class="ic"><div class="ph"><svg width="200" height="67" style="color:#c9c4b8"><use href="#suv"/></svg></div><h4>BMW iX3 50 xDrive</h4><p class="cap">Space Silver · 20" wheels</p><div class="pr"><b>€72,800</b><span class="avail"><i style="background:#f59e0b"></i>In transit</span></div></div>
+      </div>
+    </div>
+    <div class="opt">
+      <span class="lab" style="color:var(--muted)">Configurator · Step 2 of 6</span>
+      <h3 style="margin-top:8px">Exterior colour</h3><p style="font-size:14px">BMW Individual paints available on 50 xDrive.</p>
+      <div class="tiles">
+        <div class="tile"><span class="sw" style="background:#f2f2f0;border:1px solid #ccc"></span><span>Alpine White<small>Non-metallic</small></span><span class="p">Included</span></div>
+        <div class="tile sel"><span class="sw" style="background:#1c69d4"></span><span>Portimao Blue<small>Metallic</small></span><span class="p">€1,250</span></div>
+        <div class="tile"><span class="sw" style="background:#1f2328"></span><span>Carbon Black<small>Metallic</small></span><span class="p">€1,250</span></div>
+        <div class="tile"><span class="sw" style="background:#5b1f22"></span><span>Aventurine Red<small>BMW Individual</small></span><span class="p">€2,900</span></div>
+      </div>
+      <div class="sum"><div><span>BMW iX3 50 xDrive</span><span>€68,900</span></div><div><span>Portimao Blue metallic</span><span>€1,250</span></div><div><span>M Sport package</span><span>€3,300</span></div><div class="t"><span>Total</span><span>€73,450</span></div></div>
+      <input class="inp" value="Postcode for delivery: 80809" aria-label="postcode">
+      <span class="btn" style="width:100%">Continue to wheels</span>
+    </div>
+  </div>
+</div></section>
+
+<section class="cta">
+  <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(26,33,41,.95),rgba(26,33,41,.6) 50%,rgba(26,33,41,.95)),radial-gradient(60% 80% at 50% 120%,#3d4b5c,transparent)"></div>
+  <div class="wrap" style="position:relative"><span class="lab" style="color:var(--on-dark-soft)">Test drive</span><h2 style="margin-top:12px">Experience the New BMW iX3 for yourself.</h2><p>Book a 24-hour test drive at your BMW dealer.</p><span class="btn dark">Book a test drive</span></div>
+</section>
+
+<div class="bf"><div class="wrap">
+  <div class="cols">
+    <div><h4>Models</h4><p>Electric</p><p>SUV</p><p>Sedan</p><p>BMW M</p></div>
+    <div><h4>Services</h4><p>Financing</p><p>Insurance</p><p>Service booking</p><p>BMW Charging</p></div>
+    <div><h4>Dealers</h4><p>Find a dealer</p><p>Stock locator</p><p>Test drive</p></div>
+    <div><h4>About</h4><p>BMW Group</p><p>Careers</p><p>Press</p></div>
+    <div><h4>Newsletter</h4><p>News on models and events.</p><input class="inp" style="margin:8px 0 0" value="E-mail address" aria-label="email"></div>
+  </div>
+  <div class="legal"><span>© BMW AG 2026</span><span>Imprint · Privacy · Cookies · Legal notice</span></div>
+</div></div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">bmw</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

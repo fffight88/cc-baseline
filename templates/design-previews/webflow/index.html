@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Webflow — DESIGN.md preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;550;600&family=Inconsolata:wght@400&display=block">
+<style>
+:root{--primary:#080808;--ink:#080808;--ink-strong:#222;--body:#363636;--body-mid:#5a5a5a;--mute:#898989;--mute-soft:#ababab;--hair:#d8d8d8;--canvas:#fff;
+--purple:#7a3dff;--pink:#ed52cb;--blue:#3b89ff;--blue-deep:#006acc;--blue-info:#146ef5;--orange:#ff6b00;--green:#00d722;--yellow:#ffae13;--red:#ee1d36;
+--sans:"Inter",Arial,system-ui,-apple-system,sans-serif;--mono:"Inconsolata",ui-monospace,SFMono-Regular,Menlo,monospace;
+--l2:0 84px 24px rgba(0,0,0,0),0 54px 22px rgba(0,0,0,.01),0 30px 18px rgba(0,0,0,.04),0 13px 13px rgba(0,0,0,.08),0 3px 7px rgba(0,0,0,.09);
+--l3:0 84px 24px rgba(0,0,0,0),0 54px 22px rgba(0,0,0,.02),0 30px 18px rgba(0,0,0,.06),0 13px 13px rgba(0,0,0,.10),0 3px 7px rgba(0,0,0,.12)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{font-family:var(--sans);font-feature-settings:"ss01";font-size:16px;line-height:25.6px;letter-spacing:-.16px;color:var(--body);background:#fff}
+.wrap{padding:0 32px;max-width:1440px;margin:0 auto}
+.dxxl{font-size:80px;font-weight:600;line-height:83.2px;letter-spacing:-.8px;color:var(--ink)}
+.dxl{font-size:56px;font-weight:600;line-height:58.24px;letter-spacing:-.56px;color:var(--ink)}
+.dlg{font-size:44.8px;font-weight:600;line-height:46.6px;letter-spacing:-.45px;color:var(--ink)}
+.dmd{font-size:32px;font-weight:500;line-height:41.6px}
+.dsm{font-size:24px;font-weight:500;line-height:31.2px}
+.dxs{font-size:20px;font-weight:500;line-height:28px}
+.eb{font-size:15px;font-weight:500;line-height:19.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink)}
+.ebs{font-size:12px;font-weight:500;line-height:12px;letter-spacing:.6px;text-transform:uppercase}
+.blg{font-size:28.8px;font-weight:400;line-height:46.08px;letter-spacing:-.288px;color:var(--body)}
+.bsm{font-size:14px;line-height:22.4px;letter-spacing:0}
+.cap{font-size:12.8px;font-weight:550;line-height:15.36px;letter-spacing:0}
+.mono{font-family:var(--mono);font-size:12px;line-height:18px;letter-spacing:0;font-feature-settings:"zero"}
+.btn{display:inline-flex;align-items:center;gap:8px;font-size:16px;font-weight:500;line-height:25.6px;letter-spacing:-.16px;padding:12px 20px;border-radius:4px;white-space:nowrap}
+.btn.p{background:var(--primary);color:#fff}
+.btn.s{background:#fff;color:var(--ink);border:1px solid var(--hair)}
+.btn.ta{padding:20px 0;color:var(--ink);text-decoration:underline;text-underline-offset:4px}
+.badge{display:inline-block;font-size:12.8px;font-weight:550;line-height:15.36px;padding:4px 8px;border-radius:4px;background:var(--blue-info);color:#fff}
+.badge.soft{background:#fff;color:var(--blue-info);border:1px solid #cfe0fd}
+nav{display:flex;align-items:center;gap:28px;padding:16px 32px;font-size:14px;font-weight:500;line-height:22.4px;color:var(--ink);border-bottom:1px solid var(--hair)}
+nav .lg{display:flex;align-items:center;gap:8px;font-size:21px;font-weight:600;letter-spacing:-.6px;margin-right:20px}
+nav .sp{flex:1}
+.hero{padding:112px 0 0}
+.hero .top{display:grid;grid-template-columns:1.25fr 1fr;gap:64px;align-items:end}
+/* Designer mockup */
+.des{margin-top:72px;border:1px solid var(--hair);border-radius:8px;overflow:hidden;box-shadow:var(--l3);background:#2b2b2b;display:grid;grid-template-columns:44px 230px 1fr 270px;grid-template-rows:40px 560px;color:#d9d9d9;font-size:12px;line-height:16px;letter-spacing:0}
+.dtop{grid-column:1/-1;background:#1e1e1e;border-bottom:1px solid #3a3a3a;display:flex;align-items:center;gap:16px;padding:0 12px}
+.dtop .pill{background:#383838;border-radius:4px;padding:4px 10px}
+.rail{background:#1e1e1e;border-right:1px solid #3a3a3a;display:grid;align-content:start;gap:4px;padding:8px 6px}
+.rail span{height:30px;border-radius:4px;display:grid;place-items:center;color:#bdbdbd;font-size:14px}
+.rail span.on{background:#383838;color:#fff}
+.nav2{background:#2b2b2b;border-right:1px solid #3a3a3a;padding:10px 0}
+.nav2 h6{font-size:11px;font-weight:600;padding:4px 12px 8px;color:#fff;letter-spacing:.2px}
+.nv{padding:5px 12px;display:flex;gap:8px;align-items:center}
+.nv.sel{background:#146ef5;color:#fff}
+.nv i{width:10px;height:10px;border:1.5px solid currentColor;border-radius:2px;flex:none}
+.cnv{background:#e9e9e9;padding:24px;overflow:hidden;position:relative}
+.page{background:#fff;color:var(--ink);height:100%;border-radius:2px;overflow:hidden;position:relative}
+.pnav{display:flex;justify-content:space-between;padding:14px 22px;font-size:11px;font-weight:600}
+.phero{padding:30px 22px 0}
+.phero b{display:block;font-size:40px;line-height:42px;font-weight:600;letter-spacing:-.6px;max-width:440px}
+.pcards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:24px 22px}
+.pcards i{height:130px;border-radius:6px;display:block}
+.sel-outline{position:absolute;border:1.5px solid #146ef5}
+.sel-tag{position:absolute;background:#146ef5;color:#fff;font-size:10px;padding:1px 6px;border-radius:2px 2px 0 0}
+.style{background:#2b2b2b;border-left:1px solid #3a3a3a;padding:10px 12px}
+.style h6{font-size:11px;font-weight:600;color:#fff;margin:10px 0 8px}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.sg span{background:#383838;border-radius:4px;padding:5px 8px}
+.cls{background:#146ef5;color:#fff;border-radius:4px;padding:4px 8px;display:inline-block}
+.logos{display:flex;justify-content:space-between;align-items:center;padding:56px 0;color:var(--body-mid);font-size:22px;font-weight:600;letter-spacing:-.4px}
+section{padding:120px 0 0}
+.shead{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:end;margin-bottom:48px}
+.cat{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.cc{border-radius:8px;padding:32px;color:#fff;min-height:340px;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden}
+.cc.span2{grid-column:span 2}
+.cc .ui{margin-top:auto;background:#fff;color:var(--ink);border-radius:8px;padding:16px;font-size:14px;line-height:22.4px;letter-spacing:0;box-shadow:var(--l2)}
+.cc p{font-size:16px;opacity:.92;max-width:440px}
+.dark{background:var(--primary);color:#fff;border-radius:8px;padding:32px;display:grid;grid-template-columns:1fr 1.5fr;gap:48px;align-items:center}
+.dark .dlg{color:#fff}
+table{width:100%;border-collapse:collapse;background:#fff;color:var(--ink);border-radius:8px;overflow:hidden}
+th{text-align:left;font-size:12.8px;font-weight:550;line-height:15.36px;color:var(--body-mid);padding:12px 16px;border-bottom:1px solid var(--hair);background:#fff}
+td{font-size:14px;line-height:22.4px;letter-spacing:0;padding:12px 16px;border-bottom:1px solid var(--hair)}
+tr:last-child td{border-bottom:0}
+.dot{display:inline-block;width:8px;height:8px;border-radius:9999px;margin-right:6px}
+.feats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.fcard{border:1px solid var(--hair);border-radius:8px;padding:32px;display:flex;flex-direction:column;gap:12px}
+.ic{width:40px;height:40px;border-radius:9999px;border:1px solid var(--hair);display:grid;place-items:center;font-size:16px;color:var(--ink)}
+.pg{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch}
+.pc{border:1px solid var(--hair);border-radius:8px;padding:32px;display:flex;flex-direction:column;gap:14px}
+.pc.f{background:var(--ink);color:#fff;border-color:var(--ink);box-shadow:var(--l3)}
+.pc .amt{font-size:56px;font-weight:600;line-height:58.24px;letter-spacing:-.56px;color:var(--ink)}
+.pc.f .amt,.pc.f .dsm{color:#fff}
+.pc ul{list-style:none;display:grid;gap:8px;font-size:14px;line-height:22.4px;letter-spacing:0;border-top:1px solid var(--hair);padding-top:16px}
+.pc.f ul{border-color:#2a2a2a;color:#d8d8d8}
+.pc li:before{content:"✓  ";color:var(--green);font-weight:600}
+.pc .btn{justify-content:center;margin-top:auto}
+.pc.f .btn.s{border-color:#fff}
+.cta{border-top:1px solid var(--hair);margin-top:120px;padding:96px 0;text-align:center}
+.foot{padding:32px;display:grid;grid-template-columns:1.5fr repeat(5,1fr);gap:24px;font-size:14px;line-height:22.4px;letter-spacing:0;color:var(--body-mid);border-top:1px solid var(--hair)}
+.foot h6{font-size:12px;font-weight:500;letter-spacing:.6px;text-transform:uppercase;color:var(--ink);margin-bottom:12px}
+.foot li{list-style:none;margin-bottom:6px}
+</style></head><body>
+<nav><span class="lg"><svg width="30" height="19" viewBox="0 4.5 24 15" fill="#080808" aria-hidden="true"><path d="m24 4.515-7.658 14.97H9.149l3.205-6.204h-.144C9.566 16.713 5.621 18.973 0 19.485v-6.118s3.596-.213 5.71-2.435H0V4.515h6.417v5.278l.144-.001 2.622-5.277h4.854v5.244h.144l2.72-5.244H24Z"/></svg>Webflow</span>
+<span>Platform ▾</span><span>Solutions ▾</span><span>Resources ▾</span><span>Enterprise</span><span>Pricing</span><span class="sp"></span><span>Log in</span><span>Contact sales</span><span class="btn p" style="font-size:14px;padding:8px 16px">Get started — it's free</span></nav>
+
+<div class="wrap">
+<header class="hero">
+  <div class="top">
+    <div><span class="badge soft">NEW · Webflow AI Site Builder</span><h1 class="dxxl" style="margin-top:24px">Build with the power of code — without writing any</h1></div>
+    <div><p class="blg">Webflow is the visual development platform for teams that design, build and scale professional websites.</p><div style="display:flex;gap:12px;margin-top:28px"><span class="btn p">Start building</span><span class="btn s">Contact sales</span></div></div>
+  </div>
+  <div class="des">
+    <div class="dtop"><svg width="20" height="13" viewBox="0 4.5 24 15" fill="#fff" aria-hidden="true"><path d="m24 4.515-7.658 14.97H9.149l3.205-6.204h-.144C9.566 16.713 5.621 18.973 0 19.485v-6.118s3.596-.213 5.71-2.435H0V4.515h6.417v5.278l.144-.001 2.622-5.277h4.854v5.244h.144l2.72-5.244H24Z"/></svg><span class="pill">Page: Home ▾</span><span style="color:#999">Desktop · 1280 px</span><span style="margin-left:auto;color:#999">Designing</span><span class="pill">Preview</span><span style="background:#146ef5;color:#fff;border-radius:4px;padding:4px 12px">Publish</span></div>
+    <div class="rail"><span>+</span><span class="on">≣</span><span>◫</span><span>⛁</span><span>▣</span><span>⚙</span></div>
+    <div class="nav2"><h6>Navigator</h6>
+      <div class="nv"><i></i>Body</div><div class="nv" style="padding-left:24px"><i></i>Navbar</div><div class="nv sel" style="padding-left:24px"><i></i>Section · hero</div><div class="nv" style="padding-left:36px"><i></i>Heading 1</div><div class="nv" style="padding-left:36px"><i></i>Button wrap</div><div class="nv" style="padding-left:24px"><i></i>Section · features</div><div class="nv" style="padding-left:36px"><i></i>Card grid</div><div class="nv" style="padding-left:48px"><i></i>Card (3)</div><div class="nv" style="padding-left:24px"><i></i>Collection list · Blog</div><div class="nv" style="padding-left:24px"><i></i>Footer</div></div>
+    <div class="cnv"><div class="page">
+      <div class="pnav"><span>Northstar</span><span style="color:#898989">Product &nbsp; Customers &nbsp; Pricing</span></div>
+      <div class="phero"><span class="mono" style="color:#898989">FINTECH INFRASTRUCTURE</span><b>Payments that scale with your ambition</b><span style="display:inline-block;margin-top:16px;background:#080808;color:#fff;font-size:12px;padding:6px 12px;border-radius:4px">Get a demo</span></div>
+      <div class="pcards"><i style="background:#7a3dff"></i><i style="background:#ed52cb"></i><i style="background:#3b89ff"></i></div>
+      <span class="sel-tag" style="left:12px;top:44px">Section · hero</span>
+      <div class="sel-outline" style="left:12px;top:58px;right:12px;height:178px"></div>
+    </div></div>
+    <div class="style"><span class="cls">hero-section</span>
+      <h6>Layout</h6><div class="sg"><span>Display: Flex</span><span>Direction: ↓</span><span>Gap 24 px</span><span>Align: Start</span></div>
+      <h6>Spacing</h6><div class="sg"><span>Padding 96</span><span>Margin 0</span></div>
+      <h6>Size</h6><div class="sg"><span>Width Auto</span><span>Max W 1200</span></div>
+      <h6>Typography</h6><div class="sg"><span>Inter</span><span>600</span><span>40 px</span><span>-0.6 px</span></div>
+      <h6>Interactions</h6><div class="sg"><span style="grid-column:1/-1">Scroll into view · Fade up</span></div>
+    </div>
+  </div>
+  <div class="logos"><span>Dropbox</span><span>NCR</span><span>Monday.com</span><span>Discord</span><span>TED</span><span>Spotify</span><span>Philips</span></div>
+</header>
+
+<section style="padding-top:64px">
+  <div class="shead"><div><div class="eb">The Webflow platform</div><h2 class="dlg" style="margin-top:16px">Everything your team needs to ship sites that perform</h2></div><p class="blg" style="font-size:20px;line-height:32px">One platform for design, content, optimization and hosting — built for marketers, designers and developers to work together.</p></div>
+  <div class="cat">
+    <div class="cc span2" style="background:var(--purple)"><div class="ebs" style="opacity:.85">Design</div><h3 class="dmd">Visual development with full control</h3><p>Build responsive layouts with real HTML, CSS and JavaScript — visually.</p>
+      <div class="ui" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:13px"><div><div class="cap" style="color:#898989;margin-bottom:6px">CLASS</div>card-feature</div><div><div class="cap" style="color:#898989;margin-bottom:6px">BREAKPOINT</div>Tablet · 991px</div><div><div class="cap" style="color:#898989;margin-bottom:6px">VARIABLE</div>radius/md · 8px</div></div></div>
+    <div class="cc" style="background:var(--pink)"><div class="ebs" style="opacity:.85">Interactions</div><h3 class="dmd">Motion that feels native</h3><p>GSAP-powered animations, no code required.</p><div class="ui"><div style="display:flex;gap:6px;align-items:center"><span class="mono">0.0s</span><i style="flex:1;height:6px;border-radius:2px;background:#ed52cb;opacity:.35"></i><i style="width:40%;height:6px;border-radius:2px;background:#ed52cb"></i><span class="mono">1.2s</span></div></div></div>
+    <div class="cc" style="background:var(--blue)"><div class="ebs" style="opacity:.85">Analyze</div><h3 class="dmd">Optimize every page</h3><p>Built-in analytics, A/B tests and AI personalization.</p><div class="ui"><div style="display:flex;justify-content:space-between"><span>Variant B · Hero copy</span><b style="font-weight:600;color:#006acc">+18.4%</b></div></div></div>
+    <div class="cc" style="background:var(--orange)"><div class="ebs" style="opacity:.85">Hosting</div><h3 class="dmd">Enterprise-grade hosting</h3><p>Global CDN, 99.99% uptime SLA, SOC 2.</p><div class="ui"><div style="display:flex;justify-content:space-between"><span><span class="dot" style="background:#00d722"></span>Published · northstar.com</span><span class="mono">42ms</span></div></div></div>
+    <div class="cc" style="background:var(--green);color:var(--ink)"><div class="ebs">Ecommerce</div><h3 class="dmd">Sell with custom storefronts</h3><p style="opacity:1">Fully designed product pages and checkout.</p><div class="ui"><div style="display:flex;justify-content:space-between"><span>Order #4821 · 2 items</span><b style="font-weight:600">$148.00</b></div></div></div>
+  </div>
+</section>
+
+<section>
+  <div class="dark">
+    <div><div class="eb" style="color:#fff">CMS</div><h2 class="dlg" style="margin:16px 0">Content that scales with your team</h2><p style="color:#d8d8d8">Structure content once, then design it anywhere on your site. Editors publish without touching layouts.</p><a class="btn ta" style="color:#fff;background:transparent">Explore the CMS →</a></div>
+    <table>
+      <tr><th>NAME</th><th>CATEGORY</th><th>AUTHOR</th><th>STATUS</th><th>UPDATED</th></tr>
+      <tr><td>The state of web performance 2026</td><td>Research</td><td>Priya N.</td><td><span class="dot" style="background:#00d722"></span>Published</td><td class="mono">Nov 04</td></tr>
+      <tr><td>How Discord rebuilt its marketing site</td><td>Customer story</td><td>Marcus L.</td><td><span class="dot" style="background:#00d722"></span>Published</td><td class="mono">Nov 02</td></tr>
+      <tr><td>Designing for localization</td><td>Guide</td><td>Ana R.</td><td><span class="dot" style="background:#ffae13"></span>Draft</td><td class="mono">Oct 30</td></tr>
+      <tr><td>Variables and modes, explained</td><td>Product</td><td>Jon K.</td><td><span class="dot" style="background:#146ef5"></span>Scheduled</td><td class="mono">Nov 12</td></tr>
+      <tr><td>Accessibility audit checklist</td><td>Guide</td><td>Sam T.</td><td><span class="dot" style="background:#ee1d36"></span>Needs review</td><td class="mono">Oct 28</td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="eb">Built for teams</div><h2 class="dlg" style="margin:16px 0 48px;max-width:760px">Scale without the dev bottleneck</h2>
+  <div class="feats">
+    <div class="fcard"><span class="ic">⌘</span><h3 class="dxs" style="color:var(--ink)">Roles and permissions</h3><p>Give editors, designers and developers exactly the access they need.</p><a class="btn ta" style="padding:8px 0">Learn more →</a></div>
+    <div class="fcard"><span class="ic">◎</span><h3 class="dxs" style="color:var(--ink)">Localization</h3><p>Translate and localize sites for every market you serve.</p><a class="btn ta" style="padding:8px 0">Learn more →</a></div>
+    <div class="fcard"><span class="ic">⟐</span><h3 class="dxs" style="color:var(--ink)">DevLink</h3><p>Export Webflow components to React and keep them in sync.</p><a class="btn ta" style="padding:8px 0">Learn more →</a></div>
+  </div>
+</section>
+
+<section>
+  <div class="shead"><div><div class="eb">Pricing</div><h2 class="dlg" style="margin-top:16px">Plans for every stage</h2></div><p style="justify-self:end" class="bsm">Billed yearly · prices in USD</p></div>
+  <div class="pg">
+    <div class="pc"><h3 class="dsm" style="color:var(--ink)">Basic</h3><div class="amt">$14</div><p class="bsm">/mo — for simple, static sites</p><ul><li>Custom domain</li><li>150 pages</li><li>50 GB bandwidth</li></ul><span class="btn s">Get started</span></div>
+    <div class="pc f"><span class="badge" style="align-self:flex-start">MOST POPULAR</span><h3 class="dsm">CMS</h3><div class="amt">$23</div><p class="bsm" style="color:#d8d8d8">/mo — for blogs and content-driven sites</p><ul><li>2,000 CMS items</li><li>3 content editors</li><li>Site search</li></ul><span class="btn s">Get started</span></div>
+    <div class="pc"><h3 class="dsm" style="color:var(--ink)">Business</h3><div class="amt">$39</div><p class="bsm">/mo — for growing marketing sites</p><ul><li>10,000 CMS items</li><li>10 content editors</li><li>Form file uploads</li></ul><span class="btn s">Get started</span></div>
+  </div>
+</section>
+
+<div class="cta"><h2 class="dxl">Start building for free</h2><p class="blg" style="font-size:20px;line-height:32px;margin:16px 0 32px">Free plan forever. No credit card required.</p><div style="display:flex;gap:12px;justify-content:center"><span class="btn p">Get started — it's free</span><span class="btn s">Talk to sales</span></div></div>
+</div>
+<div class="foot">
+  <div><span style="display:flex;align-items:center;gap:8px;color:#080808;font-size:20px;font-weight:600;letter-spacing:-.6px"><svg width="26" height="16" viewBox="0 4.5 24 15" fill="#080808" aria-hidden="true"><path d="m24 4.515-7.658 14.97H9.149l3.205-6.204h-.144C9.566 16.713 5.621 18.973 0 19.485v-6.118s3.596-.213 5.71-2.435H0V4.515h6.417v5.278l.144-.001 2.622-5.277h4.854v5.244h.144l2.72-5.244H24Z"/></svg>Webflow</span><p style="margin-top:12px">© 2026 Webflow, Inc.</p></div>
+  <ul><h6>Product</h6><li>Designer</li><li>CMS</li><li>Interactions</li><li>Hosting</li></ul>
+  <ul><h6>Solutions</h6><li>Enterprise</li><li>Agencies</li><li>Startups</li></ul>
+  <ul><h6>Resources</h6><li>University</li><li>Templates</li><li>Blog</li><li>Showcase</li></ul>
+  <ul><h6>Company</h6><li>About</li><li>Careers</li><li>Press</li></ul>
+  <ul><h6>Community</h6><li>Forum</li><li>Experts</li><li>Events</li></ul>
+</div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">webflow</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

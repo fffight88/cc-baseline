@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Airbnb — Vacation rentals, cabins, beach houses &amp; more</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=block">
+<style>
+:root{--rausch:#ff385c;--rausch-a:#e00b41;--ink:#222222;--body:#3f3f3f;--muted:#6a6a6a;--muted-soft:#929292;--hair:#dddddd;--hair-soft:#ebebeb;--strong:#c1c1c1;--soft:#f7f7f7;--surf-strong:#f2f2f2;
+--shadow:rgba(0,0,0,.02) 0 0 0 1px,rgba(0,0,0,.04) 0 2px 6px 0,rgba(0,0,0,.1) 0 4px 8px 0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#fff;color:var(--ink);font-family:Inter,'Airbnb Cereal VF',Circular,-apple-system,system-ui,Roboto,'Helvetica Neue',sans-serif;font-size:16px;line-height:1.5}
+/* display line-heights reduced ~2% per substitute note */
+.dxl{font-size:28px;font-weight:700;line-height:1.40}
+.dlg{font-size:22px;font-weight:500;line-height:1.16;letter-spacing:-.44px}
+.dmd{font-size:21px;font-weight:700;line-height:1.40}
+.dsm{font-size:20px;font-weight:600;line-height:1.18;letter-spacing:-.18px}
+.tmd{font-size:16px;font-weight:600;line-height:1.25}
+.tsm{font-size:16px;font-weight:500;line-height:1.25}
+.bsm{font-size:14px;line-height:1.43}
+.mut{color:var(--muted)}
+.wrap{max-width:1280px;margin:0 auto;padding:0 40px}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:48px;padding:14px 24px;border-radius:8px;font-size:16px;font-weight:500;line-height:1.25;white-space:nowrap}
+.btn.p{background:var(--rausch);color:#fff}
+.btn.s{background:#fff;color:var(--ink);border:1px solid var(--ink);padding:13px 23px}
+.pill-r{display:inline-flex;align-items:center;background:var(--rausch);color:#fff;border-radius:9999px;padding:10px 20px;font-size:14px;font-weight:500;line-height:1.29}
+.circ{width:40px;height:40px;border-radius:9999px;border:1px solid var(--hair);display:grid;place-items:center;background:#fff}
+/* top nav */
+.top{height:80px;border-bottom:1px solid var(--hair)}
+.top .wrap{max-width:1440px;height:80px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
+.logo{display:flex;align-items:center;gap:4px;color:var(--rausch);font-weight:700;font-size:22px;letter-spacing:-.6px}
+.logo svg{width:32px;height:32px;fill:var(--rausch)}
+.tabs{display:flex;gap:36px;height:80px;align-items:stretch}
+.tab{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:600;line-height:1.25;color:var(--muted);position:relative}
+.tab.on{color:var(--ink)}
+.tab.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--ink)}
+.ic{width:32px;height:32px;position:relative;flex:none}
+.new{position:absolute;right:-12px;top:-4px;background:#fff;border-radius:9999px;padding:2px 6px;font-size:8px;font-weight:700;line-height:1.25;letter-spacing:.32px;text-transform:uppercase;box-shadow:var(--shadow);color:var(--ink)}
+.util{display:flex;justify-content:flex-end;align-items:center;gap:12px;font-size:14px;font-weight:500}
+.acct{display:flex;align-items:center;gap:12px;border:1px solid var(--hair);border-radius:9999px;padding:6px 6px 6px 14px}
+.av{width:32px;height:32px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:600}
+/* search */
+.searchwrap{padding:24px 0 20px;display:flex;justify-content:center;border-bottom:1px solid var(--hair-soft)}
+.search{width:850px;height:64px;border-radius:9999px;background:#fff;box-shadow:var(--shadow);border:1px solid var(--hair);display:flex;align-items:center;padding:0 8px 0 0}
+.seg{flex:1;padding:8px 24px 8px 32px;border-right:1px solid var(--hair);line-height:1.29}
+.seg:nth-child(3){border:0}
+.seg b{display:block;font-size:12px;font-weight:600}
+.seg span{font-size:14px;color:var(--muted)}
+.orb{width:48px;height:48px;border-radius:9999px;background:var(--rausch);display:grid;place-items:center;flex:none}
+/* categories */
+.cats{display:flex;gap:40px;align-items:center;padding:20px 0 0}
+.cat{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--muted);padding-bottom:12px;border-bottom:2px solid transparent}
+.cat.on{color:var(--ink);border-color:var(--ink)}
+.cat i{width:24px;height:24px;border-radius:6px;border:2px solid currentColor;opacity:.8}
+.filters{margin-left:auto;display:flex;gap:12px;margin-bottom:12px}
+.fbtn{border:1px solid var(--hair);border-radius:12px;padding:12px 16px;font-size:12px;font-weight:600;display:flex;gap:8px;align-items:center}
+/* property cards */
+section{padding:48px 0 64px}
+.shead{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:24px 16px}
+.photo{aspect-ratio:1/1;border-radius:14px;position:relative;overflow:hidden}
+.photo .fav{position:absolute;left:12px;top:12px;background:#fff;border-radius:9999px;padding:4px 10px;font-size:11px;font-weight:600;line-height:1.18;box-shadow:var(--shadow)}
+.photo .heart{position:absolute;right:12px;top:12px}
+.photo .dots{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:4px}
+.photo .dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.6)}
+.photo .dots i:first-child{background:#fff}
+.meta{padding-top:12px;font-size:14px;line-height:1.43}
+.meta .t{display:flex;justify-content:space-between;font-weight:600;font-size:15px;line-height:1.3}
+.meta .t span{font-weight:400;font-size:14px}
+.meta .p{margin-top:4px}
+.meta .p b{font-weight:600;text-decoration:underline}
+/* scenes */
+.sc1{background:radial-gradient(circle at 75% 22%,#ffe6b0 0 6%,transparent 7%),linear-gradient(180deg,#9fd3ef 0%,#cfe9f5 42%,#2e9fb5 43%,#1d7f99 60%,#e8d4a8 61%,#d9bd88 100%)}
+.sc2{background:linear-gradient(160deg,transparent 0 55%,#3b5d3a 55%),linear-gradient(200deg,transparent 0 50%,#4f7a45 50%),linear-gradient(180deg,#f3c9a1,#f6e1c8 50%,#7da36a)}
+.sc2::after{content:"";position:absolute;left:34%;top:46%;width:32%;height:26%;background:linear-gradient(135deg,#8b5a3c 50%,#6e452d 50%);clip-path:polygon(50% 0,100% 40%,100% 100%,0 100%,0 40%)}
+.sc3{background:linear-gradient(180deg,#e9eef2 0 40%,#fff 40%),#fff}
+.sc3::before{content:"";position:absolute;left:10%;right:10%;top:22%;bottom:0;background:linear-gradient(90deg,#f4f1ea 0 30%,#e2dccf 30% 32%,#f4f1ea 32%);border-radius:4px 4px 0 0}
+.sc3::after{content:"";position:absolute;left:18%;top:46%;width:22%;height:30%;background:#7fb5d9;border:6px solid #fff;box-shadow:0 0 0 1px #ddd;border-radius:999px 999px 0 0}
+.sc4{background:radial-gradient(circle at 30% 30%,#fff7e0 0 4%,transparent 5%),linear-gradient(180deg,#14213d 0%,#3a3f6b 40%,#e8a66b 70%,#2b2b2b 71%,#1a1a1a 100%)}
+.sc5{background:linear-gradient(180deg,#d7ecf7 0 35%,transparent 35%),repeating-linear-gradient(90deg,#fff 0 18%,#f0e9df 18% 20%),#fff}
+.sc5::after{content:"";position:absolute;left:0;right:0;bottom:0;height:30%;background:linear-gradient(180deg,#5ab3d6,#2e8ab0)}
+.sc6{background:linear-gradient(180deg,#ffd9c0,#ffb38a 45%,#c86f4a 46%,#8e4b33 70%,#5c2f20)}
+.sc7{background:radial-gradient(ellipse at 50% 110%,#2f4f2f 0 40%,transparent 41%),linear-gradient(180deg,#cfe7ff,#eaf4ff 60%,#9cc28a 61%,#6f9d5c)}
+.sc8{background:linear-gradient(135deg,#f6efe6 0 50%,#ebe0d0 50%)}
+.sc8::after{content:"";position:absolute;left:20%;right:20%;bottom:16%;height:34%;border-radius:20px 20px 6px 6px;background:#4c6e8c;box-shadow:inset 0 -20px 0 #3b5670}
+.sc9{background:linear-gradient(180deg,#f1d7a8,#e3b26a 50%,#c48a42 51%,#9a6a2f)}
+.sc10{background:radial-gradient(circle at 70% 35%,#fff 0 3%,transparent 4%),linear-gradient(180deg,#0f3b57,#1f6f8b 50%,#e6f2f5 51%,#bcd7df)}
+/* experiences */
+.exp{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.exp .photo{aspect-ratio:4/5}
+/* listing detail */
+.detail{display:grid;grid-template-columns:1fr 400px;gap:80px;max-width:1120px;margin:0 auto;padding:0 40px}
+.rating{display:flex;flex-direction:column;align-items:center;padding:32px 0;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);margin:24px 0}
+.rnum{display:flex;align-items:center;gap:12px;font-size:64px;font-weight:700;line-height:1.1;letter-spacing:-1px}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);width:100%;margin-top:28px;font-size:14px}
+.stats div{padding:0 10px;font-size:13px;white-space:nowrap;border-left:1px solid var(--hair-soft)}
+.stats div:first-child{border:0}
+.stats b{display:block;font-size:18px;font-weight:600;margin-top:4px}
+.amen{display:grid;grid-template-columns:1fr 1fr;column-gap:24px;margin-top:16px}
+.amen div{padding:12px 0;display:flex;gap:16px;align-items:center;font-size:16px}
+.amen i{width:24px;height:24px;border:1.5px solid var(--ink);border-radius:6px}
+.reviews{display:grid;grid-template-columns:1fr 1fr;gap:32px 64px;margin-top:24px}
+.who{display:flex;gap:12px;align-items:center;margin-bottom:8px}
+.who .av{width:44px;height:44px}
+.res{border:1px solid var(--hair);border-radius:14px;padding:24px;box-shadow:var(--shadow);position:sticky;top:24px;align-self:start}
+.dates{border:1px solid var(--strong);border-radius:8px;margin:20px 0 16px;display:grid;grid-template-columns:1fr 1fr;font-size:10px;font-weight:700;text-transform:uppercase}
+.dates div{padding:10px 12px}
+.dates div span{display:block;font-size:14px;font-weight:400;text-transform:none}
+.dates .g{grid-column:1/3;border-top:1px solid var(--strong)}
+.dates div:first-child{border-right:1px solid var(--strong)}
+.fee{display:flex;justify-content:space-between;font-size:16px;margin-top:12px}
+.fee span:first-child{text-decoration:underline}
+.cal{display:grid;grid-template-columns:repeat(7,40px);gap:2px 4px;font-size:14px;text-align:center;margin-top:12px}
+.cal span{height:40px;line-height:40px;border-radius:9999px}
+.cal .h{height:24px;line-height:24px;font-size:12px;color:var(--muted);font-weight:600}
+.cal .sel{background:var(--ink);color:#fff}
+.cal .rng{background:var(--soft);border-radius:0}
+.cal .x{color:var(--muted-soft);text-decoration:line-through}
+.host{border-radius:14px;padding:24px;box-shadow:var(--shadow);display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center;margin-top:24px}
+/* inspiration */
+.itabs{display:flex;gap:24px;border-bottom:1px solid var(--hair);font-size:14px;font-weight:600;color:var(--muted);margin:16px 0 28px}
+.itabs span{padding-bottom:12px}
+.itabs .on{color:var(--ink);border-bottom:2px solid var(--ink)}
+.cities{display:grid;grid-template-columns:repeat(6,1fr);gap:24px 16px}
+.cities b{display:block;font-size:14px;font-weight:600}
+.cities span{font-size:14px;color:var(--muted)}
+.afoot{background:var(--soft);border-top:1px solid var(--hair);padding:48px 80px 0}
+.afoot .cols{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding-bottom:40px}
+.afoot h6{font-size:14px;font-weight:600;margin-bottom:12px}
+.afoot a{display:block;font-size:14px;line-height:1.43;margin-bottom:12px}
+.legal{max-width:1280px;margin:0 auto;border-top:1px solid var(--hair);padding:24px 0;display:flex;gap:16px;font-size:13px;line-height:1.23;color:var(--muted)}
+.legal b{color:var(--ink);font-weight:600}
+</style></head><body>
+<header class="top"><div class="wrap">
+  <span class="logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.001 18.275c-1.353-1.697-2.148-3.184-2.413-4.457-.263-1.027-.16-1.848.291-2.465.477-.71 1.188-1.056 2.121-1.056s1.643.345 2.12 1.063c.446.61.558 1.432.286 2.465-.291 1.298-1.085 2.785-2.412 4.458zm9.601 1.14c-.185 1.246-1.034 2.28-2.2 2.783-2.253.98-4.483-.583-6.392-2.704 3.157-3.951 3.740-7.028 2.385-9.018-.795-1.140-1.933-1.695-3.394-1.695-2.944 0-4.563 2.490-3.927 5.382.37 1.565 1.352 3.343 2.917 5.332-.98 1.085-1.910 1.856-2.732 2.333-.636.344-1.245.558-1.828.609-2.679.399-4.778-2.200-3.825-4.880.132-.345.395-.98.845-1.961l.025-.053c1.464-3.178 3.242-6.790 5.285-10.795l.053-.132.58-1.116c.45-.822.635-1.190 1.351-1.643.346-.21.77-.315 1.246-.315.954 0 1.698.558 2.016 1.007.158.239.345.557.582.953l.558 1.089.08.159c2.041 4.004 3.821 7.608 5.279 10.794l.026.025.533 1.220.318.764c.243.613.294 1.222.213 1.858zm1.220-2.390c-.186-.583-.505-1.271-.9-2.094v-.03c-1.889-4.006-3.642-7.608-5.307-10.844l-.111-.163C15.317 1.461 14.468 0 12.001 0c-2.440 0-3.476 1.695-4.535 3.898l-.081.16c-1.669 3.236-3.421 6.843-5.303 10.847v.053l-.559 1.220c-.21.504-.317.768-.345.847C-.172 20.740 2.611 24 5.980 24c.027 0 .132 0 .265-.027h.372c1.750-.213 3.554-1.325 5.384-3.317 1.829 1.989 3.635 3.104 5.382 3.317h.372c.133.027.239.027.265.027 3.370.003 6.152-3.261 4.802-6.975z"/></svg>airbnb</span>
+  <nav class="tabs">
+    <span class="tab on"><svg class="ic" viewBox="0 0 32 32"><path d="M5 15 16 6l11 9v12H5z" fill="#f7c59f" stroke="#222" stroke-width="1.2"/><path d="M3 16 16 5l13 11" fill="none" stroke="#c0392b" stroke-width="2.4"/><rect x="13" y="19" width="6" height="8" fill="#8e5b3e"/><rect x="20" y="15" width="4" height="4" fill="#9fd3ef"/></svg>Homes</span>
+    <span class="tab"><span class="ic"><svg width="32" height="32" viewBox="0 0 32 32"><path d="M10 4h12l-2 24h-8z" fill="#f2d16b" stroke="#222" stroke-width="1.2"/><circle cx="16" cy="10" r="3" fill="#ff385c"/><path d="M12 18h8" stroke="#222" stroke-width="1.2"/></svg><span class="new">New</span></span>Experiences</span>
+    <span class="tab"><span class="ic"><svg width="32" height="32" viewBox="0 0 32 32"><path d="M6 20h20a10 10 0 0 0-20 0z" fill="#c9d6df" stroke="#222" stroke-width="1.2"/><rect x="4" y="20" width="24" height="3" rx="1.5" fill="#888"/><circle cx="16" cy="9" r="1.6" fill="#222"/></svg><span class="new">New</span></span>Services</span>
+  </nav>
+  <div class="util"><span>Become a host</span><span class="circ" style="border:0;background:var(--surf-strong)"><svg width="16" height="16" fill="none" stroke="#222" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M1.5 8h13M8 1.5c-3 3.5-3 9.5 0 13M8 1.5c3 3.5 3 9.5 0 13"/></svg></span><span class="acct"><svg width="16" height="16" stroke="#222" stroke-width="2"><path d="M2 4h12M2 8h12M2 12h12"/></svg><span class="av">M</span></span></div>
+</div></header>
+
+<div class="searchwrap"><div class="search">
+  <div class="seg"><b>Where</b><span>Search destinations</span></div>
+  <div class="seg"><b>When</b><span>Add dates</span></div>
+  <div class="seg"><b>Who</b><span>Add guests</span></div>
+  <span class="orb"><svg width="16" height="16" fill="none" stroke="#fff" stroke-width="3"><circle cx="7" cy="7" r="5"/><path d="m11 11 4 4"/></svg></span>
+</div></div>
+
+<div class="wrap"><div class="cats" style="border-bottom:1px solid var(--hair-soft)">
+  <span class="cat on"><i></i>Amazing views</span><span class="cat"><i style="border-radius:50%"></i>Beachfront</span><span class="cat"><i></i>Cabins</span><span class="cat"><i style="border-radius:50% 50% 0 0"></i>Countryside</span><span class="cat"><i></i>Tiny homes</span><span class="cat"><i style="border-radius:50%"></i>Lakefront</span><span class="cat"><i></i>Design</span><span class="cat"><i></i>OMG!</span><span class="cat"><i style="border-radius:50%"></i>Trending</span>
+  <div class="filters"><span class="fbtn">⚙ Filters</span><span class="fbtn">Display total before taxes <span style="width:32px;height:20px;border-radius:99px;background:var(--strong);display:inline-block"></span></span></div>
+</div></div>
+
+<section><div class="wrap">
+  <div class="shead"><h2 class="dsm">Popular homes in Lisbon ›</h2><div style="display:flex;gap:8px"><span class="circ" style="width:32px;height:32px;background:var(--surf-strong);border:0">‹</span><span class="circ" style="width:32px;height:32px;background:var(--surf-strong);border:0">›</span></div></div>
+  <div class="grid">
+    <div><div class="photo sc1"><span class="fav">Guest favorite</span><svg class="heart" width="26" height="26" viewBox="0 0 32 32"><path d="M16 28S3 20 3 11a6.5 6.5 0 0 1 13-1 6.5 6.5 0 0 1 13 1c0 9-13 17-13 17z" fill="rgba(0,0,0,.5)" stroke="#fff" stroke-width="2"/></svg><span class="dots"><i></i><i></i><i></i><i></i></span></div><div class="meta"><div class="t">Cascais, Portugal<span>★ 4.96</span></div><div class="mut">Ocean view · 2 beds</div><div class="mut">Nov 14 – 19</div><div class="p"><b>$1,240</b> total</div></div></div>
+    <div><div class="photo sc2"><span class="fav">Guest favorite</span><svg class="heart" width="26" height="26" viewBox="0 0 32 32"><path d="M16 28S3 20 3 11a6.5 6.5 0 0 1 13-1 6.5 6.5 0 0 1 13 1c0 9-13 17-13 17z" fill="#ff385c" stroke="#fff" stroke-width="2"/></svg><span class="dots"><i></i><i></i><i></i></span></div><div class="meta"><div class="t">Sintra, Portugal<span>★ 4.91</span></div><div class="mut">Stay with Inês · Host 6 years</div><div class="mut">Dec 2 – 7</div><div class="p"><b>$865</b> total</div></div></div>
+    <div><div class="photo sc3"><svg class="heart" width="26" height="26" viewBox="0 0 32 32"><path d="M16 28S3 20 3 11a6.5 6.5 0 0 1 13-1 6.5 6.5 0 0 1 13 1c0 9-13 17-13 17z" fill="rgba(0,0,0,.5)" stroke="#fff" stroke-width="2"/></svg><span class="dots"><i></i><i></i><i></i></span></div><div class="meta"><div class="t">Alfama, Lisbon<span>★ 4.88</span></div><div class="mut">Historic apartment · 1 bed</div><div class="mut">Nov 20 – 23</div><div class="p"><b>$412</b> total</div></div></div>
+    <div><div class="photo sc4"><span class="fav">Guest favorite</span><svg class="heart" width="26" height="26" viewBox="0 0 32 32"><path d="M16 28S3 20 3 11a6.5 6.5 0 0 1 13-1 6.5 6.5 0 0 1 13 1c0 9-13 17-13 17z" fill="rgba(0,0,0,.5)" stroke="#fff" stroke-width="2"/></svg><span class="dots"><i></i><i></i><i></i></span></div><div class="meta"><div class="t">Bairro Alto, Lisbon<span>★ 4.97</span></div><div class="mut">Rooftop loft · 2 beds</div><div class="mut">Jan 8 – 12</div><div class="p"><b>$980</b> total</div></div></div>
+    <div><div class="photo sc5"><svg class="heart" width="26" height="26" viewBox="0 0 32 32"><path d="M16 28S3 20 3 11a6.5 6.5 0 0 1 13-1 6.5 6.5 0 0 1 13 1c0 9-13 17-13 17z" fill="rgba(0,0,0,.5)" stroke="#fff" stroke-width="2"/></svg><span class="dots"><i></i><i></i><i></i></span></div><div class="meta"><div class="t">Comporta, Portugal<span>★ 4.93</span></div><div class="mut">Villa with pool · 4 beds</div><div class="mut">Feb 1 – 6</div><div class="p"><b>$2,615</b> total</div></div></div>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <div class="shead"><h2 class="dsm">Experiences hosted by locals ›</h2><span class="pill-r">Become a host</span></div>
+  <div class="exp">
+    <div><div class="photo sc6"><span class="fav" style="font-size:8px;font-weight:700;letter-spacing:.32px;text-transform:uppercase;padding:4px 8px">New</span></div><div class="meta"><div class="t" style="margin-bottom:2px">Sunset sailing on the Tagus</div><div class="mut">From $68 / guest · ★ 4.98</div></div></div>
+    <div><div class="photo sc7"></div><div class="meta"><div class="t" style="margin-bottom:2px">Hike Sintra's hidden palaces</div><div class="mut">From $45 / guest · ★ 4.95</div></div></div>
+    <div><div class="photo sc8"><span class="fav" style="font-size:8px;font-weight:700;letter-spacing:.32px;text-transform:uppercase;padding:4px 8px">New</span></div><div class="meta"><div class="t" style="margin-bottom:2px">Azulejo tile painting workshop</div><div class="mut">From $52 / guest · ★ 4.99</div></div></div>
+    <div><div class="photo sc9"></div><div class="meta"><div class="t" style="margin-bottom:2px">Pastel de nata with a pastry chef</div><div class="mut">From $39 / guest · ★ 4.97</div></div></div>
+    <div><div class="photo sc10"></div><div class="meta"><div class="t" style="margin-bottom:2px">Dolphin watching in Arrábida</div><div class="mut">From $59 / guest · ★ 4.94</div></div></div>
+  </div>
+</div></section>
+
+<section style="background:#fff;border-top:1px solid var(--hair-soft)">
+  <div class="detail">
+    <div>
+      <h2 class="dlg">Entire villa in Comporta, Portugal</h2>
+      <p class="mut" style="margin-top:6px">8 guests · 4 bedrooms · 5 beds · 3 baths</p>
+      <div class="rating">
+        <div class="rnum"><svg width="34" height="56" viewBox="0 0 34 56" fill="#222"><path d="M28 54C10 46 4 30 8 6c2 6 4 10 9 13-7-2-8 4-7 8 4-2 8 0 9 4-6-1-9 3-7 7 4-2 8 1 8 5-5-1-8 3-5 6 3-1 9 2 13 5z"/></svg>4.96<svg width="34" height="56" viewBox="0 0 34 56" fill="#222" style="transform:scaleX(-1)"><path d="M28 54C10 46 4 30 8 6c2 6 4 10 9 13-7-2-8 4-7 8 4-2 8 0 9 4-6-1-9 3-7 7 4-2 8 1 8 5-5-1-8 3-5 6 3-1 9 2 13 5z"/></svg></div>
+        <div class="dsm" style="margin-top:8px">Guest favorite</div>
+        <p class="bsm mut" style="max-width:360px;text-align:center;margin-top:6px">One of the most loved homes on Airbnb based on ratings, reviews and reliability</p>
+        <div class="stats"><div>Overall<b>4.96</b></div><div>Cleanliness<b>5.0</b></div><div>Accuracy<b>4.9</b></div><div>Check-in<b>5.0</b></div><div>Communication<b>4.9</b></div><div>Location<b>4.8</b></div></div>
+      </div>
+      <h3 class="dmd">What this place offers</h3>
+      <div class="amen"><div><i></i>Private outdoor pool</div><div><i style="border-radius:50%"></i>Beach access – 5 min walk</div><div><i></i>Fast wifi – 320 Mbps</div><div><i></i>Kitchen with espresso machine</div><div><i style="border-radius:50%"></i>Free parking on premises</div><div><i></i>Dedicated workspace</div></div>
+      <span class="btn s" style="margin-top:16px">Show all 42 amenities</span>
+      <div class="reviews" style="padding-top:32px;border-top:1px solid var(--hair);margin-top:32px">
+        <div><div class="who"><span class="av" style="background:#c9a77c">S</span><div><b class="tmd">Sophie</b><div class="bsm mut">Amsterdam · October 2026</div></div></div><p class="bsm" style="color:var(--body)">The light in this house is unreal. Pool was spotless, the rice fields at sunset are a ten-minute bike ride away. Already planning to come back.</p></div>
+        <div><div class="who"><span class="av" style="background:#6d8fa8">D</span><div><b class="tmd">Daniel</b><div class="bsm mut">Toronto · September 2026</div></div></div><p class="bsm" style="color:var(--body)">João was the most thoughtful host — fresh bread every morning and a hand-drawn map of beaches. Exactly as pictured.</p></div>
+      </div>
+      <div class="host"><span class="av" style="width:88px;height:88px;font-size:32px;background:#8e5b3e">J</span><div><b class="dsm">Hosted by João</b><p class="bsm mut" style="margin:4px 0 12px">Superhost · 9 years hosting · Response rate 100%</p><span class="btn s">Message host</span></div></div>
+    </div>
+    <aside class="res">
+      <div><span class="dmd">$523</span> <span class="mut">night</span></div>
+      <div class="dates"><div>Check-in<span>2/1/2027</span></div><div>Checkout<span>2/6/2027</span></div><div class="g">Guests<span>4 guests</span></div></div>
+      <span class="btn p" style="width:100%">Reserve</span>
+      <p class="bsm mut" style="text-align:center;margin:12px 0">You won't be charged yet</p>
+      <div class="fee"><span>$523 × 5 nights</span><span>$2,615</span></div>
+      <div class="fee"><span>Cleaning fee</span><span>$120</span></div>
+      <div class="fee"><span>Airbnb service fee</span><span>$386</span></div>
+      <div class="fee" style="border-top:1px solid var(--hair);padding-top:16px;margin-top:16px;font-weight:600"><span style="text-decoration:none">Total before taxes</span><span>$3,121</span></div>
+      <div style="border-top:1px solid var(--hair);margin-top:20px;padding-top:16px"><b class="tmd">February 2027</b>
+        <div class="cal"><span class="h">S</span><span class="h">M</span><span class="h">T</span><span class="h">W</span><span class="h">T</span><span class="h">F</span><span class="h">S</span>
+          <span></span><span class="sel">1</span><span class="rng">2</span><span class="rng">3</span><span class="rng">4</span><span class="rng">5</span><span class="sel">6</span>
+          <span>7</span><span>8</span><span class="x">9</span><span class="x">10</span><span>11</span><span>12</span><span>13</span>
+          <span>14</span><span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span></div></div>
+    </aside>
+  </div>
+</section>
+
+<section style="background:var(--soft)"><div class="wrap">
+  <h2 class="dxl">Inspiration for future getaways</h2>
+  <div class="itabs"><span class="on">Popular</span><span>Arts &amp; culture</span><span>Beach</span><span>Mountains</span><span>Outdoors</span><span>Things to do</span></div>
+  <div class="cities">
+    <div><b>Canmore</b><span>Cabin rentals</span></div><div><b>Benalmádena</b><span>Beach house rentals</span></div><div><b>Marbella</b><span>Villa rentals</span></div><div><b>Mijas</b><span>Apartment rentals</span></div><div><b>Prescott</b><span>Cottage rentals</span></div><div><b>Scottsdale</b><span>Mansion rentals</span></div>
+    <div><b>Tucson</b><span>Pet-friendly rentals</span></div><div><b>Jasper</b><span>Cabin rentals</span></div><div><b>Mountain View</b><span>Family-friendly rentals</span></div><div><b>Devonport</b><span>Cottage rentals</span></div><div><b>Mallacoota</b><span>Beach house rentals</span></div><div><b>Show more ⌄</b></div>
+  </div>
+</div></section>
+
+<div class="afoot" style="background:#fff">
+  <div class="cols">
+    <div><h6>Support</h6><a>Help Center</a><a>Get help with a safety issue</a><a>AirCover</a><a>Anti-discrimination</a><a>Cancellation options</a></div>
+    <div><h6>Hosting</h6><a>Airbnb your home</a><a>Airbnb your experience</a><a>AirCover for Hosts</a><a>Hosting resources</a><a>Community forum</a></div>
+    <div><h6>Airbnb</h6><a>2026 Winter Release</a><a>Newsroom</a><a>Careers</a><a>Investors</a><a>Gift cards</a></div>
+  </div>
+  <div class="legal"><span>© 2026 Airbnb, Inc.</span><span>·</span><span>Terms</span><span>·</span><span>Sitemap</span><span>·</span><span>Privacy</span><span style="flex:1"></span><b>🌐 English (US)</b><b>$ USD</b><b>f</b><b>X</b><b>◎</b></div>
+</div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">airbnb</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

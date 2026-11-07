@@ -35,6 +35,8 @@
 | `commands/check-log.md` | `~/.claude/commands/check-log.md` | Overwrite |
 | `scripts/audit-report.js` | `~/.claude/scripts/audit-report.js` | Overwrite |
 | `scripts/aside-session.sh` | `~/.claude/scripts/aside-session.sh` | Overwrite (exec bit 0755) |
+| `scripts/design-preview.js` | `~/.claude/scripts/design-preview.js` | Overwrite |
+| `design-previews/` (69 files) | `~/.claude/design-previews/` | Overwrite each file; uninstall removes them and any folder left empty |
 
 ## JSON merge details
 
@@ -55,7 +57,7 @@ When the installer is run with `--project`, every path in the table above shifts
 | `templates/settings-hooks.json` | `templates/settings-hooks.project.json` | `_ccBaselineId` values prefixed with `project-` so they coexist with global IDs; SessionStart + PreToolUse path-policy hooks scoped to project memory |
 | `templates/mcp-servers.json` | `templates/mcp-servers.project.json` | `npx -y @playwright/mcp@0.0.75` (portable across machines) |
 
-The 27 overwrite files (memory/, agents/, commands/, scripts/) are byte-identical between modes.
+The 28 overwrite files (memory/, agents/, commands/, scripts/) and the `design-previews/` folder are byte-identical between modes.
 
 ### JSON merge / write targets — project mode
 

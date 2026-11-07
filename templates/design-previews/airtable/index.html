@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Airtable — DESIGN.md preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..600&display=block">
+<style>
+:root{--primary:#181d26;--primary-active:#0d1218;--ink:#181d26;--body:#333840;--muted:#41454d;--hair:#dddddd;--border-strong:#9297a0;--canvas:#fff;--soft:#f8fafc;--strong:#e0e2e6;--dark:#181d26;--dark-el:#1d1f25;
+--coral:#aa2d00;--forest:#0a2e0e;--cream:#f5e9d4;--peach:#fcab79;--mint:#a8d8c4;--yellow:#f4d35e;--mustard:#d9a441;--link:#1b61c9;--info:#254fad;--info-b:#458fff;--success:#006400;--success-b:#39bf45;--pink:#1d1f25;
+--haas:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Fira Sans","Droid Sans","Helvetica Neue",sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{font-family:var(--haas);font-optical-sizing:auto;font-size:14px;line-height:1.19;color:var(--body);background:var(--canvas)}
+.wrap{max-width:1376px;margin:0 auto;padding:0 48px}
+/* type — line-heights reduced ~5% per substitute note */
+.d-lg{font-size:40px;font-weight:400;line-height:1.14;color:var(--ink)}
+.d-md{font-size:32px;font-weight:400;line-height:1.14}
+.t-lg{font-size:24px;font-weight:400;line-height:1.28;letter-spacing:.12px}
+.t-md{font-size:20px;font-weight:400;line-height:1.42}
+.t-sm{font-size:18px;font-weight:500;line-height:1.33}
+.lbl{font-size:16px;font-weight:500;line-height:1.33}
+.cap{font-size:14px;font-weight:500;line-height:1.28;letter-spacing:.16px}
+.btn{display:inline-flex;align-items:center;font-size:16px;font-weight:500;line-height:1.4;padding:16px 24px;border-radius:12px;white-space:nowrap}
+.btn.p{background:var(--primary);color:#fff;box-shadow:0 1px 2px rgba(27,97,201,.18),0 2px 6px rgba(27,97,201,.10)}
+.btn.s{background:#fff;color:var(--ink);border:1px solid var(--hair)}
+.btn.sm{padding:10px 16px;font-size:14px}
+a.tl{color:var(--link);text-decoration:none}
+/* nav */
+nav{height:64px;display:flex;align-items:center;gap:28px;font-size:14px;color:var(--ink)}
+.wm{display:flex;align-items:center;gap:8px;font-size:21px;font-weight:500;letter-spacing:-.3px;margin-right:12px}
+nav .sp{flex:1}
+/* hero */
+.hero{padding:96px 0 0;text-align:center}
+.hero h1{max-width:760px;margin:0 auto}
+.hero .sub{font-size:18px;line-height:1.4;color:var(--body);max-width:580px;margin:20px auto 32px}
+.pair{display:flex;gap:12px;justify-content:center}
+/* product grid mockup */
+.base{margin:72px auto 0;max-width:1180px;border:1px solid var(--hair);border-radius:12px;overflow:hidden;text-align:left;background:#fff}
+.btop{display:flex;align-items:center;gap:14px;background:#2d7ff9;background:#1d1f25;color:#fff;padding:10px 16px;font-size:13px}
+.btop .ic{width:22px;height:22px;border-radius:6px;background:var(--coral)}
+.btop span.o{opacity:.6}
+.tabsrow{display:flex;gap:4px;background:#24272e;padding:0 12px}
+.tabsrow span{color:#c9ccd2;font-size:13px;padding:8px 12px;border-radius:6px 6px 0 0}
+.tabsrow span.on{background:#fff;color:var(--ink);font-weight:500}
+.tools{display:flex;gap:18px;align-items:center;padding:8px 16px;border-bottom:1px solid var(--hair);font-size:13px;color:var(--muted)}
+.tools b{color:var(--ink);font-weight:500}
+.grid{display:grid;grid-template-columns:44px 260px 150px 140px 170px 130px 1fr}
+.grid>div{border-right:1px solid #eee;border-bottom:1px solid #eee;padding:8px 10px;font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:36px;display:flex;align-items:center;gap:6px}
+.grid .h{background:var(--soft);color:var(--muted);font-weight:500}
+.grid .n{color:var(--border-strong);justify-content:center}
+.chip{display:inline-block;font-size:12px;padding:2px 8px;border-radius:9999px;line-height:1.3}
+.av{width:18px;height:18px;border-radius:50%;flex:none}
+.bar{height:6px;border-radius:3px;background:var(--strong);flex:1;position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--success-b)}
+/* logo strip */
+.logos{display:flex;justify-content:space-between;padding:32px 0 0;margin-top:56px;color:var(--muted);font-size:22px;font-weight:500;letter-spacing:-.2px}
+section{padding:96px 0}
+/* coral card */
+.coral{background:var(--coral);color:#fff;border-radius:12px;padding:48px;display:grid;grid-template-columns:1fr 1.25fr;gap:48px;align-items:center}
+.coral p{font-size:14px;line-height:1.4;opacity:.92;margin:16px 0 28px;max-width:420px}
+.app{background:#fff;border-radius:10px;color:var(--ink);overflow:hidden}
+.app .ah{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--hair)}
+.app .kp{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:16px 18px}
+.app .kp div{background:var(--soft);border-radius:10px;padding:14px}
+.app .kp b{display:block;font-size:26px;font-weight:400;margin-top:4px}
+.app .rows{padding:0 18px 16px}
+.app .rows div{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--hair);font-size:13px}
+/* demo grid */
+.head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:48px;gap:48px}
+.head p{font-size:16px;line-height:1.4;max-width:420px}
+.demo{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;align-items:start}
+.dc{border-radius:10px;padding:16px;color:var(--ink)}
+.dc h4{font-size:16px;font-weight:500;margin-bottom:6px}
+.dc p{font-size:14px;line-height:1.3;color:var(--body);margin-bottom:16px}
+.frag{background:#fff;border-radius:10px;padding:12px;font-size:12.5px}
+.frag .r{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid #eee}
+.frag .r:first-child{border-top:0}
+.forest{background:var(--forest);color:#fff}
+.forest h4,.forest p{color:#fff}
+/* cream band */
+.creamband{background:var(--cream)}
+.cb{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.cb p{font-size:16px;line-height:1.4;margin:16px 0 0;max-width:480px}
+.callouts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.cc{background:#fff;border-radius:10px;padding:24px}
+.cc b{display:block;font-size:40px;font-weight:400;color:var(--ink);margin-bottom:6px}
+/* dark card */
+.darkc{background:var(--dark);color:#fff;border-radius:12px;padding:48px;display:grid;grid-template-columns:1.1fr 1fr;gap:56px}
+.darkc p{color:#c3c7ce;font-size:14px;line-height:1.4;margin:16px 0 28px}
+.agent{background:var(--dark-el);border:1px solid #2c3039;border-radius:10px;padding:20px;font-size:13px;color:#e6e8eb}
+.agent .q{background:#2a2e37;border-radius:10px;padding:12px 14px;margin-bottom:14px}
+.agent .st{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid #2c3039}
+.dotg{width:8px;height:8px;border-radius:50%;background:var(--success-b);flex:none}
+/* tabbed */
+.tabbed{background:var(--soft);border-radius:12px;padding:32px;display:grid;grid-template-columns:280px 1fr;gap:40px}
+.rail div{font-size:20px;line-height:1.42;color:var(--border-strong);padding:14px 0;border-bottom:1px solid var(--hair)}
+.rail div.on{color:var(--ink)}
+.quote{display:grid;grid-template-columns:1fr 300px;gap:32px;align-items:center}
+.quote blockquote{font-size:24px;line-height:1.28;letter-spacing:.12px;color:var(--ink)}
+.ill{height:260px;border-radius:10px;background:var(--mint);position:relative;overflow:hidden}
+.ill i{position:absolute;border-radius:10px}
+.ctal{background:var(--strong);border-radius:12px;padding:48px;display:flex;justify-content:space-between;align-items:center}
+.foot{padding:64px 0;display:grid;grid-template-columns:1.4fr repeat(5,1fr);gap:16px;font-size:14px;color:var(--muted);border-top:1px solid var(--hair)}
+.foot h5{font-size:14px;font-weight:500;color:var(--ink);margin-bottom:14px}
+.foot li{list-style:none;margin-bottom:10px}
+</style></head><body>
+<div class="wrap">
+<nav>
+  <span class="wm"><svg width="28" height="28" viewBox="0 0 24 24" fill="#181d26" aria-hidden="true"><path d="M11.992 1.966c-.434 0-.87.086-1.28.257L1.779 5.917c-.503.208-.49.908.012 1.116l8.982 3.558a3.266 3.266 0 0 0 2.454 0l8.982-3.558c.503-.196.503-.908.012-1.116l-8.957-3.694a3.255 3.255 0 0 0-1.272-.257zM23.4 8.056a.589.589 0 0 0-.222.045l-10.012 3.877a.612.612 0 0 0-.38.564v8.896a.6.6 0 0 0 .821.552L23.62 18.1a.583.583 0 0 0 .38-.551V8.653a.6.6 0 0 0-.6-.596zM.676 8.095a.644.644 0 0 0-.48.19C.086 8.396 0 8.53 0 8.69v8.355c0 .442.515.737.908.54l6.27-3.006.307-.147 2.969-1.436c.466-.22.43-.908-.061-1.092L.883 8.138a.57.57 0 0 0-.207-.044z"/></svg>Airtable</span>
+  <span>Platform</span><span>Solutions</span><span>Resources</span><span>Enterprise</span><span>Pricing</span>
+  <span class="sp"></span><span class="btn s sm">Book Demo</span><span class="btn p sm">Sign up for free</span><span>Log In</span>
+</nav>
+
+<header class="hero">
+  <h1 class="d-lg">Digital operations for the AI era</h1>
+  <p class="sub">Build AI-powered apps on your company's data — without code. Connect teams, automate the busywork and ship workflows at prototype speed.</p>
+  <div class="pair"><span class="btn p">Get started for free</span><span class="btn s">Book demo</span></div>
+
+  <div class="base">
+    <div class="btop"><span class="ic"></span><b style="font-weight:500">Product Launch Ops</b><span class="o">Data</span><span class="o">Automations</span><span class="o">Interfaces</span><span style="margin-left:auto" class="o">Omni ✦ Ask AI</span><span style="background:#fff;color:#181d26;border-radius:6px;padding:4px 10px;font-weight:500">Share</span></div>
+    <div class="tabsrow"><span class="on">Launches</span><span>Campaigns</span><span>Assets</span><span>Channels</span><span>Owners</span></div>
+    <div class="tools"><b>▦ Grid view</b><span>Hide fields</span><span>Filter</span><span>Group</span><span>Sort</span><span>Color</span><span style="margin-left:auto">Search</span></div>
+    <div class="grid">
+      <div class="h n">#</div><div class="h">Launch name</div><div class="h">Status</div><div class="h">Owner</div><div class="h">Channel</div><div class="h">Launch date</div><div class="h">Readiness</div>
+      <div class="n">1</div><div>Spring collection drop</div><div><span class="chip" style="background:#d1f7c4;color:#006400">Live</span></div><div><i class="av" style="background:#fcab79"></i>Maya Chen</div><div><span class="chip" style="background:#e0e2e6">Paid social</span></div><div>Mar 12, 2026</div><div><span class="bar"><i style="width:100%"></i></span>100%</div>
+      <div class="n">2</div><div>Loyalty app v3</div><div><span class="chip" style="background:#fff1c2;color:#7a5a00">In review</span></div><div><i class="av" style="background:#a8d8c4"></i>Jordan Lee</div><div><span class="chip" style="background:#e0e2e6">Email · In-app</span></div><div>Apr 02, 2026</div><div><span class="bar"><i style="width:78%"></i></span>78%</div>
+      <div class="n">3</div><div>Retail partner kit — EMEA</div><div><span class="chip" style="background:#dfe9ff;color:#254fad">In progress</span></div><div><i class="av" style="background:#f4d35e"></i>Priya Rao</div><div><span class="chip" style="background:#e0e2e6">Partners</span></div><div>Apr 18, 2026</div><div><span class="bar"><i style="width:52%"></i></span>52%</div>
+      <div class="n">4</div><div>Holiday gift guide</div><div><span class="chip" style="background:#e0e2e6;color:#41454d">Planned</span></div><div><i class="av" style="background:#d9a441"></i>Sam Ortiz</div><div><span class="chip" style="background:#e0e2e6">Web · SEO</span></div><div>Nov 01, 2026</div><div><span class="bar"><i style="width:14%"></i></span>14%</div>
+      <div class="n">5</div><div>Creator ambassador program</div><div><span class="chip" style="background:#dfe9ff;color:#254fad">In progress</span></div><div><i class="av" style="background:#aa2d00"></i>Ava Brooks</div><div><span class="chip" style="background:#e0e2e6">Influencer</span></div><div>May 06, 2026</div><div><span class="bar"><i style="width:61%"></i></span>61%</div>
+    </div>
+  </div>
+  <div class="logos"><span>HBO</span><span>NETFLIX</span><span>amazon</span><span>TIME</span><span>Condé Nast</span><span>Shopify</span></div>
+</header>
+</div>
+
+<section><div class="wrap">
+  <div class="coral">
+    <div>
+      <div class="cap" style="opacity:.8;margin-bottom:12px">Airtable App Builder</div>
+      <h2 class="d-md">Production apps at prototype speed</h2>
+      <p>Describe the app you need and Omni builds it on top of your live data — interfaces, permissions and automations included. Ship to the whole org the same afternoon.</p>
+      <span class="btn s">Explore App Builder</span>
+    </div>
+    <div class="app">
+      <div class="ah"><span class="lbl">Field Inspections · Interface</span><span class="cap" style="color:#41454d">Updated 2m ago</span></div>
+      <div class="kp"><div><span class="cap" style="color:#41454d">Open</span><b>128</b></div><div><span class="cap" style="color:#41454d">Due this week</span><b>37</b></div><div><span class="cap" style="color:#41454d">Pass rate</span><b>94.2%</b></div></div>
+      <div class="rows">
+        <div><span class="dotg"></span>Site 14 — Oakland warehouse<span style="margin-left:auto;color:#41454d">Passed</span></div>
+        <div><span class="dotg" style="background:#d9a441"></span>Site 22 — Fremont depot<span style="margin-left:auto;color:#41454d">Needs follow-up</span></div>
+        <div><span class="dotg" style="background:#458fff"></span>Site 31 — San Jose hub<span style="margin-left:auto;color:#41454d">Scheduled</span></div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <div class="head"><h2 class="d-md" style="color:#181d26;max-width:620px">One platform for every team's workflow</h2><p>From campaign calendars to product roadmaps, teams build the exact tool they need on a shared source of truth.</p></div>
+  <div class="demo">
+    <div class="dc" style="background:var(--peach)"><h4>Marketing calendar</h4><p>Plan every campaign across channels.</p>
+      <div class="frag"><div class="r"><span>Brand refresh teaser</span><span class="chip" style="background:#f5e9d4">Mar 4</span></div><div class="r"><span>Webinar: Ops at scale</span><span class="chip" style="background:#f5e9d4">Mar 9</span></div><div class="r"><span>Q2 newsletter</span><span class="chip" style="background:#f5e9d4">Mar 15</span></div></div></div>
+    <div class="dc forest" style="padding:24px 16px 40px"><h4>Product roadmap</h4><p style="opacity:.85">Prioritize with impact scores your whole team trusts.</p>
+      <div class="frag" style="color:#181d26"><div class="r"><b style="font-weight:500">Now</b><span>6 features</span></div><div class="r"><b style="font-weight:500">Next</b><span>11 features</span></div><div class="r"><b style="font-weight:500">Later</b><span>23 features</span></div><div class="r"><span>Avg. impact</span><span>8.4 / 10</span></div></div></div>
+    <div class="dc" style="background:var(--mint)"><h4>Content production</h4><p>Briefs, drafts and approvals in one view.</p>
+      <div class="frag"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"><span style="height:46px;border-radius:6px;background:#f4d35e"></span><span style="height:46px;border-radius:6px;background:#fcab79"></span><span style="height:46px;border-radius:6px;background:#aa2d00"></span><span style="height:46px;border-radius:6px;background:#0a2e0e"></span><span style="height:46px;border-radius:6px;background:#d9a441"></span><span style="height:46px;border-radius:6px;background:#f5e9d4"></span></div></div></div>
+    <div class="dc" style="background:var(--yellow);padding-bottom:28px"><h4>Recruiting pipeline</h4><p>Track candidates from sourced to signed.</p>
+      <div class="frag"><div class="r"><span>Applied</span><b style="font-weight:500">214</b></div><div class="r"><span>Interviewing</span><b style="font-weight:500">38</b></div><div class="r"><span>Offer</span><b style="font-weight:500">6</b></div></div></div>
+  </div>
+</div></section>
+
+<section class="creamband"><div class="wrap cb">
+  <div><div class="cap" style="color:#41454d;margin-bottom:12px">Customer results</div><h2 class="d-md" style="color:#181d26">Teams move faster when work lives in one place</h2><p>Over 500,000 organizations — including 80% of the Fortune 100 — run critical operations on Airtable. <a class="tl">Read the customer stories</a></p></div>
+  <div class="callouts">
+    <div class="cc"><b>10×</b><span class="cap">faster campaign launches at a global media company</span></div>
+    <div class="cc"><b>$4.2M</b><span class="cap">saved in tooling costs in the first year</span></div>
+    <div class="cc"><b>72%</b><span class="cap">less time spent on status reporting</span></div>
+    <div class="cc"><b>3 days</b><span class="cap">from idea to production app, on average</span></div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="darkc">
+    <div><div class="cap" style="color:#9297a0;margin-bottom:12px">Omni · AI agents</div><h2 class="d-md">The path to 10× every person in your organization</h2><p>Field agents run research, enrichment and categorization across thousands of records at once — and every result lands back in your base, ready for review.</p><span class="btn s">See Omni in action</span></div>
+    <div class="agent">
+      <div class="q">For every lead added this week, find company size and categorize by industry.</div>
+      <div class="st"><span class="dotg"></span>Enriched 1,284 records<span style="margin-left:auto;color:#9297a0">0:42</span></div>
+      <div class="st"><span class="dotg"></span>Categorized into 14 industries<span style="margin-left:auto;color:#9297a0">0:18</span></div>
+      <div class="st"><span class="dotg" style="background:#458fff"></span>Drafting outreach for top 50 accounts…<span style="margin-left:auto;color:#9297a0">running</span></div>
+    </div>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <div class="tabbed">
+    <div class="rail"><div class="on">Coca-Cola</div><div>Condé Nast</div><div>Time Inc.</div><div>Netflix</div></div>
+    <div class="quote"><div><blockquote>“Airtable gave every bottler in our network one live view of launches. What used to take a week of spreadsheets now updates itself.”</blockquote><p class="cap" style="margin-top:20px;color:#41454d">Director of Marketing Operations, Coca-Cola</p><p style="margin-top:20px"><a class="tl">Read the story →</a></p></div>
+      <div class="ill"><i style="left:24px;top:24px;width:150px;height:96px;background:#fff"></i><i style="left:120px;top:90px;width:150px;height:120px;background:#0a2e0e"></i><i style="left:40px;top:150px;width:90px;height:80px;background:#f4d35e"></i></div></div>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <div class="ctal"><h2 class="d-md" style="color:#181d26">Start building with Airtable</h2><div class="pair"><span class="btn p">Sign up for free</span><span class="btn s">Contact sales</span></div></div>
+  <div class="foot" style="margin-top:96px">
+    <div><span class="wm" style="font-size:18px">Airtable</span></div>
+    <ul><h5>Platform</h5><li>App Builder</li><li>Omni AI</li><li>Automations</li><li>Interfaces</li></ul>
+    <ul><h5>Solutions</h5><li>Marketing</li><li>Product</li><li>Operations</li><li>HR</li></ul>
+    <ul><h5>Resources</h5><li>Templates</li><li>Guides</li><li>Webinars</li><li>Community</li></ul>
+    <ul><h5>Learn</h5><li>Articles</li><li>Academy</li><li>Support</li></ul>
+    <ul><h5>Company</h5><li>About</li><li>Careers</li><li>Trust</li><li>Press</li></ul>
+  </div>
+</div></section>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">airtable</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

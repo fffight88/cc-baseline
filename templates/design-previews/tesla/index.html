@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tesla — Electric Cars, Solar &amp; Clean Energy</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=block">
+<style>
+:root{--blue:#3e6ae1;--white:#fff;--ash:#f4f4f4;--carbon:#171a20;--graphite:#393c41;--pewter:#5c5e62;--fog:#8e8e8e;--cloud:#eee;--pale:#d0d1d2}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:400 14px/20px Inter,-apple-system,Arial,sans-serif;color:var(--graphite);background:#fff;letter-spacing:normal;overflow-x:hidden}
+h1,h2,h3{font-weight:500;color:var(--carbon);letter-spacing:normal}
+.disp{font-size:40px;line-height:48px}
+.pn{font-size:17px;line-height:20px;font-weight:500;color:var(--carbon)}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:40px;width:200px;padding:4px;border:3px solid transparent;border-radius:4px;background:var(--blue);color:#fff;font:500 14px/16.8px Inter,-apple-system,Arial,sans-serif;transition:border-color .33s,background-color .33s,color .33s,box-shadow .25s}
+.btn.s{background:#fff;color:var(--graphite)}
+.btn.sm{width:auto;padding:4px 16px}
+.sl{color:var(--pewter);text-decoration:underline;text-underline-offset:4px;transition:box-shadow .33s cubic-bezier(.5,0,0,.75),color .33s}
+/* nav */
+.nav{position:absolute;top:0;left:0;right:0;z-index:5;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:12px 32px;height:56px}
+.wm{font:500 20px/1 Inter,sans-serif;letter-spacing:9px;color:var(--carbon);padding-left:8px}
+.nav .c{display:flex;gap:4px}
+.nb{padding:4px 16px;min-height:32px;display:inline-flex;align-items:center;border-radius:4px;font-weight:500;font-size:14px;line-height:16.8px;color:var(--carbon);transition:color .33s,background-color .33s}
+.nb.on{background:rgba(23,26,32,.06)}
+.nav .r{justify-self:end;display:flex;gap:8px}
+.nav .r span{width:32px;height:32px;display:grid;place-items:center}
+/* hero */
+.hero{position:relative;height:900px;overflow:hidden}
+.hero svg.ph{position:absolute;inset:0;width:100%;height:100%}
+.hero .top{position:absolute;top:120px;left:0;right:0;text-align:center}
+.hero .top p{color:var(--graphite);margin-top:6px}
+.hero .promo{display:block;font-size:22px;line-height:20px;color:var(--blue);margin-top:16px}
+.hero .bot{position:absolute;bottom:72px;left:0;right:0;display:flex;justify-content:center;gap:24px}
+.dots{position:absolute;bottom:40px;left:0;right:0;display:flex;justify-content:center;gap:8px}
+.dots i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.5)}
+.dots i.on{background:#fff}
+.arr{position:absolute;top:50%;width:44px;height:44px;border-radius:4px;background:rgba(255,255,255,.75);display:grid;place-items:center;color:var(--carbon);font-size:18px}
+.hero.dark .top h1,.hero.dark .top p{color:#fff}
+/* panel */
+.panel{background:#fff;padding:80px 0}
+.panel .in{max-width:1383px;margin:0 auto;padding:0 48px;display:grid;grid-template-columns:7fr 3fr;gap:48px}
+.vg{display:grid;grid-template-columns:repeat(3,1fr);gap:24px 16px}
+.vc{text-align:center}
+.vc svg{display:block;margin:0 auto 8px}
+.vc .ln{display:flex;justify-content:center;gap:16px;margin-top:6px}
+.side{padding-left:48px;display:grid;align-content:start;gap:14px;border-left:1px solid var(--cloud)}
+.side span{color:var(--carbon);font-weight:500}
+/* categories */
+.cats{max-width:1383px;margin:0 auto;padding:0 48px 80px;display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.cat{border-radius:12px;overflow:hidden;position:relative;aspect-ratio:2/1}
+.cat.sm{aspect-ratio:auto}
+.cat>svg{position:absolute;inset:0;width:100%;height:100%}
+.cat .lab{position:absolute;left:32px;top:28px;color:#fff;font-size:16px;font-weight:500}
+.cat .lab small{display:block;font-size:14px;font-weight:400;margin-top:4px;opacity:.9}
+.cat .cta{position:absolute;left:32px;bottom:28px;display:flex;gap:16px}
+/* charging table */
+.ash{background:var(--ash);padding:96px 0}
+.ash .in{max-width:1383px;margin:0 auto;padding:0 48px;display:grid;grid-template-columns:1fr 1.3fr;gap:64px;align-items:center}
+.map{background:#fff;border-radius:12px;overflow:hidden;position:relative}
+.tbl{width:100%;border-collapse:collapse;background:#fff}
+.tbl th{text-align:left;font-weight:500;color:var(--pewter);padding:12px 16px;border-bottom:1px solid var(--cloud)}
+.tbl td{padding:12px 16px;border-bottom:1px solid var(--cloud);color:var(--carbon)}
+.tbl td.n{text-align:right;font-variant-numeric:tabular-nums}
+.av{display:inline-block;width:52px;height:6px;border-radius:3px;background:var(--cloud);vertical-align:middle;margin-right:8px;position:relative;overflow:hidden}
+.av i{position:absolute;left:0;top:0;bottom:0;background:var(--carbon)}
+/* chat bar */
+.chat{position:relative;background:#fff;border-top:1px solid var(--cloud);display:flex;align-items:center;gap:16px;padding:10px 32px}
+.chat .q{flex:1;display:flex;align-items:center;gap:12px;background:var(--ash);border-radius:4px;padding:10px 16px}
+.chat .q b{font-weight:500;color:var(--carbon)}
+.chat .q span{color:var(--fog);flex:1}
+.bf{padding:32px 0 40px;text-align:center;color:var(--pewter);font-size:12px;display:flex;justify-content:center;gap:24px}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="car" viewBox="0 0 600 220"><ellipse cx="300" cy="200" rx="285" ry="9" fill="#000" opacity=".35"/><path d="M24 172 C24 146 40 132 80 126 L170 116 C220 76 280 56 350 56 C420 56 470 78 520 116 C560 122 580 136 580 156 L578 176 L26 178 Z" fill="currentColor"/><path d="M200 114 C246 80 296 66 350 66 C404 66 444 84 482 114 Z" fill="#14161a" opacity=".9"/><path d="M40 150 C200 140 420 140 572 148" stroke="#fff" stroke-opacity=".25" fill="none"/><path d="M50 134 L92 130" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".8"/><circle cx="135" cy="176" r="34" fill="#15171b"/><circle cx="135" cy="176" r="22" fill="#4a4e55"/><circle cx="470" cy="176" r="34" fill="#15171b"/><circle cx="470" cy="176" r="22" fill="#4a4e55"/></symbol>
+<symbol id="suv" viewBox="0 0 600 220"><ellipse cx="300" cy="200" rx="285" ry="9" fill="#000" opacity=".35"/><path d="M24 172 C24 140 40 124 80 118 L160 106 C210 60 270 44 340 44 C420 44 474 68 520 106 C562 114 580 130 580 152 L578 176 L26 178 Z" fill="currentColor"/><path d="M190 104 C238 66 288 54 340 54 C400 54 446 72 484 104 Z" fill="#14161a" opacity=".9"/><circle cx="138" cy="176" r="36" fill="#15171b"/><circle cx="138" cy="176" r="23" fill="#4a4e55"/><circle cx="468" cy="176" r="36" fill="#15171b"/><circle cx="468" cy="176" r="23" fill="#4a4e55"/></symbol>
+<symbol id="cyber" viewBox="0 0 600 220"><ellipse cx="300" cy="200" rx="285" ry="9" fill="#000" opacity=".35"/><path d="M20 160 L30 120 L300 40 L580 110 L584 160 L560 178 L40 178 Z" fill="currentColor"/><path d="M160 98 L300 54 L420 82 Z" fill="#14161a" opacity=".9"/><path d="M30 124 L120 104" stroke="#fff" stroke-width="3"/><circle cx="140" cy="176" r="36" fill="#15171b"/><circle cx="140" cy="176" r="23" fill="#4a4e55"/><circle cx="470" cy="176" r="36" fill="#15171b"/><circle cx="470" cy="176" r="23" fill="#4a4e55"/></symbol>
+</defs></svg>
+
+<section class="hero">
+<svg class="ph" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfd6dc"/><stop offset=".55" stop-color="#e9e4dc"/><stop offset=".56" stop-color="#b7b3ad"/><stop offset="1" stop-color="#8d8a86"/></linearGradient><linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9a6a1"/><stop offset="1" stop-color="#6e6c69"/></linearGradient></defs>
+<rect width="1440" height="900" fill="url(#sky)"/>
+<g fill="#b9bec3" opacity=".7"><rect x="80" y="370" width="60" height="130"/><rect x="150" y="330" width="40" height="170"/><rect x="210" y="390" width="90" height="110"/><rect x="980" y="350" width="50" height="150"/><rect x="1040" y="300" width="36" height="200"/><rect x="1090" y="380" width="110" height="120"/><rect x="1240" y="340" width="60" height="160"/></g>
+<rect y="500" width="1440" height="400" fill="url(#floor)"/>
+<path d="M0 500 L1440 500" stroke="#d8d4ce"/>
+<svg x="90" y="455" width="520" height="191" style="color:#e8e8e6"><use href="#suv"/></svg>
+<svg x="830" y="455" width="520" height="191" style="color:#a31e22"><use href="#car"/></svg>
+<svg x="420" y="490" width="600" height="220" style="color:#2d3a52"><use href="#suv"/></svg>
+</svg>
+<nav class="nav"><span class="wm">TESLA</span><span class="c"><span class="nb on">Vehicles</span><span class="nb">Energy</span><span class="nb">Charging</span><span class="nb">Discover</span><span class="nb">Shop</span></span><span class="r"><span><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#171a20" stroke-width="1.5"><circle cx="10" cy="10" r="8"/><path d="M7.5 7.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5V12"/><circle cx="10" cy="14.5" r=".6" fill="#171a20"/></svg></span><span><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#171a20" stroke-width="1.5"><circle cx="10" cy="10" r="8"/><path d="M2 10h16M10 2c3 3 3 13 0 16M10 2c-3 3-3 13 0 16"/></svg></span><span><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#171a20" stroke-width="1.5"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c1-4 4-5 7-5s6 1 7 5"/></svg></span></span></nav>
+<div class="top"><h1 class="disp">Model Y</h1><p>Starting at $39,990 · Lease from $399/mo</p><span class="promo">1.99% APR available</span></div>
+<span class="arr" style="left:24px">‹</span><span class="arr" style="right:24px">›</span>
+<div class="bot"><span class="btn">Order Now</span><span class="btn s">View Inventory</span></div>
+<div class="dots"><i class="on"></i><i></i><i></i></div>
+</section>
+
+<section class="hero dark" style="height:860px;min-height:0">
+<svg class="ph" viewBox="0 0 1440 860" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="dusk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2433"/><stop offset=".5" stop-color="#4b4f63"/><stop offset=".62" stop-color="#c98a62"/><stop offset=".63" stop-color="#3a3532"/><stop offset="1" stop-color="#171a20"/></linearGradient></defs><rect width="1440" height="860" fill="url(#dusk)"/><path d="M0 540 L300 470 L560 520 L820 450 L1100 510 L1440 460 L1440 545 L0 545Z" fill="#2a2a33"/><path d="M0 700 C400 640 1000 640 1440 700" stroke="#55504a" stroke-width="2" fill="none"/>
+<svg x="420" y="470" width="600" height="220" style="color:#d7dadd"><use href="#car"/></svg></svg>
+<div class="top"><h1 class="disp">Model 3</h1><p>From $29,990 after est. savings · 363 mi range (EPA est.)</p></div>
+<div class="bot"><span class="btn">Order Now</span><span class="btn s">Demo Drive</span></div>
+<div class="dots"><i></i><i class="on"></i><i></i></div>
+</section>
+
+<section class="panel"><div class="in">
+<div class="vg">
+<div class="vc"><svg width="260" height="95" style="color:#d0d1d2"><use href="#car"/></svg><div class="pn">Model S</div><div class="ln"><span class="sl">Learn</span><span class="sl">Order</span></div></div>
+<div class="vc"><svg width="260" height="95" style="color:#a31e22"><use href="#car"/></svg><div class="pn">Model 3</div><div class="ln"><span class="sl">Learn</span><span class="sl">Order</span></div></div>
+<div class="vc"><svg width="260" height="95" style="color:#2d3a52"><use href="#suv"/></svg><div class="pn">Model Y</div><div class="ln"><span class="sl">Learn</span><span class="sl">Order</span></div></div>
+<div class="vc"><svg width="260" height="95" style="color:#e8e8e6"><use href="#suv"/></svg><div class="pn">Model X</div><div class="ln"><span class="sl">Learn</span><span class="sl">Order</span></div></div>
+<div class="vc"><svg width="260" height="95" style="color:#9ea3a8"><use href="#cyber"/></svg><div class="pn">Cybertruck</div><div class="ln"><span class="sl">Learn</span><span class="sl">Order</span></div></div>
+<div class="vc"><svg width="260" height="95" style="color:#393c41"><use href="#car"/></svg><div class="pn">Help Me Choose</div><div class="ln"><span class="sl">Get Started</span></div></div>
+</div>
+<div class="side"><span>Inventory</span><span>Used Cars</span><span>Demo Drive</span><span>Trade-in</span><span>Compare</span><span>Help Me Charge</span><span>Fleet</span><span>Semi</span><span>Roadster</span><span>We, Robot</span></div>
+</div></section>
+
+<section class="cats">
+<div class="cat"><svg viewBox="0 0 900 450" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="c1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f6a80"/><stop offset=".6" stop-color="#9aa7ad"/><stop offset=".61" stop-color="#3b3d3c"/><stop offset="1" stop-color="#1e1f1f"/></linearGradient></defs><rect width="900" height="450" fill="url(#c1)"/><path d="M0 280 L200 220 L380 260 L600 200 L900 250 L900 280Z" fill="#5c6b70"/><svg x="240" y="250" width="460" height="169" style="color:#a31e22"><use href="#car"/></svg></svg><span class="lab">Sport Sedan<small>Model 3</small></span><span class="cta"><span class="btn" style="width:160px">Order Now</span><span class="btn s" style="width:160px">Learn More</span></span></div>
+<div class="cat sm"><svg viewBox="0 0 450 450" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="c2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2f36"/><stop offset=".6" stop-color="#5a5e66"/><stop offset=".61" stop-color="#26282c"/><stop offset="1" stop-color="#111"/></linearGradient></defs><rect width="450" height="450" fill="url(#c2)"/><svg x="20" y="250" width="410" height="150" style="color:#d0d1d2"><use href="#suv"/></svg></svg><span class="lab">Midsize SUV<small>Model Y</small></span><span class="cta"><span class="btn" style="width:160px">Order Now</span></span></div>
+</section>
+
+<section class="ash"><div class="in">
+<div><h2 class="disp">Find Your Charge</h2><p style="margin:12px 0 24px;max-width:420px">Over 70,000 Superchargers on six continents. Charge up to 200 miles in 15 minutes and keep moving.</p><span class="btn s sm" style="width:200px">View Network</span></div>
+<div class="map">
+<svg viewBox="0 0 700 240" width="100%" height="240" style="display:block"><rect width="700" height="240" fill="#eee"/><g stroke="#fff" stroke-width="6" fill="none"><path d="M0 160 C150 120 300 200 460 120 S650 80 700 100"/><path d="M220 0 L260 240"/><path d="M520 0 C500 80 540 160 500 240"/></g><g fill="#171a20"><circle cx="250" cy="150" r="7"/><circle cx="470" cy="118" r="7"/><circle cx="120" cy="140" r="7"/><circle cx="560" cy="200" r="7"/></g><circle cx="470" cy="118" r="14" fill="none" stroke="#3e6ae1" stroke-width="2"/></svg>
+<table class="tbl"><thead><tr><th>Supercharger</th><th>Availability</th><th style="text-align:right">Max power</th><th style="text-align:right">Distance</th></tr></thead><tbody>
+<tr><td>Hawthorne, CA</td><td><span class="av"><i style="width:75%"></i></span>12 / 16 available</td><td class="n">250 kW</td><td class="n">1.2 mi</td></tr>
+<tr><td>Culver City, CA</td><td><span class="av"><i style="width:40%"></i></span>8 / 20 available</td><td class="n">325 kW</td><td class="n">4.8 mi</td></tr>
+<tr><td>Santa Monica, CA</td><td><span class="av"><i style="width:90%"></i></span>36 / 40 available</td><td class="n">250 kW</td><td class="n">7.1 mi</td></tr>
+<tr><td>Torrance, CA</td><td><span class="av"><i style="width:20%"></i></span>2 / 10 available</td><td class="n">150 kW</td><td class="n">9.6 mi</td></tr>
+</tbody></table>
+</div>
+</div></section>
+
+<section class="hero" style="height:760px;min-height:0;background:#fff">
+<svg class="ph" viewBox="0 0 1440 760" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="h" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6ebef"/><stop offset=".7" stop-color="#f4f4f4"/><stop offset="1" stop-color="#dcdcdc"/></linearGradient></defs><rect width="1440" height="760" fill="url(#h)"/><path d="M420 600 L420 400 L720 260 L1020 400 L1020 600Z" fill="#fafafa"/><path d="M400 410 L720 250 L1040 410" stroke="#393c41" stroke-width="10" fill="none"/><g fill="#171a20"><rect x="470" y="360" width="120" height="40" transform="skewY(-25) translate(0 230)"/></g><rect x="600" y="440" width="70" height="140" rx="4" fill="#fff" stroke="#d0d1d2"/><rect x="690" y="440" width="70" height="140" rx="4" fill="#fff" stroke="#d0d1d2"/><g fill="#1f2a3a"><path d="M520 340 L720 244 L720 300 L560 376Z" opacity=".85"/><path d="M920 340 L720 244 L720 300 L880 376Z" opacity=".85"/></g><rect y="600" width="1440" height="160" fill="#cfcfcd"/></svg>
+<div class="top"><h1 class="disp">Powerwall 3</h1><p>Keep your lights on during outages and save with solar.</p></div>
+<div class="bot"><span class="btn">Order Now</span><span class="btn s">Learn More</span></div>
+</section>
+
+<div class="chat"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#171a20" stroke-width="1.5"><path d="M3 4h14v9H8l-4 3v-3H3z"/></svg><div class="q"><b>Ask a Question</b><span>What's Dog Mode?</span><svg width="16" height="16" viewBox="0 0 16 16" fill="#5c5e62"><path d="M1 8l14-6-5 14-2-6z"/></svg></div><span class="btn s sm" style="width:auto"><svg width="16" height="16" viewBox="0 0 24 24" fill="#3e6ae1" style="margin-right:8px"><path d="M12 5.362l2.475-3.026s4.245.09 8.471 2.054c-1.082 1.636-3.231 2.438-3.231 2.438-.146-1.439-1.154-1.79-4.354-1.79L12 24 8.619 5.034c-3.18 0-4.188.354-4.335 1.792 0 0-2.146-.795-3.229-2.430C5.28 2.431 9.525 2.34 9.525 2.34L12 5.362l-.004.002H12v-.002zm0-3.899c3.415-.03 7.326.528 11.328 2.28.535-.968.672-1.395.672-1.395C19.625.612 15.528.015 12 0 8.472.015 4.375.61 0 2.349c0 0 .195.525.672 1.396C4.674 1.989 8.585 1.435 12 1.46v.003z"/></svg>Schedule a Drive Today</span></div>
+<div class="bf"><span>Tesla © 2026</span><span>Privacy &amp; Legal</span><span>Vehicle Recalls</span><span>Contact</span><span>News</span><span>Get Updates</span><span>Locations</span></div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">tesla</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

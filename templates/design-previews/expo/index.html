@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Expo — Preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=block">
+<style>
+:root{--primary:#000;--link:#0d74ce;--link2:#476cff;--ink:#171717;--body:#60646c;--muted:#999;--msoft:#ccc;--hair:#f0f0f3;--hsoft:#f5f5f7;--hstrong:#dcdee0;--canvas:#fff;--csoft:#fafafa;--strong:#f0f0f3;--dark:#171717;--dark2:#1a1a1a;--ondsoft:#b0b4ba;--sky1:#cfe7ff;--sky2:#a8c8e8;--warn:#ab6400;--preview:#8145b5;--cyan:#47c2ff;--err:#eb8e90;--ok:#16a34a;--mono:"JetBrains Mono","Fira Code",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{background:var(--canvas);color:var(--body);font-family:Inter,-apple-system,system-ui,sans-serif;font-size:16px;line-height:1.5}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.cap{font-size:11px;font-weight:600;line-height:1.4;letter-spacing:.88px;text-transform:uppercase}
+.badge{display:inline-flex;gap:6px;align-items:center;background:var(--strong);color:var(--ink);border-radius:9999px;padding:4px 10px}
+h1{font-size:64px;font-weight:600;line-height:1.05;letter-spacing:-1.92px;color:var(--ink)}
+h2{font-size:36px;font-weight:600;line-height:1.15;letter-spacing:-1.08px;color:var(--ink)}
+h3{font-size:18px;font-weight:600;line-height:1.4;color:var(--ink)}
+a.il{color:var(--link)}
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:10px 18px;border-radius:8px;font-size:14px;font-weight:500;line-height:1;white-space:nowrap}
+.b-p{background:#000;color:#fff}
+.b-s{background:#fff;color:var(--ink);border:1px solid var(--hstrong);padding:9px 17px}
+.b-t{color:var(--link);padding:0}
+.hero{position:relative;overflow:hidden;padding-bottom:96px}
+.sky{position:absolute;left:0;right:0;top:0;height:880px;background:radial-gradient(ellipse 70% 60% at 50% 0%,#cfe7ff 0%,rgba(168,200,232,.55) 45%,rgba(255,255,255,0) 80%)}
+.sky::after{content:"";position:absolute;left:0;right:0;bottom:0;height:200px;background:linear-gradient(rgba(255,255,255,0),#fff)}
+nav{position:relative;z-index:2;height:64px}
+nav .wrap{display:flex;align-items:center;gap:28px;height:64px;font-size:14px;font-weight:500;line-height:1.4;color:var(--ink)}
+.wm{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:600;letter-spacing:-.5px;margin-right:16px}
+nav .sp{flex:1}
+.hc{position:relative;z-index:2;text-align:center;padding-top:96px}
+.hc p{font-size:18px;max-width:600px;margin:20px auto 32px}
+.hc .ctas{display:flex;gap:16px;justify-content:center;align-items:center}
+.cmd{font-family:var(--mono);font-size:13px;color:var(--ink);background:rgba(255,255,255,.7);border:1px solid var(--hstrong);border-radius:8px;padding:10px 14px}
+/* device composite */
+.devices{position:relative;z-index:2;width:1060px;height:600px;margin:72px auto 0}
+.mac{position:absolute;left:0;top:0;width:920px}
+.screen{background:#0d0d0d;border-radius:16px 16px 0 0;padding:14px 14px 0;box-shadow:0 4px 12px rgba(0,0,0,.04)}
+.app{background:#fff;border-radius:6px 6px 0 0;height:520px;display:grid;grid-template-columns:200px 1fr;overflow:hidden;text-align:left}
+.base{height:22px;background:linear-gradient(#dcdee0,#b9bcc0);border-radius:0 0 14px 14px;margin:0 -40px;position:relative}
+.base::after{content:"";position:absolute;left:50%;top:0;width:140px;height:8px;margin-left:-70px;background:#a9acb1;border-radius:0 0 8px 8px}
+.side{background:var(--csoft);border-right:1px solid var(--hair);padding:14px 10px;font-size:13px}
+.side .acct{display:flex;gap:8px;align-items:center;color:var(--ink);font-weight:600;padding:2px 8px 14px}
+.side .acct i{width:20px;height:20px;border-radius:6px;background:var(--sky2)}
+.side div.it{padding:6px 8px;border-radius:6px}
+.side div.on{background:var(--strong);color:var(--ink);font-weight:500}
+.side h6{font-size:11px;font-weight:600;letter-spacing:.88px;text-transform:uppercase;color:var(--muted);padding:14px 8px 4px}
+.main{padding:20px 24px}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.mh h4{font-size:22px;font-weight:600;letter-spacing:-.5px;color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:500;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--hstrong)}
+td{padding:9px 10px;border-bottom:1px solid var(--hair);color:var(--ink)}
+td.m{font-family:var(--mono);font-size:12px;color:var(--body)}
+.st{display:inline-flex;align-items:center;gap:6px;font-size:12px}
+.st i{width:8px;height:8px;border-radius:50%}
+.plat{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--body)}
+.phone{position:absolute;right:0;top:90px;width:250px;height:510px;background:#0d0d0d;border-radius:42px;padding:10px;box-shadow:0 4px 12px rgba(0,0,0,.04)}
+.ps{background:#fff;border-radius:34px;height:100%;overflow:hidden;position:relative;text-align:left}
+.notch{position:absolute;left:50%;top:10px;width:84px;height:24px;margin-left:-42px;background:#0d0d0d;border-radius:20px}
+.pc{padding:48px 18px 0}
+.pc h5{font-size:22px;font-weight:600;letter-spacing:-.5px;color:var(--ink)}
+.trip{margin-top:14px;border-radius:12px;height:120px;background:linear-gradient(160deg,#cfe7ff,#a8c8e8 60%,#7aa5cf);position:relative}
+.trip b{position:absolute;left:12px;bottom:10px;color:#fff;font-weight:600;font-size:15px}
+.row2{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--hair);font-size:13px;color:var(--ink)}
+.row2 span:last-child{color:var(--body)}
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:56px;border-top:1px solid var(--hair);display:flex;justify-content:space-around;align-items:center}
+.tabbar i{width:22px;height:22px;border-radius:6px;background:var(--hstrong)}
+.tabbar i:first-child{background:#000}
+.devbadge{position:absolute;left:12px;right:12px;bottom:66px;background:#000;color:#fff;font-size:11px;border-radius:8px;padding:8px 10px;font-family:var(--mono)}
+/* sections */
+.band{padding:96px 0}
+.soft{background:var(--csoft)}
+.sh{text-align:center;max-width:720px;margin:0 auto 48px}
+.sh .cap{color:var(--muted)}
+.sh h2{margin:12px 0}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.step{background:#fff;border:1px solid var(--hstrong);border-radius:12px;padding:20px}
+.si{width:32px;height:32px;border-radius:8px;background:var(--strong);display:grid;place-items:center;margin-bottom:16px}
+.step .cap{color:var(--muted)}
+.step h3{margin:4px 0 6px}
+.step p{font-size:14px}
+.step code{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--hsoft);border-radius:4px;padding:1px 6px}
+.fgrid{display:grid;grid-template-columns:1.25fr 1fr;gap:16px}
+.fc{background:#fff;border:1px solid var(--hstrong);border-radius:12px;padding:24px}
+.fc.dk{background:var(--dark);border-color:var(--dark);color:var(--ondsoft)}
+.fc.dk h3{color:#fff}
+.fc p{margin-top:6px;font-size:14px}
+.code{margin-top:20px;background:var(--dark2);border-radius:12px;padding:20px;font-family:var(--mono);font-size:13px;line-height:1.5;color:#fff;white-space:pre}
+.code .c{color:#7c8088}.code .s{color:#8fd19e}.code .k{color:#c4a2f0}.code .o{color:var(--cyan)}
+.updates{margin-top:20px;display:flex;flex-direction:column;gap:8px}
+.up{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--hair);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--ink)}
+.up .m{font-family:var(--mono);font-size:12px;color:var(--body)}
+.eco{display:grid;grid-template-columns:repeat(8,64px);justify-content:space-between;margin-top:48px}
+.tile{width:64px;height:64px;border:1px solid var(--hair);border-radius:8px;display:grid;place-items:center;font-weight:600;font-size:13px;color:var(--ink);background:#fff}
+.tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.tc{background:#fff;border:1px solid var(--hstrong);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:16px}
+.tc .who{display:flex;gap:10px;align-items:center;font-size:14px}
+.tc .who i{width:32px;height:32px;border-radius:50%;background:var(--strong)}
+.tc .who b{display:block;color:var(--ink);font-weight:600}
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tier{background:#fff;border:1px solid var(--hstrong);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:10px}
+.tier.f{background:var(--dark);border-color:var(--dark);color:var(--ondsoft)}
+.tier.f h3,.tier.f .price{color:#fff}
+.price{font-size:28px;font-weight:600;letter-spacing:-.84px;color:var(--ink)}
+.price small{font-size:14px;font-weight:400;letter-spacing:0;color:var(--muted)}
+.tier ul{list-style:none;font-size:14px;display:flex;flex-direction:column;gap:6px;margin:6px 0 16px}
+.tier li::before{content:"✓ ";color:var(--ok)}
+.tier .btn{margin-top:auto;justify-content:center}
+.cta{padding:96px 0;text-align:center;border-top:1px solid var(--hair)}
+.cta .ctas{display:flex;gap:12px;justify-content:center;margin-top:28px}
+.foot{padding:64px 0 48px;border-top:1px solid var(--hair)}
+.foot .wrap{display:grid;grid-template-columns:1.4fr repeat(5,1fr);gap:24px;font-size:14px}
+.foot h6{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:12px}
+.foot a{display:block;margin-bottom:8px}
+</style></head><body>
+<section class="hero">
+  <div class="sky"></div>
+  <nav><div class="wrap">
+    <span class="wm"><svg width="22" height="22" viewBox="0 0 24 24" fill="#000"><path d="M0 20.084c.043.53.23 1.063.718 1.778.58.849 1.576 1.315 2.303.567.49-.505 5.794-9.776 8.35-13.29a.761.761 0 011.248 0c2.556 3.514 7.86 12.785 8.35 13.29.727.748 1.723.282 2.303-.567.57-.835.728-1.42.728-2.046 0-.426-8.26-15.798-9.092-17.078-.8-1.23-1.044-1.498-2.397-1.542h-1.032c-1.353.044-1.597.311-2.398 1.542C8.267 3.991.33 18.758 0 19.770Z"/></svg>Expo</span>
+    <span>Tools</span><span>Workflows</span><span>EAS</span><span>Pricing</span><span>Docs</span><span>Showcase</span>
+    <span class="sp"></span><span>Sign in</span><span class="btn b-p">Get started</span>
+  </div></nav>
+  <div class="hc wrap">
+    <span class="badge cap">New · Expo SDK 55</span>
+    <h1 style="margin-top:20px">Make any app.<br>Run it everywhere.</h1>
+    <p>Build one project in React Native and ship native apps for Android, iOS and the web — with cloud builds, over-the-air updates and submissions handled by <a class="il">EAS</a>.</p>
+    <div class="ctas"><span class="btn b-p">Get started for free</span><span class="cmd">$ npx create-expo-app@latest</span></div>
+  </div>
+  <div class="devices">
+    <div class="mac">
+      <div class="screen"><div class="app">
+        <div class="side">
+          <div class="acct"><i></i>acme · trips-app</div>
+          <div class="it">Overview</div><div class="it on">Builds</div><div class="it">Updates</div><div class="it">Submissions</div><div class="it">Workflows</div>
+          <h6>Project</h6><div class="it">Channels</div><div class="it">Credentials</div><div class="it">Insights</div><div class="it">Settings</div>
+        </div>
+        <div class="main">
+          <div class="mh"><h4>Builds</h4><span class="btn b-p" style="height:32px;padding:8px 14px;font-size:13px">New build</span></div>
+          <table>
+            <tr><th>Status</th><th>Platform</th><th>Profile</th><th>Version</th><th>Commit</th></tr>
+            <tr><td><span class="st"><i style="background:var(--ok)"></i>Finished</span></td><td><span class="plat"> iOS</span></td><td>production</td><td>2.4.0 (118)</td><td class="m">a1f9c2e</td></tr>
+            <tr><td><span class="st"><i style="background:var(--ok)"></i>Finished</span></td><td><span class="plat">Android</span></td><td>production</td><td>2.4.0 (118)</td><td class="m">a1f9c2e</td></tr>
+            <tr><td><span class="st"><i style="background:var(--cyan)"></i>In progress</span></td><td><span class="plat"> iOS</span></td><td>preview</td><td>2.4.1 (119)</td><td class="m">7be0d14</td></tr>
+            <tr><td><span class="st"><i style="background:var(--muted)"></i>In queue</span></td><td><span class="plat">Android</span></td><td>preview</td><td>2.4.1 (119)</td><td class="m">7be0d14</td></tr>
+            <tr><td><span class="st"><i style="background:var(--err)"></i>Errored</span></td><td><span class="plat"> iOS</span></td><td>development</td><td>2.4.1 (117)</td><td class="m">c03aa91</td></tr>
+            <tr><td><span class="st"><i style="background:var(--ok)"></i>Finished</span></td><td><span class="plat">Android</span></td><td>development</td><td>2.3.9 (116)</td><td class="m">e88f210</td></tr>
+            <tr><td><span class="st"><i style="background:var(--ok)"></i>Finished</span></td><td><span class="plat"> iOS</span></td><td>production</td><td>2.3.9 (116)</td><td class="m">e88f210</td></tr>
+          </table>
+        </div>
+      </div></div>
+      <div class="base"></div>
+    </div>
+    <div class="phone"><div class="ps">
+      <div class="notch"></div>
+      <div class="pc">
+        <div class="cap" style="color:var(--muted)">Good morning, Ana</div>
+        <h5>Upcoming trips</h5>
+        <div class="trip"><b>Lisbon · Dec 12</b></div>
+        <div class="row2"><span>Flight TP 1351</span><span>08:40</span></div>
+        <div class="row2"><span>Hotel check-in</span><span>15:00</span></div>
+        <div class="row2"><span>Tram 28 tour</span><span>17:30</span></div>
+      </div>
+      <div class="devbadge">OTA 2.4.1 ✓</div>
+      <div class="tabbar"><i></i><i></i><i></i><i></i></div>
+    </div></div>
+  </div>
+</section>
+
+<section class="band soft"><div class="wrap">
+  <div class="sh"><div class="cap">Workflows</div><h2>Get your app on every device</h2><p>From the first line of code to the app stores, one toolchain handles every step.</p></div>
+  <div class="steps">
+    <div class="step"><div class="si"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#171717" stroke-width="2"><path d="M8 6l-6 6 6 6M16 6l6 6-6 6"/></svg></div><div class="cap">Step 1</div><h3>Develop</h3><p>Start with <code>create-expo-app</code> and preview instantly on your phone in Expo Go.</p></div>
+    <div class="step"><div class="si"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#171717" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 12h6"/></svg></div><div class="cap">Step 2</div><h3>Build</h3><p>Cloud builds for iOS and Android with <code>eas build</code> — no Mac required.</p></div>
+    <div class="step"><div class="si"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#171717" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div><div class="cap">Step 3</div><h3>Submit</h3><p>Ship to the App Store and Google Play with <code>eas submit</code>.</p></div>
+    <div class="step"><div class="si"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#171717" stroke-width="2"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4"/></svg></div><div class="cap">Step 4</div><h3>Update</h3><p>Push fixes over the air in minutes with <code>eas update</code>.</p></div>
+  </div>
+</div></section>
+
+<section class="band"><div class="wrap">
+  <div class="sh"><div class="cap">EAS</div><h2>Expo Application Services</h2><p>Deeply integrated cloud services for Expo and React Native apps. <a class="il">Read the docs →</a></p></div>
+  <div class="fgrid">
+    <div class="fc dk"><h3>Build in the cloud, from any machine</h3><p>Reproducible builds with managed credentials, caching and custom workflows.</p>
+<div class="code"><span class="c"># eas.json profile → production</span>
+<span class="o">$</span> eas build --platform all --profile production
+
+<span class="s">✔</span> Using remote iOS credentials (Expo server)
+<span class="s">✔</span> Uploaded project to EAS <span class="c">(12.4 MB)</span>
+<span class="k">›</span> Build queued: iOS · Android
+<span class="s">✔</span> Build finished in 8m 12s
+<span class="c">  https://expo.dev/accounts/acme/builds/4f1c…</span></div></div>
+    <div class="fc"><h3>Over-the-air updates</h3><p>Ship JavaScript and asset fixes instantly to users on any channel, with rollouts and rollbacks.</p>
+      <div class="updates">
+        <div class="up"><span>production · 2.4.1</span><span class="m">100% · 2m ago</span></div>
+        <div class="up"><span>preview · fix checkout crash</span><span class="m">25% rollout</span></div>
+        <div class="up"><span>staging · new onboarding</span><span class="m">1h ago</span></div>
+        <div class="up"><span style="color:var(--preview)">● Preview</span><span class="m">fingerprint 3c9e…</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="eco">
+    <div class="tile">TS</div><div class="tile">React</div><div class="tile">Sentry</div><div class="tile">Stripe</div><div class="tile">Clerk</div><div class="tile">Firebase</div><div class="tile">Supabase</div><div class="tile">Vercel</div>
+  </div>
+</div></section>
+
+<section class="band soft"><div class="wrap">
+  <div class="sh"><div class="cap">Showcase</div><h2>Trusted by teams shipping at scale</h2></div>
+  <div class="tgrid">
+    <div class="tc"><p>“EAS Update lets us fix production issues for millions of users without waiting on store review.”</p><div class="who"><i></i><div><b>Mobile Platform Lead</b>Discord</div></div></div>
+    <div class="tc"><p>“We moved our whole build pipeline to EAS and cut release prep from a day to under an hour.”</p><div class="who"><i></i><div><b>Head of Engineering</b>Burger King</div></div></div>
+    <div class="tc"><p>“One codebase for iOS, Android and web — our team of six ships like a team of twenty.”</p><div class="who"><i></i><div><b>CTO</b>Coinbase Wallet</div></div></div>
+  </div>
+</div></section>
+
+<section class="band"><div class="wrap">
+  <div class="sh"><div class="cap">Pricing</div><h2>Start free. Scale as you grow.</h2></div>
+  <div class="pgrid">
+    <div class="tier"><h3>Free</h3><div class="price">$0</div><ul><li>30 builds / month</li><li>1,000 update MAUs</li><li>Low-priority queue</li></ul><span class="btn b-s">Sign up</span></div>
+    <div class="tier f"><h3>Starter</h3><div class="price">$19 <small>/ month</small></div><ul><li>$45 of build credit</li><li>3,000 update MAUs</li><li>Priority builds</li></ul><span class="btn b-s">Get Starter</span></div>
+    <div class="tier"><h3>Production</h3><div class="price">$199 <small>/ month</small></div><ul><li>$225 of build credit</li><li>50,000 update MAUs</li><li>2 concurrencies</li></ul><span class="btn b-p">Get Production</span></div>
+    <div class="tier"><h3>Enterprise</h3><div class="price">$1,999 <small>/ month</small></div><ul><li>$1,000 of build credit</li><li>1M update MAUs</li><li>SSO and support SLA</li></ul><span class="btn b-s">Contact sales</span></div>
+  </div>
+</div></section>
+
+<section class="cta"><div class="wrap"><h2>Join the community of 1M+ developers</h2><p style="margin-top:12px">Build your first app in minutes. <a class="il">Follow the tutorial</a>.</p><div class="ctas"><span class="btn b-p">Get started</span><span class="btn b-s">Talk to sales</span></div></div></section>
+
+<section class="foot"><div class="wrap">
+  <div><span class="wm" style="color:var(--ink)"><svg width="20" height="20" viewBox="0 0 24 24" fill="#000"><path d="M0 20.084c.043.53.23 1.063.718 1.778.58.849 1.576 1.315 2.303.567.49-.505 5.794-9.776 8.35-13.290a.761.761 0 011.248 0c2.556 3.514 7.86 12.785 8.35 13.290.727.748 1.723.282 2.303-.567.57-.835.728-1.42.728-2.046 0-.426-8.26-15.798-9.092-17.078-.8-1.230-1.044-1.498-2.397-1.542h-1.032c-1.353.044-1.597.311-2.398 1.542C8.267 3.991.33 18.758 0 19.770Z"/></svg>Expo</span><p style="margin-top:12px;color:var(--muted)">© 2026 650 Industries, Inc.</p></div>
+  <div><h6>Product</h6><a>Expo Go</a><a>EAS Build</a><a>EAS Update</a><a>EAS Submit</a></div>
+  <div><h6>Developers</h6><a>Docs</a><a>Tutorial</a><a>Changelog</a><a>Status</a></div>
+  <div><h6>Resources</h6><a>Blog</a><a>Showcase</a><a>Customers</a></div>
+  <div><h6>Company</h6><a>About</a><a>Careers</a><a>Contact</a></div>
+  <div><h6>Legal</h6><a>Terms</a><a>Privacy</a><a>Security</a></div>
+</div></section>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">expo</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

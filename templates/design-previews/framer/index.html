@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Framer — DESIGN.md preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mona+Sans:wght@400..700&family=Inter:wght@400;500;700&display=block">
+<style>
+:root{--primary:#fff;--blue:#0099ff;--ink:#fff;--mute:#999;--canvas:#090909;--s1:#141414;--s2:#1c1c1c;--hair:#262626;--hair-soft:#1a1a1a;--mag:#d44df0;--vio:#6a4cf5;--org:#ff7a3d;--coral:#ff5577;--success:#22c55e;
+--disp:"Mona Sans","GT Walsheim Medium Placeholder",system-ui,sans-serif;--sans:"Inter",system-ui,-apple-system,sans-serif;
+--lift:inset 0 .5px 0 rgba(255,255,255,.10),rgba(0,0,0,.25) 0 10px 30px}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden;background:var(--canvas)}
+body{font-family:var(--sans);font-feature-settings:"cv01","cv05","cv09","cv11","ss03","ss07";font-size:15px;line-height:1.3;letter-spacing:-.15px;color:var(--ink)}
+.wrap{max-width:1199px;margin:0 auto;padding:0 30px}
+.dxxl{font-family:var(--disp);font-size:110px;font-weight:500;line-height:.85;letter-spacing:-5.5px}
+.dxl{font-family:var(--disp);font-size:85px;font-weight:500;line-height:.95;letter-spacing:-4.25px}
+.dlg{font-family:var(--disp);font-size:62px;font-weight:500;line-height:1;letter-spacing:-3.1px}
+.dmd{font-family:var(--disp);font-size:32px;font-weight:500;line-height:1.13;letter-spacing:-1px}
+.hl{font-size:22px;font-weight:700;line-height:1.2;letter-spacing:-.8px}
+.sub{font-size:24px;font-weight:400;line-height:1.3;letter-spacing:-.01px}
+.blg{font-size:18px;line-height:1.3;letter-spacing:-.18px}
+.bsm{font-size:14px;font-weight:500;line-height:1.4;letter-spacing:-.14px}
+.cap{font-size:13px;font-weight:500;line-height:1.2;letter-spacing:-.13px}
+.micro{font-size:12px;line-height:1.2;letter-spacing:-.12px}
+.mute{color:var(--mute)}
+.btn{display:inline-flex;align-items:center;font-size:14px;font-weight:500;line-height:1;letter-spacing:-.14px;padding:10px 15px;border-radius:100px;white-space:nowrap}
+.btn.p{background:#fff;color:#000}
+.btn.s{background:var(--s1);color:#fff}
+.btn.t{background:var(--s2);color:#fff;border-radius:30px;padding:8px 14px}
+a{color:var(--blue);text-decoration:none}
+nav{height:56px;display:flex;align-items:center;gap:26px;font-size:14px;font-weight:500;letter-spacing:-.14px}
+nav .lg{display:flex;align-items:center;gap:8px;font-family:var(--disp);font-size:20px;letter-spacing:-.8px;margin-right:auto}
+nav .r{margin-left:auto;display:flex;gap:8px}
+.hero{text-align:center;padding:120px 0 0}
+.hero .blg{max-width:520px;margin:28px auto 30px;color:var(--mute)}
+.pair{display:flex;gap:8px;justify-content:center}
+/* editor mockup */
+.mock{margin:80px auto 0;background:var(--s1);border-radius:20px;padding:16px;box-shadow:var(--lift)}
+.ed{display:grid;grid-template-columns:210px 1fr 230px;height:540px;border-radius:15px;overflow:hidden;background:#0f0f0f;border:1px solid var(--hair)}
+.ed .top{grid-column:1/-1}
+.side{background:var(--s1);border-right:1px solid var(--hair);padding:12px;font-size:12px;letter-spacing:-.12px}
+.side.r{border-right:0;border-left:1px solid var(--hair)}
+.side h6{font-size:12px;font-weight:600;margin:6px 0 10px}
+.ly{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;color:#ccc}
+.ly.sel{background:rgba(0,153,255,.18);color:#fff;box-shadow:0 0 0 1px rgba(0,153,255,.5) inset}
+.ly i{width:10px;height:10px;border-radius:3px;border:1.5px solid currentColor;flex:none}
+.cv{position:relative;background:#111;background-image:radial-gradient(#222 1px,transparent 1px);background-size:20px 20px;overflow:hidden}
+.bp{position:absolute;top:54px;background:#fff;color:#000;border-radius:6px;overflow:hidden}
+.bpl{position:absolute;top:32px;font-size:11px;color:var(--mute)}
+.site-h{padding:14px 16px;display:flex;justify-content:space-between;font-size:10px;font-weight:600}
+.site-hero{margin:0 12px;border-radius:10px;height:150px;background:linear-gradient(135deg,#ff7a3d,#ff5577 50%,#d44df0);position:relative}
+.site-hero b{position:absolute;left:16px;bottom:14px;font-family:var(--disp);font-size:24px;color:#fff;letter-spacing:-1.2px;line-height:.95}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 12px}
+.row2 i{height:70px;border-radius:8px;background:#eee}
+.selr{position:absolute;border:1.5px solid var(--blue)}
+.prop{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px}
+.prop span{background:var(--s2);border-radius:6px;padding:6px 8px;color:#ddd}
+.tg{display:inline-flex;background:var(--canvas);border-radius:100px;padding:3px;margin-bottom:12px}
+.tg span{padding:5px 10px;border-radius:100px;color:var(--mute)}
+.tg span.on{background:var(--s2);color:#fff}
+section{padding:96px 0 0}
+.shead{display:flex;justify-content:space-between;align-items:flex-end;gap:40px;margin-bottom:40px}
+.shead p{max-width:360px}
+.gal{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.spot{border-radius:30px;padding:32px;min-height:420px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.spot.v{background:radial-gradient(120% 90% at 20% 10%,#d44df0 0%,#6a4cf5 45%,#2a1d6e 100%)}
+.spot.o{background:radial-gradient(110% 100% at 80% 0%,#ffb27a 0%,#ff7a3d 35%,#ff5577 75%,#7a1f45 100%)}
+.tpl{background:var(--s1);border-radius:15px;padding:12px;box-shadow:var(--lift)}
+.tpl .shot{height:330px;border-radius:10px;overflow:hidden;position:relative}
+.tpl .meta{display:flex;justify-content:space-between;align-items:center;padding:14px 4px 4px}
+.feat{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.mt{background:var(--s1);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.mt .ui{background:var(--canvas);border:1px solid var(--hair);border-radius:15px;height:220px;padding:14px;font-size:12px;position:relative;overflow:hidden}
+.mt h3{padding:6px 6px 0}
+.mt p{padding:0 6px 8px}
+.ptabs{display:inline-flex;gap:2px;background:var(--canvas);border:1px solid var(--hair);border-radius:100px;padding:4px}
+.ptabs span{padding:8px 14px;border-radius:100px;color:var(--mute);font-size:14px;font-weight:500}
+.ptabs span.on{background:var(--s2);color:#fff}
+.pg{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-top:30px}
+.pc{background:var(--s1);border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:12px}
+.pc.f{background:var(--s2)}
+.pc .amt{font-family:var(--disp);font-size:48px;font-weight:500;letter-spacing:-2.4px;line-height:1}
+.pc .btn{justify-content:center;margin-top:8px}
+.cmp{margin-top:40px;width:100%;border-collapse:collapse}
+.cmp th{text-align:left;font-size:14px;font-weight:500;padding:14px 0;border-bottom:1px solid var(--hair);color:#fff}
+.cmp td{font-size:14px;font-weight:500;letter-spacing:-.14px;color:var(--mute);padding:14px 0;border-bottom:1px solid var(--hair-soft)}
+.cmp td:not(:first-child),.cmp th:not(:first-child){text-align:center;width:16%}
+.ck{color:var(--success)}
+.faq{display:grid;grid-template-columns:1fr 1.6fr;gap:40px}
+.fr{padding:24px;border-bottom:1px solid var(--hair-soft);display:flex;justify-content:space-between;border-radius:10px}
+.foot{padding:64px 32px;max-width:1199px;margin:96px auto 0;display:grid;grid-template-columns:1.5fr repeat(5,1fr);gap:20px;font-size:13px;font-weight:500;color:var(--mute);border-top:1px solid var(--hair-soft)}
+.foot h6{color:#fff;font-size:13px;font-weight:500;margin-bottom:14px}
+.foot li{list-style:none;margin-bottom:10px}
+</style></head><body>
+<div class="wrap">
+<nav><span class="lg"><svg width="14" height="20" viewBox="4 0 16 24" fill="#fff" aria-hidden="true"><path d="M4 0h16v8h-8zM4 8h8l8 8H4zM4 16h8v8z"/></svg>Framer</span>
+<span>Start</span><span>Features</span><span>Marketplace</span><span>Enterprise</span><span>Pricing</span><span>Updates</span>
+<span class="r"><span class="btn s">Log in</span><span class="btn p">Get started for free</span></span></nav>
+
+<header class="hero">
+  <span class="btn t" style="margin-bottom:34px">✦ Framer AI — Wireframer is here <span class="mute" style="margin-left:6px">→</span></span>
+  <h1 class="dxxl">Build better sites,<br>faster.</h1>
+  <p class="blg">Framer is the site builder trusted by leading startups and Fortune 500 companies. Design freely, publish fast, and scale with CMS, SEO, analytics and more.</p>
+  <div class="pair"><span class="btn p">Start for free</span><span class="btn s">Start with AI</span></div>
+
+  <div class="mock"><div class="ed">
+    <div class="side" style="text-align:left">
+      <div class="tg"><span class="on">Pages</span><span>Layers</span><span>Assets</span></div>
+      <h6>Pages</h6><div class="ly sel"><i></i>Home</div><div class="ly"><i></i>Pricing</div><div class="ly"><i></i>Blog</div><div class="ly"><i></i>Blog / :slug</div>
+      <h6 style="margin-top:16px">Layers</h6><div class="ly"><i></i>Navigation</div><div class="ly" style="padding-left:20px"><i></i>Hero</div><div class="ly" style="padding-left:20px"><i></i>Features</div><div class="ly" style="padding-left:20px"><i></i>Testimonials</div><div class="ly"><i></i>Footer</div>
+    </div>
+    <div class="cv">
+      <span class="bpl" style="left:40px">Desktop · 1200</span>
+      <div class="bp" style="left:40px;width:380px;height:440px">
+        <div class="site-h"><span>Lumen</span><span style="color:#888">Product &nbsp; Pricing &nbsp; Docs</span></div>
+        <div class="site-hero"><b>Light up<br>your data</b></div>
+        <div class="row2"><i></i><i></i></div><div class="row2"><i style="background:#f3f3f3"></i><i style="background:#f3f3f3"></i></div>
+      </div>
+      <div class="selr" style="left:52px;top:100px;width:356px;height:152px"></div>
+      <span style="position:absolute;left:52px;top:256px;background:var(--blue);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px">Hero · 356 × 150</span>
+      <span class="bpl" style="left:450px">Tablet · 810</span>
+      <div class="bp" style="left:450px;width:200px;height:340px"><div class="site-h"><span>Lumen</span><span>≡</span></div><div class="site-hero" style="height:110px"><b style="font-size:16px;letter-spacing:-.8px">Light up<br>your data</b></div><div class="row2"><i style="height:50px"></i><i style="height:50px"></i></div></div>
+      <span class="bpl" style="left:680px">Phone</span>
+      <div class="bp" style="left:680px;width:110px;height:230px"><div class="site-h" style="padding:8px"><span>Lumen</span></div><div class="site-hero" style="height:80px;margin:0 6px"></div></div>
+    </div>
+    <div class="side r" style="text-align:left">
+      <h6>Hero</h6><div class="prop"><span>W Fill</span><span>H 150</span></div>
+      <h6>Stack</h6><div class="prop"><span>↓ Vertical</span><span>Gap 20</span><span>Pad 30</span><span>Center</span></div>
+      <h6>Effects</h6><div class="prop"><span>Appear</span><span>Spring</span></div>
+      <h6>Fill</h6><div class="prop"><span style="grid-column:1/-1">Linear · 3 stops</span></div>
+      <h6>Breakpoints</h6><div class="prop"><span>1200</span><span>810</span><span>390</span><span style="color:var(--blue)">+ Add</span></div>
+    </div>
+  </div></div>
+</header>
+
+<section>
+  <div class="shead"><h2 class="dxl">Built with<br>Framer</h2><p class="blg mute">From launch pages to full product sites, teams ship their best work on Framer. <a>Explore the gallery →</a></p></div>
+  <div class="gal">
+    <div class="spot v"><span class="btn t" style="align-self:flex-start">Framer AI</span><div><h3 class="dlg" style="margin-bottom:16px">Start with a prompt.</h3><p class="sub" style="max-width:420px">Describe your site and get a responsive, editable first draft in seconds.</p></div></div>
+    <div class="tpl"><div class="shot" style="background:#f4f1ea;color:#111;padding:22px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600"><span>speedrun</span><span>Apply →</span></div>
+      <div style="font-family:var(--disp);font-size:54px;font-weight:600;letter-spacing:-2.7px;line-height:.9;margin-top:40px">a16z<br>speedrun</div>
+      <div style="display:flex;gap:8px;margin-top:30px"><i style="flex:1;height:90px;border-radius:10px;background:#111"></i><i style="flex:1;height:90px;border-radius:10px;background:#ff7a3d"></i><i style="flex:1;height:90px;border-radius:10px;background:#d9d4c7"></i></div></div>
+      <div class="meta"><span class="bsm">a16z speedrun × Tonik</span><span class="cap mute">Startup</span></div></div>
+    <div class="tpl"><div class="shot" style="background:#0d0d0d;border:1px solid var(--hair);padding:22px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600"><span>nudge</span><span class="mute">Features &nbsp; Pricing</span></div>
+      <div style="font-family:var(--disp);font-size:40px;letter-spacing:-2px;line-height:.95;margin-top:44px">The calmer way<br>to run your inbox</div>
+      <div style="margin-top:26px;background:var(--s1);border-radius:10px;padding:12px;font-size:11px;display:grid;gap:8px"><div style="display:flex;justify-content:space-between"><span>Weekly digest</span><span class="mute">Mon</span></div><div style="display:flex;justify-content:space-between"><span>Invoice #2041 paid</span><span class="mute">Tue</span></div></div></div>
+      <div class="meta"><span class="bsm">Nudge — SaaS template</span><span class="cap mute">$79</span></div></div>
+    <div class="spot o"><span class="btn t" style="align-self:flex-start">Localization</span><div><h3 class="dlg" style="margin-bottom:16px">Go global, instantly.</h3><p class="sub" style="max-width:420px">Translate every page into 60+ languages with AI — and keep SEO intact.</p></div></div>
+  </div>
+</section>
+
+<section>
+  <div class="shead"><h2 class="dlg">Everything you need<br>to scale</h2><span class="btn s">See all features</span></div>
+  <div class="feat">
+    <div class="mt"><div class="ui"><div class="micro mute" style="margin-bottom:10px">CMS · Blog posts · 248 items</div>
+      <div style="display:grid;gap:0">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hair-soft)"><span>Designing for motion</span><span class="ck">Published</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hair-soft)"><span>Launch week recap</span><span class="ck">Published</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hair-soft)"><span>Building with components</span><span class="mute">Draft</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hair-soft)"><span>SEO checklist 2026</span><span class="mute">Scheduled</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0"><span>Typography on the web</span><span class="ck">Published</span></div>
+      </div></div><h3 class="dmd">CMS</h3><p class="mute">Publish blogs, changelogs and job boards with a visual CMS.</p></div>
+    <div class="mt"><div class="ui"><div class="micro mute">Analytics · Last 30 days</div><div style="font-family:var(--disp);font-size:36px;letter-spacing:-1.5px;margin:6px 0">184,203</div><div class="micro ck">▲ 23.4% visitors</div>
+      <svg width="100%" height="90" viewBox="0 0 300 90" preserveAspectRatio="none" style="margin-top:12px"><path d="M0 80 L30 70 L60 74 L90 58 L120 62 L150 44 L180 48 L210 30 L240 34 L270 16 L300 10" fill="none" stroke="#0099ff" stroke-width="2"/></svg></div><h3 class="dmd">Analytics</h3><p class="mute">Built-in, privacy-friendly insights and A/B tests.</p></div>
+    <div class="mt"><div class="ui"><div class="micro mute" style="margin-bottom:12px">Collaboration</div>
+      <div style="background:var(--s1);border-radius:10px;padding:10px;margin-bottom:8px"><b style="font-weight:600">Ana</b> <span class="mute">· 2m</span><br>Can we tighten the hero spacing?</div>
+      <div style="background:var(--s1);border-radius:10px;padding:10px;margin-left:30px"><b style="font-weight:600">Theo</b> <span class="mute">· now</span><br>Done — 30px gap on desktop.</div>
+      <span style="position:absolute;right:40px;bottom:30px;background:var(--mag);color:#fff;font-size:10px;padding:2px 8px;border-radius:4px 10px 10px 10px">Ana</span></div><h3 class="dmd">Multiplayer</h3><p class="mute">Edit together in real time with comments and roles.</p></div>
+  </div>
+</section>
+
+<section>
+  <div style="text-align:center"><h2 class="dxl">Pricing</h2><p class="blg mute" style="margin:20px 0 30px">Start for free. Upgrade to get the capacity that exactly matches your needs.</p><div class="ptabs"><span class="on">Websites</span><span>Workspace</span><span>Enterprise</span></div></div>
+  <div class="pg">
+    <div class="pc"><h3 class="hl">Free</h3><div class="amt">$0</div><p class="mute">Framer domain, 1,000 visitors, 10 CMS collections.</p><span class="btn s">Start for free</span></div>
+    <div class="pc"><h3 class="hl">Basic</h3><div class="amt">$10</div><p class="mute">Custom domain, 10k visitors, 1 locale per month.</p><span class="btn s">Get Basic</span></div>
+    <div class="pc f"><h3 class="hl">Pro</h3><div class="amt">$30</div><p class="mute">200k visitors, staging, A/B testing, 2 locales.</p><span class="btn p">Get Pro</span></div>
+    <div class="pc"><h3 class="hl">Scale</h3><div class="amt">$100</div><p class="mute">Premium CDN, 500k visitors, advanced analytics.</p><span class="btn s">Get Scale</span></div>
+  </div>
+  <table class="cmp">
+    <tr><th>Features</th><th>Free</th><th>Basic</th><th>Pro</th><th>Scale</th></tr>
+    <tr><td>Custom domain</td><td>—</td><td class="ck">✓</td><td class="ck">✓</td><td class="ck">✓</td></tr>
+    <tr><td>CMS items</td><td>1,000</td><td>1,000</td><td>2,500</td><td>10,000</td></tr>
+    <tr><td>Monthly visitors</td><td>1k</td><td>10k</td><td>200k</td><td>500k</td></tr>
+    <tr><td>Staging environment</td><td>—</td><td>—</td><td class="ck">✓</td><td class="ck">✓</td></tr>
+    <tr><td>A/B testing</td><td>—</td><td>—</td><td class="ck">✓</td><td class="ck">✓</td></tr>
+  </table>
+</section>
+
+<section><div class="faq">
+  <h2 class="dlg">FAQ</h2>
+  <div><div class="fr"><span>Can I use my own domain?</span><span class="mute">+</span></div><div class="fr"><span>Do you offer discounts for startups?</span><span class="mute">+</span></div><div class="fr"><span>Can I export my site's code?</span><span class="mute">+</span></div><div class="fr"><span>How does localization pricing work?</span><span class="mute">+</span></div></div>
+</div></section>
+</div>
+<div class="foot">
+  <div><span style="display:flex;align-items:center;gap:8px;color:#fff;font-family:var(--disp);font-size:20px;letter-spacing:-.8px"><svg width="14" height="20" viewBox="4 0 16 24" fill="#fff" aria-hidden="true"><path d="M4 0h16v8h-8zM4 8h8l8 8H4zM4 16h8v8z"/></svg>Framer</span></div>
+  <ul><h6>Product</h6><li>Design</li><li>CMS</li><li>Localization</li><li>Analytics</li></ul>
+  <ul><h6>Compare</h6><li>Webflow</li><li>WordPress</li><li>Figma</li></ul>
+  <ul><h6>Resources</h6><li>Academy</li><li>Marketplace</li><li>Gallery</li><li>Experts</li></ul>
+  <ul><h6>Company</h6><li>About</li><li>Careers</li><li>Blog</li></ul>
+  <ul><h6>Legal</h6><li>Terms</li><li>Privacy</li><li>Security</li></ul>
+</div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">framer</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

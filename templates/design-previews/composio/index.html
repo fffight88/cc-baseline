@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Composio — preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=block">
+<style>
+:root{--primary:#0007cd;--pact:#0005a3;--glow:#1a26ff;--ink:#fff;--body:#a8a8a8;--muted:#888;--msoft:#666;--hair:#222;--hsoft:#1a1a1a;--hstrong:#333;--canvas:#0f0f0f;--deep:#000;--card:#181818;--elev:#222;--strong:#2a2a2a;--cyan:#00d4ff;--violet:#7b3aed;--err:#ff4d4d;--ok:#33d17a;
+--sans:Inter,ui-sans-serif,system-ui,sans-serif;--mono:'JetBrains Mono','Fira Code',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{background:var(--canvas);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5;letter-spacing:-.015em}
+.wrap{max-width:1248px;margin:0 auto;padding:0 24px}
+nav{height:64px;border-bottom:1px solid var(--hsoft)}
+nav .wrap{height:64px;display:flex;align-items:center;gap:28px;font-size:14px;font-weight:500;line-height:1.4}
+.wm{display:flex;align-items:center;gap:10px;font-size:19px;font-weight:600;letter-spacing:-.5px;margin-right:12px}
+.wm i{width:24px;height:24px;border-radius:6px;background:var(--primary);display:flex;align-items:center;justify-content:center}
+nav a{color:#fff}
+nav .sp{flex:1}
+.gh{display:flex;align-items:center;gap:6px;color:var(--body);font-size:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:10px 18px;border-radius:8px;font-size:14px;font-weight:500;line-height:1;background:var(--primary);color:#fff;white-space:nowrap;letter-spacing:0}
+.btn.s2{background:var(--elev)}
+.btn.ol{background:transparent;box-shadow:inset 0 0 0 1px var(--hstrong);padding:9px 17px}
+.btn.tx{background:transparent;color:var(--body);padding:10px 4px}
+.badge{display:inline-flex;align-items:center;gap:8px;background:var(--elev);color:#fff;font-size:11px;font-weight:600;line-height:1.4;letter-spacing:.88px;text-transform:uppercase;padding:4px 10px;border-radius:9999px}
+.badge i{width:6px;height:6px;border-radius:50%;background:var(--ok)}
+.cap{font-size:11px;font-weight:600;line-height:1.4;letter-spacing:.88px;text-transform:uppercase;color:var(--muted)}
+/* hero */
+.hero{position:relative;padding:96px 0;text-align:center;overflow:hidden}
+.glow{position:absolute;left:50%;top:330px;width:1500px;height:900px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(26,38,255,.7),rgba(0,7,205,.3) 50%,rgba(15,15,15,0) 100%);pointer-events:none}
+.hero .wrap{position:relative}
+h1{font-size:72px;font-weight:500;line-height:1.05;letter-spacing:-2.16px;max-width:960px;margin:24px auto 20px}
+.lead{font-size:18px;color:var(--body);max-width:620px;margin:0 auto 32px}
+.ctas{display:flex;gap:12px;justify-content:center}
+.term{margin:64px auto 0;max-width:1100px;background:var(--deep);border-radius:16px;padding:32px;display:grid;grid-template-columns:1fr 1fr;gap:16px;text-align:left;box-shadow:inset 0 0 0 1px var(--hair)}
+.pane{background:var(--card);border-radius:12px;padding:20px;font-family:var(--mono);font-size:13px;line-height:1.5;color:var(--body);letter-spacing:0;min-height:230px}
+.pane .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.88px;text-transform:uppercase;color:var(--muted)}
+.pane .hd b{display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--ok)}
+.pane .hd b::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok)}
+.w{color:#fff}.k{color:#8a92ff}.s{color:#7fd6a6}.c{color:var(--msoft)}.cy{color:var(--cyan)}
+.call{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:6px;background:var(--elev);margin-bottom:6px;color:#fff}
+.call .ic{width:18px;height:18px;border-radius:4px;flex:none}
+.call .t{margin-left:auto;color:var(--muted);font-size:12px}
+.call .ok{color:var(--ok);font-size:12px}
+/* logos */
+.logos{display:flex;justify-content:space-between;align-items:center;padding:40px 0 0;color:var(--muted);font-weight:600;font-size:19px;letter-spacing:-.4px}
+/* bands */
+.band{padding:96px 0}
+h2{font-size:44px;font-weight:500;line-height:1.1;letter-spacing:-1.32px;max-width:720px;margin-top:16px}
+.sub{color:var(--body);font-size:18px;max-width:600px;margin-top:16px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px}
+.search{display:flex;align-items:center;gap:10px;height:40px;width:320px;padding:10px 16px;border-radius:8px;background:var(--card);color:var(--muted);font-size:16px;line-height:20px}
+.tk{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:40px}
+.tc{background:var(--card);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:6px}
+.tc .ti{width:40px;height:40px;border-radius:8px;background:var(--elev);display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-weight:600;font-size:15px}
+.tc h4{font-size:16px;font-weight:600;line-height:1.4;letter-spacing:0}
+.tc p{font-size:14px;color:var(--body)}
+.tc .n{font-family:var(--mono);font-size:12px;color:var(--msoft);letter-spacing:0;margin-top:6px}
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+.fc{background:var(--card);border-radius:16px;padding:28px}
+.fc .ix{font-family:var(--mono);font-size:13px;color:var(--msoft);letter-spacing:0}
+.fc h3{font-size:18px;font-weight:600;line-height:1.4;letter-spacing:0;margin:40px 0 8px}
+.fc p{color:var(--body);font-size:16px}
+.spot{position:relative;overflow:hidden;background:var(--card);border-radius:16px;padding:48px;display:grid;grid-template-columns:1fr 1.1fr;gap:48px;align-items:center;margin-top:24px}
+.spot::before{content:"";position:absolute;left:-200px;top:-200px;width:700px;height:700px;background:radial-gradient(closest-side,rgba(26,38,255,.45),rgba(26,38,255,0));pointer-events:none}
+.spot>*{position:relative}
+.spot h3{font-size:32px;font-weight:500;line-height:1.15;letter-spacing:-.96px}
+.spot p{color:var(--body);margin:16px 0 24px}
+.code{background:var(--deep);border-radius:12px;padding:20px;font-family:var(--mono);font-size:13px;line-height:1.5;color:var(--body);letter-spacing:0;box-shadow:inset 0 0 0 1px var(--hair)}
+.code .tabs{display:flex;gap:16px;font-size:12px;color:var(--msoft);margin-bottom:14px;border-bottom:1px solid var(--hair);padding-bottom:10px}
+.code .tabs span.on{color:#fff}
+.tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+.tm{background:var(--card);border-radius:12px;padding:24px;color:var(--body);display:flex;flex-direction:column;gap:20px}
+.tm .who{display:flex;align-items:center;gap:12px;margin-top:auto}
+.tm .av{width:36px;height:36px;border-radius:9999px;background:linear-gradient(135deg,#2a2a2a,#444)}
+.tm .who b{display:block;color:#fff;font-weight:600;font-size:14px;line-height:1.3}
+.tm .who span{font-size:13px;color:var(--muted)}
+.ctaband{position:relative;padding:96px 0;text-align:center;overflow:hidden;border-top:1px solid var(--hsoft)}
+.ctaband::before{content:"";position:absolute;left:50%;top:50%;width:900px;height:500px;transform:translate(-50%,-50%);background:radial-gradient(closest-side,rgba(26,38,255,.5),rgba(26,38,255,0));}
+.ctaband .wrap{position:relative}
+.ctaband h2{margin:0 auto 24px;max-width:760px}
+.inp{display:flex;gap:8px;justify-content:center;margin-top:8px}
+.inp span.f{height:44px;width:320px;padding:12px 16px;border-radius:8px;background:var(--card);color:var(--muted);text-align:left;line-height:20px}
+.inp .btn{height:44px}
+footer.site{padding:64px 48px;color:var(--body);font-size:14px;line-height:1.5;border-top:1px solid var(--hsoft)}
+.fcols{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1.6fr repeat(5,1fr);gap:24px}
+.fcols h6{font-size:11px;font-weight:600;letter-spacing:.88px;text-transform:uppercase;color:#fff;margin-bottom:14px}
+.fcols span{display:block;margin-bottom:8px}
+.fcols .wm{display:flex}
+</style></head><body>
+
+<nav><div class="wrap">
+  <span class="wm"><i><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="2"><path d="M10.5 3.5A5 5 0 1 0 10.5 10.5"/></svg></i>composio</span>
+  <a>Product</a><a>Toolkits</a><a>Docs</a><a>Pricing</a><a>Customers</a><a>Blog</a>
+  <span class="sp"></span><span class="gh"><svg width="15" height="15" viewBox="0 0 16 16" fill="#a8a8a8"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>26.4k</span><span class="btn tx">Sign in</span><span class="btn">Get started</span>
+</div></nav>
+
+<header class="hero">
+  <div class="glow" aria-hidden="true"></div>
+  <div class="wrap">
+    <span class="badge"><i></i>Tool Router · now in beta</span>
+    <h1>Skills that evolve for your agents</h1>
+    <p class="lead">Connect your AI agents to 850+ apps with managed auth, tool search and a sandboxed workbench. One SDK, every integration.</p>
+    <div class="ctas"><span class="btn">Get your API key</span><span class="btn ol">Read the docs</span></div>
+    <div class="term">
+      <div class="pane"><div class="hd"><span>agent.py</span><span>python</span></div>
+<span class="k">from</span> composio <span class="k">import</span> Composio<br>
+<span class="k">from</span> openai <span class="k">import</span> OpenAI<br><br>
+composio = <span class="w">Composio</span>()<br>
+tools = composio.tools.<span class="cy">get</span>(<br>
+&nbsp;&nbsp;user_id=<span class="s">"user_4821"</span>,<br>
+&nbsp;&nbsp;toolkits=[<span class="s">"GITHUB"</span>, <span class="s">"SLACK"</span>, <span class="s">"LINEAR"</span>]<br>
+)<br>
+<span class="c"># 3 toolkits · 214 tools resolved</span></div>
+      <div class="pane"><div class="hd"><span>tool calls</span><b>live</b></div>
+        <div class="call"><span class="ic" style="background:#333"></span>GITHUB_LIST_PULL_REQUESTS<span class="t">182ms</span><span class="ok">200</span></div>
+        <div class="call"><span class="ic" style="background:#3a2a3a"></span>LINEAR_CREATE_ISSUE<span class="t">240ms</span><span class="ok">200</span></div>
+        <div class="call"><span class="ic" style="background:#2a3a33"></span>SLACK_SEND_MESSAGE<span class="t">96ms</span><span class="ok">200</span></div>
+        <div class="call"><span class="ic" style="background:#2a2f3a"></span>GMAIL_FETCH_EMAILS<span class="t">311ms</span><span class="ok">200</span></div>
+      </div>
+      <div class="pane"><div class="hd"><span>auth</span><span>managed oauth</span></div>
+<span class="c">$</span> <span class="w">composio</span> connections list<br><br>
+<span class="w">github</span>&nbsp;&nbsp;&nbsp;&nbsp; user_4821 &nbsp;<span class="s">ACTIVE</span><br>
+<span class="w">slack</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; user_4821 &nbsp;<span class="s">ACTIVE</span><br>
+<span class="w">linear</span>&nbsp;&nbsp;&nbsp;&nbsp; user_4821 &nbsp;<span class="s">ACTIVE</span><br>
+<span class="w">gmail</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; user_4821 &nbsp;<span style="color:#ff4d4d">EXPIRED</span><br>
+<span class="c">→ refreshing token… done</span></div>
+      <div class="pane"><div class="hd"><span>agent output</span><span>gpt · 2.4s</span></div>
+<span class="w">✓</span> Found 3 PRs awaiting review in acme/api<br>
+<span class="w">✓</span> Created LIN-482 "Review auth refactor"<br>
+<span class="w">✓</span> Posted summary to #eng-reviews<br><br>
+<span class="c">tokens 1,284 · tools 3 · cost $0.004</span></div>
+    </div>
+    <div class="logos"><span>Glean</span><span>Zoom</span><span>Airtable</span><span>Letta</span><span>Cognition</span><span>Datadog</span></div>
+  </div>
+</header>
+
+<section class="band"><div class="wrap">
+  <div class="head"><div><span class="cap">Toolkits</span><h2>850+ toolkits, authenticated and ready</h2></div><span class="search">⌕&nbsp; Search toolkits…</span></div>
+  <div class="tk">
+    <div class="tc"><div class="ti">Gh</div><h4>GitHub</h4><p>Issues, PRs, repos and actions.</p><span class="n">412 tools</span></div>
+    <div class="tc"><div class="ti">Sl</div><h4>Slack</h4><p>Messages, channels and threads.</p><span class="n">138 tools</span></div>
+    <div class="tc"><div class="ti">Li</div><h4>Linear</h4><p>Issues, cycles and projects.</p><span class="n">64 tools</span></div>
+    <div class="tc"><div class="ti">No</div><h4>Notion</h4><p>Pages, databases and blocks.</p><span class="n">47 tools</span></div>
+    <div class="tc"><div class="ti">Gm</div><h4>Gmail</h4><p>Read, draft and send email.</p><span class="n">36 tools</span></div>
+    <div class="tc"><div class="ti">St</div><h4>Stripe</h4><p>Customers, invoices and refunds.</p><span class="n">219 tools</span></div>
+    <div class="tc"><div class="ti">Hs</div><h4>HubSpot</h4><p>Contacts, deals and pipelines.</p><span class="n">245 tools</span></div>
+    <div class="tc"><div class="ti">Sf</div><h4>Salesforce</h4><p>Leads, accounts and SOQL.</p><span class="n">188 tools</span></div>
+  </div>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap">
+  <span class="cap">Platform</span>
+  <h2>Everything between your agent and the API</h2>
+  <div class="fgrid">
+    <div class="fc"><span class="ix">01</span><h3>Managed authentication</h3><p>OAuth, API keys and token refresh for every user, handled for you.</p></div>
+    <div class="fc"><span class="ix">02</span><h3>Tool search</h3><p>Agents discover the right tool at runtime instead of loading thousands.</p></div>
+    <div class="fc"><span class="ix">03</span><h3>Remote workbench</h3><p>A sandbox for bulk operations and long-running workflows.</p></div>
+  </div>
+  <div class="spot">
+    <div><h3>Works with every agent framework</h3><p>OpenAI Agents, Anthropic, LangGraph, CrewAI, Vercel AI SDK and MCP — drop Composio tools in with two lines.</p><span class="btn">View integrations</span></div>
+    <div class="code"><div class="tabs"><span class="on">TypeScript</span><span>Python</span><span>MCP</span></div>
+<span class="k">import</span> { Composio } <span class="k">from</span> <span class="s">"@composio/core"</span>;<br>
+<span class="k">import</span> { VercelProvider } <span class="k">from</span> <span class="s">"@composio/vercel"</span>;<br><br>
+<span class="k">const</span> composio = <span class="k">new</span> <span class="w">Composio</span>({ provider: <span class="k">new</span> <span class="w">VercelProvider</span>() });<br>
+<span class="k">const</span> tools = <span class="k">await</span> composio.tools.<span class="cy">get</span>(<span class="s">"user_4821"</span>, {<br>
+&nbsp;&nbsp;toolkits: [<span class="s">"NOTION"</span>, <span class="s">"GMAIL"</span>],<br>
+});</div>
+  </div>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap">
+  <span class="cap">Customers</span>
+  <h2>Trusted by teams shipping agents in production</h2>
+  <div class="tgrid">
+    <div class="tm"><p>"Composio cut our integration backlog from months to days. Auth alone would have taken a full team."</p><div class="who"><span class="av"></span><div><b>Maya Patel</b><span>Head of AI, Northwind</span></div></div></div>
+    <div class="tm"><p>"Tool search was the unlock — our agent went from 40% to 92% task success without changing the model."</p><div class="who"><span class="av"></span><div><b>Daniel Kim</b><span>CTO, Relay Labs</span></div></div></div>
+    <div class="tm"><p>"We ship new integrations every week now. The SDK just gets out of the way."</p><div class="who"><span class="av"></span><div><b>Sofia Reyes</b><span>Staff Engineer, Lumen</span></div></div></div>
+  </div>
+</div></section>
+
+<section class="ctaband"><div class="wrap">
+  <h2>Give your agents the tools they need</h2>
+  <div class="inp"><span class="f">you@company.com</span><span class="btn">Get started free</span></div>
+</div></section>
+
+<footer class="site"><div class="fcols">
+  <div><span class="wm" style="margin-bottom:14px"><i><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="2"><path d="M10.5 3.5A5 5 0 1 0 10.5 10.5"/></svg></i>composio</span><span>© 2026 Composio, Inc.</span></div>
+  <div><h6>Product</h6><span>Toolkits</span><span>Tool Router</span><span>MCP</span><span>Pricing</span></div>
+  <div><h6>Developers</h6><span>Docs</span><span>SDK reference</span><span>Changelog</span></div>
+  <div><h6>Frameworks</h6><span>OpenAI</span><span>LangGraph</span><span>CrewAI</span></div>
+  <div><h6>Company</h6><span>About</span><span>Careers</span><span>Blog</span></div>
+  <div><h6>Legal</h6><span>Privacy</span><span>Terms</span><span>Security</span></div>
+</div></footer>
+
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">composio</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>

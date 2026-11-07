@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shopify — The commerce platform for everyone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=block">
+<style>
+:root{--night:#000;--night-el:#0a0a0a;--el-dark:#1e2c31;--cream:#fbfbf5;--s30:#d4d4d8;--s40:#a1a1aa;--s50:#71717a;--s60:#52525b;--s70:#3f3f46;--hl:#e4e4e7;--hd:#1e2c31;--aloe:#c1fbd4;--pist:#d4f9e0;--lc1:#9dabad;--lc2:#9797a2;--lc3:#bdbdca;--lmint:#99b3ad;
+--e1:0 1px 2px rgba(255,255,255,.05),inset 0 1px 0 rgba(255,255,255,.04);
+--e3:0 8px 8px rgba(0,0,0,.1),0 4px 4px rgba(0,0,0,.1),0 2px 2px rgba(0,0,0,.1),0 0 0 1px rgba(0,0,0,.1)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:#fff;font-family:'Inter Variable',Inter,Helvetica,Arial,sans-serif;font-optical-sizing:auto;font-feature-settings:"ss03";font-size:16px;font-weight:420;line-height:1.5}
+/* display: Inter at display optical size, thin 330 (Neue Haas Grotesk Display substitute) */
+.d{font-family:'NeueHaasGrotesk Display',Inter,Helvetica,Arial,sans-serif;font-variation-settings:"opsz" 32;font-weight:330}
+.xxl{font-size:96px;line-height:1;letter-spacing:2.4px}
+.xl{font-size:70px;line-height:1}
+.lg{font-size:55px;line-height:1.16}
+.md{font-size:48px;line-height:1.14}
+.hxl{font-size:28px;font-weight:500;line-height:1.28;letter-spacing:.42px}
+.hlg{font-size:24px;font-weight:400;line-height:1.14;letter-spacing:.36px}
+.hmd{font-size:20px;font-weight:500;line-height:1.4;letter-spacing:.3px}
+.hsm{font-size:18px;font-weight:500;line-height:1.25;letter-spacing:.72px}
+.blg{font-size:18px;font-weight:550;line-height:1.56}
+.cap{font-size:14px;font-weight:500;line-height:1.49;letter-spacing:.28px}
+.micro{font-size:13px;font-weight:500;line-height:1.5;letter-spacing:-.13px}
+.eye{font-size:12px;font-weight:400;line-height:1.2;letter-spacing:.72px;text-transform:uppercase}
+.wrap{max-width:1440px;margin:0 auto;padding:0 64px}
+.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:9999px;padding:12px 24px;font-size:16px;font-weight:420;line-height:1.5;white-space:nowrap}
+.btn.p{background:#000;color:#fff}
+.btn.od{background:#000;color:#fff;border:2px solid #fff;padding:10px 24px}
+.btn.ol{background:#fff;color:#000;border:1px solid #000;padding:11px 23px}
+.btn.aloe{background:var(--aloe);color:#000}
+.tag{display:inline-block;border-radius:9999px;padding:4px 12px;font-size:12px;letter-spacing:.72px;text-transform:uppercase;line-height:1.2;color:#000}
+/* nav */
+nav{padding:16px 24px}
+nav .in{max-width:1440px;margin:0 auto;padding:0 40px;display:flex;align-items:center;gap:32px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:24px;letter-spacing:-.5px}
+.logo svg{width:28px;height:28px}
+nav .sp{flex:1}
+/* hero */
+.hero{padding:96px 0 0;text-align:center}
+.hero p{max-width:620px;margin:32px auto 40px;color:var(--s30)}
+.bleed{margin-top:96px;height:620px;position:relative;overflow:hidden;background:
+ radial-gradient(ellipse 22% 40% at 30% 58%,rgba(255,214,170,.55),transparent 70%),
+ radial-gradient(ellipse 30% 30% at 74% 40%,rgba(120,160,150,.35),transparent 70%),
+ linear-gradient(180deg,#000 0%,#14100c 18%,#2a2119 60%,#0d0b09 100%)}
+.bleed .shelf{position:absolute;left:52%;top:18%;width:34%;height:64%;border-left:6px solid #3a2e22;border-right:6px solid #3a2e22;background:repeating-linear-gradient(180deg,transparent 0 120px,#3a2e22 120px 128px)}
+.bleed .jar{position:absolute;bottom:0;border-radius:18px 18px 8px 8px}
+.bleed .person{position:absolute;left:22%;bottom:0;width:260px;height:440px;border-radius:130px 130px 0 0;background:linear-gradient(180deg,#5a4636 0 26%,#1f2f2c 26%)}
+.bleed .person::before{content:"";position:absolute;left:70px;top:-120px;width:120px;height:150px;border-radius:60px;background:linear-gradient(180deg,#2b1d14 0 30%,#c99a74 30%)}
+.logos{display:flex;justify-content:space-between;align-items:center;padding:56px 0;color:var(--s40);font-size:24px;font-weight:600;letter-spacing:-.4px;border-bottom:1px solid var(--hd)}
+/* cinematic features */
+.band{padding:160px 0}
+.feat{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:64px}
+.cc{background:var(--night-el);border-radius:12px;padding:32px;box-shadow:var(--e1);min-height:340px;display:flex;flex-direction:column}
+.cc p{color:var(--s40);margin-top:12px}
+.cc .vis{margin-top:auto;height:120px;border-radius:8px;position:relative;overflow:hidden}
+/* admin dashboard mockup */
+.admin{margin-top:64px;border-radius:20px 20px 0 0;background:#0a0a0a;box-shadow:var(--e1);overflow:hidden;display:grid;grid-template-columns:220px 1fr;min-height:560px}
+.aside{border-right:1px solid var(--hd);padding:20px 12px;font-size:14px;color:var(--s30)}
+.aside div{padding:8px 12px;border-radius:8px;display:flex;gap:10px;align-items:center}
+.aside .on{background:#1a1a1a;color:#fff}
+.aside i{width:14px;height:14px;border:1.5px solid currentColor;border-radius:4px}
+.amain{padding:24px 28px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
+.kpi{border:1px solid var(--hd);border-radius:12px;padding:16px}
+.kpi b{display:block;font-size:24px;font-weight:500;letter-spacing:.36px;margin:4px 0}
+.up{color:var(--aloe)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;color:var(--s40);font-weight:500;padding:10px 12px;border-bottom:1px solid var(--hd);letter-spacing:.28px}
+td{padding:12px;border-bottom:1px solid #141414}
+td:last-child,th:last-child{text-align:right}
+.st{display:inline-block;border-radius:9999px;padding:2px 10px;font-size:12px}
+.st.paid{background:#1e2c31;color:#c1fbd4}
+.st.pend{background:#3f3f46;color:#e4e4e7}
+.st.ful{background:#fff;color:#000}
+/* light track */
+.light{background:var(--cream);color:#000;padding:96px 0 64px}
+.tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:48px}
+.tier{background:#fff;border:1px solid var(--hl);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--e3)}
+.tier.f{background:var(--aloe);border-color:var(--aloe)}
+.tier ul{list-style:none;display:flex;flex-direction:column;gap:10px;font-size:14px;padding:8px 0 24px;border-top:1px solid var(--hl);padding-top:16px}
+.tier.f ul{border-color:rgba(0,0,0,.12)}
+.tier li::before{content:"✓  "}
+.tier .btn{margin-top:auto}
+.toggle{display:inline-flex;background:#fff;border:1px solid var(--hl);border-radius:9999px;padding:4px;margin-top:24px}
+.toggle span{padding:8px 20px;border-radius:9999px;font-size:14px;font-weight:500}
+.toggle .on{background:#000;color:#fff}
+.pband{background:var(--pist);border-radius:12px;padding:32px;margin-top:48px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;align-items:start}
+.signup{display:flex;gap:8px;margin-top:16px}
+.signup input{flex:1;font:inherit;border:1px solid var(--hl);border-radius:8px;padding:10px 12px;background:#fff}
+.sfoot{background:#000;color:#fff;padding:64px 24px}
+.sfoot .in{max-width:1440px;margin:0 auto;padding:0 40px;display:grid;grid-template-columns:repeat(5,1fr);gap:24px;font-size:14px;font-weight:500;letter-spacing:.28px}
+.sfoot h6{font-size:14px;font-weight:550;margin-bottom:16px}
+.sfoot a{display:block;margin-bottom:10px;color:var(--lc1);text-decoration:underline;text-decoration-color:rgba(157,171,173,.4)}
+.sfoot .legal{max-width:1440px;margin:48px auto 0;padding:24px 40px 0;border-top:1px solid var(--s70);display:flex;gap:24px;font-size:13px;color:var(--lc2)}
+</style></head><body>
+<nav><div class="in">
+  <span class="logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M15.337 23.979l7.216-1.561s-2.604-17.613-2.625-17.73c-.018-.116-.114-.192-.211-.192s-1.929-.136-1.929-.136-1.275-1.274-1.439-1.411c-.045-.037-.075-.057-.121-.074l-.914 21.104h.023zM11.71 11.305s-.81-.424-1.774-.424c-1.447 0-1.504.906-1.504 1.141 0 1.232 3.24 1.715 3.24 4.629 0 2.295-1.44 3.76-3.406 3.76-2.354 0-3.54-1.465-3.54-1.465l.646-2.086s1.245 1.066 2.28 1.066c.675 0 .975-.545.975-.932 0-1.619-2.654-1.694-2.654-4.359-.034-2.237 1.571-4.416 4.827-4.416 1.257 0 1.875.361 1.875.361l-.945 2.715-.02.01zM11.17.83c.136 0 .271.038.405.135-.984.465-2.064 1.639-2.508 3.992-.656.213-1.293.405-1.889.578C7.697 3.75 8.951.84 11.170.84V.83zm1.235 2.949v.135c-.754.232-1.583.484-2.394.736.466-1.777 1.333-2.645 2.085-2.971.193.501.309 1.176.309 2.1zm.539-2.234c.694.074 1.141.867 1.429 1.755-.349.114-.735.231-1.158.366v-.252c0-.752-.096-1.371-.271-1.871v.002zm2.992 1.289c-.02 0-.06.021-.078.021s-.289.075-.714.21c-.423-1.233-1.176-2.37-2.508-2.37h-.115C12.135.209 11.669 0 11.265 0 8.159 0 6.675 3.877 6.21 5.846c-1.194.365-2.063.636-2.16.674-.675.213-.694.232-.772.87-.075.462-1.83 14.063-1.83 14.063L15.009 24l.927-21.166z"/></svg>shopify</span>
+  <span>Solutions</span><span>Pricing</span><span>Resources</span><span>Enterprise</span><span>What's new</span>
+  <span class="sp"></span><span class="btn od">Log in</span><span class="btn od" style="font-weight:550">Start for free</span>
+</div></nav>
+
+<header class="hero">
+  <div class="wrap"><span class="eye" style="color:var(--s40)">Commerce for everyone</span>
+    <h1 class="d xxl" style="margin-top:24px">Be the next big thing</h1>
+    <p class="blg">Dream big, build fast, and grow far on Shopify — the platform behind millions of businesses in 175 countries.</p>
+    <span class="btn od">Start for free</span>
+  </div>
+  <div class="bleed">
+    <div class="shelf"></div>
+    <div class="jar" style="left:56%;top:31%;width:60px;height:80px;background:#c9a27a"></div>
+    <div class="jar" style="left:62%;top:28%;width:50px;height:96px;background:#6f8f84"></div>
+    <div class="jar" style="left:68%;top:33%;width:70px;height:72px;background:#e3d3b8"></div>
+    <div class="jar" style="left:58%;top:54%;width:90px;height:66px;background:#8a5a3b"></div>
+    <div class="jar" style="left:70%;top:51%;width:56px;height:86px;background:#b9c9bf"></div>
+    <div class="person"></div>
+  </div>
+</header>
+
+<div class="wrap"><div class="logos"><span>Gymshark</span><span>Allbirds</span><span>Mattel</span><span>Heinz</span><span>Glossier</span><span>Staples</span><span>Brooklinen</span></div></div>
+
+<section class="band"><div class="wrap">
+  <span class="eye" style="color:var(--s40)">Sell everywhere</span>
+  <h2 class="d xl" style="margin-top:24px;max-width:980px">One platform for online, in person and everywhere in between</h2>
+  <div class="feat">
+    <div class="cc"><h3 class="hxl">Online store</h3><p>Build a storefront with drag-and-drop themes, or go headless with Hydrogen and our APIs.</p><div class="vis" style="background:linear-gradient(135deg,#1e2c31,#0a0a0a)"><div style="position:absolute;left:20px;top:18px;right:80px;height:10px;border-radius:5px;background:#3f3f46"></div><div style="position:absolute;left:20px;top:40px;width:90px;height:60px;border-radius:5px;background:#52525b"></div><div style="position:absolute;left:122px;top:40px;width:90px;height:60px;border-radius:5px;background:#3f3f46"></div></div></div>
+    <div class="cc"><h3 class="hxl">Point of sale</h3><p>Sell in store, at pop-ups and markets with hardware and software that syncs inventory in real time.</p><div class="vis" style="background:#0a0a0a;border:1px solid #1e2c31"><div style="position:absolute;left:50%;top:14px;transform:translateX(-50%);width:130px;height:92px;border-radius:12px;background:#1e2c31;box-shadow:inset 0 0 0 6px #111"></div></div></div>
+    <div class="cc"><h3 class="hxl">Shop Pay</h3><p>The highest-converting accelerated checkout, trusted by 200M+ buyers. One tap, done.</p><div class="vis" style="background:linear-gradient(160deg,#0a0a0a,#1e2c31)"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;color:#000;border-radius:9999px;padding:10px 40px;font-weight:700;letter-spacing:-.3px">shop <span style="font-weight:400">Pay</span></span></div></div>
+  </div>
+  <div class="admin">
+    <div class="aside"><div style="color:#fff;font-weight:550;margin-bottom:8px">◼ Juniper &amp; Pine</div><div class="on"><i></i>Home</div><div><i></i>Orders <span style="margin-left:auto;font-size:12px;background:#3f3f46;border-radius:9999px;padding:0 8px">12</span></div><div><i></i>Products</div><div><i></i>Customers</div><div><i></i>Marketing</div><div><i></i>Discounts</div><div><i></i>Analytics</div><div style="margin-top:16px;color:var(--s50)">Sales channels</div><div><i></i>Online Store</div><div><i></i>Point of Sale</div><div><i></i>Shop</div></div>
+    <div class="amain">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="hmd">Today</span><span style="display:flex;gap:8px"><span class="btn" style="background:#1a1a1a;padding:6px 16px;font-size:14px">Last 30 days ⌄</span><span class="btn" style="background:#fff;color:#000;padding:6px 16px;font-size:14px">Create order</span></span></div>
+      <div class="kpis">
+        <div class="kpi"><span class="cap" style="color:var(--s40)">Total sales</span><b>$48,215.90</b><span class="micro up">↑ 18%</span></div>
+        <div class="kpi"><span class="cap" style="color:var(--s40)">Orders</span><b>1,204</b><span class="micro up">↑ 9%</span></div>
+        <div class="kpi"><span class="cap" style="color:var(--s40)">Conversion rate</span><b>3.42%</b><span class="micro up">↑ 0.4 pts</span></div>
+        <div class="kpi"><span class="cap" style="color:var(--s40)">Returning customers</span><b>38%</b><span class="micro" style="color:var(--s40)">— flat</span></div>
+      </div>
+      <svg width="100%" height="90" viewBox="0 0 900 90" preserveAspectRatio="none" style="display:block;margin-bottom:16px"><path d="M0 70 L60 66 L120 58 L180 62 L240 48 L300 52 L360 40 L420 44 L480 30 L540 36 L600 24 L660 28 L720 18 L780 22 L840 10 L900 14" fill="none" stroke="#c1fbd4" stroke-width="2"/><path d="M0 80 L120 76 L240 72 L360 70 L480 64 L600 62 L720 56 L900 52" fill="none" stroke="#52525b" stroke-width="1.5" stroke-dasharray="4 4"/></svg>
+      <table>
+        <tr><th>Order</th><th>Date</th><th>Customer</th><th>Channel</th><th>Payment</th><th>Fulfillment</th><th>Total</th></tr>
+        <tr><td>#1842</td><td>Today at 9:41 am</td><td>Amara Osei</td><td>Online Store</td><td><span class="st paid">Paid</span></td><td><span class="st pend">Unfulfilled</span></td><td>$128.00</td></tr>
+        <tr><td>#1841</td><td>Today at 9:12 am</td><td>Lucas Meyer</td><td>Shop</td><td><span class="st paid">Paid</span></td><td><span class="st ful">Fulfilled</span></td><td>$64.50</td></tr>
+        <tr><td>#1840</td><td>Today at 8:55 am</td><td>Priya Nair</td><td>Point of Sale</td><td><span class="st paid">Paid</span></td><td><span class="st ful">Fulfilled</span></td><td>$212.00</td></tr>
+        <tr><td>#1839</td><td>Yesterday at 6:20 pm</td><td>Sam Carter</td><td>Instagram</td><td><span class="st pend">Pending</span></td><td><span class="st pend">Unfulfilled</span></td><td>$39.00</td></tr>
+        <tr><td>#1838</td><td>Yesterday at 4:02 pm</td><td>Hana Kobayashi</td><td>Online Store</td><td><span class="st paid">Paid</span></td><td><span class="st ful">Fulfilled</span></td><td>$310.75</td></tr>
+      </table>
+    </div>
+  </div>
+</div></section>
+
+<section class="light"><div class="wrap">
+  <div style="text-align:center"><span class="tag" style="background:var(--aloe)">Pricing</span><h2 class="d lg" style="margin-top:20px">Start for free, then enjoy $1/month<br>for your first 3 months</h2><div class="toggle"><span class="on">Pay monthly</span><span>Pay yearly (save 25%)</span></div></div>
+  <div class="tiers">
+    <div class="tier"><h3 class="hxl">Basic</h3><p class="cap" style="color:var(--s50)">For solo entrepreneurs</p><div class="d md">$39<span class="micro" style="font-family:Inter">USD/mo</span></div><ul><li>10 inventory locations</li><li>24/7 chat support</li><li>Localized global selling</li></ul><span class="btn p">Try for free</span></div>
+    <div class="tier f"><span class="tag" style="background:#fff;align-self:flex-start">Most popular</span><h3 class="hxl">Grow</h3><p class="cap" style="color:var(--s60)">For small teams</p><div class="d md">$105<span class="micro" style="font-family:Inter">USD/mo</span></div><ul><li>5 additional staff accounts</li><li>Reporting &amp; analytics</li><li>Lower card rates</li></ul><span class="btn p">Try for free</span></div>
+    <div class="tier"><h3 class="hxl">Advanced</h3><p class="cap" style="color:var(--s50)">As your business scales</p><div class="d md">$399<span class="micro" style="font-family:Inter">USD/mo</span></div><ul><li>15 additional staff accounts</li><li>Custom report builder</li><li>Duties &amp; import taxes</li></ul><span class="btn p">Try for free</span></div>
+    <div class="tier"><h3 class="hxl">Plus</h3><p class="cap" style="color:var(--s50)">For complex businesses</p><div class="d md">$2,300<span class="micro" style="font-family:Inter">USD/mo</span></div><ul><li>Unlimited staff accounts</li><li>B2B &amp; wholesale built in</li><li>Priority support</li></ul><span class="btn ol">Get in touch</span></div>
+  </div>
+  <div class="pband">
+    <div><span class="tag" style="background:var(--s30)">All plans include</span><h3 class="hmd" style="margin-top:16px">Everything you need to sell</h3></div>
+    <p class="cap" style="color:var(--s60)">Online store &amp; themes · Shopify Payments · Shop Pay · 1,000+ apps · Unlimited products · Abandoned cart recovery · Fraud analysis</p>
+    <div><b class="hsm">Get Shopify news</b><div class="signup"><input value="you@yourstore.com" aria-label="email"><span class="btn p">Subscribe</span></div></div>
+  </div>
+  <p class="micro" style="color:var(--s50);margin-top:24px;text-align:center">Prices in USD. Credit card rates vary by plan. Offer available to new merchants on Basic, Grow and Advanced plans.</p>
+</div></section>
+
+<div class="sfoot"><div class="in">
+  <div><h6>Shopify</h6><a>About</a><a>Careers</a><a>Investors</a><a>Press and Media</a></div>
+  <div><h6>Support</h6><a>Merchant Support</a><a>Help Center</a><a>Hire a Partner</a><a>Community</a></div>
+  <div><h6>Developers</h6><a>Shopify.dev</a><a>API Documentation</a><a>Dev Degree</a></div>
+  <div><h6>Products</h6><a>Shop</a><a>Shop Pay</a><a>Shopify Plus</a><a>Shopify for Enterprise</a></div>
+  <div><h6>Solutions</h6><a>Online Store Builder</a><a>Website Builder</a><a>Point of Sale</a></div>
+</div><div class="legal"><span>Terms of Service</span><span>Privacy Policy</span><span>Sitemap</span><span>Privacy Choices</span><span style="flex:1"></span><span>🇺🇸 USA</span></div></div>
+<footer style="all:unset;display:block;padding:14px 24px;background:#111;color:#bbb;font:12px/1.5 ui-monospace,Menlo,monospace;text-align:center">DESIGN.md preview · <b style="color:#fff">shopify</b> · built by cc-baseline from VoltAgent/awesome-design-md @3b60532 · fonts are open-source substitutes · not affiliated with the brand</footer>
+</body></html>
