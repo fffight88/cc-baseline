@@ -247,14 +247,21 @@ e2e-tester: 조작(LLM, Aside 우선 / Playwright 대체) → 기대 결과마�
 
 | 환경 변수 | 값 |
 |---|---|
-| `CC_BASELINE_JEV_KEY` | TypeSafe API 키. 없으면 ①은 건너뜀, ②는 2층 생략 |
-| `CC_BASELINE_JEV_MODEL` | 정확한 판본, 기본 `jev-1.13.0`. `latest`·`preview` 등 별칭이면 거부 |
+| `CC_BASELINE_JEV_KEY` | TypeSafe API 키. 없으면 공식 SDK 기본 이름 `TYPESAFE_API_KEY`를 읽는다. 둘 다 없으면 ①은 건너뜀, ②는 2층 생략 |
+| `CC_BASELINE_JEV_MODEL` | 정확한 판본. 기본값은 구현 시점에 지원 종료 일정이 가장 먼 정식 판본으로 정한다(2026-11 기준 후보 `jev-1.14.0` — `jev-1.13.0`은 지원 종료 예고됨). `latest`·`preview` 등 별칭이면 거부 |
 | `CC_BASELINE_JEV_BASE_URL` | 기본 `https://api.typesafe.ai`, 경로 `/v1/systemone` |
 
 - 인증 `Authorization: Bearer <키>`. 키는 결과·표본·오류 메시지·로그 어디에도 남기지 않는다.
 - 응답의 `model`·`usage`·선택지별 확률을 그대로 저장. 요청 판본과 응답 판본이 다르면 오류로 멈춘다.
 - 이미지 입력(`text+image`)은 이번에 쓰지 않는다(실험 기능, 별도 헤더 필요). 입력 방식은 `text`로 기록해 나중 비교와 섞이지 않게 한다.
 - 실행마다 Jev 호출 수·토큰·응답 시간을 결과에 남겨 LLM 판정 대비 비용을 비교할 수 있게 한다.
+
+**판본 교체·지원 종료 대비**:
+- TypeSafe는 판본마다 지원 종료 기간을 예고한다(예: 새 판본 출시 시 이전 판본 60일). 별칭은 예고 없이 다른 판본을 가리키게 되므로 쓰지 않는다.
+- 판본을 바꾸면 그 판본의 보정 기록이 없으므로 Jev 판정은 다시 `REVIEW` 이하로 캡된다. 표본·보정은 판본별로 분리돼 섞이지 않는다.
+- 교체 전에 저장된 표본 요청을 새 판본으로 다시 보내 질문별 정답률·거짓 PASS율을 비교하고(`tc-jev-judge.js --replay --model <새 판본>`), 나빠지지 않을 때만 사용자 승인으로 기본값을 바꾼다.
+- doctor가 설정된 판본을 보여주고, 응답에 지원 종료 경고가 오면 결과·doctor에 표시한다.
+- 이미지 입력(`TypeSafe-Danger-Zone-Images`)·Box·긴 맥락(`TypeSafe-Danger-Zone-Long-Context`)은 제공자가 운영 수준을 보장하지 않는 실험 기능이므로 이번에 쓰지 않는다. 이미지 입력은 로드맵 단계 4에서 텍스트 판정과 비교 실험 후 정한다.
 
 ### 6. e2e 연결
 
@@ -298,11 +305,12 @@ e2e-tester: 조작(LLM, Aside 우선 / Playwright 대체) → 기대 결과마�
 ## Phase D — Jev 클라이언트 + ① 작성 검사
 
 1. Read ~/.claude/memory/phase_start.md and execute
-2. 공통 모듈 `templates/scripts/lib/jev-client.js` — 설정 읽기, 별칭 거부, 요청·응답 저장, 판본 불일치 오류, 키 비노출, 재시도 없음(오류는 사유로 기록)
-3. `templates/scripts/tc-jev-check.js` — §4
-4. 저장된 응답 재생 테스트(네트워크 없음): 키 미설정·별칭·판본 불일치·HTTP 오류·정상
-5. **키 수령 후** 실제 호출 1회로 요청·응답 형식 확인, 결과 판본·usage 기록
-6. Read ~/.claude/memory/phase_end.md and execute
+2. 요청 형식 확인: TypeSafe 공식 문서(`docs.typesafe.ai`의 quickstart·primitives·api)와 공식 스킬 `typesafe-ai/skills`의 `SKILL.md`를 **참고 자료로 읽기만** 한다(하네스에 설치하지 않음 — 외부 플러그인은 훅·실행 파일 유무를 확인하고 사용자 승인 후에만)
+3. 공통 모듈 `templates/scripts/lib/jev-client.js` — 설정 읽기(`CC_BASELINE_JEV_KEY` → `TYPESAFE_API_KEY`), 별칭 거부, 요청·응답 저장, 판본 불일치 오류, 키 비노출, 재시도 없음(오류는 사유로 기록)
+4. `templates/scripts/tc-jev-check.js` — §4
+5. 저장된 응답 재생 테스트(네트워크 없음): 키 미설정·`TYPESAFE_API_KEY` 대체·별칭·판본 불일치·HTTP 오류·정상
+6. **키 수령 후** 실제 호출 1회로 요청·응답 형식 확인, 기본 판본 확정(지원 종료 일정 확인), 결과 판본·usage 기록
+7. Read ~/.claude/memory/phase_end.md and execute
 
 ## Phase E — ② 실행 판정 + e2e 연결
 
