@@ -70,11 +70,25 @@ function installSemgrepLinux(localBin) {
   }
   // isolated venv install — bypasses PEP 668 on Ubuntu 24.04, no sudo required
   const venvDir = path.join(HOME, '.local', 'share', 'cc-baseline', 'semgrep-venv');
-  fs.mkdirSync(path.dirname(venvDir), { recursive: true });
-  spawnSync('python3', ['-m', 'venv', venvDir], { stdio: 'inherit' });
-  spawnSync(`${venvDir}/bin/pip`, ['install', '--quiet', '--upgrade', 'pip'], { stdio: 'inherit' });
-  spawnSync(`${venvDir}/bin/pip`, ['install', '--quiet', 'semgrep'], { stdio: 'inherit' });
   const target = path.join(localBin, 'semgrep');
+  // each step must succeed: a venv without ensurepip still exits early and leaves a
+  // half-built directory, which used to be reported as "installed"
+  const step = (cmd, args, hint) => {
+    const r = spawnSync(cmd, args, { stdio: 'inherit' });
+    if (r.status !== 0) {
+      fs.rmSync(venvDir, { recursive: true, force: true });
+      removeDanglingLink(target);
+      throw new Error(hint);
+    }
+  };
+  // a previous failed run can leave a venv with no pip; start that one over
+  if (!fs.existsSync(path.join(venvDir, 'bin', 'pip'))) fs.rmSync(venvDir, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(venvDir), { recursive: true });
+  step('python3', ['-m', 'venv', venvDir],
+    'python3 -m venv failed — the venv module is missing (Debian/Ubuntu: sudo apt install python3-venv)');
+  step(`${venvDir}/bin/pip`, ['install', '--quiet', '--upgrade', 'pip'], 'pip upgrade failed inside the semgrep venv');
+  step(`${venvDir}/bin/pip`, ['install', '--quiet', 'semgrep'], 'pip install semgrep failed');
+  step(`${venvDir}/bin/semgrep`, ['--version'], 'semgrep was installed but does not run');
   try {
     fs.unlinkSync(target);
   } catch (unlinkErr) {
@@ -83,6 +97,13 @@ function installSemgrepLinux(localBin) {
     }
   }
   fs.symlinkSync(path.join(venvDir, 'bin', 'semgrep'), target);
+}
+
+// Removes a symlink whose target no longer exists (left by an earlier failed install).
+function removeDanglingLink(p) {
+  try {
+    if (fs.lstatSync(p).isSymbolicLink() && !fs.existsSync(p)) fs.unlinkSync(p);
+  } catch {}
 }
 
 function installGitleaksLinux(localBin) {
@@ -102,7 +123,8 @@ function installGitleaksLinux(localBin) {
   const ver = tag.slice(1);
   const tarName = `gitleaks_${ver}_linux_${arch}.tar.gz`;
   const url = `https://github.com/gitleaks/gitleaks/releases/download/${tag}/${tarName}`;
-  const checksumUrl = `https://github.com/gitleaks/gitleaks/releases/download/${tag}/checksums.txt`;
+  // gitleaks names the file gitleaks_<ver>_checksums.txt; a bare checksums.txt does not exist (404)
+  const checksumUrl = `https://github.com/gitleaks/gitleaks/releases/download/${tag}/gitleaks_${ver}_checksums.txt`;
 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gitleaks-'));
   try {
@@ -173,7 +195,7 @@ function printManualScannerCommands(failures, localBin) {
   console.log('\n  ⚠️  Manual install commands for failed scanners:');
   for (const s of failures) {
     if (s === 'semgrep') {
-      console.log('     - semgrep: sudo apt install -y python3-venv pipx && pipx install semgrep');
+      console.log('     - semgrep: sudo apt install -y python3-venv, then re-run cc-baseline (or: pipx install semgrep)');
     } else if (s === 'gitleaks') {
       console.log(`     - gitleaks: download linux binary from GitHub Releases → ${localBin}/`);
       console.log('               https://github.com/gitleaks/gitleaks/releases/latest');

@@ -315,6 +315,11 @@ function checkNotifier() {
     return warn('Notifier (terminal-notifier)', 'not found',
       'brew install terminal-notifier (falls back to osascript without it)');
   }
+  // notify-send needs a desktop session to show anything; on a headless server
+  // (SSH, Remote Control) there is nothing to install
+  if (!process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) {
+    return ok('Notifier', 'headless (no DISPLAY / WAYLAND_DISPLAY) — desktop notifications do not apply');
+  }
   if (checkCmd('notify-send')) return ok('Notifier (notify-send)', 'installed');
   return warn('Notifier (notify-send)', 'not found',
     'apt install libnotify-bin (notifications will be silent without it)');
