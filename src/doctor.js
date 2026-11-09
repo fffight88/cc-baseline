@@ -325,6 +325,18 @@ function checkNotifier() {
     'apt install libnotify-bin (notifications will be silent without it)');
 }
 
+// Jev (TypeSafe) is optional: TC authoring checks and layer-2 judging are
+// skipped without a key, so a missing key is ok. A misconfiguration (alias
+// model, key file not 600, non-https URL) warns. No network call here.
+function checkJev({ env = process.env, home = HOME } = {}) {
+  const label = 'Jev key (optional)';
+  const { loadConfig } = require(path.join(TEMPLATES_DIR, 'scripts', 'jev-client.js'));
+  const c = loadConfig({ env, home });
+  if (c.error) return warn(label, c.error, 'see reference_tc_authoring.md §5 — exact model version, key file mode 600');
+  if (!c.key) return ok(label, 'not configured — TC Jev checks skipped, e2e judges code → LLM');
+  return ok(label, `key from ${c.keySource}, model ${c.model}`);
+}
+
 function runChecks(opts) {
   const target = resolveTarget(opts || {});
 
@@ -358,6 +370,7 @@ function runChecks(opts) {
     checkPlaywrightMcp(),
     checkAside({ configPath: path.join(target.claudeDir, 'cc-baseline-browser.json') }),
     checkNotifier(),
+    checkJev(),
   ];
 }
 
@@ -384,4 +397,4 @@ function doctor(opts) {
   return failCount === 0 ? 0 : 1;
 }
 
-module.exports = { doctor, runChecks, checkMcpServers, checkAside, checkHooks };
+module.exports = { doctor, runChecks, checkMcpServers, checkAside, checkHooks, checkJev };

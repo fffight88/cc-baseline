@@ -24,6 +24,7 @@
 | `memory/reference_publisher_protocol.md` | 〃 | Overwrite |
 | `memory/reference_agent_pipeline.md` | 〃 | Overwrite |
 | `memory/reference_browser_tools.md` | 〃 | Overwrite |
+| `memory/reference_tc_authoring.md` | 〃 | Overwrite |
 | `agents/e2e-tester.md` | `~/.claude/agents/e2e-tester.md` | Overwrite |
 | `agents/security-auditor.md` | `~/.claude/agents/security-auditor.md` | Overwrite |
 | `agents/code-reviewer.md` | `~/.claude/agents/code-reviewer.md` | Overwrite |
@@ -36,6 +37,10 @@
 | `scripts/audit-report.js` | `~/.claude/scripts/audit-report.js` | Overwrite |
 | `scripts/aside-session.sh` | `~/.claude/scripts/aside-session.sh` | Overwrite (exec bit 0755) |
 | `scripts/design-preview.js` | `~/.claude/scripts/design-preview.js` | Overwrite |
+| `scripts/tc-lint.js` | `~/.claude/scripts/tc-lint.js` | Overwrite |
+| `scripts/jev-client.js` | `~/.claude/scripts/jev-client.js` | Overwrite |
+| `scripts/tc-jev-check.js` | `~/.claude/scripts/tc-jev-check.js` | Overwrite |
+| `scripts/tc-jev-judge.js` | `~/.claude/scripts/tc-jev-judge.js` | Overwrite |
 | `design-previews/` (69 files) | `~/.claude/design-previews/` | Overwrite each file; uninstall removes them and any folder left empty |
 
 ## JSON merge details

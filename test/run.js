@@ -1880,6 +1880,15 @@ t('tc-jev-judge: replay re-asks stored requests with another model and compares 
   } finally { await srv.close(); fs.rmSync(jevDir, { recursive: true, force: true }); }
 });
 
+t('doctor.checkJev: missing key is ok, alias model warns, key value never shown', () => {
+  const { checkJev } = require(path.join(ROOT, 'src', 'doctor'));
+  assert.equal(checkJev({ env: {}, home: '/nonexistent' }).status, 'ok');
+  assert.equal(checkJev({ env: { CC_BASELINE_JEV_KEY: FAKE_KEY, CC_BASELINE_JEV_MODEL: 'jev-latest' }, home: '/x' }).status, 'warn');
+  const r = checkJev({ env: { CC_BASELINE_JEV_KEY: FAKE_KEY }, home: '/x' });
+  assert.equal(r.status, 'ok');
+  assert.ok(!JSON.stringify(r).includes(FAKE_KEY));
+});
+
 t('e2e docs: TC runs are verbatim, one judge per expected result, TC file untouched', () => {
   const tester = fs.readFileSync(path.join(ROOT, 'templates', 'agents', 'e2e-tester.md'), 'utf8');
   const guide = fs.readFileSync(path.join(ROOT, 'templates', 'memory', 'reference_e2e_manager_guide.md'), 'utf8');

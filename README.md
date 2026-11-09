@@ -42,6 +42,7 @@ Setting up Claude Code consistently across machines is tedious. cc-baseline solv
 - **HTML report generator** (`audit-report.js`) that turns audit JSON into a color-coded, severity-sorted web page — opened automatically when a scan loop completes
 - **Reliable notifications** via `terminal-notifier` (auto-installed on macOS) so you never miss an interview prompt for design/business decisions
 - **E2E tester agent** that drives **Aside** first (one `aside repl` session per tester, test account only) and falls back to five parallel Playwright MCP servers — sweeps transient controls (toasts, auto-closing modals) too, records `BROWSER_TOOL` / `FALLBACK_REASON`, automatically collects browser console, network headers/payloads, and server log on failure; writes a structured `e2e-results/fail-{N}-{timestamp}.md` artifact; skips all log collection on pass
+- **Test cases written while planning** — plans with `Behavior Impact: Yes/Unknown` get user actions + TCs in `docs/tc/<feature>.tc.json` (one fact per expected result, an observe channel for each, basis `requirement` / `source-observation` / `proposal`), checked right after writing by `tc-lint.js` (code rules) and, with an optional TypeSafe **Jev** key, `tc-jev-check.js` (`single` / `hidden` / `screen` scores). e2e then runs the TCs verbatim and judges every expected result exactly once — code → Jev → LLM — recording `judged_by` in `.cc-audits/<plan>/tc-results.jsonl`. Jev verdicts stay capped at `REVIEW` until you approve a calibration built from code/human-labeled samples
 - **`/open-browser` skill** — opens a tab you drive yourself: in Aside's test-account window, or the headed `playwright-test-1` as fallback; saves session state so `/check-log` reads the same browser
 - **`/check-log` skill** — after you reproduce a bug in the open browser, one command collects console errors, network request/response details, and server log into `e2e-results/fail-manual-{timestamp}.md` at the same depth as an e2e-tester artifact
 - **Safe merge strategy** — CLAUDE.md and MEMORY.md use marker-block merge; hooks use status-message deduplication. Your personal settings are never touched.
@@ -180,6 +181,7 @@ Because `./.claude/memory/` and `./.mcp.json` are committable and run on every t
 | HTML report generator (`scripts/audit-report.js`) | Converts audit/review JSON into a severity-colored, decision-badged HTML page. Run with `node ~/.claude/scripts/audit-report.js <audit-dir>` |
 | Aside session helper (`scripts/aside-session.sh`) | Keeps one `aside repl` alive per session name so browser steps share tabs and variables (`start` / `send` / `stop` / `list`) |
 | DESIGN.md previews (`design-previews/` + `scripts/design-preview.js`) | One page per catalog brand plus a filterable gallery, built from each DESIGN.md's own components and layout. Served on `127.0.0.1` during the design-director interview (`start` / `status` / `stop`); on a remote machine, reach it with `ssh -L <port>:127.0.0.1:<port>` |
+| TC tools (`scripts/tc-lint.js`, `tc-jev-check.js`, `tc-jev-judge.js`, `jev-client.js`) | Authoring checks for `docs/tc/*.tc.json` (warn only, `--strict` to fail) and per-expected-result Jev judging with calibration samples (`judge` / `calibrate` / `replay` / `record`). Jev is optional: key from `CC_BASELINE_JEV_KEY`, `TYPESAFE_API_KEY` or `~/.config/cc-baseline/jev.env` (mode 600); exact model version only (default `jev-1.14.0`) |
 | Hook config (`settings.json hooks`) | SessionStart memory load, PreToolUse E2E guide inject · path guard, SessionEnd process cleanup |
 | MCP servers (`~/.claude.json`) | `playwright-test-1~5` global MCP server entries — the Playwright fallback (`playwright-test-1` is headed and reserved for `/open-browser`; 2–5 headless) |
 
@@ -432,6 +434,7 @@ cc-baseline never reads or writes the `permissions` key in `~/.claude/settings.j
 - All paths in hook commands are stored as `{{HOME}}` and substituted at install time
 - Install logs (`~/.claude/.cc-baseline-install.log`), backups, and audit reports (`.cc-audits/`) are listed in `.gitignore`
 - Only `playwright-test-1~5` in `~/.claude.json` are read/written; all other keys are left untouched
+- With a Jev key configured, `tc-jev-check.js` sends TC expected-result sentences and `tc-jev-judge.js` sends the observed screen text (URL, title, visible text, accessibility summary; secret inputs scrubbed) to the TypeSafe API. Without a key nothing is sent. Judging samples are kept in `~/.claude/jev/` (mode 700); the key is never written to results, samples or logs
 
 ---
 
@@ -458,7 +461,7 @@ cc-baseline/
     ├── memory/             # MEMORY.md + 12 rule files
     ├── agents/             # e2e-tester.md, security-auditor.md, code-reviewer.md, publisher.md
     ├── commands/           # plan.md, clean.md, open-browser.md, check-log.md
-    ├── scripts/            # audit-report.js, aside-session.sh, design-preview.js
+    ├── scripts/            # audit-report.js, aside-session.sh, design-preview.js, tc-lint.js, jev-client.js, tc-jev-check.js, tc-jev-judge.js
     ├── design-previews/    # one preview page per DESIGN.md catalog brand + gallery
     ├── settings-hooks.json # hooks section only
     └── mcp-servers.json    # playwright-test-1~5 only
