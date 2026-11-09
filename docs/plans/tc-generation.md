@@ -247,7 +247,7 @@ e2e-tester: 조작(LLM, Aside 우선 / Playwright 대체) → 기대 결과마�
 
 | 환경 변수 | 값 |
 |---|---|
-| `CC_BASELINE_JEV_KEY` | TypeSafe API 키. 없으면 공식 SDK 기본 이름 `TYPESAFE_API_KEY`를 읽는다. 둘 다 없으면 ①은 건너뜀, ②는 2층 생략 |
+| `CC_BASELINE_JEV_KEY` | TypeSafe API 키. 찾는 순서: 환경 변수 `CC_BASELINE_JEV_KEY` → `TYPESAFE_API_KEY`(공식 SDK 기본 이름) → 파일 `~/.config/cc-baseline/jev.env`(`KEY=value` 한 줄, 권한 600이 아니면 거부). 셸 시작 파일을 고치지 않아도 되게 파일을 지원한다. 모두 없으면 ①은 건너뜀, ②는 2층 생략 |
 | `CC_BASELINE_JEV_MODEL` | 정확한 판본. 기본값은 구현 시점에 지원 종료 일정이 가장 먼 정식 판본으로 정한다(2026-11 기준 후보 `jev-1.14.0` — `jev-1.13.0`은 지원 종료 예고됨). `latest`·`preview` 등 별칭이면 거부 |
 | `CC_BASELINE_JEV_BASE_URL` | 기본 `https://api.typesafe.ai`, 경로 `/v1/systemone` |
 
