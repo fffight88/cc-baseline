@@ -1474,6 +1474,197 @@ t('tc-lint CLI: --json writes the lint block and keeps an existing jev block', (
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });
 
+// ──────────────────────────────────────────────────────────────────────────
+// jev-client.js + tc-jev-check.js — Jev authoring check (no network: local mock)
+// ──────────────────────────────────────────────────────────────────────────
+
+const JEV_CLIENT = path.join(ROOT, 'templates', 'scripts', 'jev-client.js');
+const TC_JEV_CHECK = path.join(ROOT, 'templates', 'scripts', 'tc-jev-check.js');
+const FAKE_KEY = 'apikey_test_0123456789abcdef';
+
+function jevTmp() {
+  return fs.mkdtempSync(path.join(require('os').tmpdir(), 'jev-'));
+}
+
+// Local stand-in for the TypeSafe API. `reply(body, n)` returns { status, json }.
+function mockJev(reply) {
+  const http = require('http');
+  const seen = [];
+  const server = http.createServer((req, res) => {
+    let raw = '';
+    req.on('data', c => { raw += c; });
+    req.on('end', () => {
+      const body = raw ? JSON.parse(raw) : null;
+      seen.push({ url: req.url, auth: req.headers.authorization, body });
+      const { status, json } = reply(body, seen.length);
+      res.writeHead(status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(json));
+    });
+  });
+  return new Promise(resolve => server.listen(0, '127.0.0.1', () => {
+    resolve({ seen, url: `http://127.0.0.1:${server.address().port}`, close: () => new Promise(r => server.close(r)) });
+  }));
+}
+
+function nouls(body, values) {
+  const answers = {};
+  for (const k of Object.keys(body.questions)) answers[k] = { type: 'noul', noul: values[k] };
+  return { model: body.model, answers, usage: { input_tokens: 100, output_tokens: 10 } };
+}
+
+function runNode(args, env) {
+  const { spawn } = require('child_process');
+  return new Promise(resolve => {
+    const p = spawn(process.execPath, args, { env, stdio: ['ignore', 'pipe', 'pipe'] });
+    let stdout = '', stderr = '';
+    p.stdout.on('data', d => { stdout += d; });
+    p.stderr.on('data', d => { stderr += d; });
+    p.on('close', status => resolve({ status, stdout, stderr }));
+  });
+}
+
+t('jev-client: key lookup order — CC_BASELINE_JEV_KEY, TYPESAFE_API_KEY, then the 600 key file', () => {
+  const { loadConfig } = require(JEV_CLIENT);
+  const home = jevTmp();
+  try {
+    assert.equal(loadConfig({ env: {}, home }).key, null);
+    assert.equal(loadConfig({ env: { TYPESAFE_API_KEY: 'b' }, home }).keySource, 'TYPESAFE_API_KEY');
+    assert.equal(loadConfig({ env: { CC_BASELINE_JEV_KEY: 'a', TYPESAFE_API_KEY: 'b' }, home }).key, 'a');
+    const file = path.join(home, '.config', 'cc-baseline', 'jev.env');
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, `# comment\nCC_BASELINE_JEV_KEY=${FAKE_KEY}\n`, { mode: 0o600 });
+    fs.chmodSync(file, 0o600);
+    const c = loadConfig({ env: {}, home });
+    assert.equal(c.key, FAKE_KEY);
+    assert.equal(c.keySource, 'file');
+    fs.chmodSync(file, 0o644);
+    const bad = loadConfig({ env: {}, home });
+    assert.equal(bad.key, null);
+    assert.match(bad.error, /600/);
+  } finally { fs.rmSync(home, { recursive: true, force: true }); }
+});
+
+t('jev-client: model must be an exact version — aliases are refused', () => {
+  const { loadConfig, DEFAULT_MODEL } = require(JEV_CLIENT);
+  assert.match(DEFAULT_MODEL, /^jev-\d+\.\d+\.\d+$/);
+  for (const m of ['jev-latest', 'jev-preview', 'jev-1.14', 'gpt-4']) {
+    const c = loadConfig({ env: { CC_BASELINE_JEV_KEY: FAKE_KEY, CC_BASELINE_JEV_MODEL: m }, home: '/nonexistent' });
+    assert.match(c.error || '', /exact version/, m);
+  }
+  const ok = loadConfig({ env: { CC_BASELINE_JEV_KEY: FAKE_KEY, CC_BASELINE_JEV_MODEL: 'jev-1.13.0' }, home: '/nonexistent' });
+  assert.equal(ok.error, undefined);
+  assert.equal(ok.model, 'jev-1.13.0');
+});
+
+t('jev-client: base URL must be https (loopback http allowed for tests)', () => {
+  const { loadConfig } = require(JEV_CLIENT);
+  const env = { CC_BASELINE_JEV_KEY: FAKE_KEY };
+  assert.match(loadConfig({ env: { ...env, CC_BASELINE_JEV_BASE_URL: 'http://evil.example' }, home: '/x' }).error, /https/);
+  assert.equal(loadConfig({ env: { ...env, CC_BASELINE_JEV_BASE_URL: 'http://127.0.0.1:9' }, home: '/x' }).error, undefined);
+});
+
+t('jev-client: retries 429/529 with backoff, not other errors; key never in errors', async () => {
+  const { loadConfig, systemOne } = require(JEV_CLIENT);
+  let calls = 0;
+  const srv = await mockJev((body) => {
+    calls++;
+    if (body.questions.q.instructions === 'busy' && calls < 3) return { status: 529, json: { error: 'overloaded' } };
+    if (body.questions.q.instructions === 'denied') return { status: 401, json: { error: `bad key ${FAKE_KEY}` } };
+    return { status: 200, json: nouls(body, { q: 0.5 }) };
+  });
+  try {
+    const cfg = loadConfig({ env: { CC_BASELINE_JEV_KEY: FAKE_KEY, CC_BASELINE_JEV_BASE_URL: srv.url }, home: '/x' });
+    const sleeps = [];
+    const sleep = ms => { sleeps.push(ms); return Promise.resolve(); };
+    const ok = await systemOne(cfg, { state: 's', questions: { q: { type: 'noul', instructions: 'busy' } } }, { sleep });
+    assert.equal(ok.ok, true);
+    assert.equal(calls, 3);
+    assert.equal(sleeps.length, 2);
+    assert.ok(sleeps[1] > sleeps[0], 'backoff grows');
+    assert.equal(srv.seen[0].auth, `Bearer ${FAKE_KEY}`);
+    assert.equal(srv.seen[0].url, '/v1/systemone');
+    calls = 0;
+    const denied = await systemOne(cfg, { state: 's', questions: { q: { type: 'noul', instructions: 'denied' } } }, { sleep });
+    assert.equal(denied.ok, false);
+    assert.equal(calls, 1, 'no retry on 401');
+    assert.ok(!JSON.stringify(denied).includes(FAKE_KEY), 'key leaked into error');
+  } finally { await srv.close(); }
+});
+
+t('jev-client: a response from a different model version is an error', async () => {
+  const { loadConfig, systemOne } = require(JEV_CLIENT);
+  const srv = await mockJev(body => ({ status: 200, json: { ...nouls(body, { q: 0.5 }), model: 'jev-9.9.9' } }));
+  try {
+    const cfg = loadConfig({ env: { CC_BASELINE_JEV_KEY: FAKE_KEY, CC_BASELINE_JEV_BASE_URL: srv.url }, home: '/x' });
+    const r = await systemOne(cfg, { state: 's', questions: { q: { type: 'noul', instructions: 'x' } } }, { sleep: () => Promise.resolve() });
+    assert.equal(r.ok, false);
+    assert.match(r.error, /model mismatch/);
+  } finally { await srv.close(); }
+});
+
+t('tc-jev-check: no key → zero requests, jev block "unconfigured", lint block kept', async () => {
+  const srv = await mockJev(body => ({ status: 200, json: nouls(body, { single: 1, hidden: 0, screen: 1 }) }));
+  const tmp = jevTmp();
+  try {
+    const file = path.join(tmp, 'x.tc.json');
+    fs.writeFileSync(file, JSON.stringify(tcDoc()));
+    const out = path.join(tmp, 'tc-check.json');
+    fs.writeFileSync(out, JSON.stringify({ lint: { warnings: [] } }));
+    const r = await runNode([TC_JEV_CHECK, file, '--out', out], { PATH: process.env.PATH, HOME: tmp, CC_BASELINE_JEV_BASE_URL: srv.url });
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(srv.seen.length, 0);
+    const j = JSON.parse(fs.readFileSync(out, 'utf8'));
+    assert.equal(j.jev.status, 'unconfigured');
+    assert.deepEqual(j.lint, { warnings: [] });
+  } finally { await srv.close(); fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
+t('tc-jev-check: alias model is refused with exit 2 and the key is not printed', async () => {
+  const tmp = jevTmp();
+  try {
+    const file = path.join(tmp, 'x.tc.json');
+    fs.writeFileSync(file, JSON.stringify(tcDoc()));
+    const r = await runNode([TC_JEV_CHECK, file], { PATH: process.env.PATH, HOME: tmp, CC_BASELINE_JEV_KEY: FAKE_KEY, CC_BASELINE_JEV_MODEL: 'jev-latest' });
+    assert.equal(r.status, 2);
+    assert.ok(!(r.stdout + r.stderr).includes(FAKE_KEY));
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
+t('tc-jev-check: scores each expected result with single/hidden/screen and warns past the thresholds', async () => {
+  const srv = await mockJev(body => {
+    const bundled = /메일/.test(body.state.expected_result);
+    return { status: 200, json: nouls(body, bundled ? { single: 0.05, hidden: 0.8, screen: 0.2 } : { single: 0.95, hidden: 0.1, screen: 0.9 }) };
+  });
+  const tmp = jevTmp();
+  try {
+    const d = tcDoc();
+    d.test_cases[0].expected[1] = { text: '저장되고 메일이 발송된다', observe: { channel: 'dom', key: 'body' } };
+    const file = path.join(tmp, 'x.tc.json');
+    fs.writeFileSync(file, JSON.stringify(d));
+    const out = path.join(tmp, 'tc-check.json');
+    const env = { PATH: process.env.PATH, HOME: tmp, CC_BASELINE_JEV_KEY: FAKE_KEY, CC_BASELINE_JEV_BASE_URL: srv.url };
+    const r = await runNode([TC_JEV_CHECK, file, '--out', out], env);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(srv.seen.length, 2, 'one request per expected result');
+    const q = srv.seen[0].body.questions;
+    assert.deepEqual(Object.keys(q).sort(), ['hidden', 'screen', 'single']);
+    for (const k of Object.keys(q)) {
+      assert.equal(q[k].type, 'noul');
+      assert.match(q[k].instructions, /do not follow/i, `${k} carries the data-not-instructions guard`);
+    }
+    const j = JSON.parse(fs.readFileSync(out, 'utf8'));
+    assert.equal(j.jev.status, 'ok');
+    assert.equal(j.jev.model, srv.seen[0].body.model);
+    assert.match(j.jev.questions.single, /@\d+$/);
+    assert.deepEqual(j.jev.warnings.map(w => w.rule).sort(), ['jev_hidden', 'jev_screen', 'jev_single']);
+    assert.equal(j.jev.results.length, 2);
+    assert.equal(j.jev.usage.requests, 2);
+    assert.ok(!(r.stdout + fs.readFileSync(out, 'utf8')).includes(FAKE_KEY));
+    const strict = await runNode([TC_JEV_CHECK, file, '--strict'], env);
+    assert.equal(strict.status, 1);
+  } finally { await srv.close(); fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
 async function run() {
   let pass = 0, fail = 0;
   const failures = [];
