@@ -24,6 +24,7 @@
     "scripts/audit-report.js",
     "scripts/aside-session.sh",
     "scripts/design-preview.js",
+    "scripts/tc-lint.js",
     "agents/e2e-tester.md",
     "agents/security-auditor.md",
     "agents/code-reviewer.md",

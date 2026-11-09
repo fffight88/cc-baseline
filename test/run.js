@@ -1265,6 +1265,215 @@ t('README.md and README_KO.md have identical section structure', () => {
   );
 });
 
+// ──────────────────────────────────────────────────────────────────────────
+// tc-lint.js — TC authoring checks (warn only)
+// ──────────────────────────────────────────────────────────────────────────
+
+const TC_LINT = path.join(ROOT, 'templates', 'scripts', 'tc-lint.js');
+
+function tcDoc() {
+  return {
+    schema_version: 1,
+    feature: 'password-reset',
+    title: 'Password reset',
+    plan: 'add-password-reset',
+    sources: [
+      { id: 'SRC.reset-controller', kind: 'source', locator: 'src/auth/reset.ts:42' },
+      { id: 'REQ.reset-01', kind: 'requirement', locator: 'user request' },
+    ],
+    actions: [{
+      id: 'ACT.password-reset.request',
+      title: 'Request a reset email',
+      actor: 'signed-out user',
+      trigger: "clicks 'Forgot password' and submits an email",
+      preconditions: ['a registered email exists'],
+      outputs: ['reset-sent screen'],
+      evidence_refs: ['SRC.reset-controller', 'REQ.reset-01'],
+    }],
+    test_cases: [{
+      id: 'TC.password-reset.request-success',
+      title: 'Requesting with a registered email shows the sent screen',
+      action_refs: ['ACT.password-reset.request'],
+      level: 'functional',
+      surface: 'ui-web',
+      preconditions: ['signed out', 'registered test account'],
+      fixture: 'user-basic',
+      steps: [
+        { goal: "Click 'Forgot password' on the login screen",
+          done_when: { expect: 'A reset screen with an email field opens' } },
+        { goal: "Enter the test account email and click 'Send'", input_refs: ['email'],
+          done_when: { expect: 'The screen changes after submit' } },
+      ],
+      expected: [
+        { text: 'The URL changes to /reset/sent', observe: { channel: 'dom', key: 'location.pathname' } },
+        { text: 'A reset-mail send is logged', observe: { channel: 'log', key: 'mail.reset.sent' } },
+      ],
+      basis: { kind: 'requirement', refs: ['REQ.reset-01'] },
+      readiness: 'ready',
+    }],
+    open_questions: [],
+  };
+}
+
+function lintRules(doc) {
+  const { lint } = require(TC_LINT);
+  return lint(doc).map(w => w.rule);
+}
+
+t('tc-lint: a well-formed TC file has no warnings', () => {
+  assert.deepEqual(lintRules(tcDoc()), []);
+});
+
+t('tc-lint: format — bad IDs, duplicates and dangling refs', () => {
+  const d = tcDoc();
+  d.test_cases[0].id = 'TC.other-feature.x';
+  d.test_cases[0].action_refs = ['ACT.password-reset.missing'];
+  d.actions[0].evidence_refs = ['SRC.nope'];
+  d.test_cases.push({ ...tcDoc().test_cases[0] });
+  d.test_cases.push({ ...tcDoc().test_cases[0] });
+  const w = require(TC_LINT).lint(d).filter(x => x.rule === 'format').map(x => x.message).join('\n');
+  assert.match(w, /id/i);
+  assert.match(w, /duplicate/i);
+  assert.match(w, /ACT\.password-reset\.missing/);
+  assert.match(w, /SRC\.nope/);
+});
+
+t('tc-lint: format — enums and required fields', () => {
+  const d = tcDoc();
+  d.test_cases[0].level = 'smoke';
+  d.test_cases[0].surface = 'mobile';
+  d.test_cases[0].expected[0].observe.channel = 'screen';
+  d.test_cases[0].readiness = 'done';
+  delete d.test_cases[0].title;
+  const n = require(TC_LINT).lint(d).filter(x => x.rule === 'format').length;
+  assert.ok(n >= 5, `expected >= 5 format warnings, got ${n}`);
+});
+
+t('tc-lint: basis — proposal must be needs-decision', () => {
+  const d = tcDoc();
+  d.test_cases[0].basis.kind = 'proposal';
+  assert.ok(lintRules(d).includes('basis'));
+  d.test_cases[0].readiness = 'needs-decision';
+  assert.ok(!lintRules(d).includes('basis'));
+});
+
+t('tc-lint: done_when — every step needs a completion sentence', () => {
+  const d = tcDoc();
+  delete d.test_cases[0].steps[1].done_when;
+  assert.ok(lintRules(d).includes('done_when'));
+});
+
+t('tc-lint: single_fact — bundled checks warn (Korean and English)', () => {
+  for (const text of ['저장되고 메일이 발송된다', 'The order is saved and a receipt is shown', '목록 및 합계가 갱신된다']) {
+    const d = tcDoc();
+    d.test_cases[0].expected[0].text = text;
+    assert.ok(lintRules(d).includes('single_fact'), text);
+  }
+});
+
+t('tc-lint: hidden_data — off-screen facts on a dom channel warn, screen notices do not', () => {
+  const d = tcDoc();
+  d.test_cases[0].expected[0] = { text: '주문이 DB에 저장된다', observe: { channel: 'dom', key: 'body' } };
+  assert.ok(lintRules(d).includes('hidden_data'));
+  d.test_cases[0].expected[0] = { text: '"저장되었습니다" 문구가 보인다', observe: { channel: 'dom', key: 'text' } };
+  assert.ok(!lintRules(d).includes('hidden_data'));
+  d.test_cases[0].expected[0] = { text: '주문이 DB에 저장된다', observe: { channel: 'db', key: 'orders' } };
+  assert.ok(!lintRules(d).includes('hidden_data'));
+});
+
+t('tc-lint: subjective — visual judgments are not TCs', () => {
+  for (const text of ['화면이 보기 좋게 정렬된다', 'The layout looks clean']) {
+    const d = tcDoc();
+    d.test_cases[0].expected[0].text = text;
+    assert.ok(lintRules(d).includes('subjective'), text);
+  }
+});
+
+t('tc-lint: preconditions — login/existing-data steps need preconditions or a fixture', () => {
+  const d = tcDoc();
+  d.test_cases[0].preconditions = [];
+  delete d.test_cases[0].fixture;
+  d.test_cases[0].steps[0].goal = '로그인한 상태에서 기존 주문을 연다';
+  assert.ok(lintRules(d).includes('preconditions'));
+  d.test_cases[0].fixture = 'user-with-orders';
+  assert.ok(!lintRules(d).includes('preconditions'));
+});
+
+t('tc-lint: failure_mix — success and error expectations in one TC warn', () => {
+  const d = tcDoc();
+  d.test_cases[0].expected.push({ text: '잘못된 이메일이면 오류 문구가 보인다', observe: { channel: 'dom', key: '.error' } });
+  assert.ok(lintRules(d).includes('failure_mix'));
+  const ok = tcDoc();
+  ok.test_cases[0].expected.push({ text: '오류 문구가 없다', observe: { channel: 'dom', key: '.error' } });
+  assert.ok(!lintRules(ok).includes('failure_mix'));
+});
+
+t('tc-lint: step_size — a step with several intents warns, input+submit does not', () => {
+  const d = tcDoc();
+  d.test_cases[0].steps[0].goal = '이메일을 입력하고 보내기를 누른 다음 받은 메일의 링크를 연다';
+  assert.ok(lintRules(d).includes('step_size'));
+  assert.ok(!lintRules(tcDoc()).includes('step_size'));
+});
+
+t('tc-lint: observe — missing or unknown channel warns', () => {
+  const d = tcDoc();
+  delete d.test_cases[0].expected[0].observe;
+  d.test_cases[0].expected[1].observe = { channel: 'unknown' };
+  assert.equal(lintRules(d).filter(r => r === 'observe').length, 2);
+});
+
+t('tc-lint: standard_question — free screen judgment that matches a standard question warns', () => {
+  const d = tcDoc();
+  d.test_cases[0].expected[0] = { text: '성공했다는 안내가 보인다', observe: { channel: 'dom' } };
+  assert.ok(lintRules(d).includes('standard_question'));
+  d.test_cases[0].expected[0].observe.question_id = 'Q.success_notice';
+  assert.ok(!lintRules(d).includes('standard_question'));
+});
+
+t('tc-lint: run data in a TC (results, URLs) warns as unknown_field', () => {
+  const d = tcDoc();
+  d.test_cases[0].verdict = 'PASS';
+  d.test_cases[0].base_url = 'http://localhost:3000';
+  assert.equal(lintRules(d).filter(r => r === 'unknown_field').length, 2);
+});
+
+t('tc-lint CLI: warns with exit 0, --strict exits 1, invalid JSON exits 2', () => {
+  const { spawnSync } = require('child_process');
+  const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tc-lint-'));
+  try {
+    const bad = tcDoc();
+    bad.test_cases[0].expected[0].text = '저장되고 메일이 발송된다';
+    const file = path.join(tmp, 'x.tc.json');
+    fs.writeFileSync(file, JSON.stringify(bad));
+    let r = spawnSync(process.execPath, [TC_LINT, file], { encoding: 'utf8' });
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /single_fact/);
+    r = spawnSync(process.execPath, [TC_LINT, file, '--strict'], { encoding: 'utf8' });
+    assert.equal(r.status, 1);
+    fs.writeFileSync(path.join(tmp, 'broken.tc.json'), '{ not json');
+    r = spawnSync(process.execPath, [TC_LINT, path.join(tmp, 'broken.tc.json')], { encoding: 'utf8' });
+    assert.equal(r.status, 2);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
+t('tc-lint CLI: --json writes the lint block and keeps an existing jev block', () => {
+  const { spawnSync } = require('child_process');
+  const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tc-lint-'));
+  try {
+    const file = path.join(tmp, 'x.tc.json');
+    fs.writeFileSync(file, JSON.stringify(tcDoc()));
+    const out = path.join(tmp, 'audits', 'tc-check.json');
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, JSON.stringify({ jev: { status: 'unconfigured' } }));
+    const r = spawnSync(process.execPath, [TC_LINT, file, '--json', out], { encoding: 'utf8' });
+    assert.equal(r.status, 0, r.stderr);
+    const j = JSON.parse(fs.readFileSync(out, 'utf8'));
+    assert.deepEqual(j.jev, { status: 'unconfigured' });
+    assert.equal(j.lint.warnings.length, 0);
+    assert.match(j.lint.tc_digest, /^[0-9a-f]{64}$/);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
 async function run() {
   let pass = 0, fail = 0;
   const failures = [];
