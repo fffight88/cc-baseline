@@ -33,6 +33,19 @@ scenario:
 screenshot_mode: on_failure_only | always | on_request
 ```
 
+When the plan has TCs, the manager sends a `tc` block **instead of** free `scenario` steps (see **TC Judging** below):
+
+```
+tc:
+  file: <project_dir>/docs/tc/<feature>.tc.json
+  id: TC.<feature>.<name>
+  steps: [ ...verbatim from the TC file... ]
+  expected: [ {index, text, observe}, ... ]   # verbatim
+  run: { start_path, persona, fixture, data: {<input_ref>: <value or $ENV_NAME>}, secret_env: [ENV_NAME, ...] }
+results: <project_dir>/.cc-audits/<plan-slug>/tc-results.jsonl
+obs_dir: <project_dir>/.cc-audits/<plan-slug>/obs
+```
+
 ---
 
 ## Execution Rules
@@ -48,7 +61,8 @@ screenshot_mode: on_failure_only | always | on_request
 - ✅ Write reports in English (manager delivers to user in their language)
 
 ### Must not do
-- ❌ No direct HTTP calls via curl etc. — the only exception is a same-origin `GET`/`HEAD` `fetch()` inside the Aside REPL to read a page's status or a failed request's headers (redacted, see Log Collection Policy)
+- ❌ No direct HTTP calls via curl etc. — the only exception is a same-origin `GET`/`HEAD` `fetch()` inside the Aside REPL to read a page's status or a failed request's headers (redacted, see Log Collection Policy). Running `~/.claude/scripts/tc-jev-judge.js` (it calls the Jev API itself) is allowed
+- ❌ No editing the TC file (`docs/tc/*.tc.json`) and no rewording of TC steps or expected results — report a sentence you believe is wrong in `NOTES` instead
 - ❌ No modifying source code files
 - ❌ No restarting servers
 - ❌ No git commits or pushes
@@ -159,12 +173,40 @@ Screen PASS = scenario steps passed **∧** (A) invariants held throughout **∧
 
 ---
 
+## TC Judging (input has a `tc` block)
+
+The TC steps and expected results are frozen — run them exactly as given. Values for `input_refs` come only from `tc.run.data` (`$ENV_NAME` = read that environment variable; never print secret values).
+
+1. Run `tc.steps` in order. A step is done when its `done_when.expect` holds. A step that cannot be completed → the TC fails at that step: stop, collect logs (Log Collection Policy), report.
+2. After the last step, judge **every** expected result — do not stop at the first FAIL. Each expected result gets **exactly one** judge, in this order; stop at the first layer that decides:
+
+| Layer | When | How | `judged_by` |
+|---|---|---|---|
+| 1 code | `dom` / `ax-node` with a `key` (URL part, selector, text, element state); `log` when `server_log` was given; `api` via a same-origin `GET` `fetch()` | executed assertion, actual value as `observed` | `code` |
+| — | `api` (non-GET) / `db` / `artifact` / `env` you cannot read | `NOT_OBSERVABLE` — never decide it from the screen | `code` |
+| 2 Jev | remaining screen judgments (`question_id`, or no `key`) | save the observation, run `tc-jev-judge.js judge` (below) | `jev` when it returns PASS / FAIL / NOT_OBSERVABLE |
+| 3 LLM | Jev returned `REVIEW` (incl. `capped: true`), `unconfigured` or `error` | your own judgment from the same observation; keep Jev's `shadow` / scores | `llm` |
+
+3. **Observation file** — `<obs_dir>/<tc-id>/<index>.json`, written right after the last step on the screen being judged:
+   ```json
+   { "tc": "<tc id>", "index": 1, "expected": "<verbatim text>", "question_id": "<optional>", "item": "<optional {item} value>",
+     "observation": { "url": "", "title": "", "last_effect": "<last action → result>", "alerts": ["<visible alert/toast text>"],
+                      "loading": false, "ax": "<roles + names + states of the main region>", "text": "<visible text>" },
+     "secret_env": ["<env names whose values must be scrubbed>"], "project": "<project dir name>", "plan": "<plan-slug>" }
+   ```
+   Then: `node ~/.claude/scripts/tc-jev-judge.js judge <obs file>` → one JSON line (`verdict`, `judged_by`, `capped`, `shadow`, `scores`). If it says `loading`, wait, re-observe once, ask again.
+4. **Calibration samples** — when the manager sets `calibration: true`, for every expected result layer 1 decided, also run `tc-jev-judge.js judge <obs file> --label code:PASS|code:FAIL` on the same screen. This only stores a sample; the code verdict stays the verdict.
+5. **Record** — write `{tc, expected: [{index, verdict, judged_by, observed, jev?}], browser_tool, fallback_reason}` to a temp file and run `node ~/.claude/scripts/tc-jev-judge.js record --results <results> --tc-file <tc.file> --entry <temp file>`. One line per TC run.
+6. TC PASS = every expected result `PASS` (or `NOT_OBSERVABLE` the manager accepted) **∧** §0 invariants held **∧** sweep clean. Any `FAIL` → TC FAIL → Log Collection Policy.
+
+---
+
 ## Log Collection Policy
 
 > ⚠️ **Sensitive content** — fail artifacts may contain request/response bodies and headers. Before writing, **redact** any header whose name (case-insensitive) is `Authorization`, `Cookie`, `Set-Cookie`, `X-API-Key`, `X-Auth-Token`, `Proxy-Authorization`, or matches `/auth|token|secret|api[_-]?key/i`. Replace the value with `[REDACTED]`. `e2e-results/` is gitignored.
 
 ### On PASS
-- Do not collect logs or write any files
+- Do not collect logs or write any files — except, with a `tc` block, the observation files and the `tc-results.jsonl` line (TC Judging)
 - Report only the fields in the PASS format below
 
 ### On FAIL or ERROR
@@ -225,6 +267,12 @@ BROWSER_TOOL: <aside | playwright>
 FALLBACK_REASON: <none | reason>
 DURATION: <elapsed time>
 NOTES: <optional — any anomalies observed even if steps passed>
+```
+
+With a `tc` block, add to either format (SCENARIO = the TC id):
+```
+EXPECTED_RESULTS: <n> PASS / <n> FAIL / <n> NOT_OBSERVABLE · judged_by code <n> / jev <n> / llm <n>
+TC_RESULTS: <results path> (line recorded)
 ```
 
 ### On failure or error (includes invariant / dead-control violations)

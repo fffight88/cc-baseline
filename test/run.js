@@ -1880,6 +1880,21 @@ t('tc-jev-judge: replay re-asks stored requests with another model and compares 
   } finally { await srv.close(); fs.rmSync(jevDir, { recursive: true, force: true }); }
 });
 
+t('e2e docs: TC runs are verbatim, one judge per expected result, TC file untouched', () => {
+  const tester = fs.readFileSync(path.join(ROOT, 'templates', 'agents', 'e2e-tester.md'), 'utf8');
+  const guide = fs.readFileSync(path.join(ROOT, 'templates', 'memory', 'reference_e2e_manager_guide.md'), 'utf8');
+  const plan = fs.readFileSync(path.join(ROOT, 'templates', 'commands', 'plan.md'), 'utf8');
+  assert.match(tester, /## TC Judging/);
+  assert.match(tester, /exactly one\*\* judge/);
+  assert.match(tester, /tc-jev-judge\.js judge/);
+  assert.match(tester, /No editing the TC file/);
+  assert.match(guide, /## 2-A\. Running TCs/);
+  assert.match(guide, /git diff --quiet -- docs\/tc\//);
+  assert.match(guide, /user approves/);
+  assert.match(plan, /Behavior Impact/);
+  assert.match(plan, /tc-lint\.js/);
+});
+
 async function run() {
   let pass = 0, fail = 0;
   const failures = [];

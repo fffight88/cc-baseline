@@ -73,6 +73,29 @@ screenshot_mode: on_failure_only | always | on_request
 
 ---
 
+## 2-A. Running TCs (plans with `Behavior Impact: Yes/Unknown`)
+
+When the plan has a TC file (`docs/tc/<feature>.tc.json`, see `reference_tc_authoring.md`), the manager does **not** write scenario steps or expected results. It runs the TCs verbatim.
+
+1. **Run add-on** — write `.cc-audits/<plan-slug>/tc-run.json` (not committed):
+   ```json
+   { "base_url": "http://localhost:3000",
+     "fixtures": { "user-basic": "seed command or account description" },
+     "tcs": {
+       "TC.password-reset.request-success": { "start_path": "/login", "persona": "test user",
+         "data": { "email": "reset-test@example.com", "password": "$E2E_TEST_PASSWORD" }, "secret_env": ["E2E_TEST_PASSWORD"] },
+       "TC.password-reset.provider-down": { "skip": "server-injection" } } }
+   ```
+   - Skip reasons: `api-only` · `external-idp` · `real-input-device` · `server-injection` · `decided-out`. A `ready` `ui-web` TC with no entry is reported as `unmapped`.
+   - Secrets are env var names (`$NAME`), never values.
+2. **Tester input** — per TC, the `tc` block (`file`, `id`, `steps`, `expected` copied **verbatim**, `run` from the add-on), `results: .cc-audits/<plan-slug>/tc-results.jsonl`, `obs_dir: .cc-audits/<plan-slug>/obs`, and `calibration: true` while any Jev question in use has no calibration entry (`node ~/.claude/scripts/tc-jev-judge.js calibrate` shows `insufficient`).
+3. **One judge per expected result** — code → Jev → LLM (tester **TC Judging**). Off-screen channels the tester cannot read (`db`, non-GET `api`, `artifact`, `env`) come back `NOT_OBSERVABLE`; the manager may then check them itself with a read-only command and record the outcome as `judged_by: code` with the actual value. Never let a screen judgment stand in for them.
+4. **Results** — `tc-results.jsonl` gets one line per TC run (`tc_digest` marks which TC text was run). The TC file must be unchanged after the run (`git diff --quiet -- docs/tc/`).
+5. **A failing TC** — fix the product and re-run the same TC. If the TC sentence itself looks wrong, stop and ask the user; change the TC file only with their OK and a recorded reason. Never reword a TC so it passes.
+6. **Calibration** — Jev verdicts stay capped at `REVIEW` (LLM judges) until `tc-jev-judge.js calibrate` reports `ok` for that question × model and the **user approves** `--apply`. Thresholds never change automatically. When the Jev model version changes, run `tc-jev-judge.js replay --model <new>` first and switch only if it is not worse.
+
+---
+
 ## 3. How to Run in Parallel
 
 - There is one agent definition file (`e2e-tester`); call N instances in parallel
@@ -188,6 +211,7 @@ When all tests are complete, create an HTML file with results and serve it via a
 - Overall result summary (PASS/FAIL count, elapsed time)
 - Per-scenario result table (scenario name, result, failed step, cause)
 - Per-screen §0 status column: `INVARIANTS` (held/violated) + `SWEEP` (clean N / dead-control) from the tester reports — so a green scenario with a §0 violation is visibly FAIL
+- With TCs: one row per expected result (TC id, index, text, verdict, `judged_by`, observed value) from `tc-results.jsonl`; `REVIEW` / `NOT_OBSERVABLE` in their own color; skipped and `unmapped` TCs listed with the reason
 - Inline screenshot on failure (base64 embed or relative path)
 - Color coding: PASS → green, FAIL → red
 
@@ -275,6 +299,8 @@ authenticated result (not a login redirect). Same-origin means all headers
 - [ ] **(§0-B)** Transient UI (toasts, auto-closing modals) has an explicit scenario step; no `transient-missed` left in `SWEEP`
 - [ ] `project_dir` passed to every tester; no screenshot in the project root after the run
 - [ ] **(§0-C/D)** PASS granted only with executed asserts + actual-value evidence — never on a markdown ✓ alone
+- [ ] **(§2-A)** With a TC file: TCs ran verbatim from `tc-run.json`, every `ready` `ui-web` TC is run / skipped with a reason / reported `unmapped`, each expected result has exactly one `judged_by`, and `git diff --quiet -- docs/tc/` holds after the run
+- [ ] **(§2-A)** Jev verdicts were capped at `REVIEW` for any question × model without an approved calibration entry
 - [ ] Checked `aside-session.sh account` once and set `browser:` for every tester; reports carry `BROWSER_TOOL` / `FALLBACK_REASON`
 - [ ] Distinct N (2–5) per tester for `aside_session: e2e-{N}` and fallback `mcp_server`; never `manual` / `playwright-test-1`
 - [ ] No `e2e-*` Aside session left running after the run
