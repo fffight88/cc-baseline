@@ -18,7 +18,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { loadConfig, systemOne, redact } = require('./jev-client');
+const { loadConfig, systemOne, redact, parseArgs, checkOutputName } = require('./jev-client');
 
 // Question sentences are fixed per version. Changing a sentence means a new
 // version, and scores of different versions are never compared.
@@ -38,10 +38,11 @@ const QUESTIONS = {
   },
 };
 const LANGUAGE = 'en';
+const THRESHOLDS = { single_lte: 0.1, hidden_gte: 0.7, screen_lte: 0.3 };
 const RULES = [
-  ['single', s => s <= 0.1, 'jev_single', 'Jev reads several facts in this line — split it'],
-  ['hidden', s => s >= 0.7, 'jev_hidden', 'Jev reads this as off-screen data — use an api / db / log channel'],
-  ['screen', s => s <= 0.3, 'jev_screen', 'Jev doubts the screen alone can decide this — do not leave it to a screen judgment'],
+  ['single', s => s <= THRESHOLDS.single_lte, 'jev_single', 'Jev reads several facts in this line — split it'],
+  ['hidden', s => s >= THRESHOLDS.hidden_gte, 'jev_hidden', 'Jev reads this as off-screen data — use an api / db / log channel'],
+  ['screen', s => s <= THRESHOLDS.screen_lte, 'jev_screen', 'Jev doubts the screen alone can decide this — do not leave it to a screen judgment'],
 ];
 const CONCURRENCY = 4;
 
@@ -90,7 +91,7 @@ async function check(doc, config, opts = {}) {
     model: config.model,
     questions: Object.fromEntries(Object.entries(QUESTIONS).map(([k, q]) => [k, q.id])),
     language: LANGUAGE,
-    thresholds: { single_lte: 0.1, hidden_gte: 0.7, screen_lte: 0.3, calibrated: false },
+    thresholds: { ...THRESHOLDS, calibrated: false },
     checked_at: new Date().toISOString(),
     results: [],
     warnings: [],
@@ -118,20 +119,26 @@ async function check(doc, config, opts = {}) {
       if (scores[k] !== null && hit(scores[k])) block.warnings.push({ rule, where, score: scores[k], message });
     }
   }
-  if (block.errors.length) block.status = block.results.length ? 'partial' : 'error';
+  if (items.length === 0) block.status = 'empty';
+  else if (block.errors.length) block.status = block.results.length ? 'partial' : 'error';
   return block;
 }
 
+const USAGE = 'usage: node tc-jev-check.js <tc file> [--out <…/tc-check.json>] [--strict]';
+
 async function main(argv) {
-  const args = argv.slice(2);
-  const strict = args.includes('--strict');
-  const outAt = args.indexOf('--out');
-  const out = outAt >= 0 ? args[outAt + 1] : null;
-  const file = args.find((a, i) => !a.startsWith('--') && (outAt < 0 || i !== outAt + 1));
-  if (!file || (outAt >= 0 && !out)) {
-    console.error('usage: node tc-jev-check.js <tc file> [--out <tc-check.json>] [--strict]');
+  let opts, positional;
+  try {
+    ({ opts, positional } = parseArgs(argv.slice(2), { values: ['--out'], flags: ['--strict'] }));
+    if (positional.length !== 1) throw new Error('give exactly one TC file');
+    if (opts['--out']) checkOutputName(opts['--out'], 'tc-check.json');
+  } catch (e) {
+    console.error(`tc-jev-check: ${e.message}\n${USAGE}`);
     return 2;
   }
+  const strict = opts['--strict'] === true;
+  const out = opts['--out'] || null;
+  const file = positional[0];
 
   let raw, doc;
   try {
@@ -139,6 +146,10 @@ async function main(argv) {
     doc = JSON.parse(raw);
   } catch (e) {
     console.error(`tc-jev-check: cannot read ${file}: ${e.message}`);
+    return 2;
+  }
+  if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
+    console.error(`tc-jev-check: ${file} is not a JSON object`);
     return 2;
   }
 
@@ -156,12 +167,14 @@ async function main(argv) {
 
   const block = await check(doc, config);
   block.file = file;
-  block.tc_digest = sha256(raw);
+  block.file_sha256 = sha256(raw);
   for (const w of block.warnings) console.log(`WARN  ${w.rule.padEnd(11)} ${w.where}  ${w.message} (${w.score})`);
   for (const e of block.errors) console.log(`ERROR ${e.where}  ${e.error}`);
   console.log(`tc-jev-check: ${block.results.length} scored with ${block.model}, ${block.warnings.length} warning(s), ` +
     `${block.errors.length} error(s), ${block.usage.input_tokens} input tokens, ${block.usage.ms} ms`);
   if (out) writeBlock(out, block);
+  if (block.status === 'empty') console.log('tc-jev-check: no expected results to score');
+  if (block.status === 'error') return 1;
   return strict && block.warnings.length > 0 ? 1 : 0;
 }
 

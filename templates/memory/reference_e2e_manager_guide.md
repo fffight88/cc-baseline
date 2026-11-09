@@ -92,7 +92,7 @@ When the plan has a TC file (`docs/tc/<feature>.tc.json`, see `reference_tc_auth
 3. **One judge per expected result** — code → Jev → LLM (tester **TC Judging**). Off-screen channels the tester cannot read (`db`, non-GET `api`, `artifact`, `env`) come back `NOT_OBSERVABLE`; the manager may then check them itself with a read-only command and record the outcome as `judged_by: code` with the actual value. Never let a screen judgment stand in for them.
 4. **Results** — `tc-results.jsonl` gets one line per TC run (`tc_digest` marks which TC text was run). The TC file must be unchanged after the run (`git diff --quiet -- docs/tc/`).
 5. **A failing TC** — fix the product and re-run the same TC. If the TC sentence itself looks wrong, stop and ask the user; change the TC file only with their OK and a recorded reason. Never reword a TC so it passes.
-6. **Calibration** — Jev verdicts stay capped at `REVIEW` (LLM judges) until `tc-jev-judge.js calibrate` reports `ok` for that question × model and the **user approves** `--apply`. Thresholds never change automatically. When the Jev model version changes, run `tc-jev-judge.js replay --model <new>` first and switch only if it is not worse.
+6. **Calibration** — Jev verdicts stay capped at `REVIEW` (LLM judges) until `tc-jev-judge.js calibrate` reports `ok` for that question × model and the **user approves** `calibrate --apply --question <Q.id@v> --model <jev-X.Y.Z>` (one entry per approval). Thresholds never change automatically. Even after calibration Jev decides only PASS / FAIL; NOT_OBSERVABLE and screens with instruction-like text go to the LLM. When the Jev model version changes, run `tc-jev-judge.js replay --model <new>` first and switch only if it is not worse.
 
 ---
 

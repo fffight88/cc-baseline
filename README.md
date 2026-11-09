@@ -434,7 +434,7 @@ cc-baseline never reads or writes the `permissions` key in `~/.claude/settings.j
 - All paths in hook commands are stored as `{{HOME}}` and substituted at install time
 - Install logs (`~/.claude/.cc-baseline-install.log`), backups, and audit reports (`.cc-audits/`) are listed in `.gitignore`
 - Only `playwright-test-1~5` in `~/.claude.json` are read/written; all other keys are left untouched
-- With a Jev key configured, `tc-jev-check.js` sends TC expected-result sentences and `tc-jev-judge.js` sends the observed screen text (URL, title, visible text, accessibility summary; secret inputs scrubbed) to the TypeSafe API. Without a key nothing is sent. Judging samples are kept in `~/.claude/jev/` (mode 700); the key is never written to results, samples or logs
+- With a Jev key configured, `tc-jev-check.js` sends TC expected-result sentences and `tc-jev-judge.js` sends the observed screen text (URL, title, visible text, accessibility summary) to the TypeSafe API after masking emails, phone/card/ID numbers, tokens and the secret inputs the tester names — use test accounts and test data. Without a key nothing is sent. Judging samples are kept in `~/.claude/jev/` (mode 700); the key is never written to results, samples or logs
 
 ---
 

@@ -15,6 +15,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { parseArgs, checkOutputName } = require('./jev-client');
 
 const ENUMS = {
   sourceKind: ['source', 'requirement', 'decision'],
@@ -27,15 +28,22 @@ const ENUMS = {
 
 const TOP_KEYS = ['schema_version', 'feature', 'title', 'plan', 'sources', 'actions', 'test_cases', 'open_questions'];
 const TC_KEYS = ['id', 'title', 'action_refs', 'level', 'surface', 'preconditions', 'fixture', 'steps', 'expected', 'basis', 'readiness', 'notes'];
+const STEP_KEYS = ['goal', 'done_when', 'input_refs', 'notes'];
+const DONE_KEYS = ['expect', 'assertions'];
+const EXPECTED_KEYS = ['text', 'observe', 'notes'];
+const OBSERVE_KEYS = ['channel', 'key', 'question_id'];
 const SCREEN_CHANNELS = ['dom', 'ax-node'];
+const URL_RE = /\bhttps?:\/\//i;
 
 // Heuristics. They only raise warnings, so they lean toward catching too much.
 const RE = {
   // Two facts joined in one sentence: "A and B", "A하고/되고/이며 B", "A 및 B".
-  conjunction: /\b(and|as well as|also)\b|;|그리고|또한|\s및\s|[가-힣](?:고|며|면서)\s/gi,
-  sequence: /\bthen\b|다음|이어서|[가-힣]\s후(?:에)?\s/i,
+  // The quotation particle 라고 ("'저장됨'이라고 표시된다") is not a join.
+  conjunction: /\b(and|as well as|also)\b|;|그리고|또한|\s및\s|[가-힣](?<!라)(?:고|며|면서)\s/gi,
+  sequence: /\bthen\b|이어서/i,
   quoted: /["“'‘][^"”'’]+["”'’]/g,
-  hidden: /\bDB\b|database|데이터베이스|저장(?:된다|됨|되어|돼)|기록(?:된다|됨)|로그|\blogged\b|\bstored\b|persist|발송|\bsent to\b|webhook|\bqueue\b|서버/i,
+  hidden: /\bDB\b|database|데이터베이스|저장(?:된다|됨|되어|돼)|기록(?:된다|됨)|로그(?!인|아웃)|\blogged\b(?!\s+(?:in|out))|\bstored\b|persist|발송|\bsent to\b|webhook|\bqueue\b|서버/i,
+  success: /성공|완료|이동한다|이동된다|바뀐다|열린다|생성된다|저장된다|표시된다|\bsuccess|\bsucceed|redirect|navigat|changes to|is created|is saved|\bopens\b/i,
   visible: /보인다|보임|표시|문구|나타난다|shown|visible|displayed|message|notice|toast/i,
   subjective: /보기 좋|자연스럽|깔끔|어색|예쁘|직관적|looks? (?:good|nice|clean|great)|\bnice\b|\bclean(?:ly)?\b|\bnatural\b|awkward|\bpretty\b|intuitive|beautiful/i,
   needsState: /로그인(?:한|된|\s?상태)|기존|등록된|저장된|logged in|signed in|existing|previously/i,
@@ -53,6 +61,20 @@ const RE = {
 function isStr(v) { return typeof v === 'string' && v.trim() !== ''; }
 function arr(v) { return Array.isArray(v) ? v : []; }
 function count(re, s) { return (String(s).match(re) || []).length; }
+
+// "…한 다음", "…누른 후": 다음/후 after a verb in its adnominal form (final ㄴ)
+// means a second action. "다음 버튼" (the Next button) does not.
+function hasSequence(s) {
+  if (RE.sequence.test(s)) return true;
+  for (const m of String(s).matchAll(/([가-힣])\s+(?:다음|후)(?:에)?(?=\s|,|$)/g)) {
+    if ((m[1].charCodeAt(0) - 0xac00) % 28 === 4) return true;
+  }
+  return false;
+}
+
+function unknownKeys(obj, allowed) {
+  return obj && typeof obj === 'object' && !Array.isArray(obj) ? Object.keys(obj).filter(k => !allowed.includes(k)) : [];
+}
 
 function lint(doc) {
   const warnings = [];
@@ -89,6 +111,7 @@ function lint(doc) {
     if (a && actionIds.has(a.id)) warn('format', where, `duplicate action id ${a.id}`);
     if (a && a.id) actionIds.add(a.id);
     for (const f of ['title', 'actor', 'trigger']) if (!isStr(a && a[f])) warn('format', where, `${f} is required`);
+    if (arr(a && a.evidence_refs).length === 0) warn('evidence', where, 'action has no evidence_refs — cite the source code or requirement it comes from');
     for (const r of arr(a && a.evidence_refs)) if (!sourceIds.has(r)) warn('format', where, `evidence_refs points to unknown source ${r}`);
   }
 
@@ -99,8 +122,8 @@ function lint(doc) {
     if (!tc || typeof tc !== 'object') { warn('format', `test_cases[${i}]`, 'TC must be an object'); continue; }
     const id = isStr(tc.id) ? tc.id : `test_cases[${i}]`;
     if (!isStr(tc.id) || !idRe('TC').test(tc.id)) warn('format', id, `TC id must look like TC.${feature}.<name>`);
-    if (tcIds.has(tc.id)) warn('format', id, `duplicate TC id ${tc.id}`);
-    tcIds.add(tc.id);
+    if (isStr(tc.id) && tcIds.has(tc.id)) warn('format', id, `duplicate TC id ${tc.id}`);
+    if (isStr(tc.id)) tcIds.add(tc.id);
     for (const k of Object.keys(tc)) {
       if (!TC_KEYS.includes(k)) warn('unknown_field', id, `unknown field "${k}" — URLs, results and thresholds go to tc-run.json / tc-results.jsonl`);
     }
@@ -124,11 +147,17 @@ function lint(doc) {
       const where = `${id} steps[${s}]`;
       if (!isStr(step && step.goal)) { warn('format', where, 'goal is required'); continue; }
       stepText.push(step.goal);
+      for (const k of [...unknownKeys(step, STEP_KEYS), ...unknownKeys(step.done_when, DONE_KEYS).map(k => `done_when.${k}`)]) {
+        warn('unknown_field', where, `unknown field "${k}"`);
+      }
+      if (URL_RE.test(step.goal) || URL_RE.test(step.done_when && step.done_when.expect)) {
+        warn('run_data', where, 'URLs belong in tc-run.json (start_path / base_url), not in the TC');
+      }
       if (!isStr(step.done_when && step.done_when.expect)) warn('done_when', where, 'add done_when.expect — one sentence for what the screen looks like when the step is done');
       if (step.input_refs !== undefined && !(Array.isArray(step.input_refs) && step.input_refs.every(isStr))) {
         warn('format', where, 'input_refs must be a list of input names (values live in tc-run.json)');
       }
-      if (count(RE.conjunction, step.goal) >= 2 || RE.sequence.test(step.goal)) {
+      if (count(RE.conjunction, step.goal) >= 2 || hasSequence(step.goal)) {
         warn('step_size', where, 'this step holds several user intents — split it into one step per intent');
       }
     }
@@ -141,11 +170,19 @@ function lint(doc) {
     const expected = arr(tc.expected);
     if (expected.length === 0) warn('format', id, 'expected must not be empty');
     let failureLines = 0;
+    let successLines = 0;
     for (const [e, exp] of expected.entries()) {
       const where = `${id} expected[${e}]`;
       if (!isStr(exp && exp.text)) { warn('format', where, 'text is required'); continue; }
       const text = exp.text;
       const obs = exp.observe;
+      for (const k of [...unknownKeys(exp, EXPECTED_KEYS), ...unknownKeys(obs, OBSERVE_KEYS).map(k => `observe.${k}`)]) {
+        warn('unknown_field', where, `unknown field "${k}" — results and thresholds do not belong in the TC`);
+      }
+      if (URL_RE.test(text)) warn('run_data', where, 'URLs belong in tc-run.json — write the path or what the user sees instead');
+      if (obs && isStr(obs.question_id) && !RE.standard.some(([qid]) => qid === obs.question_id)) {
+        warn('format', where, `unknown standard question ${obs.question_id} (${RE.standard.map(([q]) => q).join(', ')})`);
+      }
       if (!obs || typeof obs !== 'object') {
         warn('observe', where, 'add observe.channel — where the fact is read (dom, api, db, log, …)');
       } else if (!ENUMS.channel.includes(obs.channel)) {
@@ -169,8 +206,9 @@ function lint(doc) {
         if (hit) warn('standard_question', where, `use the standard question ${hit[0]} (observe.question_id) instead of a free sentence`);
       }
       if (RE.failure.test(text) && !RE.negated.test(text)) failureLines++;
+      else if (RE.success.test(text)) successLines++;
     }
-    if (failureLines > 0 && failureLines < expected.length) {
+    if (failureLines > 0 && successLines > 0) {
       warn('failure_mix', id, 'success and error expectations are mixed — put the error flow in its own TC');
     }
   }
@@ -194,15 +232,18 @@ function writeJson(out, block) {
 }
 
 function main(argv) {
-  const args = argv.slice(2);
-  const strict = args.includes('--strict');
-  const jsonAt = args.indexOf('--json');
-  const out = jsonAt >= 0 ? args[jsonAt + 1] : null;
-  const file = args.find((a, i) => !a.startsWith('--') && (jsonAt < 0 || i !== jsonAt + 1));
-  if (!file || (jsonAt >= 0 && !out)) {
-    console.error('usage: node tc-lint.js <tc file> [--strict] [--json <out>]');
+  let opts, positional;
+  try {
+    ({ opts, positional } = parseArgs(argv.slice(2), { values: ['--json'], flags: ['--strict'] }));
+    if (positional.length !== 1) throw new Error('give exactly one TC file');
+    if (opts['--json']) checkOutputName(opts['--json'], 'tc-check.json');
+  } catch (e) {
+    console.error(`tc-lint: ${e.message}\nusage: node tc-lint.js <tc file> [--strict] [--json <…/tc-check.json>]`);
     return 2;
   }
+  const strict = opts['--strict'] === true;
+  const out = opts['--json'] || null;
+  const file = positional[0];
 
   let raw, doc;
   try {
@@ -228,7 +269,7 @@ function main(argv) {
       tool: 'tc-lint',
       version: 1,
       file,
-      tc_digest: crypto.createHash('sha256').update(raw).digest('hex'),
+      file_sha256: crypto.createHash('sha256').update(raw).digest('hex'),
       checked_at: new Date().toISOString(),
       warnings,
       counts,

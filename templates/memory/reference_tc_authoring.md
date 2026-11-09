@@ -138,9 +138,9 @@ For screen judgments code cannot decide, prefer a fixed question over a free sen
 | `Q.loading@1` | Noul | Is the screen still loading? |
 | `Q.dialog_open@1` | Noul | Is a dialog or popup open? |
 | `Q.success_notice@1` | Noul | Is a message or mark telling that the action just done succeeded? |
-| `Q.item_added@1` | Noul | Is a new item matching `{item}` visible in the list? |
+| `Q.item_added@2` | Noul | Is a new item matching `state.item` visible in the list? |
 
-Only the `{item}` placeholder is filled from the TC.
+TC values never enter a question sentence: for `Q.item_added`, the item is passed as data (`item` in the observation file) and the sentence stays fixed.
 
 ---
 

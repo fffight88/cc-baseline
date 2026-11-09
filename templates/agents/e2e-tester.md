@@ -184,8 +184,8 @@ The TC steps and expected results are frozen — run them exactly as given. Valu
 |---|---|---|---|
 | 1 code | `dom` / `ax-node` with a `key` (URL part, selector, text, element state); `log` when `server_log` was given; `api` via a same-origin `GET` `fetch()` | executed assertion, actual value as `observed` | `code` |
 | — | `api` (non-GET) / `db` / `artifact` / `env` you cannot read | `NOT_OBSERVABLE` — never decide it from the screen | `code` |
-| 2 Jev | remaining screen judgments (`question_id`, or no `key`) | save the observation, run `tc-jev-judge.js judge` (below) | `jev` when it returns PASS / FAIL / NOT_OBSERVABLE |
-| 3 LLM | Jev returned `REVIEW` (incl. `capped: true`), `unconfigured` or `error` | your own judgment from the same observation; keep Jev's `shadow` / scores | `llm` |
+| 2 Jev | remaining screen judgments (`question_id`, or no `key`) | save the observation, run `tc-jev-judge.js judge` (below) | `jev` when it returns PASS / FAIL with `judged_by: "jev"` |
+| 3 LLM | Jev returned `REVIEW` (uncalibrated, not-observable, instruction-like screen text, middle score), `unconfigured` or `error` | your own judgment from the same observation; keep Jev's `shadow` / scores | `llm` |
 
 3. **Observation file** — `<obs_dir>/<tc-id>/<index>.json`, written right after the last step on the screen being judged:
    ```json
@@ -194,10 +194,11 @@ The TC steps and expected results are frozen — run them exactly as given. Valu
                       "loading": false, "ax": "<roles + names + states of the main region>", "text": "<visible text>" },
      "secret_env": ["<env names whose values must be scrubbed>"], "project": "<project dir name>", "plan": "<plan-slug>" }
    ```
-   Then: `node ~/.claude/scripts/tc-jev-judge.js judge <obs file>` → one JSON line (`verdict`, `judged_by`, `capped`, `shadow`, `scores`). If it says `loading`, wait, re-observe once, ask again.
+   Then: `node ~/.claude/scripts/tc-jev-judge.js judge <obs file>` → one JSON line (`verdict`, `judged_by`, `capped`, `shadow`, `scores`). If it says `loading`, wait, re-observe once, ask again. The script masks emails, phone/card numbers and tokens before sending; still list every secret input in `secret_env`.
+5. **Record** needs a verdict for every expected result; if a step failed, record what was judged and set `failed_at_step`.
 4. **Calibration samples** — when the manager sets `calibration: true`, for every expected result layer 1 decided, also run `tc-jev-judge.js judge <obs file> --label code:PASS|code:FAIL` on the same screen. This only stores a sample; the code verdict stays the verdict.
-5. **Record** — write `{tc, expected: [{index, verdict, judged_by, observed, jev?}], browser_tool, fallback_reason}` to a temp file and run `node ~/.claude/scripts/tc-jev-judge.js record --results <results> --tc-file <tc.file> --entry <temp file>`. One line per TC run.
-6. TC PASS = every expected result `PASS` (or `NOT_OBSERVABLE` the manager accepted) **∧** §0 invariants held **∧** sweep clean. Any `FAIL` → TC FAIL → Log Collection Policy.
+6. **Record** — write `{tc, expected: [{index, verdict, judged_by, observed, jev?}], browser_tool, fallback_reason, failed_at_step?}` to a temp file and run `node ~/.claude/scripts/tc-jev-judge.js record --results <results> --tc-file <tc.file> --entry <temp file>`. One line per TC run.
+7. TC PASS = every expected result `PASS` (or `NOT_OBSERVABLE` the manager accepted) **∧** §0 invariants held **∧** sweep clean. Any `FAIL` → TC FAIL → Log Collection Policy.
 
 ---
 

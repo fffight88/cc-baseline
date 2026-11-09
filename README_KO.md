@@ -434,7 +434,7 @@ cc-baseline은 `~/.claude/settings.json`의 `permissions` 키를 절대 읽거�
 - 훅 명령어의 모든 경로는 `{{HOME}}`으로 저장되고 설치 시 치환됩니다
 - 설치 로그(`~/.claude/.cc-baseline-install.log`), 백업, 감사 리포트(`.cc-audits/`)는 `.gitignore`에 등록됩니다
 - `~/.claude.json`에서는 `playwright-test-1~5`만 읽고 씁니다; 다른 키는 건드리지 않습니다
-- Jev 키가 설정되면 `tc-jev-check.js`는 TC 기대 결과 문장을, `tc-jev-judge.js`는 관측한 화면 텍스트(URL·제목·보이는 글·접근성 요약, 비밀 입력값은 지움)를 TypeSafe API로 보냅니다. 키가 없으면 아무것도 보내지 않습니다. 판정 표본은 `~/.claude/jev/`(권한 700)에 남고, 키는 결과·표본·로그 어디에도 쓰지 않습니다
+- Jev 키가 설정되면 `tc-jev-check.js`는 TC 기대 결과 문장을, `tc-jev-judge.js`는 관측한 화면 텍스트(URL·제목·보이는 글·접근성 요약)를 이메일·전화/카드/주민번호·토큰과 테스터가 지정한 비밀 입력값을 가린 뒤 TypeSafe API로 보냅니다 — 테스트 계정·테스트 데이터를 쓰세요. 키가 없으면 아무것도 보내지 않습니다. 판정 표본은 `~/.claude/jev/`(권한 700)에 남고, 키는 결과·표본·로그 어디에도 쓰지 않습니다
 
 ---
 

@@ -226,7 +226,7 @@ e2e-tester: 조작(LLM, Aside 우선 / Playwright 대체) → 기대 결과마�
 **보정 전 단계 (기본)**: 해당 질문 판·모델 판본에 보정 기록이 없으면 Jev 판정은 최대 `REVIEW`로 캡을 씌운다. 모든 기대 결과가 3층(LLM)으로 넘어가 `judged_by: llm`이 되고, Jev 응답은 `jev_shadow`로만 남는다. 이 기간에 쌓인 표본으로 경계값을 정한다.
 
 **보정 표본** `~/.claude/jev/samples.jsonl` (프로젝트 간 공유, 질문 판·모델 판본·입력 방식별):
-- 한 행: `{request_digest, request_ref, question_id@판, model, input_mode, scores, label, label_source, project, run_at}`
+- 한 행: `{request_sha256, question(=ID@판), model, input_mode, scores, label, label_source, injection_suspected, tc, index, project, plan, run_at}` — 요청 원문은 `requests/<request_sha256>.json`
 - `label_source`: `code`(같은 기대 결과를 코드 assert로도 판정한 경우) · `llm`(3층 판정, 참고용) · `human`(사용자 확인)
 - 보정 계산은 `code`·`human` 정답만 쓴다. `llm` 정답은 보정에 쓰지 않는다.
 - `tc-jev-judge.js --calibrate`: 표본에서 질문·판본별 거짓 PASS율·정답률·확신 분포를 계산해 경계값 후보를 보여주고, 사용자가 승인하면 `~/.claude/jev/calibration.json`에 `{question_id@판, model, thresholds, sample_count, calibrated_at}`로 기록. **자동으로 기준을 바꾸지 않는다.**
@@ -270,7 +270,7 @@ e2e-tester: 조작(LLM, Aside 우선 / Playwright 대체) → 기대 결과마�
 - **tester 판정 순서**:
   1. `dom`/`ax-node` 중 코드로 확인 가능한 것(URL·텍스트 포함·요소 존재·비활성) → 브라우저 assert, `judged_by: code`, 실측값
   2. `api`/`db`/`log` → Bash·요청 재현으로 가능하면 `code`, 아니면 `NOT_OBSERVABLE`(정상). 화면 판정으로 대체하지 않음
-  3. 남은 화면 판정 → 관측 저장 → `tc-jev-judge.js` → `PASS`/`FAIL`/`NOT_OBSERVABLE`이면 `judged_by: jev`
+  3. 남은 화면 판정 → 관측 저장 → `tc-jev-judge.js` → `PASS`/`FAIL`이면 `judged_by: jev` (Jev의 `NOT_OBSERVABLE`은 LLM으로 — 구현 메모 참고)
   4. Jev 없음 또는 `REVIEW` → tester LLM 판정, `judged_by: llm` (Jev 점수는 `jev_shadow`)
   - 1층에서 결론 난 기대 결과는 **보정 기간에만** Jev에도 물어 `label_source: code` 표본을 만든다(판정에는 쓰지 않음).
 - 기존 §0(런타임 불변식 + dead-control sweep)은 그대로. TC 판정과 별개의 화면 PASS 조건이다.
@@ -355,6 +355,7 @@ e2e-tester: 조작(LLM, Aside 우선 / Playwright 대체) → 기대 결과마�
 - 공식 문서에 지원 종료를 알리는 응답 헤더·필드가 없어 "응답의 지원 종료 경고 표시"는 구현하지 않음. 응답 `model`이 요청 판본과 같은지만 검사하고, doctor는 설정된 판본을 보여줌.
 - 기본 모델 `jev-1.14.0` 확정(2026-11-09 실제 호출 HTTP 200).
 - `calibrate`의 제안값은 기본값(PASS ≥ 0.9, FAIL ≤ 0.1)보다 느슨해지지 않음. 더 느슨한 기준은 사람이 직접 정해야 함. 최소 표본은 code/human 정답 30건, PASS·FAIL 각 5건 이상(열린 질문 1의 시작값).
+- 감사·리뷰(iter-1) 반영(2026-11-09): Jev는 보정 후에도 PASS·FAIL만 판정(NOT_OBSERVABLE은 정답 표본이 없어 LLM으로), 화면에 지시문 같은 글이 있으면 REVIEW, `{item}`은 `state.item`으로(질문 문장 고정, `Q.item_added@2`), 화면 텍스트의 이메일·전화/카드/주민번호·토큰 마스킹(표본 보존 기한은 두지 않음 — 사용자 결정), `calibrate --apply`는 `--question`·`--model` 지정 필수, 표본 중복 제거, `replay`는 질문별 집계, `record`는 모든 기대 결과 판정·값 검증, 키 파일 symlink·소유자 검사, base URL은 `*.typesafe.ai`만, 리다이렉트 거부. 파일 해시 필드는 `file_sha256`(tc-check.json), TC 해시는 `tc_digest`(키 순서 무관, tc-results.jsonl)로 구분.
 - 화면 밖 채널(`db`, GET이 아닌 `api` 등)은 tester가 읽을 수 없으면 `NOT_OBSERVABLE`로 돌려주고, 매니저가 읽기 전용 명령으로 확인해 `judged_by: code`로 기록할 수 있음(tester의 curl 금지 규칙 유지).
 
 ## 로드맵 (이 플랜 이후)
@@ -404,3 +405,9 @@ e2e-tester: 조작(LLM, Aside 우선 / Playwright 대체) → 기대 결과마�
 - [ ] manifest·doctor·README(영/한)·install-details·CHANGELOG `[Unreleased]` 반영
 - [ ] `templates/`·`src/`만 수정 → 재설치로 전파, `~/.claude/` 직접 수정 없음
 - [ ] 공개 레포에 비공개 참고 자료 원문·내부 수치·내부 ID가 들어가지 않았는가
+
+## Audit History
+- iter-1: 2026-11-09 / critical=0 high=0 medium=2 low=3 / next_action=done — SEC-001·002(design)은 사용자 결정(마스킹만 / item 분리+패턴 감지)으로 반영, SEC-003~005(auto) 수정
+
+## Code Review History
+- code-review-iter-1: 2026-11-09 / critical=0 high=0 medium=5 low=8 / profile_status=generated / next_action=self_fix — QA-001~013 수정, 회귀 테스트 8개 추가(142 passed)
