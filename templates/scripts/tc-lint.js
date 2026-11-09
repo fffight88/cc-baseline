@@ -38,8 +38,9 @@ const URL_RE = /\bhttps?:\/\//i;
 // Heuristics. They only raise warnings, so they lean toward catching too much.
 const RE = {
   // Two facts joined in one sentence: "A and B", "A하고/되고/이며 B", "A 및 B".
-  // The quotation particle 라고 ("'저장됨'이라고 표시된다") is not a join.
-  conjunction: /\b(and|as well as|also)\b|;|그리고|또한|\s및\s|[가-힣](?<!라)(?:고|며|면서)\s/gi,
+  // The quotation particle 라고 ("'저장됨'이라고 표시된다") and nouns ending in 고
+  // (광고, 신고, 창고, 경고, 재고, 원고, 최고, 참고, 사고, 잔고, 공고) are not joins.
+  conjunction: /\b(and|as well as|also)\b|;|그리고|또한|\s및\s|[가-힣](?<![라광신창경재원최참사잔공])고\s|[가-힣](?:며|면서)\s/gi,
   sequence: /\bthen\b|이어서/i,
   quoted: /["“'‘][^"”'’]+["”'’]/g,
   hidden: /\bDB\b|database|데이터베이스|저장(?:된다|됨|되어|돼)|기록(?:된다|됨)|로그(?!인|아웃)|\blogged\b(?!\s+(?:in|out))|\bstored\b|persist|발송|\bsent to\b|webhook|\bqueue\b|서버/i,

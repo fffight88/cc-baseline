@@ -147,9 +147,15 @@ function buildRequest(input, { env = process.env } = {}) {
     holds = HOLDS_FREE.text;
     question = `${HOLDS_FREE.id}@${HOLDS_FREE.version}`;
   }
+  if (input.question_id === 'Q.item_added' && !(typeof input.item === 'string' && input.item.trim())) {
+    throw new Error('Q.item_added needs a non-empty item');
+  }
+  // TC-side text gets the same scrubbing and masking as the screen text, so
+  // it matches what the page shows and carries no personal data.
+  const tcText = (s, n) => maskPersonal(scrub(s)).slice(0, n);
   const state = {
-    expected_result: input.expected,
-    ...(input.item !== undefined ? { item: String(input.item) } : {}),
+    expected_result: tcText(input.expected, 1000),
+    ...(input.item !== undefined ? { item: tcText(input.item, 300) } : {}),
     ...normalizeObservation(input.observation, { secretEnv: input.secret_env || [], env }),
   };
   return {

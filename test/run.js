@@ -1734,6 +1734,47 @@ t('tc-jev-judge: standard question sentence stays fixed; the item goes into stat
   assert.throws(() => buildRequest(obsInput({ question_id: 'Q.nope' }), {}), /unknown standard question/);
 });
 
+t('tc-jev-judge: item and expected_result are masked and capped like screen text; missing item is refused', () => {
+  const { buildRequest } = require(TC_JEV_JUDGE);
+  const { body } = buildRequest(obsInput({
+    expected: `Invite sent to lee@example.com at 2026-11-09T10:00:00Z ${'word '.repeat(500)}`,
+    question_id: 'Q.item_added', item: `Invoice for lee@example.com ${'x '.repeat(400)}`,
+  }), {});
+  assert.ok(!JSON.stringify(body.state).includes('lee@example.com'));
+  assert.ok(!body.state.expected_result.includes('2026-11-09T10:00:00Z'));
+  assert.ok(body.state.expected_result.length <= 1000);
+  assert.ok(body.state.item.length <= 300);
+  assert.throws(() => buildRequest(obsInput({ question_id: 'Q.item_added' }), {}), /non-empty item/);
+  assert.throws(() => buildRequest(obsInput({ question_id: 'Q.item_added', item: '  ' }), {}), /non-empty item/);
+});
+
+t('tc-lint: nouns ending in 고 are not joins', () => {
+  for (const text of ['광고 배너가 보인다', '신고 버튼이 보인다', '경고 문구가 없다']) {
+    const d = tcDoc();
+    d.test_cases[0].expected[0] = { text, observe: { channel: 'dom', key: 'body' } };
+    assert.ok(!lintRules(d).includes('single_fact'), text);
+  }
+  const joined = tcDoc();
+  joined.test_cases[0].expected[0].text = '목록이 갱신되고 합계가 바뀐다';
+  assert.ok(lintRules(joined).includes('single_fact'));
+});
+
+t('tc-jev-check: --strict fails on a partial run; the jev block carries file_sha256', async () => {
+  const srv = await mockJev((body, n) => (n === 1 ? { status: 500, json: { error: 'boom' } } : { status: 200, json: nouls(body, { single: 0.9, hidden: 0.1, screen: 0.9 }) }));
+  const tmp = jevTmp();
+  try {
+    const env = { PATH: process.env.PATH, HOME: tmp, CC_BASELINE_JEV_KEY: FAKE_KEY, CC_BASELINE_JEV_BASE_URL: srv.url };
+    const file = path.join(tmp, 'x.tc.json');
+    fs.writeFileSync(file, JSON.stringify(tcDoc()));
+    const out = path.join(tmp, 'tc-check.json');
+    const r = await runNode([TC_JEV_CHECK, file, '--strict', '--out', out], env);
+    assert.equal(r.status, 1);
+    const j = JSON.parse(fs.readFileSync(out, 'utf8')).jev;
+    assert.equal(j.status, 'partial');
+    assert.match(j.file_sha256, /^[0-9a-f]{64}$/);
+  } finally { await srv.close(); fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
 t('tc-jev-judge: emails, phone/card numbers and tokens are masked before sending', () => {
   const { normalizeObservation } = require(TC_JEV_JUDGE);
   const s = JSON.stringify(normalizeObservation({

@@ -175,7 +175,7 @@ async function main(argv) {
   if (out) writeBlock(out, block);
   if (block.status === 'empty') console.log('tc-jev-check: no expected results to score');
   if (block.status === 'error') return 1;
-  return strict && block.warnings.length > 0 ? 1 : 0;
+  return strict && (block.warnings.length > 0 || block.status === 'partial') ? 1 : 0;
 }
 
 if (require.main === module) {

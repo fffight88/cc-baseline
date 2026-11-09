@@ -239,9 +239,9 @@ e2e-tester: 조작(LLM, Aside 우선 / Playwright 대체) → 기대 결과마�
 | `Q.loading@1` | Noul | 화면이 아직 불러오는 중인가 |
 | `Q.dialog_open@1` | Noul | 대화상자·팝업이 열려 있는가 |
 | `Q.success_notice@1` | Noul | 방금 한 일이 성공했음을 알리는 문구나 표시가 있는가 |
-| `Q.item_added@1` | Noul | 목록에 `{item}`에 해당하는 새 항목이 보이는가 |
+| `Q.item_added@2` | Noul | 목록에 `state.item`에 해당하는 새 항목이 보이는가 |
 
-`{item}` 같은 자리 표시만 TC 값으로 채우고, 그 밖의 문장은 바꾸지 않는다.
+TC 값은 질문 문장에 넣지 않는다. `Q.item_added`의 항목은 `state.item`으로 데이터로만 넘기고(화면 텍스트와 같은 마스킹·길이 제한), 문장은 바꾸지 않는다.
 
 **설정** (①②공통):
 
@@ -408,6 +408,8 @@ e2e-tester: 조작(LLM, Aside 우선 / Playwright 대체) → 기대 결과마�
 
 ## Audit History
 - iter-1: 2026-11-09 / critical=0 high=0 medium=2 low=3 / next_action=done — SEC-001·002(design)은 사용자 결정(마스킹만 / item 분리+패턴 감지)으로 반영, SEC-003~005(auto) 수정
+- iter-2: 2026-11-09 / critical=0 high=0 medium=0 low=1 / next_action=done — SEC-001~005 수정 확인, SEC-006(item·expected_result 마스킹·길이 제한) 수정
 
 ## Code Review History
 - code-review-iter-1: 2026-11-09 / critical=0 high=0 medium=5 low=8 / profile_status=generated / next_action=self_fix — QA-001~013 수정, 회귀 테스트 8개 추가(142 passed)
+- code-review-iter-2: 2026-11-09 / critical=0 high=0 medium=1 low=3 / profile_status=cached / next_action=self_fix — QA-001~013 수정 확인, QA-014~017 수정(145 passed). critical·high 0으로 루프 종료
