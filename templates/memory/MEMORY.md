@@ -15,4 +15,5 @@
 - [reference_web_interface_guidelines.md](reference_web_interface_guidelines.md) — Vercel Web Interface Guidelines, pinned + vendored: the static UI rule set publisher runs in its Step 5 self-check
 - [reference_publisher_protocol.md](reference_publisher_protocol.md) — publisher auto-trigger, call protocol, self-fix loop, decision_type follow-up, and post-publish handoff to e2e-tester
 - [reference_agent_pipeline.md](reference_agent_pipeline.md) — canonical five-agent order (design-director direct → publisher build → security-auditor + code-reviewer review → e2e-tester verify) and the de-duplication matrix
+- [reference_tc_authoring.md](reference_tc_authoring.md) — **When a plan has `Behavior Impact: Yes/Unknown`**: write actions + TCs in `docs/tc/<feature>.tc.json`, one-fact expected results, observe channels, authoring checks, what e2e may not change
 - [reference_browser_tools.md](reference_browser_tools.md) — **Before any browser work**: Aside first (`aside repl` / `scripts/aside-session.sh`, test account only), Playwright MCP fallback, switch conditions, `__e2e` recorder, report fields

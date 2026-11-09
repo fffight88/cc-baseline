@@ -15,6 +15,8 @@ type: reference
 - ❌ DON'T: Run publisher for a non-UI plan (`UI Impact: No`) — the flow reverts to the original flat post-implementation fan-out
 - ❌ DON'T: Run design-director when a design profile or an existing design system is present — inheriting an existing design is publisher's job, and a fresh direction would overwrite it
 - ❌ DON'T: Expect runtime/visual defects (whitelabel-on-click, dead controls, baseline drift) from source-based sec/code-review — that class is owned **only** by publisher (§9) + e2e-tester (§0), see §3.1
+- ✅ DO: For `Behavior Impact: Yes/Unknown`, write the TCs **in the plan stage** (`reference_tc_authoring.md`) — e2e-tester later runs those TCs verbatim and judges each expected result
+- ❌ DON'T: Let e2e-tester or the manager rewrite TC steps/expected text to make a run pass — TC text changes only in the TC file, with the user's OK
 - ✅ DO: Run every browser stage (publisher Step 6, e2e-tester, `/open-browser`) on **Aside first, Playwright MCP as fallback** — see `reference_browser_tools.md`; each report states `browser_tool` / `fallback_reason`
 
 ---
@@ -24,7 +26,9 @@ type: reference
 The five agents form a **sequence**, not a flat fan-out, whenever a plan involves UI work:
 
 ```
-/plan  (## Meta: Security Impact / Code Quality Impact / UI Impact)
+/plan  (## Meta: Security Impact / Code Quality Impact / UI Impact / Behavior Impact)
+   └─ [Behavior Impact: Yes/Unknown] actions + TCs → docs/tc/<feature>.tc.json
+                                     → tc-lint.js (+ tc-jev-check.js) → ## Test Cases → approval freezes TCs
    │
    ▼
 DIRECTION  (greenfield only — skipped whenever a design profile or design system exists)
@@ -45,7 +49,8 @@ AUDIT GATES  (parallel, single message — review the produced code, publisher o
        └─ each loops (auto→self_fix, design/business→interview), max 3 → HTML report once both done
    │
    ▼
-e2e-tester   (functional interaction only — visual & a11y already covered by publisher)
+e2e-tester   (functional interaction only — visual & a11y already covered by publisher;
+              with TCs: runs them verbatim, judges each expected result code → Jev → LLM)
    │
    ▼
 done
@@ -61,6 +66,7 @@ done
 
 | Stage | Agent | Trigger | When it runs |
 |-------|-------|---------|--------------|
+| Specify | orchestrator (no agent) | `Behavior Impact: Yes/Unknown` | **while writing the plan** — TCs + authoring checks, frozen by plan approval |
 | Direction | design-director | `UI Impact: Yes/Unknown` **AND** no `design-profile.md` **AND** no existing design system/screens | **once per project**, before publisher's first call |
 | Build | publisher | `UI Impact: Yes/Unknown` (or explicit request / UI-natured task) | **during** execution, first for the UI portion |
 | Review | security-auditor | `Security Impact: Yes/Unknown` | after implementation (incl. publisher output) |
@@ -84,6 +90,9 @@ See each agent's protocol: `reference_design_director_protocol.md`, `reference_p
 | Logic errors, edge cases, CLAUDE.md, conventions, dead code, async | code-reviewer | — |
 | XSS / `innerHTML` / inline secrets / dependency vulns | security-auditor | — |
 | Functional interaction (click→result, nav, form submit, console-clean) | e2e-tester | publisher does not test interaction |
+| **What correct behavior is** (actions, TC steps, expected results, basis) | orchestrator at plan time (`reference_tc_authoring.md`) | e2e manager / tester never add or rewrite expected results |
+| TC sentence quality (one fact, channel named, no subjective words) | authoring checks (`tc-lint.js`, `tc-jev-check.js`) | — |
+| Verdict per expected result | e2e-tester, one judge each: code → Jev → LLM (`judged_by`) | no second judge on the same expected result |
 | **Runtime invariants** (no whitelabel/500 on click, no console error/ReferenceError) + **dead-control sweep** | e2e-tester (§0) | **sec/code-review can't — source-based, out of scope** |
 | **Visual baseline drift / render thoroughness** (thead+tbody, all states, computed values) | publisher (§9) | **sec/code-review can't — source-based, out of scope** |
 
@@ -126,6 +135,7 @@ report.html                     # merged audit HTML (security + code-review)
 ## ✅ Checklist (orchestrator, per UI-bearing plan)
 
 - [ ] `UI Impact` present in plan `## Meta`; if Yes/Unknown, UI portion delegated to publisher
+- [ ] `Behavior Impact` present; if Yes/Unknown, `docs/tc/<feature>.tc.json` + `## Test Cases` were written at plan time and the TC file is unchanged by the e2e run
 - [ ] Greenfield checked **before** publisher's first call — if no profile/design system/screens exist, design-director ran first and seeded the direction (§2); otherwise it was correctly skipped
 - [ ] publisher finished (self-fix loop closed) **before** invoking the audit gates
 - [ ] security-auditor + code-reviewer called in parallel on the produced code (publisher output included)

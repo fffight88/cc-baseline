@@ -20,6 +20,7 @@
     "memory/reference_publisher_protocol.md",
     "memory/reference_agent_pipeline.md",
     "memory/reference_browser_tools.md",
+    "memory/reference_tc_authoring.md",
     "scripts/audit-report.js",
     "scripts/aside-session.sh",
     "scripts/design-preview.js",
