@@ -41,6 +41,7 @@
 | `scripts/jev-client.js` | `~/.claude/scripts/jev-client.js` | Overwrite |
 | `scripts/tc-jev-check.js` | `~/.claude/scripts/tc-jev-check.js` | Overwrite |
 | `scripts/tc-jev-judge.js` | `~/.claude/scripts/tc-jev-judge.js` | Overwrite |
+| `scripts/tc-api-run.js` | `~/.claude/scripts/tc-api-run.js` | Overwrite |
 | `design-previews/` (69 files) | `~/.claude/design-previews/` | Overwrite each file; uninstall removes them and any folder left empty |
 
 ## JSON merge details
@@ -62,7 +63,7 @@ When the installer is run with `--project`, every path in the table above shifts
 | `templates/settings-hooks.json` | `templates/settings-hooks.project.json` | `_ccBaselineId` values prefixed with `project-` so they coexist with global IDs; SessionStart + PreToolUse path-policy hooks scoped to project memory |
 | `templates/mcp-servers.json` | `templates/mcp-servers.project.json` | `npx -y @playwright/mcp@0.0.75` (portable across machines) |
 
-The 28 overwrite files (memory/, agents/, commands/, scripts/) and the `design-previews/` folder are byte-identical between modes.
+The 29 overwrite files (memory/, agents/, commands/, scripts/) and the `design-previews/` folder are byte-identical between modes.
 
 ### JSON merge / write targets — project mode
 
