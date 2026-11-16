@@ -62,6 +62,7 @@ const JUDGES = ['code', 'jev', 'llm', 'human'];
 const SHA_RE = /^[0-9a-f]{64}$/;
 const RUN_ID_RE = /^[0-9A-Za-z][0-9A-Za-z._-]{0,39}$/;
 const HOLDOUT_PERCENT = 30;
+const SCREEN_CHANNELS = ['dom', 'ax-node'];
 const DEFAULT_AUDIT_RATE = 0.1;
 const REVOKE_WINDOW = 20;
 const REVOKE_DISAGREEMENTS = 2;
@@ -236,6 +237,10 @@ function appendSample(jevDir, body, sample) {
 
 async function judge(input, { config = loadConfig(), jevDir = jevDirDefault(), sleep, label = null, env = process.env } = {}) {
   const base = { tc: input.tc, index: input.index, verdict: null, judged_by: null };
+  // A calibration sample is a screen judgment; an api / db / log fact has no screen to learn from.
+  if (label && input.channel !== undefined && !SCREEN_CHANNELS.includes(input.channel)) {
+    return { ...base, status: 'error', error: `calibration samples come only from screen channels (${SCREEN_CHANNELS.join(' / ')}), not ${input.channel}` };
+  }
   if (config.error) return { ...base, status: 'error', error: redact(config.error, config.key) };
   if (!config.key) return { ...base, status: 'unconfigured' };
 

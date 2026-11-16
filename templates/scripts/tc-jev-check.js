@@ -49,11 +49,14 @@ const RULES = [
 const OFF_SCREEN_CHANNELS = ['api', 'db', 'log', 'artifact', 'env'];
 const CONCURRENCY = 4;
 
-function writeBlock(out, block) {
+function writeBlock(out, block, file) {
   let data = {};
   try { data = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* new or unreadable file */ }
   if (!data || typeof data !== 'object' || Array.isArray(data)) data = {};
   data.jev = block;
+  // one plan can have several TC files: keep each file's block too
+  data.by_file = data.by_file && typeof data.by_file === 'object' && !Array.isArray(data.by_file) ? data.by_file : {};
+  if (file) data.by_file[file] = { ...(data.by_file[file] || {}), jev: block };
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, JSON.stringify(data, null, 2) + '\n');
 }
@@ -162,12 +165,12 @@ async function main(argv) {
   const config = loadConfig();
   if (config.error) {
     console.error(`tc-jev-check: ${redact(config.error, config.key)}`);
-    if (out) writeBlock(out, { tool: 'tc-jev-check', version: 1, status: 'error', error: redact(config.error, config.key) });
+    if (out) writeBlock(out, { tool: 'tc-jev-check', version: 1, status: 'error', error: redact(config.error, config.key) }, file);
     return 2;
   }
   if (!config.key) {
     console.log('tc-jev-check: jev: unconfigured (no CC_BASELINE_JEV_KEY / TYPESAFE_API_KEY / key file) — skipped');
-    if (out) writeBlock(out, { tool: 'tc-jev-check', version: 1, status: 'unconfigured', checked_at: new Date().toISOString() });
+    if (out) writeBlock(out, { tool: 'tc-jev-check', version: 1, status: 'unconfigured', checked_at: new Date().toISOString() }, file);
     return 0;
   }
 
@@ -178,7 +181,7 @@ async function main(argv) {
   for (const e of block.errors) console.log(`ERROR ${e.where}  ${e.error}`);
   console.log(`tc-jev-check: ${block.results.length} scored with ${block.model}, ${block.warnings.length} warning(s), ` +
     `${block.errors.length} error(s), ${block.usage.input_tokens} input tokens, ${block.usage.ms} ms`);
-  if (out) writeBlock(out, block);
+  if (out) writeBlock(out, block, file);
   if (block.status === 'empty') console.log('tc-jev-check: no expected results to score');
   if (block.status === 'error') return 1;
   return strict && (block.warnings.length > 0 || block.status === 'partial') ? 1 : 0;

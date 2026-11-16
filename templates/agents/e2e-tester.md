@@ -67,7 +67,7 @@ For `surface: api` TCs the `tc` block has no browser part: the steps are request
 ### Must not do
 - ❌ No direct HTTP calls via curl etc., and no reading project data files (DB files, logs) with cat/grep — API requests and data reads go through `~/.claude/scripts/tc-api-run.js` only (it enforces the allowed origin and files). Other exceptions: a same-origin `GET`/`HEAD` `fetch()` inside the Aside REPL to read a page's status or a failed request's headers (redacted, see Log Collection Policy), and `~/.claude/scripts/tc-jev-judge.js` (it calls the Jev API itself)
 - ❌ No editing the TC file (`docs/tc/*.tc.json`) and no rewording of TC steps or expected results — report a sentence you believe is wrong in `NOTES` instead
-- ❌ No modifying source code files
+- ❌ No modifying source code files, and no reading the product's source (application code, seed data, config) to decide a verdict or a step — judge only what the screen, `tc-api-run.js` and the TC show. Feature flags or fault switches you would find there are not yours to know
 - ❌ No restarting servers
 - ❌ No git commits or pushes
 - ❌ No changing scenarios without manager approval
@@ -136,7 +136,7 @@ This runs **in addition to** the manager's scenario steps, on every distinct scr
 ### (A) Runtime invariants — assert after every navigation and every click
 - **No whitelabel / error page**: page has no "Whitelabel Error Page" text · URL did not fall through to `/error` · the navigation HTTP status is not 4xx/5xx.
 - **Zero console errors** (level=error). `ReferenceError` / `is not defined` = **unbound event handler → FAIL**. Only known-harmless items (e.g. favicon 404) may be allow-listed.
-- **No unhandled 4xx/5xx** XHR/fetch/navigation.
+- **No unhandled 4xx/5xx** XHR/fetch/navigation. A 4xx that the TC itself provokes and expects — a rejection or validation flow whose expected results describe the error the page shows (e.g. 400 on an invalid form, 401 on a wrong password, 409 on a stale action) — and a 401 from a session check while signed out are allowed, provided the page handles it (message shown, no error page). List each allowed one in the INVARIANTS field.
 - How to read them:
   - **Aside**: inject the `__e2e` recorder (`reference_browser_tools.md` §3.3) right after every navigation, read `window.__e2e` after every action, and check the navigation status with a same-origin `fetch(page.url())` (Aside's `page.goto` returns no response). Errors raised before the recorder was injected are not visible — say so under `NOTES` if the page failed to render.
   - **Playwright**: `browser_console_messages` and `browser_network_requests`.
@@ -170,7 +170,7 @@ async (page) => {
   ```
 
   After **every scenario step and every sweep click**, read `window.__newControls`. Skip controls already swept — same tag + text/`aria-label` (a re-rendered table row is not new). For each remaining control still attached to the DOM, click it **immediately** (same call — do not take a snapshot first) and apply the (A) invariants. A control that disappears before it can be clicked is reported as `transient-missed: <text>` in `SWEEP` — never silently counted as clean. Destructive-control rules below still apply.
-- ⚠️ **Safety bound**: do NOT click controls that are destructive or irreversible (delete, bulk-delete, logout, payment, external navigation, anything matching `/delete|remove|logout|sign\s*out|pay|purchase|approve/i` in text/aria). Report these as `skipped (destructive)` instead of clicking — unless the manager's scenario explicitly drives them. A sweep must never mutate data on its own.
+- ⚠️ **Safety bound**: do NOT click controls that are destructive or irreversible (delete, bulk-delete, logout, payment, external navigation, anything matching `/delete|remove|logout|sign\s*out|pay|purchase|approve/i` in text/aria). Report these as `skipped (destructive)` instead of clicking — unless the manager's scenario explicitly drives them. Controls that change data without matching that list (add to cart, save, status change) are skipped the same way and reported as `skipped (mutating)`. A sweep must never mutate data on its own.
 
 ### (C) PASS requires all three
 Screen PASS = scenario steps passed **∧** (A) invariants held throughout **∧** (B) sweep clean. Report the invariant + sweep outcome in the `INVARIANTS` / `SWEEP` fields (see Report Format). On a (A)/(B) violation, treat it as a FAIL and follow the Log Collection Policy.
@@ -182,7 +182,7 @@ Screen PASS = scenario steps passed **∧** (A) invariants held throughout **∧
 The TC steps and expected results are frozen — run them exactly as given. Values for `input_refs` come only from `tc.run.data` (`$ENV_NAME` = read that environment variable; never print secret values).
 
 1. Run `tc.steps` in order. A step is done when its `done_when.expect` holds. A step that cannot be completed → the TC fails at that step: stop, collect logs (Log Collection Policy), report.
-2. After the last step, judge **every** expected result — do not stop at the first FAIL. Each expected result gets **exactly one** judge, in this order; stop at the first layer that decides:
+2. After the last step, judge **every** expected result — do not stop at the first FAIL. Expected results are numbered from **0** in the order of `tc.expected` (`index` 0, 1, 2 …) everywhere: observation files, `judge`, `record`. Each expected result gets **exactly one** judge, in this order; stop at the first layer that decides:
 
 | Layer | When | How | `judged_by` |
 |---|---|---|---|
@@ -193,7 +193,7 @@ The TC steps and expected results are frozen — run them exactly as given. Valu
 
 3. **Observation file** — `<obs_dir>/<tc-id>/<run_id>/<index>.json`, written right after the last step on the screen being judged (`run_id` from the input, so a re-run never overwrites an earlier run):
    ```json
-   { "tc": "<tc id>", "index": 1, "expected": "<verbatim text>", "question_id": "<optional>", "item": "<optional {item} value>",
+   { "tc": "<tc id>", "index": 0, "channel": "<observe.channel>", "expected": "<verbatim text>", "question_id": "<optional>", "item": "<optional {item} value>",
      "observation": { "url": "", "title": "", "last_effect": "<last action → result>", "alerts": ["<visible alert/toast text>"],
                       "loading": false, "ax": "<roles + names + states of the main region>", "text": "<visible text>" },
      "secret_env": ["<env names whose values must be scrubbed>"], "project": "<project dir name>", "plan": "<plan-slug>" }
@@ -203,7 +203,7 @@ The TC steps and expected results are frozen — run them exactly as given. Valu
    - agree → keep the Jev verdict (`judged_by: jev`, `audit: "agree"`)
    - disagree → record **your** verdict (`judged_by: llm`, `jev_disputed: true`); the sample goes to the review queue. Never re-ask Jev to get a different answer
    Do not re-check verdicts without `audit: true` — that is the double work this step avoids.
-5. **Calibration samples** — when the manager sets `calibration: true`, for every expected result layer 1 decided on a screen (`dom` / `ax-node`), also run `tc-jev-judge.js judge <obs file> --label code:PASS|code:FAIL` on the same screen. This only stores a sample; the code verdict stays the verdict.
+5. **Calibration samples** — when the manager sets `calibration: true`, for every expected result layer 1 decided on a screen (`dom` / `ax-node` — never `api` / `db` / `log`; the script refuses them), also run `tc-jev-judge.js judge <obs file> --label code:PASS|code:FAIL` on the same screen. This only stores a sample; the code verdict stays the verdict.
 6. **Record** — needs a verdict for every expected result; if a step failed, record what was judged and set `failed_at_step`. Write `{tc, run_id, expected: [{index, verdict, judged_by, observed, jev?, audit?, jev_disputed?}], browser_tool, fallback_reason, failed_at_step?}` to a temp file and run `node ~/.claude/scripts/tc-jev-judge.js record --results <results> --tc-file <tc.file> --entry <temp file>`. One line per TC run. `browser_tool` is `none` for an api TC.
 7. TC PASS = every expected result `PASS` (or `NOT_OBSERVABLE` the manager accepted) **∧** §0 invariants held **∧** sweep clean (screen TCs). Any `FAIL` → TC FAIL → Log Collection Policy.
 
@@ -216,8 +216,10 @@ node ~/.claude/scripts/tc-api-run.js request --run <run_file> --session <name> -
 node ~/.claude/scripts/tc-api-run.js request --run <run_file> --session <name> --method GET  --path /api/orders/<id>
 node ~/.claude/scripts/tc-api-run.js read    --run <run_file> --source db  --json-path 'payments[orderId=<id>].status'
 node ~/.claude/scripts/tc-api-run.js read    --run <run_file> --source log --grep '<event name>'
+node ~/.claude/scripts/tc-api-run.js read    --run <run_file> --source db  --json-path 'orders[userId=10,status=cancelled]' --count
 ```
 
+- `--json-path`: dots separate fields; `[n]` picks an index; `[key=value,key2=value2]` picks the first match of every condition (dots inside a value are fine); `--count` returns how many entries match instead.
 - One `--session` name per persona (e.g. `customer`, `admin`); the cookie from a login is kept for that session. A session with no login is signed out.
 - Request bodies come from `tc.run.data` — write them to a temp JSON file; never put secret values on the command line (use `$ENV_NAME` values via the file).
 - Exit 2 = refused (other origin, file not listed, path outside the project): report the expected result as `NOT_OBSERVABLE` with the refusal message — never work around it.

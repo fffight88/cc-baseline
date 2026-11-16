@@ -258,6 +258,9 @@ function writeJson(out, block) {
   try { data = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* new or unreadable file */ }
   if (!data || typeof data !== 'object' || Array.isArray(data)) data = {};
   data.lint = block;
+  // one plan can have several TC files: keep each file's block too
+  data.by_file = data.by_file && typeof data.by_file === 'object' && !Array.isArray(data.by_file) ? data.by_file : {};
+  data.by_file[block.file] = { ...(data.by_file[block.file] || {}), lint: block };
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, JSON.stringify(data, null, 2) + '\n');
 }

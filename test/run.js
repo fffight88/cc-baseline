@@ -2008,6 +2008,47 @@ t('tc-jev-judge: calibrate refuses with too few samples, proposes otherwise, app
   } finally { fs.rmSync(jevDir, { recursive: true, force: true }); }
 });
 
+t('tc-jev-judge: --label refuses samples from api / db / log channels before any request', async () => {
+  const { judge } = require(TC_JEV_JUDGE);
+  const srv = await mockJev(body => ({ status: 200, json: nouls(body, { holds: 0.9, observable: 0.9 }) }));
+  const jevDir = jevTmp();
+  try {
+    for (const channel of ['api', 'db', 'log']) {
+      const r = await judge(obsInput({ channel }), { config: judgeCfg(srv.url), jevDir, sleep: noSleep, label: { source: 'code', value: 'PASS' } });
+      assert.equal(r.status, 'error', channel);
+      assert.match(r.error, /screen channels/);
+    }
+    assert.equal(srv.seen.length, 0, 'nothing sent to Jev');
+    const ok = await judge(obsInput({ channel: 'dom' }), { config: judgeCfg(srv.url), jevDir, sleep: noSleep, label: { source: 'code', value: 'PASS' } });
+    assert.equal(ok.status, 'ok');
+  } finally { await srv.close(); fs.rmSync(jevDir, { recursive: true, force: true }); }
+});
+
+t('tc-check.json keeps a block per TC file when one plan has several', () => {
+  const { spawnSync } = require('child_process');
+  const tmp = jevTmp();
+  try {
+    const out = path.join(tmp, 'tc-check.json');
+    for (const name of ['a', 'b']) {
+      const f = path.join(tmp, `${name}.tc.json`);
+      fs.writeFileSync(f, JSON.stringify(tcDoc()));
+      assert.equal(spawnSync(process.execPath, [TC_LINT, f, '--json', out]).status, 0);
+    }
+    const j = JSON.parse(fs.readFileSync(out, 'utf8'));
+    assert.deepEqual(Object.keys(j.by_file).map(k => path.basename(k)).sort(), ['a.tc.json', 'b.tc.json']);
+    assert.equal(path.basename(j.lint.file), 'b.tc.json', 'lint keeps the latest file');
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
+t('e2e-tester: 0-based indices, expected 4xx allowed, mutating controls skipped, no source reading', () => {
+  const tester = fs.readFileSync(path.join(ROOT, 'templates', 'agents', 'e2e-tester.md'), 'utf8');
+  assert.match(tester, /numbered from \*\*0\*\*/);
+  assert.match(tester, /A 4xx that the TC itself provokes and expects/);
+  assert.match(tester, /skipped \(mutating\)/);
+  assert.match(tester, /no reading the product's source/);
+  assert.match(tester, /"channel": "<observe\.channel>"/);
+});
+
 t('tc-jev-judge: a false PASS in the holdout split makes the calibration unsafe', () => {
   const { calibrate, splitOf } = require(TC_JEV_JUDGE);
   const crypto = require('crypto');
@@ -2469,6 +2510,13 @@ t('tc-api-run read: only readable files inside the project; --json-path and --gr
     assert.equal(v.status, 0, v.stderr);
     assert.deepEqual(JSON.parse(v.stdout), { source: 'db', json_path: 'payments[orderId=B].status', found: true, value: 'refunded' });
     assert.equal(JSON.parse((await run(['--source', 'db', '--json-path', 'payments[orderId=Z].status'])).stdout).found, false);
+    const { jsonPath } = require(TC_API_RUN);
+    assert.deepEqual(jsonPath({ users: [{ email: 't05@example.com', id: 14 }] }, 'users[email=t05@example.com].id'), { found: true, value: 14 }, 'dots inside [k=v] stay in the value');
+    fs.writeFileSync(path.join(p.proj, 'data', 'db.json'), JSON.stringify({ orders: [{ userId: 10, status: 'cancelled' }, { userId: 10, status: 'paid' }, { userId: 11, status: 'cancelled' }, { userId: 10, status: 'cancelled' }] }));
+    const c = JSON.parse((await run(['--source', 'db', '--json-path', 'orders[userId=10,status=cancelled]', '--count'])).stdout);
+    assert.equal(c.count, 2, 'every condition must hold');
+    assert.equal(JSON.parse((await run(['--source', 'db', '--json-path', 'orders[userId=99]', '--count'])).stdout).count, 0);
+    assert.equal((await run(['--source', 'db', '--json-path', 'orders[userId]'])).status, 2, 'a condition needs key=value');
     const g = JSON.parse((await run(['--source', 'log', '--grep', 'payment.refunded'])).stdout);
     assert.equal(g.count, 1);
     for (const src of ['out', 'link', 'abs', 'nope']) {

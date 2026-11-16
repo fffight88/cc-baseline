@@ -6,7 +6,7 @@
 // code, from the run add-on file written at plan approval:
 //
 //   node tc-api-run.js request --run <tc-run.json> --session <name> --method <M> --path </api/...> [--body <json file>]
-//   node tc-api-run.js read    --run <tc-run.json> --source <name> (--grep <text> | --json-path <a.b[k=v].c>)
+//   node tc-api-run.js read    --run <tc-run.json> --source <name> (--grep <text> | --json-path <a.b[k=v].c> [--count])
 //
 // request: only base_url's origin; a path, never an absolute URL; redirects are
 //   reported, not followed; a non-loopback base_url needs "api_remote_ok": true.
@@ -181,34 +181,49 @@ async function request({ runFile, session, method, p, bodyFile, env = process.en
   return out;
 }
 
-// a.b[k=v].c[0] → value, or { found: false }.
-function jsonPath(doc, expr) {
-  const segs = String(expr).split('.').filter(Boolean);
+// a.b[k=v].c[0] → value, or { found: false }. [k=v,k2=v2] needs every
+// condition; with `all` the last filter keeps every match (for --count).
+function jsonPath(doc, expr, { all = false } = {}) {
+  // split on dots outside [...], so a value like [email=a.b@c.d] stays whole
+  const segs = [];
+  let part = '';
+  let depth = 0;
+  for (const ch of String(expr)) {
+    if (ch === '[') depth++;
+    else if (ch === ']') depth = Math.max(0, depth - 1);
+    if (ch === '.' && depth === 0) { if (part) segs.push(part); part = ''; } else part += ch;
+  }
+  if (part) segs.push(part);
   if (segs.length === 0) throw new Refused('--json-path is empty');
   let cur = doc;
-  for (const seg of segs) {
-    const m = /^([^[\]]*)(?:\[([^\]=]+)(?:=([^\]]*))?\])?$/.exec(seg);
+  for (const [i, seg] of segs.entries()) {
+    const m = /^([^[\]]*)(?:\[([^\]]+)\])?$/.exec(seg);
     if (!m) throw new Refused(`bad --json-path segment "${seg}"`);
-    const [, name, a, b] = m;
+    const [, name, cond] = m;
     if (name) {
       if (!cur || typeof cur !== 'object' || !Object.prototype.hasOwnProperty.call(cur, name)) return { found: false };
       cur = cur[name];
     }
-    if (a !== undefined) {
-      if (!Array.isArray(cur)) return { found: false };
-      if (b === undefined) {
-        if (!/^\d+$/.test(a)) throw new Refused(`bad index in "${seg}"`);
-        cur = cur[Number(a)];
-      } else {
-        cur = cur.find(x => x && typeof x === 'object' && String(x[a]) === b);
-      }
-      if (cur === undefined) return { found: false };
+    if (cond === undefined) continue;
+    if (!Array.isArray(cur)) return { found: false };
+    if (/^\d+$/.test(cond)) {
+      cur = cur[Number(cond)];
+    } else {
+      const pairs = cond.split(',').map(c => {
+        const eq = c.indexOf('=');
+        if (eq <= 0) throw new Refused(`bad condition "${c}" in "${seg}" — use [key=value] or [key=value,key2=value2]`);
+        return [c.slice(0, eq).trim(), c.slice(eq + 1).trim()];
+      });
+      const hits = cur.filter(x => x && typeof x === 'object' && pairs.every(([k, v]) => String(x[k]) === v));
+      if (all && i === segs.length - 1) return { found: true, value: hits };
+      cur = hits[0];
     }
+    if (cur === undefined) return { found: false };
   }
   return { found: true, value: cur };
 }
 
-function readSource({ runFile, source, grep, jsonPathExpr }) {
+function readSource({ runFile, source, grep, jsonPathExpr, count = false }) {
   const run = loadRun(runFile);
   const readable = run.readable && typeof run.readable === 'object' && !Array.isArray(run.readable) ? run.readable : {};
   if (!Object.prototype.hasOwnProperty.call(readable, source)) {
@@ -227,7 +242,11 @@ function readSource({ runFile, source, grep, jsonPathExpr }) {
   if (jsonPathExpr !== undefined) {
     let doc;
     try { doc = JSON.parse(text); } catch { throw new Refused(`readable.${source} is not JSON — use --grep`); }
-    const r = jsonPath(doc, jsonPathExpr);
+    const r = jsonPath(doc, jsonPathExpr, { all: count });
+    if (count) {
+      const n = !r.found ? 0 : Array.isArray(r.value) ? r.value.length : 1;
+      return { source, json_path: jsonPathExpr, count: n };
+    }
     const out = { source, json_path: jsonPathExpr, found: r.found };
     if (r.found) {
       const c = capped(maskTokens(JSON.stringify(r.value)));
@@ -248,13 +267,13 @@ function readSource({ runFile, source, grep, jsonPathExpr }) {
 }
 
 const USAGE = 'usage: tc-api-run.js request --run <tc-run.json> --session <name> --method <M> --path </...> [--body <json file>]\n' +
-  '       tc-api-run.js read --run <tc-run.json> --source <name> (--grep <text> | --json-path <a.b[k=v].c>)';
+  '       tc-api-run.js read --run <tc-run.json> --source <name> (--grep <text> | --json-path <a.b[k=v,k2=v2].c> [--count])';
 
 async function main(argv) {
   const [cmd, ...rest] = argv.slice(2);
   const spec = {
     request: { values: ['--run', '--session', '--method', '--path', '--body'] },
-    read: { values: ['--run', '--source', '--grep', '--json-path'] },
+    read: { values: ['--run', '--source', '--grep', '--json-path'], flags: ['--count'] },
   }[cmd];
   if (!spec) { console.error(USAGE); return 2; }
   let opts, positional;
@@ -263,7 +282,7 @@ async function main(argv) {
   try {
     const out = cmd === 'request'
       ? await request({ runFile: opts['--run'], session: opts['--session'], method: opts['--method'], p: opts['--path'], bodyFile: opts['--body'] })
-      : readSource({ runFile: opts['--run'], source: opts['--source'], grep: opts['--grep'], jsonPathExpr: opts['--json-path'] });
+      : readSource({ runFile: opts['--run'], source: opts['--source'], grep: opts['--grep'], jsonPathExpr: opts['--json-path'], count: opts['--count'] === true });
     console.log(JSON.stringify(out));
     return 0;
   } catch (e) {
