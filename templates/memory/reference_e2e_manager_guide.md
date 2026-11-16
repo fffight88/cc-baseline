@@ -77,22 +77,31 @@ screenshot_mode: on_failure_only | always | on_request
 
 When the plan has a TC file (`docs/tc/<feature>.tc.json`, see `reference_tc_authoring.md`), the manager does **not** write scenario steps or expected results. It runs the TCs verbatim.
 
-1. **Run add-on** — write `.cc-audits/<plan-slug>/tc-run.json` (not committed):
+1. **Run add-on** — `.cc-audits/<plan-slug>/tc-run.json` (not committed) is written right after plan approval (`/plan`); fill in anything still missing (fixture ids, seeded order numbers) before the run:
    ```json
    { "base_url": "http://localhost:3000",
+     "readable": { "db": "data/db.json", "log": "server.log" },
      "fixtures": { "user-basic": "seed command or account description" },
      "tcs": {
        "TC.password-reset.request-success": { "start_path": "/login", "persona": "test user",
          "data": { "email": "reset-test@example.com", "password": "$E2E_TEST_PASSWORD" }, "secret_env": ["E2E_TEST_PASSWORD"] },
+       "TC.password-reset.token-expired": { "persona": "test user", "data": { "token": "expired-token" } },
        "TC.password-reset.provider-down": { "skip": "server-injection" } } }
    ```
-   - Skip reasons: `api-only` · `external-idp` · `real-input-device` · `server-injection` · `decided-out`. A `ready` `ui-web` TC with no entry is reported as `unmapped`.
+   - `readable` — the only project files `tc-api-run.js read` may open (project-relative). List what the `db` / `log` expected results need, nothing else.
+   - `api_remote_ok: true` — only when the user approved API requests to a non-loopback `base_url`; without it `tc-api-run.js` refuses.
+   - Skip reasons: `needs-decision` · `external-idp` · `real-input-device` · `server-injection` · `decided-out`. A `ready` TC with no entry is reported as `unmapped`. `api` TCs are run, not skipped.
    - Secrets are env var names (`$NAME`), never values.
-2. **Tester input** — per TC, the `tc` block (`file`, `id`, `steps`, `expected` copied **verbatim**, `run` from the add-on), `results: .cc-audits/<plan-slug>/tc-results.jsonl`, `obs_dir: .cc-audits/<plan-slug>/obs`, and `calibration: true` while any Jev question in use has no calibration entry (`node ~/.claude/scripts/tc-jev-judge.js calibrate` shows `insufficient`).
-3. **One judge per expected result** — code → Jev → LLM (tester **TC Judging**). Off-screen channels the tester cannot read (`db`, non-GET `api`, `artifact`, `env`) come back `NOT_OBSERVABLE`; the manager may then check them itself with a read-only command and record the outcome as `judged_by: code` with the actual value. Never let a screen judgment stand in for them.
-4. **Results** — `tc-results.jsonl` gets one line per TC run (`tc_digest` marks which TC text was run). The TC file must be unchanged after the run (`git diff --quiet -- docs/tc/`).
-5. **A failing TC** — fix the product and re-run the same TC. If the TC sentence itself looks wrong, stop and ask the user; change the TC file only with their OK and a recorded reason. Never reword a TC so it passes.
-6. **Calibration** — Jev verdicts stay capped at `REVIEW` (LLM judges) until `tc-jev-judge.js calibrate` reports `ok` for that question × model and the **user approves** `calibrate --apply --question <Q.id@v> --model <jev-X.Y.Z>` (one entry per approval). Thresholds never change automatically. Even after calibration Jev decides only PASS / FAIL; NOT_OBSERVABLE and screens with instruction-like text go to the LLM. When the Jev model version changes, run `tc-jev-judge.js replay --model <new>` first and switch only if it is not worse.
+2. **Tester input** — per TC, the `tc` block (`file`, `id`, `steps`, `expected` copied **verbatim**, `run` from the add-on), `results: .cc-audits/<plan-slug>/tc-results.jsonl`, `obs_dir: .cc-audits/<plan-slug>/obs`, `run_file: .cc-audits/<plan-slug>/tc-run.json`, one `run_id` (UTC timestamp) shared by the whole run, and `calibration: true` while any Jev question in use is not calibrated (`node ~/.claude/scripts/tc-jev-judge.js bank` shows it).
+3. **Assignment** — `ui-web` TCs go to testers in parallel. `api` TCs go to **one** tester, after the screen TCs finish, run one at a time — their requests change data other TCs may be looking at.
+4. **One judge per expected result** — code → Jev → LLM (tester **TC Judging**). `api` / `db` / `log` facts are read by the tester with `tc-api-run.js` and judged by code. What the run file does not allow (`artifact`, `env`, a file not in `readable`) comes back `NOT_OBSERVABLE`; the manager may check it with a read-only command and record `judged_by: code` with the actual value. Never let a screen judgment stand in for it.
+5. **Results** — `tc-results.jsonl` gets one line per TC run (`tc_digest` marks which TC text was run, `run_id` which run). The TC file must be unchanged after the run (`git diff --quiet -- docs/tc/`).
+6. **A failing TC** — fix the product and re-run the same TC. If the TC sentence itself looks wrong, stop and ask the user; change the TC file only with their OK and a recorded reason. Never reword a TC so it passes.
+7. **Jev as the judge** — a question × model with a calibration entry is decided by Jev (PASS / FAIL); the LLM re-checks only the verdicts marked `audit: true` (about 10%).
+   - **Applying** a calibration needs the user: show `tc-jev-judge.js calibrate` (it must be `ok`, holdout included), then on their OK run `calibrate --apply --question <Q.id@v> --model <jev-X.Y.Z>`.
+   - **Revoking is automatic**: 2 disagreements in the last 20 re-checks remove the entry (`calibration.json` → `revoked`), and the question goes back to the LLM. Tell the user when a run revoked one.
+   - **Review queue** — after the run, list the disputed samples (`tc-jev-judge.js bank` → `review`) with the expected result, a short screen summary and both verdicts, and ask the user for the right answer (AskUserQuestion; skipping is fine). Store answers with `tc-jev-judge.js label --sample <id> --label human:PASS|human:FAIL`.
+   - NOT_OBSERVABLE and screens with instruction-like text always go to the LLM. When the Jev model version changes, run `tc-jev-judge.js replay --model <new>` first and switch only if it is not worse.
 
 ---
 
@@ -300,7 +309,8 @@ authenticated result (not a login redirect). Same-origin means all headers
 - [ ] `project_dir` passed to every tester; no screenshot in the project root after the run
 - [ ] **(§0-C/D)** PASS granted only with executed asserts + actual-value evidence — never on a markdown ✓ alone
 - [ ] **(§2-A)** With a TC file: TCs ran verbatim from `tc-run.json`, every `ready` `ui-web` TC is run / skipped with a reason / reported `unmapped`, each expected result has exactly one `judged_by`, and `git diff --quiet -- docs/tc/` holds after the run
-- [ ] **(§2-A)** Jev verdicts were capped at `REVIEW` for any question × model without an approved calibration entry
+- [ ] **(§2-A)** Jev verdicts were capped at `REVIEW` for any question × model without an approved calibration entry; `audit: true` verdicts were re-checked and the review queue was offered to the user
+- [ ] **(§2-A)** `api` TCs ran with `tc-api-run.js` on one tester after the screen TCs; no TC skipped as `api-only`
 - [ ] Checked `aside-session.sh account` once and set `browser:` for every tester; reports carry `BROWSER_TOOL` / `FALLBACK_REASON`
 - [ ] Distinct N (2–5) per tester for `aside_session: e2e-{N}` and fallback `mcp_server`; never `manual` / `playwright-test-1`
 - [ ] No `e2e-*` Aside session left running after the run

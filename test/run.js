@@ -2218,9 +2218,155 @@ t('e2e docs: TC runs are verbatim, one judge per expected result, TC file untouc
   assert.match(tester, /No editing the TC file/);
   assert.match(guide, /## 2-A\. Running TCs/);
   assert.match(guide, /git diff --quiet -- docs\/tc\//);
-  assert.match(guide, /user approves/);
+  assert.match(guide, /Applying\*\* a calibration needs the user/);
   assert.match(plan, /Behavior Impact/);
   assert.match(plan, /tc-lint\.js/);
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// tc-api-run.js — API requests / data reads with code-enforced limits
+// ──────────────────────────────────────────────────────────────────────────
+
+const TC_API_RUN = path.join(ROOT, 'templates', 'scripts', 'tc-api-run.js');
+
+function httpServer(handler) {
+  const http = require('http');
+  const seen = [];
+  const server = http.createServer((req, res) => {
+    let raw = '';
+    req.on('data', c => { raw += c; });
+    req.on('end', () => { seen.push({ method: req.method, url: req.url, cookie: req.headers.cookie, body: raw }); handler(req, res, raw); });
+  });
+  return new Promise(resolve => server.listen(0, '127.0.0.1', () => {
+    resolve({ seen, url: `http://127.0.0.1:${server.address().port}`, close: () => new Promise(r => server.close(r)) });
+  }));
+}
+
+// <tmp>/proj/.cc-audits/slug/tc-run.json
+function apiProject(run) {
+  const tmp = jevTmp();
+  const proj = path.join(tmp, 'proj');
+  const runDir = path.join(proj, '.cc-audits', 'slug');
+  fs.mkdirSync(runDir, { recursive: true });
+  const runFile = path.join(runDir, 'tc-run.json');
+  fs.writeFileSync(runFile, JSON.stringify(run));
+  return { tmp, proj, runFile };
+}
+
+const apiEnv = extra => ({ PATH: process.env.PATH, ...extra });
+
+t('tc-api-run: same-origin request returns status + JSON; other origins and absolute URLs are refused', async () => {
+  const srv = await httpServer((req, res) => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end('{"order":{"status":"cancelled"}}'); });
+  const other = await httpServer((req, res) => { res.writeHead(200); res.end('other'); });
+  const p = apiProject({ base_url: srv.url });
+  try {
+    const ok = await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'customer', '--method', 'GET', '--path', '/api/orders/1'], apiEnv());
+    assert.equal(ok.status, 0, ok.stderr);
+    const out = JSON.parse(ok.stdout);
+    assert.equal(out.status, 200);
+    assert.equal(out.json.order.status, 'cancelled');
+    for (const bad of [`${other.url}/x`, `//127.0.0.1:${new URL(other.url).port}/x`, 'api/x', '/\\evil']) {
+      const r = await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'customer', '--method', 'GET', '--path', bad], apiEnv());
+      assert.equal(r.status, 2, bad);
+      assert.match(r.stderr, /refused/);
+    }
+    assert.equal(other.seen.length, 0, 'nothing reached the other host');
+    const noSession = await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--method', 'GET', '--path', '/x'], apiEnv());
+    assert.equal(noSession.status, 2);
+    const badMethod = await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'c', '--method', 'TRACE', '--path', '/x'], apiEnv());
+    assert.equal(badMethod.status, 2);
+  } finally { await srv.close(); await other.close(); fs.rmSync(p.tmp, { recursive: true, force: true }); }
+});
+
+t('tc-api-run: a non-loopback base_url needs api_remote_ok; redirects are reported, not followed', async () => {
+  const other = await httpServer((req, res) => { res.writeHead(200); res.end('other'); });
+  const srv = await httpServer((req, res) => { res.writeHead(302, { Location: `${other.url}/steal` }); res.end(); });
+  const remote = apiProject({ base_url: 'http://example.invalid' });
+  const p = apiProject({ base_url: srv.url });
+  try {
+    const r = await runNode([TC_API_RUN, 'request', '--run', remote.runFile, '--session', 'c', '--method', 'GET', '--path', '/x'], apiEnv());
+    assert.equal(r.status, 2);
+    assert.match(r.stderr, /api_remote_ok/);
+    const red = await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'c', '--method', 'GET', '--path', '/go'], apiEnv());
+    assert.equal(red.status, 0, red.stderr);
+    const out = JSON.parse(red.stdout);
+    assert.equal(out.status, 302);
+    assert.match(out.redirect_not_followed, /steal/);
+    assert.equal(other.seen.length, 0, 'redirect was followed');
+  } finally {
+    await srv.close(); await other.close();
+    fs.rmSync(remote.tmp, { recursive: true, force: true }); fs.rmSync(p.tmp, { recursive: true, force: true });
+  }
+});
+
+t('tc-api-run: session cookies are kept per session, sent back, and never printed; $ENV body values are filled and masked', async () => {
+  const COOKIE = 'sid-value-9f8e7d6c5b4a';
+  const srv = await httpServer((req, res, raw) => {
+    if (req.url === '/api/login') {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Set-Cookie': `sid=${COOKIE}; HttpOnly; Path=/` });
+      return res.end(JSON.stringify({ ok: true, echo: JSON.parse(raw), sid: COOKIE }));
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ signedIn: req.headers.cookie === `sid=${COOKIE}` }));
+  });
+  const p = apiProject({ base_url: srv.url });
+  try {
+    const body = path.join(p.tmp, 'login.json');
+    fs.writeFileSync(body, JSON.stringify({ email: 'user@example.com', password: '$TEST_PW' }));
+    const env = apiEnv({ TEST_PW: 'pw-very-secret-123' });
+    const login = await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'customer', '--method', 'POST', '--path', '/api/login', '--body', body], env);
+    assert.equal(login.status, 0, login.stderr);
+    assert.ok(!login.stdout.includes(COOKIE), 'cookie value printed');
+    assert.ok(!login.stdout.includes('pw-very-secret-123'), 'secret printed');
+    assert.equal(srv.seen[0].body.includes('pw-very-secret-123'), true, 'secret was sent');
+    const out = JSON.parse(login.stdout);
+    assert.equal(out.headers['set-cookie'], '[REDACTED]');
+    assert.deepEqual(out.cookies_set, ['sid']);
+    const jar = path.join(path.dirname(p.runFile), 'api-sessions', 'customer.json');
+    assert.equal(fs.statSync(jar).mode & 0o777, 0o600);
+    const me = await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'customer', '--method', 'GET', '--path', '/api/me'], env);
+    assert.equal(JSON.parse(me.stdout).json.signedIn, true);
+    const anon = await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'guest', '--method', 'GET', '--path', '/api/me'], env);
+    assert.equal(JSON.parse(anon.stdout).json.signedIn, false, 'sessions are separate');
+    const missing = await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'customer', '--method', 'POST', '--path', '/api/login', '--body', body], apiEnv());
+    assert.equal(missing.status, 2, 'unset $ENV is refused');
+  } finally { await srv.close(); fs.rmSync(p.tmp, { recursive: true, force: true }); }
+});
+
+t('tc-api-run: large bodies are capped at 64 KB', async () => {
+  const srv = await httpServer((req, res) => { res.writeHead(200, { 'Content-Type': 'text/plain' }); res.end('x'.repeat(200000)); });
+  const p = apiProject({ base_url: srv.url });
+  try {
+    const r = await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'c', '--method', 'GET', '--path', '/big'], apiEnv());
+    const out = JSON.parse(r.stdout);
+    assert.equal(out.truncated, true);
+    assert.ok(out.body.length <= 64 * 1024);
+  } finally { await srv.close(); fs.rmSync(p.tmp, { recursive: true, force: true }); }
+});
+
+t('tc-api-run read: only readable files inside the project; --json-path and --grep', async () => {
+  const p = apiProject({ base_url: 'http://127.0.0.1:9', readable: { db: 'data/db.json', log: 'server.log', out: '../secret.txt', link: 'data/link.json', abs: '/etc/hostname' } });
+  try {
+    fs.mkdirSync(path.join(p.proj, 'data'));
+    fs.writeFileSync(path.join(p.proj, 'data', 'db.json'), JSON.stringify({ payments: [{ orderId: 'A', status: 'captured' }, { orderId: 'B', status: 'refunded' }] }));
+    fs.writeFileSync(path.join(p.proj, 'server.log'), '{"event":"order.cancelled","orderId":"B"}\n{"event":"payment.refunded","orderId":"B"}\n');
+    fs.writeFileSync(path.join(p.tmp, 'secret.txt'), 'TOP-SECRET-CONTENT');
+    fs.symlinkSync(path.join(p.tmp, 'secret.txt'), path.join(p.proj, 'data', 'link.json'));
+    const run = args => runNode([TC_API_RUN, 'read', '--run', p.runFile, ...args], apiEnv());
+    const v = await run(['--source', 'db', '--json-path', 'payments[orderId=B].status']);
+    assert.equal(v.status, 0, v.stderr);
+    assert.deepEqual(JSON.parse(v.stdout), { source: 'db', json_path: 'payments[orderId=B].status', found: true, value: 'refunded' });
+    assert.equal(JSON.parse((await run(['--source', 'db', '--json-path', 'payments[orderId=Z].status'])).stdout).found, false);
+    const g = JSON.parse((await run(['--source', 'log', '--grep', 'payment.refunded'])).stdout);
+    assert.equal(g.count, 1);
+    for (const src of ['out', 'link', 'abs', 'nope']) {
+      const r = await run(['--source', src, '--grep', 'x']);
+      assert.equal(r.status, 2, src);
+      assert.ok(!(r.stdout + r.stderr).includes('TOP-SECRET-CONTENT'), src);
+    }
+    assert.equal((await run(['--source', 'db'])).status, 2, 'needs --grep or --json-path');
+    assert.equal((await run(['--source', 'db', '--grep', 'a', '--json-path', 'b'])).status, 2, 'not both');
+  } finally { fs.rmSync(p.tmp, { recursive: true, force: true }); }
 });
 
 t('/plan flow: TCs are drafted in the plan, checked from stdin, open questions asked, file written after approval', () => {
