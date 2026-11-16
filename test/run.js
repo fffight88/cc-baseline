@@ -2223,6 +2223,38 @@ t('e2e docs: TC runs are verbatim, one judge per expected result, TC file untouc
   assert.match(plan, /tc-lint\.js/);
 });
 
+t('/plan flow: TCs are drafted in the plan, checked from stdin, open questions asked, file written after approval', () => {
+  const plan = fs.readFileSync(path.join(ROOT, 'templates', 'commands', 'plan.md'), 'utf8');
+  const contract = fs.readFileSync(path.join(ROOT, 'templates', 'memory', 'reference_tc_authoring.md'), 'utf8');
+  assert.match(plan, /## Test Cases \(draft\)/);
+  assert.match(plan, /tc-lint\.js -/);
+  assert.match(plan, /AskUserQuestion/);
+  assert.match(plan, /Right after approval/);
+  assert.doesNotMatch(plan, /while writing the plan\n1\. Write the user actions and TCs into `docs\/tc/);
+  assert.match(contract, /open_questions\[\]/);
+  assert.match(contract, /expected\[\]\.basis/);
+  assert.match(contract, /skip: needs-decision/);
+});
+
+t('tc-lint / tc-jev-check: "-" reads the TC draft from stdin', async () => {
+  const { spawnSync } = require('child_process');
+  const ok = spawnSync(process.execPath, [TC_LINT, '-'], { input: JSON.stringify(tcDoc()), encoding: 'utf8' });
+  assert.equal(ok.status, 0, ok.stderr);
+  assert.match(ok.stdout, /1 TC, 0 warning/);
+  const bad = tcDoc();
+  bad.test_cases[0].readiness = 'maybe';
+  const warned = spawnSync(process.execPath, [TC_LINT, '-', '--strict'], { input: JSON.stringify(bad), encoding: 'utf8' });
+  assert.equal(warned.status, 1);
+  const junk = spawnSync(process.execPath, [TC_LINT, '-'], { input: 'not json', encoding: 'utf8' });
+  assert.equal(junk.status, 2);
+  const tmp = jevTmp();
+  try {
+    const jev = spawnSync(process.execPath, [TC_JEV_CHECK, '-'], { input: JSON.stringify(tcDoc()), encoding: 'utf8', env: { PATH: process.env.PATH, HOME: tmp } });
+    assert.equal(jev.status, 0, jev.stderr);
+    assert.match(jev.stdout, /unconfigured/);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
 async function run() {
   let pass = 0, fail = 0;
   const failures = [];

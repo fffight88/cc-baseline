@@ -8,7 +8,8 @@ type: reference
 
 | ✅ DO | ❌ DON'T |
 |---|---|
-| Write actions (ACT) first, then TCs per action — **once**, while writing the plan; the user's plan approval freezes them | Re-split steps or invent input values at e2e time |
+| Write actions (ACT) first, then TCs per action — **once**, as a draft in the plan; the user's plan approval freezes them and the file is written right after | Re-split steps or invent input values at e2e time, or write files in plan mode |
+| Ask every `open_questions` entry with AskUserQuestion before approval | Hand a `needs-decision` TC to e2e |
 | One expected result = **one fact** a machine can decide (URL, text, element state, API value, log line) | Bundle several checks into one sentence, or write visual/subjective judgments ("looks good") — those belong to publisher |
 | Give every expected result an `observe.channel`; off-screen data (API/DB/log) gets `api` / `db` / `log` | Let a screen judgment stand in for server state |
 | Mark the basis: `requirement` / `source-observation` / `proposal`; every `proposal` is `needs-decision` | Promote the current implementation's behavior to an approved answer |
@@ -24,6 +25,7 @@ type: reference
 - A plan whose `## Meta` has `Behavior Impact: Yes` or `Unknown` must contain actions + TCs.
 - `Behavior Impact: No` (pure refactor, docs, build config with no user-visible change) → no TC file; say so in the plan.
 - TCs live in the **project**: `docs/tc/<feature>.tc.json`, committed. One file per feature; a later plan updates the same file instead of creating a parallel one.
+- Order (`/plan`): draft the JSON in the plan's `## Test Cases (draft)` → check it from stdin (§5) → ask the open questions (§3) → user approves → write the file and `tc-run.json` as the first execution step → check the file again. Plan mode writes no files.
 - Run artifacts live under `.cc-audits/<plan-slug>/` (not committed): `tc-check.json`, `tc-run.json`, `tc-results.jsonl`, `obs/<tc-id>/<run_id>/`, `api-sessions/`.
 
 ---
@@ -96,13 +98,15 @@ JSON (Node reads it with no dependency). The plan body shows a TC summary table 
 | `level` | `functional` · `contract` · `integration` |
 | `surface` | `ui-web` (e2e-tester runs it) · `api` · `cli` |
 | `steps[].goal` | one user intent per step |
-| `steps[].done_when.expect` | one sentence: what the screen looks like when the step is done. Required |
+| `steps[].done_when.expect` | one sentence: what the screen looks like when the step is done. Required. For `surface: api` / `cli`, the sentence says the response or exit came back ("a response status comes back") — the facts to check go in `expected` |
 | `steps[].input_refs` | names of inputs; the values come from the run add-on file (`tc-run.json`), never from the TC |
 | `expected[].text` | one fact, non-empty |
 | `expected[].observe.channel` | `dom` · `ax-node` · `api` · `db` · `log` · `artifact` · `env` · `unknown` |
 | `expected[].observe.key` | what to read: a URL part, selector, endpoint + status, log key, file path |
 | `expected[].observe.question_id` | optional standard question (§4) for screen judgments that code cannot decide |
 | `basis` | `{ kind: requirement | source-observation | proposal, refs: [...] }` |
+| `expected[].basis` | optional, same shape — when one line rests on a different source than the TC (e.g. one proposed value in an otherwise required flow). `proposal` ⇒ the TC is `needs-decision` |
+| `open_questions[]` | `{ id: "OQ.<feature>.<name>", question, default, affects: [TC ids], answer?, decided_at? }`. While `answer` is missing, every TC in `affects` stays `needs-decision`; an answer needs `decided_at` and a `kind: decision` source |
 | `readiness` | `ready` · `needs-decision`. `proposal` ⇒ `needs-decision`. `ready` means the TC text is ready, **not** that the feature passes |
 | `fixture` | optional name of a data/account bundle defined in `tc-run.json` |
 
@@ -125,6 +129,7 @@ JSON (Node reads it with no dependency). The plan body shows a TC summary table 
 - Happy path, rejection, error, boundary, cancel, retry → separate TCs, and only where the contract actually has that behavior.
 - Login or existing data needed → say so in `preconditions` and name a `fixture`.
 - Never invent numbers or expected values to make a TC `ready`; missing facts → `needs-decision` + an `open_questions` entry.
+- Before ExitPlanMode, ask each open question with AskUserQuestion (`default` first, marked recommended). An answer goes into the draft (`answer`, `decided_at`, a `kind: decision` source) and makes the affected TCs `ready`; a skipped question leaves them `needs-decision`, and e2e reports them `skip: needs-decision`.
 
 ---
 
@@ -147,8 +152,16 @@ TC values never enter a question sentence: for `Q.item_added`, the item is passe
 ## 5. Authoring checks (run after writing, before asking for approval)
 
 ```bash
+# plan mode — the draft from the plan, no file written
+node ~/.claude/scripts/tc-lint.js - <<'EOF'
+{ ...draft JSON... }
+EOF
+node ~/.claude/scripts/tc-jev-check.js - <<'EOF'      # Jev key set only
+{ ...draft JSON... }
+EOF
+# right after approval — the written file, results kept
 node ~/.claude/scripts/tc-lint.js docs/tc/<feature>.tc.json --json .cc-audits/<plan-slug>/tc-check.json
-node ~/.claude/scripts/tc-jev-check.js docs/tc/<feature>.tc.json --out .cc-audits/<plan-slug>/tc-check.json   # Jev key set only
+node ~/.claude/scripts/tc-jev-check.js docs/tc/<feature>.tc.json --out .cc-audits/<plan-slug>/tc-check.json
 ```
 
 - `tc-lint.js` (code rules) always runs. `tc-jev-check.js` scores each expected result with three Noul questions — `single` (one fact?), `hidden` (needs off-screen data?), `screen` (decidable from the screen alone?) — and does nothing when no Jev key is configured.
@@ -162,7 +175,7 @@ node ~/.claude/scripts/tc-jev-check.js docs/tc/<feature>.tc.json --out .cc-audit
 | May | May not |
 |---|---|
 | Write `.cc-audits/<plan-slug>/tc-run.json`: start path, persona/account, fixture data, input values (secrets as env var names), `skip: <reason>` | Edit `steps` or `expected` text in the TC file |
-| Report a TC as `unmapped` or `skip` with a reason (`api-only`, `external-idp`, `real-input-device`, `server-injection`, `decided-out`) | Weaken or drop an expected result because it is hard to observe |
+| Report a TC as `unmapped` or `skip` with a reason (`needs-decision`, `external-idp`, `real-input-device`, `server-injection`, `decided-out`). `api` TCs are run with `tc-api-run.js`, not skipped | Weaken or drop an expected result because it is hard to observe |
 | Append results to `tc-results.jsonl` | Write results into the TC file |
 | Propose a TC text fix to the user when the sentence itself is wrong | Apply that fix without the user's OK and a recorded reason |
 
@@ -176,5 +189,7 @@ node ~/.claude/scripts/tc-jev-check.js docs/tc/<feature>.tc.json --out .cc-audit
 - [ ] Every expected result is one fact with an `observe.channel`; off-screen facts use `api` / `db` / `log`
 - [ ] Success and failure flows are separate TCs; no subjective/visual sentences
 - [ ] No URLs, results, thresholds or secrets in the TC file
-- [ ] Authoring checks ran; warnings fixed or kept with a reason in the plan
+- [ ] Authoring checks ran on the draft (stdin); warnings fixed or kept with a reason in the plan
+- [ ] Every open question was asked before approval; answers recorded, skipped ones left `needs-decision`
 - [ ] The plan shows the TC summary table; the user's approval freezes the TCs
+- [ ] Right after approval the file and `tc-run.json` were written and checked again

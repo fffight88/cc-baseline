@@ -27,8 +27,8 @@ The five agents form a **sequence**, not a flat fan-out, whenever a plan involve
 
 ```
 /plan  (## Meta: Security Impact / Code Quality Impact / UI Impact / Behavior Impact)
-   └─ [Behavior Impact: Yes/Unknown] actions + TCs → docs/tc/<feature>.tc.json
-                                     → tc-lint.js (+ tc-jev-check.js) → ## Test Cases → approval freezes TCs
+   └─ [Behavior Impact: Yes/Unknown] actions + TCs as ## Test Cases (draft) → tc-lint.js - (+ tc-jev-check.js -)
+                                     → open questions asked → approval freezes TCs → docs/tc/<feature>.tc.json + tc-run.json
    │
    ▼
 DIRECTION  (greenfield only — skipped whenever a design profile or design system exists)
@@ -135,7 +135,7 @@ report.html                     # merged audit HTML (security + code-review)
 ## ✅ Checklist (orchestrator, per UI-bearing plan)
 
 - [ ] `UI Impact` present in plan `## Meta`; if Yes/Unknown, UI portion delegated to publisher
-- [ ] `Behavior Impact` present; if Yes/Unknown, `docs/tc/<feature>.tc.json` + `## Test Cases` were written at plan time and the TC file is unchanged by the e2e run
+- [ ] `Behavior Impact` present; if Yes/Unknown, the TC draft was in the plan, `docs/tc/<feature>.tc.json` was written right after approval, and the TC file is unchanged by the e2e run
 - [ ] Greenfield checked **before** publisher's first call — if no profile/design system/screens exist, design-director ran first and seeded the direction (§2); otherwise it was correctly skipped
 - [ ] publisher finished (self-fix loop closed) **before** invoking the audit gates
 - [ ] security-auditor + code-reviewer called in parallel on the produced code (publisher output included)

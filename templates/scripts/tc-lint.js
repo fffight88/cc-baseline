@@ -6,6 +6,7 @@
 // sentence or records why a warning stays.
 //
 //   node tc-lint.js <tc file>                 print warnings, exit 0
+//   node tc-lint.js - < draft.json            read the TC draft from stdin (plan mode)
 //   node tc-lint.js <tc file> --strict        exit 1 when there is any warning
 //   node tc-lint.js <tc file> --json <out>    also write the `lint` block of
 //                                             tc-check.json (other blocks kept)
@@ -277,7 +278,9 @@ function main(argv) {
 
   let raw, doc;
   try {
-    raw = fs.readFileSync(file, 'utf8');
+    // `-` reads the TC draft from stdin, so /plan can check it in plan mode
+    // before any file exists.
+    raw = fs.readFileSync(file === '-' ? 0 : file, 'utf8');
     doc = JSON.parse(raw);
   } catch (e) {
     console.error(`tc-lint: cannot read ${file}: ${e.message}`);

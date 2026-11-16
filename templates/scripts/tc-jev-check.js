@@ -10,6 +10,7 @@
 // Thresholds are uncalibrated starting values, so it warns only.
 //
 //   node tc-jev-check.js <tc file> [--out <tc-check.json>] [--strict]
+//   node tc-jev-check.js - < draft.json    read the TC draft from stdin (plan mode)
 //
 // No Jev key → no request, records `jev: unconfigured`, exit 0.
 // Misconfiguration (alias model, key file not 600, non-https URL) → exit 2.
@@ -147,7 +148,7 @@ async function main(argv) {
 
   let raw, doc;
   try {
-    raw = fs.readFileSync(file, 'utf8');
+    raw = fs.readFileSync(file === '-' ? 0 : file, 'utf8');
     doc = JSON.parse(raw);
   } catch (e) {
     console.error(`tc-jev-check: cannot read ${file}: ${e.message}`);
