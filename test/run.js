@@ -1980,27 +1980,139 @@ t('tc-jev-judge: --label code:FAIL stores a labeled sample but never counts as a
 t('tc-jev-judge: calibrate refuses with too few samples, proposes otherwise, applies only on request', () => {
   const { calibrate, applyCalibration } = require(TC_JEV_JUDGE);
   let n = 0;
-  const mk = (holds, label, source = 'code', extra = {}) => ({ request_sha256: String(++n).padStart(64, '0'), question: 'Q.holds@1', model: 'jev-1.14.0', input_mode: 'text', scores: { holds, observable: 0.9 }, label, label_source: source, ...extra });
+  const sha = i => require('crypto').createHash('sha256').update(`s${i}`).digest('hex');
+  const mk = (holds, label, source = 'code', extra = {}) => ({ request_sha256: sha(++n), question: 'Q.holds@1', model: 'jev-1.14.0', input_mode: 'text', scores: { holds, observable: 0.9 }, label, label_source: source, ...extra });
   const few = [mk(0.95, 'PASS'), mk(0.05, 'FAIL')];
   assert.equal(calibrate(few, { minSamples: 30 })[0].status, 'insufficient');
   assert.deepEqual(calibrate([mk(0.9, null, null)], { minSamples: 30 }), [], 'unlabeled groups produce no report');
   const many = [];
-  for (let i = 0; i < 20; i++) many.push(mk(0.92 + (i % 5) / 100, 'PASS'));
-  for (let i = 0; i < 20; i++) many.push(mk(0.02 + (i % 5) / 100, 'FAIL'));
+  for (let i = 0; i < 30; i++) many.push(mk(0.92 + (i % 5) / 100, 'PASS'));
+  for (let i = 0; i < 30; i++) many.push(mk(0.02 + (i % 5) / 100, 'FAIL'));
   for (let i = 0; i < 50; i++) many.push(mk(0.99, 'FAIL', 'llm'));
   for (let i = 0; i < 10; i++) many.push(mk(0.99, 'FAIL', 'code', { injection_suspected: true }));
   for (let i = 0; i < 10; i++) many.push({ ...many[0] });
   const [rep] = calibrate(many, { minSamples: 30 });
   assert.equal(rep.status, 'ok');
-  assert.equal(rep.labeled, 40, 'llm labels, injection-flagged samples and duplicates must not count');
+  assert.equal(rep.labeled, 60, 'llm labels, injection-flagged samples and duplicates must not count');
+  assert.equal(rep.calib.pass + rep.calib.fail + rep.holdout.pass + rep.holdout.fail, 60);
+  assert.ok(rep.holdout.pass >= 2 && rep.holdout.fail >= 2, 'both splits used');
+  assert.equal(rep.holdout_check.false_pass, 0);
   assert.ok(rep.proposed.pass_gte >= 0.9 && rep.proposed.fail_lte <= 0.1);
   const jevDir = jevTmp();
   try {
     applyCalibration(jevDir, rep);
     const c = JSON.parse(fs.readFileSync(path.join(jevDir, 'calibration.json'), 'utf8'));
     assert.equal(c.entries.length, 1);
-    assert.equal(c.entries[0].sample_count, 40);
+    assert.equal(c.entries[0].sample_count, 60);
+    assert.equal(c.entries[0].audit_rate, 0.1);
   } finally { fs.rmSync(jevDir, { recursive: true, force: true }); }
+});
+
+t('tc-jev-judge: a false PASS in the holdout split makes the calibration unsafe', () => {
+  const { calibrate, splitOf } = require(TC_JEV_JUDGE);
+  const crypto = require('crypto');
+  const rows = [];
+  for (let i = 0; rows.length < 120; i++) {
+    const sha = crypto.createHash('sha256').update(`h${i}`).digest('hex');
+    const pass = i % 2 === 0;
+    rows.push({ request_sha256: sha, question: 'Q.holds@1', model: 'jev-1.14.0', input_mode: 'text', label: pass ? 'PASS' : 'FAIL', label_source: 'code',
+      scores: { holds: pass ? 0.97 : 0.03, observable: 0.9 } });
+  }
+  assert.equal(calibrate(rows)[0].status, 'ok');
+  // one FAIL in the holdout scored like a PASS: calib still looks clean, holdout does not
+  const hold = rows.find(r => r.label === 'FAIL' && splitOf(r.request_sha256) === 'holdout');
+  hold.scores.holds = 0.95;
+  const [rep] = calibrate(rows);
+  assert.equal(rep.status, 'unsafe');
+  assert.match(rep.reason, /holdout/);
+  assert.ok(rep.holdout_check.false_pass > 0);
+});
+
+t('tc-jev-judge: Jev decides a calibrated question; a fixed share is marked for re-check', async () => {
+  const { judge, auditSelected } = require(TC_JEV_JUDGE);
+  const srv = await mockJev(body => ({ status: 200, json: nouls(body, { holds: 0.97, observable: 0.9 }) }));
+  const jevDir = jevTmp();
+  try {
+    fs.writeFileSync(path.join(jevDir, 'calibration.json'), JSON.stringify({ entries: [{ question: 'Q.holds@1', model: 'jev-1.14.0', input_mode: 'text',
+      thresholds: { pass_gte: 0.9, fail_lte: 0.1, not_observable_lte: 0.25 }, audit_rate: 0.1, calibrated_at: '2026-01-01T00:00:00.000Z' }] }));
+    const input = obsInput();
+    delete input.question_id;
+    const r = await judge(input, { config: judgeCfg(srv.url), jevDir, sleep: noSleep });
+    assert.equal(r.verdict, 'PASS');
+    assert.equal(r.judged_by, 'jev');
+    assert.equal(typeof r.audit, 'boolean');
+    assert.equal(r.audit, auditSelected(r.sample, 0.1), 'selection is fixed by the request');
+    const again = await judge(input, { config: judgeCfg(srv.url), jevDir, sleep: noSleep });
+    assert.equal(again.audit, r.audit, 'same screen, same selection');
+    const sample = fs.readFileSync(path.join(jevDir, 'samples.jsonl'), 'utf8').trim().split('\n').map(JSON.parse)[0];
+    assert.equal(sample.jev_verdict, 'PASS');
+    assert.match(sample.split, /^(calib|holdout)$/);
+    // about 10% over many digests
+    const crypto = require('crypto');
+    let hit = 0;
+    for (let i = 0; i < 2000; i++) if (auditSelected(crypto.createHash('sha256').update(`a${i}`).digest('hex'), 0.1)) hit++;
+    assert.ok(hit > 140 && hit < 260, `audit share ${hit}/2000`);
+  } finally { await srv.close(); fs.rmSync(jevDir, { recursive: true, force: true }); }
+});
+
+t('tc-jev-judge: two disagreeing re-checks revoke the calibration; the question goes back to the LLM', async () => {
+  const { judge, audit, bank, label } = require(TC_JEV_JUDGE);
+  let holds = 0.97;
+  const srv = await mockJev(body => ({ status: 200, json: nouls(body, { holds, observable: 0.9 }) }));
+  const jevDir = jevTmp();
+  try {
+    fs.writeFileSync(path.join(jevDir, 'calibration.json'), JSON.stringify({ entries: [{ question: 'Q.holds@1', model: 'jev-1.14.0', input_mode: 'text',
+      thresholds: { pass_gte: 0.9, fail_lte: 0.1, not_observable_lte: 0.25 }, audit_rate: 0.1, calibrated_at: '2026-01-01T00:00:00.000Z' }] }));
+    const ids = [];
+    for (let i = 0; i < 3; i++) {
+      const input = obsInput({ expected: `line ${i}` });
+      ids.push((await judge(input, { config: judgeCfg(srv.url), jevDir, sleep: noSleep })).sample);
+    }
+    assert.equal(audit(jevDir, { sample: ids[0], llm: 'PASS' }).agree, true);
+    const first = audit(jevDir, { sample: ids[1], llm: 'FAIL' });
+    assert.equal(first.agree, false);
+    assert.equal(first.revoked, false, 'one disagreement keeps it');
+    const second = audit(jevDir, { sample: ids[2], llm: 'FAIL' });
+    assert.equal(second.revoked, true);
+    const c = JSON.parse(fs.readFileSync(path.join(jevDir, 'calibration.json'), 'utf8'));
+    assert.equal(c.entries.length, 0);
+    assert.equal(c.revoked[0].question, 'Q.holds@1');
+    assert.match(c.revoked[0].reason, /2 of the last 3/);
+    const after = await judge(obsInput({ expected: 'line 9' }), { config: judgeCfg(srv.url), jevDir, sleep: noSleep });
+    assert.equal(after.verdict, 'REVIEW');
+    assert.equal(after.judged_by, null);
+    const b = bank(jevDir);
+    assert.equal(b.review.length, 2, 'both disagreements wait for review');
+    assert.equal(b.groups[0].calibration, 'revoked');
+    label(jevDir, { sample: ids[1], value: 'FAIL' });
+    assert.equal(bank(jevDir).review.length, 1, 'a human label clears it from the queue');
+    assert.throws(() => audit(jevDir, { sample: 'f'.repeat(64), llm: 'PASS' }), /no Jev-decided sample/);
+    assert.throws(() => audit(jevDir, { sample: ids[0], llm: 'MAYBE' }), /PASS or FAIL/);
+  } finally { await srv.close(); fs.rmSync(jevDir, { recursive: true, force: true }); }
+});
+
+t('tc-jev-judge bank --export: private copy, refused inside a git work tree unless ignored', () => {
+  const { exportBank } = require(TC_JEV_JUDGE);
+  const { spawnSync } = require('child_process');
+  const jevDir = jevTmp();
+  const tmp = jevTmp();
+  try {
+    fs.writeFileSync(path.join(jevDir, 'samples.jsonl'), '{"request_sha256":"x"}\n');
+    fs.mkdirSync(path.join(jevDir, 'requests'));
+    fs.writeFileSync(path.join(jevDir, 'requests', `${'a'.repeat(64)}.json`), '{}');
+    const out = path.join(tmp, 'bank');
+    exportBank(jevDir, out);
+    assert.equal(fs.statSync(out).mode & 0o777, 0o700);
+    assert.equal(fs.statSync(path.join(out, 'samples.jsonl')).mode & 0o777, 0o600);
+    assert.ok(fs.existsSync(path.join(out, 'requests', `${'a'.repeat(64)}.json`)));
+    assert.throws(() => exportBank(jevDir, out), /not empty/);
+    const repo = path.join(tmp, 'repo');
+    fs.mkdirSync(repo);
+    spawnSync('git', ['init', '-q', repo]);
+    assert.throws(() => exportBank(jevDir, path.join(repo, 'bank')), /git work tree/);
+    fs.writeFileSync(path.join(repo, '.gitignore'), 'private-bank/\n');
+    exportBank(jevDir, path.join(repo, 'private-bank'));
+  } finally { fs.rmSync(jevDir, { recursive: true, force: true }); fs.rmSync(tmp, { recursive: true, force: true }); }
 });
 
 t('tc-jev-judge: record appends one line per TC with the TC digest', () => {

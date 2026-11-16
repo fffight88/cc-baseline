@@ -15,6 +15,17 @@
 //       re-asks stored labeled requests with another model version and compares, per question.
 //   node tc-jev-judge.js record --results <…/tc-results.jsonl> --tc-file <tc file> --entry <entry.json>
 //       validates and appends one TC result line (with the TC digest).
+//   node tc-jev-judge.js audit --sample <id> --llm PASS|FAIL
+//       records the LLM re-check of a Jev verdict marked `audit: true`; two
+//       disagreements in the last 20 re-checks revoke that calibration entry.
+//   node tc-jev-judge.js label --sample <id> --label human:PASS|human:FAIL
+//       stores a person's answer for a sample (review queue).
+//   node tc-jev-judge.js bank [--export <dir>]
+//       the sample bank per question × model: counts per split, review queue,
+//       re-check record, calibration state. --export copies it to a private dir.
+//
+// Samples are split by request digest — 70% `calib` (thresholds are proposed
+// from these) and 30% `holdout` (a proposal must also hold there).
 //
 // Jev decides only PASS / FAIL, and only for a question × model × input mode
 // with an approved calibration entry. Everything else — uncalibrated,
@@ -50,6 +61,10 @@ const VERDICTS = ['PASS', 'FAIL', 'REVIEW', 'NOT_OBSERVABLE'];
 const JUDGES = ['code', 'jev', 'llm', 'human'];
 const SHA_RE = /^[0-9a-f]{64}$/;
 const RUN_ID_RE = /^[0-9A-Za-z][0-9A-Za-z._-]{0,39}$/;
+const HOLDOUT_PERCENT = 30;
+const DEFAULT_AUDIT_RATE = 0.1;
+const REVOKE_WINDOW = 20;
+const REVOKE_DISAGREEMENTS = 2;
 
 // Screen text that tries to steer the judge. Matching it never blocks the run;
 // it only keeps the verdict away from Jev.
@@ -68,6 +83,16 @@ function jevDirDefault() {
 }
 
 function sha256(s) { return crypto.createHash('sha256').update(s).digest('hex'); }
+
+// Fixed per request: the same screen always lands in the same split.
+function splitOf(requestSha) {
+  return parseInt(String(requestSha).slice(0, 4), 16) % 100 < HOLDOUT_PERCENT ? 'holdout' : 'calib';
+}
+
+// Re-check selection, also fixed per request (bytes 4..8, independent of the split).
+function auditSelected(requestSha, rate) {
+  return parseInt(String(requestSha).slice(4, 8), 16) % 100 < Math.round(rate * 100);
+}
 
 // Key-order independent JSON, so the same TC always has the same digest.
 function canonical(v) {
@@ -171,11 +196,21 @@ function buildRequest(input, { env = process.env } = {}) {
   };
 }
 
-function readCalibration(jevDir) {
+function readCalibrationFile(jevDir) {
   try {
     const c = JSON.parse(fs.readFileSync(path.join(jevDir, 'calibration.json'), 'utf8'));
-    return Array.isArray(c.entries) ? c.entries : [];
-  } catch { return []; }
+    return { entries: Array.isArray(c.entries) ? c.entries : [], revoked: Array.isArray(c.revoked) ? c.revoked : [] };
+  } catch { return { entries: [], revoked: [] }; }
+}
+
+function readCalibration(jevDir) { return readCalibrationFile(jevDir).entries; }
+
+function writeCalibrationFile(jevDir, c) {
+  ensurePrivateDir(jevDir);
+  const file = path.join(jevDir, 'calibration.json');
+  const tmp = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify({ entries: c.entries, revoked: c.revoked }, null, 2) + '\n', { mode: 0o600 });
+  fs.renameSync(tmp, file);
 }
 
 function decide(scores, th) {
@@ -194,7 +229,7 @@ function appendSample(jevDir, body, sample) {
   const raw = JSON.stringify(body);
   const requestSha = sha256(raw);
   fs.writeFileSync(path.join(jevDir, 'requests', `${requestSha}.json`), raw, { mode: 0o600 });
-  const row = { request_sha256: requestSha, ...sample };
+  const row = { request_sha256: requestSha, split: splitOf(requestSha), ...sample };
   fs.appendFileSync(path.join(jevDir, 'samples.jsonl'), JSON.stringify(row) + '\n', { mode: 0o600 });
   return requestSha;
 }
@@ -215,10 +250,14 @@ async function judge(input, { config = loadConfig(), jevDir = jevDirDefault(), s
 
   const answers = r.response.answers || {};
   const scores = { holds: noulOf(answers, 'holds'), observable: noulOf(answers, 'observable') };
+  const cal = readCalibration(jevDir).find(e => e.question === question && e.model === config.model && e.input_mode === INPUT_MODE);
+  const raw = decide(scores, cal ? { ...DEFAULT_THRESHOLDS, ...cal.thresholds } : DEFAULT_THRESHOLDS);
+  const jevDecides = !label && !injection && cal && (raw === 'PASS' || raw === 'FAIL');
   ensurePrivateDir(jevDir);
   const sampleId = appendSample(jevDir, body, {
     question, model: config.model, input_mode: INPUT_MODE, scores,
     label: label ? label.value : null, label_source: label ? label.source : null,
+    jev_verdict: jevDecides ? raw : null,
     injection_suspected: injection,
     tc: input.tc, index: input.index, project: input.project || null, plan: input.plan || null,
     run_at: new Date().toISOString(),
@@ -227,13 +266,13 @@ async function judge(input, { config = loadConfig(), jevDir = jevDirDefault(), s
   const result = { ...base, status: 'ok', question, model: config.model, input_mode: INPUT_MODE, scores, sample: sampleId, usage, ms: r.ms };
   if (label) return result;
 
-  const cal = readCalibration(jevDir).find(e => e.question === question && e.model === config.model && e.input_mode === INPUT_MODE);
-  const raw = decide(scores, cal ? { ...DEFAULT_THRESHOLDS, ...cal.thresholds } : DEFAULT_THRESHOLDS);
   const toLlm = reason => ({ ...result, verdict: 'REVIEW', capped: true, shadow: raw, reason });
   if (injection) return toLlm('instruction-like text on the screen — LLM judges, Jev kept as shadow');
   if (!cal) return toLlm('uncalibrated — LLM judges, Jev kept as shadow');
   if (raw === 'NOT_OBSERVABLE') return toLlm('observability is not calibrated — LLM judges, Jev kept as shadow');
-  return { ...result, verdict: raw, capped: false, judged_by: raw === 'REVIEW' ? null : 'jev' };
+  if (!jevDecides) return { ...result, verdict: raw, capped: false, judged_by: null };
+  const rate = typeof cal.audit_rate === 'number' ? cal.audit_rate : DEFAULT_AUDIT_RATE;
+  return { ...result, verdict: raw, capped: false, judged_by: 'jev', audit: auditSelected(sampleId, rate) };
 }
 
 function readSamples(jevDir) {
@@ -252,7 +291,8 @@ function dedupe(samples) {
   return [...byRequest.values()];
 }
 
-// Proposes thresholds per question × model × input mode from code/human labels.
+// Proposes thresholds per question × model × input mode from the `calib`
+// split of code/human labels, then checks them on the `holdout` split.
 // Proposals never go looser than the defaults; looser values need an explicit
 // human choice.
 function calibrate(samples, { minSamples = 30, target = 0.02 } = {}) {
@@ -264,19 +304,27 @@ function calibrate(samples, { minSamples = 30, target = 0.02 } = {}) {
   }
   const reports = [];
   for (const g of groups.values()) {
-    const pass = g.rows.filter(s => s.label === 'PASS');
-    const fail = g.rows.filter(s => s.label === 'FAIL');
-    const rep = { question: g.question, model: g.model, input_mode: g.input_mode, labeled: g.rows.length, pass: pass.length, fail: fail.length };
-    if (g.rows.length < minSamples || pass.length < 5 || fail.length < 5) {
-      reports.push({ ...rep, status: 'insufficient', need: `>= ${minSamples} code/human labels with >= 5 PASS and >= 5 FAIL` });
+    const split = name => g.rows.filter(s => splitOf(s.request_sha256) === name);
+    const calib = split('calib');
+    const hold = split('holdout');
+    const by = (rows, l) => rows.filter(s => s.label === l);
+    const pass = by(calib, 'PASS');
+    const fail = by(calib, 'FAIL');
+    const rep = {
+      question: g.question, model: g.model, input_mode: g.input_mode, labeled: g.rows.length,
+      calib: { pass: pass.length, fail: fail.length }, holdout: { pass: by(hold, 'PASS').length, fail: by(hold, 'FAIL').length },
+      projects: new Set(g.rows.map(s => s.project).filter(Boolean)).size,
+    };
+    if (calib.length < minSamples || pass.length < 5 || fail.length < 5 || rep.holdout.pass < 2 || rep.holdout.fail < 2) {
+      reports.push({ ...rep, status: 'insufficient', need: `calib >= ${minSamples} labels with >= 5 PASS and >= 5 FAIL, holdout >= 2 PASS and >= 2 FAIL` });
       continue;
     }
-    const falsePass = p => fail.filter(s => s.scores.holds >= p).length / fail.length;
-    const falseFail = f => pass.filter(s => s.scores.holds <= f).length / pass.length;
-    const passGte = [0.7, 0.8, 0.9, 0.95, 0.98].find(p => falsePass(p) <= target);
-    const failLte = [0.3, 0.2, 0.1, 0.05, 0.02].find(f => falseFail(f) <= target);
+    const falsePass = (rows, p) => { const f = by(rows, 'FAIL'); return f.filter(s => s.scores.holds >= p).length / f.length; };
+    const falseFail = (rows, f) => { const ps = by(rows, 'PASS'); return ps.filter(s => s.scores.holds <= f).length / ps.length; };
+    const passGte = [0.7, 0.8, 0.9, 0.95, 0.98].find(p => falsePass(calib, p) <= target);
+    const failLte = [0.3, 0.2, 0.1, 0.05, 0.02].find(f => falseFail(calib, f) <= target);
     if (passGte === undefined || failLte === undefined) {
-      reports.push({ ...rep, status: 'unsafe', reason: `no threshold keeps false PASS / false FAIL <= ${target}` });
+      reports.push({ ...rep, status: 'unsafe', reason: `no threshold keeps false PASS / false FAIL <= ${target} on calib` });
       continue;
     }
     const proposed = {
@@ -284,28 +332,138 @@ function calibrate(samples, { minSamples = 30, target = 0.02 } = {}) {
       fail_lte: Math.min(failLte, DEFAULT_THRESHOLDS.fail_lte),
       not_observable_lte: DEFAULT_THRESHOLDS.not_observable_lte,
     };
-    reports.push({
-      ...rep, status: 'ok', proposed,
-      at_proposed: {
-        false_pass: falsePass(proposed.pass_gte),
-        false_fail: falseFail(proposed.fail_lte),
-        decided: g.rows.filter(s => s.scores.holds >= proposed.pass_gte || s.scores.holds <= proposed.fail_lte).length / g.rows.length,
-      },
-    });
+    const decided = rows => rows.filter(s => s.scores.holds >= proposed.pass_gte || s.scores.holds <= proposed.fail_lte).length / rows.length;
+    const atCalib = { false_pass: falsePass(calib, proposed.pass_gte), false_fail: falseFail(calib, proposed.fail_lte), decided: decided(calib) };
+    const atHold = { false_pass: falsePass(hold, proposed.pass_gte), false_fail: falseFail(hold, proposed.fail_lte), decided: decided(hold) };
+    if (atHold.false_pass > target || atHold.false_fail > target) {
+      reports.push({ ...rep, status: 'unsafe', proposed, at_proposed: atCalib, holdout_check: atHold, reason: `holdout false PASS / false FAIL above ${target}` });
+      continue;
+    }
+    reports.push({ ...rep, status: 'ok', proposed, at_proposed: atCalib, holdout_check: atHold });
   }
   return reports;
 }
 
 function applyCalibration(jevDir, rep) {
   if (rep.status !== 'ok') throw new Error(`cannot apply a ${rep.status} calibration`);
-  ensurePrivateDir(jevDir);
-  const file = path.join(jevDir, 'calibration.json');
-  const entries = readCalibration(jevDir).filter(e => !(e.question === rep.question && e.model === rep.model && e.input_mode === rep.input_mode));
-  entries.push({
+  const c = readCalibrationFile(jevDir);
+  c.entries = c.entries.filter(e => !(e.question === rep.question && e.model === rep.model && e.input_mode === rep.input_mode));
+  c.entries.push({
     question: rep.question, model: rep.model, input_mode: rep.input_mode,
-    thresholds: rep.proposed, sample_count: rep.labeled, calibrated_at: new Date().toISOString(),
+    thresholds: rep.proposed, audit_rate: DEFAULT_AUDIT_RATE, sample_count: rep.labeled, calibrated_at: new Date().toISOString(),
   });
-  fs.writeFileSync(file, JSON.stringify({ entries }, null, 2) + '\n', { mode: 0o600 });
+  writeCalibrationFile(jevDir, c);
+}
+
+function readJsonl(file) {
+  try {
+    return fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+  } catch { return []; }
+}
+
+function latestSample(jevDir, id) {
+  if (!SHA_RE.test(String(id))) throw new Error('--sample must be a sample id (64 hex chars) from a judge line');
+  const rows = readSamples(jevDir).filter(s => s.request_sha256 === id);
+  if (rows.length === 0) throw new Error(`no sample ${id}`);
+  return rows[rows.length - 1];
+}
+
+// Records the LLM re-check of a Jev verdict and revokes the calibration entry
+// when the re-checks since it was applied disagree too often.
+function audit(jevDir, { sample, llm, now = new Date() }) {
+  if (!['PASS', 'FAIL'].includes(llm)) throw new Error('--llm must be PASS or FAIL');
+  const rows = readSamples(jevDir).filter(s => s.request_sha256 === sample && s.jev_verdict);
+  if (!SHA_RE.test(String(sample)) || rows.length === 0) throw new Error(`no Jev-decided sample ${sample}`);
+  const s = rows[rows.length - 1];
+  const line = { request_sha256: sample, question: s.question, model: s.model, input_mode: s.input_mode,
+    tc: s.tc, index: s.index, project: s.project, jev: s.jev_verdict, llm, agree: s.jev_verdict === llm, at: now.toISOString() };
+  ensurePrivateDir(jevDir);
+  fs.appendFileSync(path.join(jevDir, 'audits.jsonl'), JSON.stringify(line) + '\n', { mode: 0o600 });
+
+  const c = readCalibrationFile(jevDir);
+  const entry = c.entries.find(e => e.question === s.question && e.model === s.model && e.input_mode === s.input_mode);
+  let revoked = false;
+  if (entry) {
+    const recent = readJsonl(path.join(jevDir, 'audits.jsonl'))
+      .filter(a => a.question === entry.question && a.model === entry.model && a.input_mode === entry.input_mode && a.at >= entry.calibrated_at)
+      .slice(-REVOKE_WINDOW);
+    const disagreements = recent.filter(a => !a.agree).length;
+    if (disagreements >= REVOKE_DISAGREEMENTS) {
+      c.entries = c.entries.filter(e => e !== entry);
+      c.revoked.push({ ...entry, revoked_at: now.toISOString(),
+        reason: `${disagreements} of the last ${recent.length} re-checks disagreed`, disagreements, window: recent.length });
+      writeCalibrationFile(jevDir, c);
+      revoked = true;
+    }
+  }
+  return { ...line, revoked };
+}
+
+// A person's answer for a stored sample; it counts from the next calibrate on.
+function label(jevDir, { sample, value, now = new Date() }) {
+  const s = latestSample(jevDir, sample);
+  const row = { request_sha256: s.request_sha256, split: splitOf(s.request_sha256), question: s.question, model: s.model,
+    input_mode: s.input_mode, scores: s.scores, label: value, label_source: 'human', jev_verdict: null,
+    injection_suspected: s.injection_suspected, tc: s.tc, index: s.index, project: s.project, plan: s.plan, run_at: now.toISOString() };
+  fs.appendFileSync(path.join(jevDir, 'samples.jsonl'), JSON.stringify(row) + '\n', { mode: 0o600 });
+  return row;
+}
+
+function bank(jevDir) {
+  const samples = readSamples(jevDir);
+  const audits = readJsonl(path.join(jevDir, 'audits.jsonl'));
+  const cal = readCalibrationFile(jevDir);
+  const humanLabeled = new Set(samples.filter(s => s.label_source === 'human').map(s => `${s.request_sha256}|${s.model}`));
+  const review = audits.filter(a => !a.agree && !humanLabeled.has(`${a.request_sha256}|${a.model}`))
+    .map(a => ({ sample: a.request_sha256, question: a.question, model: a.model, tc: a.tc, index: a.index, project: a.project, jev: a.jev, llm: a.llm, at: a.at }));
+  const keys = new Map();
+  const keyOf = x => `${x.question}|${x.model}|${x.input_mode}`;
+  for (const x of [...samples, ...audits, ...cal.entries, ...cal.revoked]) if (x.question && x.model) keys.set(keyOf(x), { question: x.question, model: x.model, input_mode: x.input_mode || INPUT_MODE });
+  const groups = [];
+  for (const [k, g] of keys) {
+    const labeled = dedupe(samples.filter(s => keyOf(s) === k && isLabeled(s)));
+    const count = (split, l) => labeled.filter(s => splitOf(s.request_sha256) === split && s.label === l).length;
+    const entry = cal.entries.find(e => keyOf(e) === k);
+    const since = audits.filter(a => keyOf(a) === k && (!entry || a.at >= entry.calibrated_at)).slice(-REVOKE_WINDOW);
+    groups.push({
+      ...g,
+      calib: { pass: count('calib', 'PASS'), fail: count('calib', 'FAIL') },
+      holdout: { pass: count('holdout', 'PASS'), fail: count('holdout', 'FAIL') },
+      unlabeled: samples.filter(s => keyOf(s) === k && !s.label).length,
+      projects: new Set(labeled.map(s => s.project).filter(Boolean)).size,
+      review: review.filter(r => keyOf({ ...r, input_mode: g.input_mode }) === k).length,
+      rechecks: { recent: since.length, disagreements: since.filter(a => !a.agree).length },
+      calibration: entry ? 'applied' : cal.revoked.some(e => keyOf(e) === k) ? 'revoked' : 'none',
+    });
+  }
+  return { groups, review };
+}
+
+// Copies the bank to a private folder. Refused inside a git work tree unless
+// git ignores the folder, so screen text never lands in a repository.
+function exportBank(jevDir, dest, { git = spawnGit } = {}) {
+  const target = path.resolve(dest);
+  if (fs.existsSync(target) && fs.readdirSync(target).length > 0) throw new Error(`${target} is not empty`);
+  const parent = path.dirname(target);
+  if (!fs.existsSync(parent)) throw new Error(`${parent} does not exist`);
+  if (git(['-C', parent, 'rev-parse', '--is-inside-work-tree']).status === 0
+      // trailing slash: the folder may not exist yet, and "dir/" ignore patterns only match directories
+      && git(['-C', parent, 'check-ignore', '-q', `${target}/`]).status !== 0) {
+    throw new Error(`${target} is inside a git work tree and not ignored — the bank holds screen text, export it outside any repository`);
+  }
+  ensurePrivateDir(target);
+  const copy = (from, to) => { if (fs.existsSync(from)) fs.copyFileSync(from, to); if (fs.existsSync(to)) fs.chmodSync(to, 0o600); };
+  for (const f of ['samples.jsonl', 'audits.jsonl', 'calibration.json']) copy(path.join(jevDir, f), path.join(target, f));
+  const req = path.join(jevDir, 'requests');
+  if (fs.existsSync(req)) {
+    ensurePrivateDir(path.join(target, 'requests'));
+    for (const f of fs.readdirSync(req)) if (/^[0-9a-f]{64}\.json$/.test(f)) copy(path.join(req, f), path.join(target, 'requests', f));
+  }
+  return { exported: target, samples: readSamples(jevDir).length };
+}
+
+function spawnGit(args) {
+  return require('child_process').spawnSync('git', args, { stdio: 'ignore' });
 }
 
 // Re-asks stored, labeled requests with `config.model` and compares, per
@@ -374,7 +532,10 @@ function record({ results, tcFile, entry }) {
 const USAGE = 'usage: tc-jev-judge.js judge <obs.json> [--label code|human:PASS|FAIL]\n' +
   '       tc-jev-judge.js calibrate [--min N] [--apply --question <Q.id@v> --model <jev-X.Y.Z>]\n' +
   '       tc-jev-judge.js replay --model <jev-X.Y.Z>\n' +
-  '       tc-jev-judge.js record --results <tc-results.jsonl> --tc-file <tc file> --entry <entry.json>';
+  '       tc-jev-judge.js record --results <tc-results.jsonl> --tc-file <tc file> --entry <entry.json>\n' +
+  '       tc-jev-judge.js audit --sample <id> --llm PASS|FAIL\n' +
+  '       tc-jev-judge.js label --sample <id> --label human:PASS|human:FAIL\n' +
+  '       tc-jev-judge.js bank [--export <dir>]';
 
 async function main(argv) {
   const [cmd, ...rest] = argv.slice(2);
@@ -383,6 +544,9 @@ async function main(argv) {
     calibrate: { values: ['--min', '--question', '--model'], flags: ['--apply'] },
     replay: { values: ['--model'] },
     record: { values: ['--results', '--tc-file', '--entry'] },
+    audit: { values: ['--sample', '--llm'] },
+    label: { values: ['--sample', '--label'] },
+    bank: { values: ['--export'] },
   }[cmd];
   if (!spec) { console.error(USAGE); return 2; }
   let opts, positional;
@@ -416,6 +580,23 @@ async function main(argv) {
     }
     return 0;
   }
+  if (cmd === 'audit') {
+    if (!opts['--sample'] || !opts['--llm']) { console.error(USAGE); return 2; }
+    console.log(JSON.stringify(audit(jevDirDefault(), { sample: opts['--sample'], llm: opts['--llm'] })));
+    return 0;
+  }
+  if (cmd === 'label') {
+    const [source, value] = String(opts['--label'] || '').split(':');
+    if (!opts['--sample'] || source !== 'human' || !['PASS', 'FAIL'].includes(value)) { console.error('label needs --sample <id> --label human:PASS|human:FAIL'); return 2; }
+    const row = label(jevDirDefault(), { sample: opts['--sample'], value });
+    console.log(`labeled ${row.request_sha256} ${row.label} (human) — counts from the next calibrate`);
+    return 0;
+  }
+  if (cmd === 'bank') {
+    if (opts['--export']) { console.log(JSON.stringify(exportBank(jevDirDefault(), opts['--export']))); return 0; }
+    console.log(JSON.stringify(bank(jevDirDefault()), null, 2));
+    return 0;
+  }
   if (cmd === 'replay') {
     if (!opts['--model']) { console.error(USAGE); return 2; }
     const cand = loadConfig({ env: { ...process.env, CC_BASELINE_JEV_MODEL: opts['--model'] } });
@@ -436,4 +617,7 @@ if (require.main === module) {
   });
 }
 
-module.exports = { normalizeObservation, buildRequest, injectionSuspected, judge, decide, calibrate, applyCalibration, replay, record, STANDARD, DEFAULT_THRESHOLDS };
+module.exports = {
+  normalizeObservation, buildRequest, injectionSuspected, judge, decide, calibrate, applyCalibration, replay, record,
+  audit, label, bank, exportBank, splitOf, auditSelected, STANDARD, DEFAULT_THRESHOLDS,
+};
