@@ -49,6 +49,7 @@ const LABEL_SOURCES = ['code', 'human'];
 const VERDICTS = ['PASS', 'FAIL', 'REVIEW', 'NOT_OBSERVABLE'];
 const JUDGES = ['code', 'jev', 'llm', 'human'];
 const SHA_RE = /^[0-9a-f]{64}$/;
+const RUN_ID_RE = /^[0-9A-Za-z][0-9A-Za-z._-]{0,39}$/;
 
 // Screen text that tries to steer the judge. Matching it never blocks the run;
 // it only keeps the verdict away from Jev.
@@ -346,6 +347,10 @@ function record({ results, tcFile, entry }) {
   const tc = (Array.isArray(doc && doc.test_cases) ? doc.test_cases : []).find(x => x && x.id === entry.tc);
   if (!tc) throw new Error(`${entry.tc} is not in ${tcFile}`);
   if (!Array.isArray(entry.expected) || entry.expected.length === 0) throw new Error('entry.expected must be a non-empty list');
+  // run_id names the obs/<tc>/<run_id>/ folder, so it must be a safe path part.
+  if (entry.run_id !== undefined && !(typeof entry.run_id === 'string' && RUN_ID_RE.test(entry.run_id))) {
+    throw new Error('run_id must look like 20261116T093000Z (letters, digits, . _ -)');
+  }
   const count = Array.isArray(tc.expected) ? tc.expected.length : 0;
   const seen = new Set();
   for (const e of entry.expected) {

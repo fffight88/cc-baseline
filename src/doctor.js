@@ -7,6 +7,7 @@ const { HOME, applyHome, PLAYWRIGHT_MCP_BIN, ASIDE_BIN, resolveTarget } = requir
 const { spawnSync } = require('child_process');
 const manifest = require('./manifest');
 const { harnessIdOf } = require('./merge/settings-hooks');
+const { needsNoSandbox } = require('./merge/mcp-servers');
 const { hasMarkerBlock, stripDuplicatePreamble } = require('./merge/markdown');
 const { checkCmd } = require('./installers/_util');
 
@@ -191,7 +192,7 @@ function checkHooks(claudeDir, target) {
   return ok(label, `${expectedIds.length}/${expectedIds.length} managed hooks registered`);
 }
 
-function checkMcpServers(mcpJsonPath, target) {
+function checkMcpServers(mcpJsonPath, target, env = {}) {
   const isProject = target && target.mode === 'project';
   const label = isProject ? 'MCP servers (./.mcp.json)' : 'MCP servers (~/.claude.json)';
   const fixCmd = isProject
@@ -215,6 +216,12 @@ function checkMcpServers(mcpJsonPath, target) {
   const manualArgs = (mcp['playwright-test-1'] && mcp['playwright-test-1'].args) || [];
   if (manualArgs.includes('--headless')) {
     return warn(label, 'playwright-test-1 is headless, so /open-browser shows no window', fixCmd);
+  }
+  if (needsNoSandbox(env)) {
+    const sandboxed = expected.filter(k => !((mcp[k] && mcp[k].args) || []).includes('--no-sandbox'));
+    if (sandboxed.length > 0) {
+      return warn(label, `running as root on Linux, the browser cannot start without --no-sandbox: ${sandboxed.join(', ')}`, fixCmd);
+    }
   }
   return ok(label, `${expected.length}/${expected.length} playwright-test-* registered`);
 }

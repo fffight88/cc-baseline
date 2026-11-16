@@ -444,12 +444,48 @@ t('B12: doctor warns when playwright-test-1 is still headless', () => {
   const servers = n => Object.fromEntries([1, 2, 3, 4, 5].map(i => [`playwright-test-${i}`, { args: i === 1 && !n ? ['--headless', '--isolated'] : (i === 1 ? ['--isolated'] : ['--headless', '--isolated']) }]));
   try {
     fs.writeFileSync(file, JSON.stringify({ mcpServers: servers(false) }));
-    assert.equal(checkMcpServers(file).status, 'warn');
+    assert.equal(checkMcpServers(file, undefined, { platform: 'darwin' }).status, 'warn');
     fs.writeFileSync(file, JSON.stringify({ mcpServers: servers(true) }));
-    assert.equal(checkMcpServers(file).status, 'ok');
+    assert.equal(checkMcpServers(file, undefined, { platform: 'darwin' }).status, 'ok');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+t('root on Linux: install adds --no-sandbox to playwright-test-*, doctor warns when it is missing', () => {
+  const os = require('os');
+  const { adaptMcpServers } = require(path.join(ROOT, 'src', 'merge', 'mcp-servers'));
+  const { checkMcpServers } = require(path.join(ROOT, 'src', 'doctor'));
+  const tpl = JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', 'mcp-servers.json'), 'utf8'));
+  const root = { platform: 'linux', uid: 0 };
+  const adapted = adaptMcpServers(tpl, root);
+  for (const [k, v] of Object.entries(adapted)) {
+    if (k.startsWith('playwright-test-')) assert.ok(v.args.includes('--no-sandbox'), k);
+  }
+  assert.equal(adaptMcpServers(adapted, root)['playwright-test-2'].args.filter(a => a === '--no-sandbox').length, 1, 'added once');
+  assert.deepEqual(adaptMcpServers(tpl, { platform: 'linux', uid: 1000 }), tpl, 'non-root unchanged');
+  assert.deepEqual(adaptMcpServers(tpl, { platform: 'darwin', uid: 0 }), tpl, 'macOS unchanged');
+  assert.ok(!tpl['playwright-test-1'].args.includes('--no-sandbox'), 'template itself untouched');
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ccb-mcp-'));
+  const file = path.join(dir, 'claude.json');
+  try {
+    fs.writeFileSync(file, JSON.stringify({ mcpServers: tpl }));
+    const w = checkMcpServers(file, undefined, root);
+    assert.equal(w.status, 'warn');
+    assert.match(w.detail || w.message || JSON.stringify(w), /no-sandbox/);
+    fs.writeFileSync(file, JSON.stringify({ mcpServers: adapted }));
+    assert.equal(checkMcpServers(file, undefined, root).status, 'ok');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+t('Linux without Chrome: the Playwright MCP installer prints the browser install hint', () => {
+  const { browserHint } = require(path.join(ROOT, 'src', 'installers', 'playwright-mcp'));
+  assert.match(browserHint({ platform: 'linux', exists: () => false }), /playwright install --with-deps chrome/);
+  assert.equal(browserHint({ platform: 'linux', exists: () => true }), null);
+  assert.equal(browserHint({ platform: 'darwin', exists: () => false }), null);
 });
 
 t('B10: e2e sweep covers transient controls added after load', () => {
@@ -1324,6 +1360,37 @@ t('tc-lint: a well-formed TC file has no warnings', () => {
   assert.deepEqual(lintRules(tcDoc()), []);
 });
 
+t('tc-lint: open_questions — format, known TCs, unanswered question keeps its TCs needs-decision', () => {
+  const tc = 'TC.password-reset.request-success';
+  const q = { id: 'OQ.password-reset.expiry', question: 'How long is the link valid?', default: '24 hours', affects: [tc] };
+  const d = tcDoc();
+  d.test_cases[0].readiness = 'needs-decision';
+  d.open_questions = [q];
+  assert.deepEqual(lintRules(d), [], 'unanswered question + needs-decision TC is fine');
+  d.test_cases[0].readiness = 'ready';
+  assert.deepEqual(lintRules(d), ['open_question']);
+  d.open_questions = [{ ...q, answer: '24 hours', decided_at: '2026-11-16' }];
+  assert.deepEqual(lintRules(d), [], 'answered question lets the TC be ready');
+  d.open_questions = [{ ...q, answer: '24 hours' }];
+  assert.deepEqual(lintRules(d), ['format'], 'answer needs decided_at');
+  d.open_questions = [{ id: 'Q1', question: '', affects: ['TC.password-reset.nope'], extra: 1 }];
+  const rules = lintRules(d);
+  assert.ok(rules.includes('unknown_field'));
+  assert.ok(rules.filter(r => r === 'format').length >= 4, rules.join(','));
+});
+
+t('tc-lint: expected[].basis — allowed, checked, proposal needs a needs-decision TC', () => {
+  const d = tcDoc();
+  d.test_cases[0].expected[0].basis = { kind: 'source-observation', refs: ['SRC.reset-controller'] };
+  assert.deepEqual(lintRules(d), []);
+  d.test_cases[0].expected[0].basis = { kind: 'proposal', refs: [] };
+  assert.deepEqual(lintRules(d), ['basis']);
+  d.test_cases[0].readiness = 'needs-decision';
+  assert.deepEqual(lintRules(d), []);
+  d.test_cases[0].expected[0].basis = { kind: 'guess', refs: ['SRC.missing'] };
+  assert.deepEqual(lintRules(d), ['format', 'format']);
+});
+
 t('tc-lint: format — bad IDs, duplicates and dangling refs', () => {
   const d = tcDoc();
   d.test_cases[0].id = 'TC.other-feature.x';
@@ -1665,6 +1732,29 @@ t('tc-jev-check: scores each expected result with single/hidden/screen and warns
   } finally { await srv.close(); fs.rmSync(tmp, { recursive: true, force: true }); }
 });
 
+t('tc-jev-check: no jev_hidden warning on a line already read from api/db/log (score still kept)', async () => {
+  const srv = await mockJev(body => ({ status: 200, json: nouls(body, { single: 0.95, hidden: 0.9, screen: 0.1 }) }));
+  const tmp = jevTmp();
+  try {
+    const d = tcDoc();
+    d.test_cases[0].expected = [
+      { text: 'The order status in the API response is cancelled', observe: { channel: 'api', key: 'GET /api/orders/<id> → status' } },
+      { text: 'The payment row status is refunded', observe: { channel: 'db', key: 'payments.status' } },
+      { text: 'A mail.reset.sent line is logged', observe: { channel: 'log', key: 'mail.reset.sent' } },
+      { text: 'The order status shows Cancelled', observe: { channel: 'dom', key: '#status' } },
+    ];
+    const file = path.join(tmp, 'x.tc.json');
+    fs.writeFileSync(file, JSON.stringify(d));
+    const out = path.join(tmp, 'tc-check.json');
+    const r = await runNode([TC_JEV_CHECK, file, '--out', out], { PATH: process.env.PATH, HOME: tmp, CC_BASELINE_JEV_KEY: FAKE_KEY, CC_BASELINE_JEV_BASE_URL: srv.url });
+    assert.equal(r.status, 0, r.stderr);
+    const j = JSON.parse(fs.readFileSync(out, 'utf8'));
+    const hidden = j.jev.warnings.filter(w => w.rule === 'jev_hidden').map(w => w.where);
+    assert.deepEqual(hidden, ['TC.password-reset.request-success expected[3]'], 'only the dom line warns');
+    assert.equal(j.jev.results.filter(x => x.scores.hidden === 0.9).length, 4, 'scores recorded for every line');
+  } finally { await srv.close(); fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
 // ──────────────────────────────────────────────────────────────────────────
 // tc-jev-judge.js — runtime judging of expected results (no network: local mock)
 // ──────────────────────────────────────────────────────────────────────────
@@ -1943,6 +2033,10 @@ t('tc-jev-judge: record appends one line per TC with the TC digest', () => {
     assert.throws(bad('PASS'), /non-empty list/);
     record({ results, tcFile, entry: { ...entry, expected: [ok[0]], failed_at_step: 1 } });
     assert.throws(() => record({ results: path.join(tmp, 'other.json'), tcFile, entry }), /tc-results\.jsonl/);
+    assert.equal(record({ results, tcFile, entry: { ...entry, run_id: '20261116T093000Z' } }).run_id, '20261116T093000Z');
+    for (const runId of ['../x', 'a/b', '', 7]) {
+      assert.throws(() => record({ results, tcFile, entry: { ...entry, run_id: runId } }), /run_id/, String(runId));
+    }
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });
 

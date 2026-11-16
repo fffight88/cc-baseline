@@ -44,6 +44,8 @@ const RULES = [
   ['hidden', s => s >= THRESHOLDS.hidden_gte, 'jev_hidden', 'Jev reads this as off-screen data — use an api / db / log channel'],
   ['screen', s => s <= THRESHOLDS.screen_lte, 'jev_screen', 'Jev doubts the screen alone can decide this — do not leave it to a screen judgment'],
 ];
+// A line already read from an off-screen channel needs no jev_hidden warning.
+const OFF_SCREEN_CHANNELS = ['api', 'db', 'log', 'artifact', 'env'];
 const CONCURRENCY = 4;
 
 function writeBlock(out, block) {
@@ -61,7 +63,9 @@ function expectedItems(doc) {
   const items = [];
   for (const tc of Array.isArray(doc.test_cases) ? doc.test_cases : []) {
     for (const [index, exp] of (Array.isArray(tc && tc.expected) ? tc.expected : []).entries()) {
-      if (exp && typeof exp.text === 'string' && exp.text.trim()) items.push({ tc: tc.id, index, text: exp.text });
+      if (exp && typeof exp.text === 'string' && exp.text.trim()) {
+        items.push({ tc: tc.id, index, text: exp.text, channel: exp.observe && exp.observe.channel });
+      }
     }
   }
   return items;
@@ -116,6 +120,7 @@ async function check(doc, config, opts = {}) {
     }
     block.results.push({ where, tc: item.tc, index: item.index, text_sha256: sha256(item.text), scores });
     for (const [k, hit, rule, message] of RULES) {
+      if (rule === 'jev_hidden' && OFF_SCREEN_CHANNELS.includes(item.channel)) continue;
       if (scores[k] !== null && hit(scores[k])) block.warnings.push({ rule, where, score: scores[k], message });
     }
   }

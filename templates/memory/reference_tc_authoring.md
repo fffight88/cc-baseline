@@ -24,7 +24,7 @@ type: reference
 - A plan whose `## Meta` has `Behavior Impact: Yes` or `Unknown` must contain actions + TCs.
 - `Behavior Impact: No` (pure refactor, docs, build config with no user-visible change) → no TC file; say so in the plan.
 - TCs live in the **project**: `docs/tc/<feature>.tc.json`, committed. One file per feature; a later plan updates the same file instead of creating a parallel one.
-- Run artifacts live under `.cc-audits/<plan-slug>/` (not committed): `tc-check.json`, `tc-run.json`, `tc-results.jsonl`, `obs/`.
+- Run artifacts live under `.cc-audits/<plan-slug>/` (not committed): `tc-check.json`, `tc-run.json`, `tc-results.jsonl`, `obs/<tc-id>/<run_id>/`, `api-sessions/`.
 
 ---
 

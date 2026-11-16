@@ -34,4 +34,22 @@ function removeHarnessMcpServers(existing, harnessKeys) {
   return { result, removed, isEmpty: Object.keys(result).length === 0 };
 }
 
-module.exports = { mergeMcpServers, removeHarnessMcpServers };
+// Chromium cannot start its sandbox as root on Linux, so Playwright MCP fails
+// to open a browser there unless it is told --no-sandbox.
+function needsNoSandbox({ platform = process.platform, uid = typeof process.getuid === 'function' ? process.getuid() : null } = {}) {
+  return platform === 'linux' && uid === 0;
+}
+
+function adaptMcpServers(servers, env = {}) {
+  if (!needsNoSandbox(env)) return servers;
+  const result = {};
+  for (const [key, val] of Object.entries(servers)) {
+    const args = Array.isArray(val && val.args) ? val.args : null;
+    result[key] = key.startsWith('playwright-test-') && args && !args.includes('--no-sandbox')
+      ? Object.assign({}, val, { args: [...args, '--no-sandbox'] })
+      : val;
+  }
+  return result;
+}
+
+module.exports = { mergeMcpServers, removeHarnessMcpServers, adaptMcpServers, needsNoSandbox };

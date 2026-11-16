@@ -44,7 +44,11 @@ tc:
   run: { start_path, persona, fixture, data: {<input_ref>: <value or $ENV_NAME>}, secret_env: [ENV_NAME, ...] }
 results: <project_dir>/.cc-audits/<plan-slug>/tc-results.jsonl
 obs_dir: <project_dir>/.cc-audits/<plan-slug>/obs
+run_file: <project_dir>/.cc-audits/<plan-slug>/tc-run.json   # base_url, readable — used by tc-api-run.js
+run_id: <UTC timestamp, e.g. 20261116T093000Z>                 # same for every TC of this run
 ```
+
+For `surface: api` TCs the `tc` block has no browser part: the steps are requests and reads, run with `tc-api-run.js` (see **API, DB and log checks**).
 
 ---
 
@@ -61,7 +65,7 @@ obs_dir: <project_dir>/.cc-audits/<plan-slug>/obs
 - ✅ Write reports in English (manager delivers to user in their language)
 
 ### Must not do
-- ❌ No direct HTTP calls via curl etc. — the only exception is a same-origin `GET`/`HEAD` `fetch()` inside the Aside REPL to read a page's status or a failed request's headers (redacted, see Log Collection Policy). Running `~/.claude/scripts/tc-jev-judge.js` (it calls the Jev API itself) is allowed
+- ❌ No direct HTTP calls via curl etc., and no reading project data files (DB files, logs) with cat/grep — API requests and data reads go through `~/.claude/scripts/tc-api-run.js` only (it enforces the allowed origin and files). Other exceptions: a same-origin `GET`/`HEAD` `fetch()` inside the Aside REPL to read a page's status or a failed request's headers (redacted, see Log Collection Policy), and `~/.claude/scripts/tc-jev-judge.js` (it calls the Jev API itself)
 - ❌ No editing the TC file (`docs/tc/*.tc.json`) and no rewording of TC steps or expected results — report a sentence you believe is wrong in `NOTES` instead
 - ❌ No modifying source code files
 - ❌ No restarting servers
@@ -182,23 +186,43 @@ The TC steps and expected results are frozen — run them exactly as given. Valu
 
 | Layer | When | How | `judged_by` |
 |---|---|---|---|
-| 1 code | `dom` / `ax-node` with a `key` (URL part, selector, text, element state); `log` when `server_log` was given; `api` via a same-origin `GET` `fetch()` | executed assertion, actual value as `observed` | `code` |
-| — | `api` (non-GET) / `db` / `artifact` / `env` you cannot read | `NOT_OBSERVABLE` — never decide it from the screen | `code` |
+| 1 code | `dom` / `ax-node` with a `key` (URL part, selector, text, element state); `api` / `db` / `log` the run file allows (`tc-api-run.js`, below) | executed assertion, actual value as `observed` | `code` |
+| — | `artifact` / `env`, or an `api` / `db` / `log` source the run file does not list | `NOT_OBSERVABLE` — never decide it from the screen | `code` |
 | 2 Jev | remaining screen judgments (`question_id`, or no `key`) | save the observation, run `tc-jev-judge.js judge` (below) | `jev` when it returns PASS / FAIL with `judged_by: "jev"` |
 | 3 LLM | Jev returned `REVIEW` (uncalibrated, not-observable, instruction-like screen text, middle score), `unconfigured` or `error` | your own judgment from the same observation; keep Jev's `shadow` / scores | `llm` |
 
-3. **Observation file** — `<obs_dir>/<tc-id>/<index>.json`, written right after the last step on the screen being judged:
+3. **Observation file** — `<obs_dir>/<tc-id>/<run_id>/<index>.json`, written right after the last step on the screen being judged (`run_id` from the input, so a re-run never overwrites an earlier run):
    ```json
    { "tc": "<tc id>", "index": 1, "expected": "<verbatim text>", "question_id": "<optional>", "item": "<optional {item} value>",
      "observation": { "url": "", "title": "", "last_effect": "<last action → result>", "alerts": ["<visible alert/toast text>"],
                       "loading": false, "ax": "<roles + names + states of the main region>", "text": "<visible text>" },
      "secret_env": ["<env names whose values must be scrubbed>"], "project": "<project dir name>", "plan": "<plan-slug>" }
    ```
-   Then: `node ~/.claude/scripts/tc-jev-judge.js judge <obs file>` → one JSON line (`verdict`, `judged_by`, `capped`, `shadow`, `scores`). If it says `loading`, wait, re-observe once, ask again. The script masks emails, phone/card numbers and tokens before sending; still list every secret input in `secret_env`.
-5. **Record** needs a verdict for every expected result; if a step failed, record what was judged and set `failed_at_step`.
-4. **Calibration samples** — when the manager sets `calibration: true`, for every expected result layer 1 decided, also run `tc-jev-judge.js judge <obs file> --label code:PASS|code:FAIL` on the same screen. This only stores a sample; the code verdict stays the verdict.
-6. **Record** — write `{tc, expected: [{index, verdict, judged_by, observed, jev?}], browser_tool, fallback_reason, failed_at_step?}` to a temp file and run `node ~/.claude/scripts/tc-jev-judge.js record --results <results> --tc-file <tc.file> --entry <temp file>`. One line per TC run.
-7. TC PASS = every expected result `PASS` (or `NOT_OBSERVABLE` the manager accepted) **∧** §0 invariants held **∧** sweep clean. Any `FAIL` → TC FAIL → Log Collection Policy.
+   Then: `node ~/.claude/scripts/tc-jev-judge.js judge <obs file>` → one JSON line (`verdict`, `judged_by`, `capped`, `shadow`, `scores`, `sample`, `audit`). If it says `loading`, wait, re-observe once, ask again. The script masks emails, phone/card numbers and tokens before sending; still list every secret input in `secret_env`.
+4. **Re-check (`audit: true`)** — when Jev decided and the line says `audit: true`, judge the same observation yourself, then run `node ~/.claude/scripts/tc-jev-judge.js audit --sample <sample> --llm PASS|FAIL`. Its line says `agree: true|false`:
+   - agree → keep the Jev verdict (`judged_by: jev`, `audit: "agree"`)
+   - disagree → record **your** verdict (`judged_by: llm`, `jev_disputed: true`); the sample goes to the review queue. Never re-ask Jev to get a different answer
+   Do not re-check verdicts without `audit: true` — that is the double work this step avoids.
+5. **Calibration samples** — when the manager sets `calibration: true`, for every expected result layer 1 decided on a screen (`dom` / `ax-node`), also run `tc-jev-judge.js judge <obs file> --label code:PASS|code:FAIL` on the same screen. This only stores a sample; the code verdict stays the verdict.
+6. **Record** — needs a verdict for every expected result; if a step failed, record what was judged and set `failed_at_step`. Write `{tc, run_id, expected: [{index, verdict, judged_by, observed, jev?, audit?, jev_disputed?}], browser_tool, fallback_reason, failed_at_step?}` to a temp file and run `node ~/.claude/scripts/tc-jev-judge.js record --results <results> --tc-file <tc.file> --entry <temp file>`. One line per TC run. `browser_tool` is `none` for an api TC.
+7. TC PASS = every expected result `PASS` (or `NOT_OBSERVABLE` the manager accepted) **∧** §0 invariants held **∧** sweep clean (screen TCs). Any `FAIL` → TC FAIL → Log Collection Policy.
+
+### API, DB and log checks — `tc-api-run.js`
+
+The only way to send a request or read project data. It accepts only `base_url`'s origin and the files named in the run file's `readable`, and masks cookies and tokens.
+
+```bash
+node ~/.claude/scripts/tc-api-run.js request --run <run_file> --session <name> --method POST --path /api/login --body <json file>
+node ~/.claude/scripts/tc-api-run.js request --run <run_file> --session <name> --method GET  --path /api/orders/<id>
+node ~/.claude/scripts/tc-api-run.js read    --run <run_file> --source db  --json-path 'payments[orderId=<id>].status'
+node ~/.claude/scripts/tc-api-run.js read    --run <run_file> --source log --grep '<event name>'
+```
+
+- One `--session` name per persona (e.g. `customer`, `admin`); the cookie from a login is kept for that session. A session with no login is signed out.
+- Request bodies come from `tc.run.data` — write them to a temp JSON file; never put secret values on the command line (use `$ENV_NAME` values via the file).
+- Exit 2 = refused (other origin, file not listed, path outside the project): report the expected result as `NOT_OBSERVABLE` with the refusal message — never work around it.
+- Run api TCs **one at a time, after the screen TCs** — the manager assigns them to one tester so requests do not change data another tester is looking at.
+- Judge from the printed value (`judged_by: code`, the value as `observed`).
 
 ---
 

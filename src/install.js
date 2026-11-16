@@ -10,7 +10,7 @@ const { confirm } = require('./prompt');
 const { checkConflicts } = require('./conflict-checker');
 const { mergeMarkerBlock, stripDuplicatePreamble } = require('./merge/markdown');
 const { mergeHooks } = require('./merge/settings-hooks');
-const { mergeMcpServers } = require('./merge/mcp-servers');
+const { mergeMcpServers, adaptMcpServers } = require('./merge/mcp-servers');
 const { installScanners } = require('./installers/scanners');
 const { installNotifier } = require('./installers/notifier');
 const { installPlaywrightMcp } = require('./installers/playwright-mcp');
@@ -237,7 +237,7 @@ async function install(opts = {}) {
     if (!proceed) { console.log('\nInstall cancelled.'); return; }
   }
   const existingClaudeJson = (existingClaudeJsonRaw && !existingClaudeJsonRaw.__parseError) ? existingClaudeJsonRaw : {};
-  const incomingMcp = JSON.parse(readTemplate(templateNameFor('mcp-servers.json', target)));
+  const incomingMcp = adaptMcpServers(JSON.parse(readTemplate(templateNameFor('mcp-servers.json', target))));
 
   if (target.mode === 'project') {
     // .mcp.json's top-level shape is { mcpServers: {...} } — the only Claude

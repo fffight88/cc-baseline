@@ -30,7 +30,8 @@ const TOP_KEYS = ['schema_version', 'feature', 'title', 'plan', 'sources', 'acti
 const TC_KEYS = ['id', 'title', 'action_refs', 'level', 'surface', 'preconditions', 'fixture', 'steps', 'expected', 'basis', 'readiness', 'notes'];
 const STEP_KEYS = ['goal', 'done_when', 'input_refs', 'notes'];
 const DONE_KEYS = ['expect', 'assertions'];
-const EXPECTED_KEYS = ['text', 'observe', 'notes'];
+const EXPECTED_KEYS = ['text', 'observe', 'basis', 'notes'];
+const QUESTION_KEYS = ['id', 'question', 'default', 'affects', 'answer', 'decided_at'];
 const OBSERVE_KEYS = ['channel', 'key', 'question_id'];
 const SCREEN_CHANNELS = ['dom', 'ax-node'];
 const URL_RE = /\bhttps?:\/\//i;
@@ -192,6 +193,12 @@ function lint(doc) {
         warn('observe', where, 'observe.channel is unknown — name the channel once it is known (keep the sentence)');
       }
       const channel = obs && obs.channel;
+      if (exp.basis !== undefined) {
+        const eb = exp.basis || {};
+        if (!ENUMS.basis.includes(eb.kind)) warn('format', where, `basis.kind must be one of ${ENUMS.basis.join(' | ')}`);
+        for (const r of arr(eb.refs)) if (!sourceIds.has(r)) warn('format', where, `basis.refs points to unknown source ${r}`);
+        if (eb.kind === 'proposal' && tc.readiness !== 'needs-decision') warn('basis', where, 'a proposal-based expected result makes its TC readiness: needs-decision');
+      }
 
       if (count(RE.conjunction, text) >= 1 || count(RE.quoted, text) >= 3) {
         warn('single_fact', where, 'one expected result should check one fact — split this line');
@@ -212,6 +219,28 @@ function lint(doc) {
     if (failureLines > 0 && successLines > 0) {
       warn('failure_mix', id, 'success and error expectations are mixed — put the error flow in its own TC');
     }
+  }
+
+  // open_questions: { id, question, default, affects: [TC ids], answer?, decided_at? }.
+  // An unanswered question keeps every TC it affects at needs-decision.
+  const readiness = new Map(tcs.filter(t => t && isStr(t.id)).map(t => [t.id, t.readiness]));
+  const questionIds = new Set();
+  if (doc.open_questions !== undefined && !Array.isArray(doc.open_questions)) warn('format', 'file', 'open_questions must be a list');
+  for (const [i, q] of arr(doc.open_questions).entries()) {
+    const where = (q && isStr(q.id) && q.id) || `open_questions[${i}]`;
+    if (!q || typeof q !== 'object' || Array.isArray(q)) { warn('format', where, 'open question must be an object'); continue; }
+    for (const k of unknownKeys(q, QUESTION_KEYS)) warn('unknown_field', where, `unknown field "${k}"`);
+    if (!isStr(q.id) || !idRe('OQ').test(q.id)) warn('format', where, `open question id must look like OQ.${feature}.<name>`);
+    if (isStr(q.id) && questionIds.has(q.id)) warn('format', where, `duplicate open question id ${q.id}`);
+    if (isStr(q.id)) questionIds.add(q.id);
+    for (const f of ['question', 'default']) if (!isStr(q[f])) warn('format', where, `${f} is required`);
+    if (arr(q.affects).length === 0) warn('format', where, 'affects must name at least one TC');
+    for (const t of arr(q.affects)) {
+      if (!readiness.has(t)) warn('format', where, `affects points to unknown TC ${t}`);
+      else if (!isStr(q.answer) && readiness.get(t) === 'ready') warn('open_question', where, `${t} is ready but this question has no answer — ask it before approval or keep the TC needs-decision`);
+    }
+    if (q.answer !== undefined && !isStr(q.answer)) warn('format', where, 'answer must be a non-empty string when present');
+    if (isStr(q.answer) && !isStr(q.decided_at)) warn('format', where, 'an answered question needs decided_at');
   }
 
   return warnings;

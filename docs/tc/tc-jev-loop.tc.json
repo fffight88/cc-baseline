@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "feature": "tc-jev-loop",
+  "title": "TC/Jev stage 2 — Jev as the judge, sample bank, API TC runner",
+  "plan": "tc-jev-loop",
+  "sources": [
+    { "id": "REQ.tc-jev-loop-plan", "kind": "requirement", "locator": "docs/plans/tc-jev-loop.md (approved 2026-11-16)" },
+    { "id": "REQ.jev-as-judge", "kind": "decision", "locator": "user decision 2026-11-16: Jev decides, LLM re-checks a share, samples kept as a bank" },
+    { "id": "REQ.api-runner", "kind": "decision", "locator": "user decision 2026-11-16: testers get a script with code-enforced limits for API/DB/log checks" }
+  ],
+  "actions": [
+    {
+      "id": "ACT.tc-jev-loop.api-request",
+      "title": "Send an API request for a TC",
+      "actor": "e2e-tester",
+      "trigger": "runs tc-api-run.js request with a tc-run.json, a session name, a method and a path",
+      "preconditions": ["tc-run.json has base_url"],
+      "outputs": ["one JSON line with status, headers and body", "session cookie file"],
+      "evidence_refs": ["REQ.tc-jev-loop-plan", "REQ.api-runner"]
+    },
+    {
+      "id": "ACT.tc-jev-loop.file-read",
+      "title": "Read a project file for a TC",
+      "actor": "e2e-tester",
+      "trigger": "runs tc-api-run.js read with a tc-run.json and a readable source name",
+      "preconditions": ["tc-run.json has readable"],
+      "outputs": ["matching lines or JSON value"],
+      "evidence_refs": ["REQ.tc-jev-loop-plan", "REQ.api-runner"]
+    },
+    {
+      "id": "ACT.tc-jev-loop.audit",
+      "title": "Record an LLM re-check of a Jev verdict",
+      "actor": "e2e-tester",
+      "trigger": "runs tc-jev-judge.js audit with a sample id and the LLM verdict",
+      "preconditions": ["the question has a calibration entry"],
+      "outputs": ["audits.jsonl line", "calibration.json entry kept or revoked"],
+      "evidence_refs": ["REQ.tc-jev-loop-plan", "REQ.jev-as-judge"]
+    },
+    {
+      "id": "ACT.tc-jev-loop.calibrate",
+      "title": "Propose thresholds from the sample bank",
+      "actor": "orchestrator",
+      "trigger": "runs tc-jev-judge.js calibrate",
+      "preconditions": ["labeled samples exist"],
+      "outputs": ["JSON report per question"],
+      "evidence_refs": ["REQ.tc-jev-loop-plan", "REQ.jev-as-judge"]
+    },
+    {
+      "id": "ACT.tc-jev-loop.authoring-check",
+      "title": "Score TC sentences with Jev",
+      "actor": "orchestrator",
+      "trigger": "runs tc-jev-check.js on a TC file",
+      "preconditions": ["a Jev key is configured"],
+      "outputs": ["warnings"],
+      "evidence_refs": ["REQ.tc-jev-loop-plan"]
+    },
+    {
+      "id": "ACT.tc-jev-loop.install",
+      "title": "Install cc-baseline",
+      "actor": "user",
+      "trigger": "runs node bin/cli.js --yes",
+      "preconditions": [],
+      "outputs": ["~/.claude.json mcpServers"],
+      "evidence_refs": ["REQ.tc-jev-loop-plan"]
+    }
+  ],
+  "test_cases": [
+    {
+      "id": "TC.tc-jev-loop.api-run-same-origin",
+      "title": "A request to the allowed origin returns the response",
+      "action_refs": ["ACT.tc-jev-loop.api-request"],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": ["a test HTTP server on 127.0.0.1", "tc-run.json whose base_url is that server"],
+      "steps": [
+        { "goal": "Run tc-api-run.js request with method GET and a path on the server",
+          "done_when": { "expect": "The command exits" } }
+      ],
+      "expected": [
+        { "text": "The exit code is 0", "observe": { "channel": "artifact", "key": "exit code" } },
+        { "text": "The output status field is the server's status code", "observe": { "channel": "artifact", "key": "stdout JSON .status" } }
+      ],
+      "basis": { "kind": "requirement", "refs": ["REQ.tc-jev-loop-plan"] },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-jev-loop.api-run-other-origin-rejected",
+      "title": "A request to another origin is refused",
+      "action_refs": ["ACT.tc-jev-loop.api-request"],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": ["tc-run.json whose base_url is a loopback server"],
+      "steps": [
+        { "goal": "Run tc-api-run.js request with an absolute URL on another host as the path",
+          "done_when": { "expect": "The command exits" } }
+      ],
+      "expected": [
+        { "text": "The exit code is 2", "observe": { "channel": "artifact", "key": "exit code" } },
+        { "text": "No request reaches the other host", "observe": { "channel": "artifact", "key": "other test server request count" } }
+      ],
+      "basis": { "kind": "requirement", "refs": ["REQ.api-runner"] },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-jev-loop.api-run-cookie-masked",
+      "title": "A login response cookie is masked in the output",
+      "action_refs": ["ACT.tc-jev-loop.api-request"],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": ["a test server whose login route sets a session cookie"],
+      "steps": [
+        { "goal": "Run tc-api-run.js request with method POST on the login route",
+          "done_when": { "expect": "The command exits" } }
+      ],
+      "expected": [
+        { "text": "The cookie value does not appear in the output", "observe": { "channel": "artifact", "key": "stdout" } }
+      ],
+      "basis": { "kind": "requirement", "refs": ["REQ.tc-jev-loop-plan"] },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-jev-loop.read-outside-rejected",
+      "title": "Reading a file outside readable is refused",
+      "action_refs": ["ACT.tc-jev-loop.file-read"],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": ["tc-run.json whose readable entry points outside the project root"],
+      "steps": [
+        { "goal": "Run tc-api-run.js read with that source name",
+          "done_when": { "expect": "The command exits" } }
+      ],
+      "expected": [
+        { "text": "The exit code is 2", "observe": { "channel": "artifact", "key": "exit code" } },
+        { "text": "The file content does not appear in the output", "observe": { "channel": "artifact", "key": "stdout" } }
+      ],
+      "basis": { "kind": "requirement", "refs": ["REQ.api-runner"] },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-jev-loop.audit-disagree-revokes",
+      "title": "Two disagreements in the last 20 re-checks revoke the calibration",
+      "action_refs": ["ACT.tc-jev-loop.audit"],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": ["a test Jev directory with a calibration entry for Q.holds@1"],
+      "steps": [
+        { "goal": "Record two audits where the LLM verdict differs from Jev",
+          "done_when": { "expect": "Both commands exit" } }
+      ],
+      "expected": [
+        { "text": "calibration.json has no Q.holds@1 entry", "observe": { "channel": "artifact", "key": "calibration.json entries" } },
+        { "text": "calibration.json revoked lists Q.holds@1", "observe": { "channel": "artifact", "key": "calibration.json revoked" } }
+      ],
+      "basis": { "kind": "requirement", "refs": ["REQ.jev-as-judge"] },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-jev-loop.holdout-unsafe",
+      "title": "A false PASS in the holdout split makes the calibration unsafe",
+      "action_refs": ["ACT.tc-jev-loop.calibrate"],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": ["labeled samples whose holdout split has a FAIL scored 0.95"],
+      "steps": [
+        { "goal": "Run tc-jev-judge.js calibrate",
+          "done_when": { "expect": "The report is printed" } }
+      ],
+      "expected": [
+        { "text": "The report status for that question is unsafe", "observe": { "channel": "artifact", "key": "stdout JSON [].status" } }
+      ],
+      "basis": { "kind": "requirement", "refs": ["REQ.tc-jev-loop-plan"] },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-jev-loop.hidden-not-on-api",
+      "title": "An api-channel sentence gets no jev_hidden warning",
+      "action_refs": ["ACT.tc-jev-loop.authoring-check"],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": ["a mock Jev that scores hidden 0.9", "a TC file whose expected result uses the api channel"],
+      "steps": [
+        { "goal": "Run tc-jev-check.js on the TC file",
+          "done_when": { "expect": "The command exits" } }
+      ],
+      "expected": [
+        { "text": "The warnings list has no jev_hidden entry", "observe": { "channel": "artifact", "key": "tc-check.json jev.warnings" } }
+      ],
+      "basis": { "kind": "requirement", "refs": ["REQ.tc-jev-loop-plan"] },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-jev-loop.root-no-sandbox",
+      "title": "Installing as root on Linux adds --no-sandbox",
+      "action_refs": ["ACT.tc-jev-loop.install"],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": ["root user on Linux"],
+      "steps": [
+        { "goal": "Build the MCP server entries the installer writes",
+          "done_when": { "expect": "The entries are returned" } }
+      ],
+      "expected": [
+        { "text": "Every playwright-test entry has --no-sandbox in args", "observe": { "channel": "artifact", "key": "mcpServers.playwright-test-*.args" } }
+      ],
+      "basis": { "kind": "requirement", "refs": ["REQ.tc-jev-loop-plan"] },
+      "readiness": "ready"
+    }
+  ],
+  "open_questions": []
+}
