@@ -686,6 +686,11 @@ t('browser layer: agents and commands are Aside-first with a Playwright fallback
   assert.match(checkLog, /\[REDACTED\]/);
   assert.match(checkLog, /2a\. \*\*Aside\*\*/);
   assert.match(read('commands', 'clean.md'), /aside-session\.sh" stop-under "\$PROJ"/);
+  const clean = read('commands', 'clean.md');
+  assert.doesNotMatch(clean, /pgrep -f "claude"/, 'a bare "claude" match also hits tmux -L claude and kills the running session');
+  assert.match(clean, /pgrep -u "\$\(id -u\)" -x claude/);
+  assert.match(clean, /case "\$ANC" in \*" \$pid "\*\) continue/, 'ancestors of the running shell are never killed');
+  assert.doesNotMatch(clean.split('Then kill stale playwright-mcp')[0], /\[\[/, 'orphan step runs under /bin/sh');
   assert.doesNotMatch(publisher, /default playwright-test-1/, 'test-1 is reserved for /open-browser');
   assert.match(openBrowser, /\^https\?:\/\/\[A-Za-z0-9\._~:\/\?#@!\*\+,;=%&-\]\+\$/, 'URL allowlist excludes $ and backticks');
 });

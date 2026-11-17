@@ -1,6 +1,8 @@
-Use the Bash tool to clean up orphaned Claude processes and E2E test artifacts. Execute the following commands immediately:
+Use the Bash tool to clean up orphaned Claude processes and E2E test artifacts. Execute the following commands immediately.
 
-pgrep -f "claude" | while read pid; do ppid=$(ps -o ppid= -p $pid 2>/dev/null | tr -d " "); if [[ "$ppid" == "1" ]]; then echo "Killing: PID $pid"; kill $pid 2>/dev/null; fi; done && echo "Claude orphan process cleanup complete"
+First stop orphaned Claude CLI processes (re-parented to PID 1). Match only the `claude` executable and the npm install — never a match on any argument containing "claude", which also hits a `tmux -L claude` server or any path containing "claude" and can take down the session running this command. Skip every ancestor of this shell (in a container or a detached launch the live session itself has parent PID 1) and headless `-p` / `--print` runs:
+
+ANC=" "; _p=$$; while [ -n "$_p" ] && [ "$_p" != "0" ]; do ANC="$ANC$_p "; [ "$_p" = "1" ] && break; _p=$(ps -o ppid= -p "$_p" 2>/dev/null | tr -d ' '); done; { pgrep -u "$(id -u)" -x claude; pgrep -u "$(id -u)" -f '@anthropic-ai/claude-code'; } 2>/dev/null | sort -u | while read pid; do case "$ANC" in *" $pid "*) continue;; esac; ppid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' '); [ "$ppid" = "1" ] || continue; case " $(ps -o args= -p "$pid" 2>/dev/null) " in *' -p '*|*' --print '*) continue;; esac; echo "Killing orphaned claude: PID $pid"; kill "$pid" 2>/dev/null; done; echo "Claude orphan process cleanup complete"
 
 Then kill stale playwright-mcp processes older than 6h (forgotten sessions in other terminals), but protect the current session's own MCP children — killing those would disconnect this very session's playwright. First walk up from this shell to the highest "claude" ancestor and exclude its descendants from the age-based kill. Don't lower the 6h threshold — long e2e loops in other terminals may be active:
 
