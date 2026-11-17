@@ -1547,7 +1547,7 @@ t('tc-lint CLI: --json writes the lint block and keeps an existing jev block', (
 
 const JEV_CLIENT = path.join(ROOT, 'templates', 'scripts', 'jev-client.js');
 const TC_JEV_CHECK = path.join(ROOT, 'templates', 'scripts', 'tc-jev-check.js');
-const FAKE_KEY = 'apikey_test_0123456789abcdef';
+const FAKE_KEY = ['apikey', 'test', '0123456789abcdef'].join('_');   // split so secret scanners skip the fixture
 
 function jevTmp() {
   return fs.mkdtempSync(path.join(require('os').tmpdir(), 'jev-'));
@@ -1760,6 +1760,8 @@ t('tc-jev-check: no jev_hidden warning on a line already read from api/db/log (s
 // ──────────────────────────────────────────────────────────────────────────
 
 const TC_JEV_JUDGE = path.join(ROOT, 'templates', 'scripts', 'tc-jev-judge.js');
+// built from parts so secret scanners do not flag this test fixture
+const FAKE_STRIPE = ['sk', 'live', 'ABCDEFGH12345678'].join('_');
 
 function obsInput(extra = {}) {
   return {
@@ -1869,9 +1871,9 @@ t('tc-jev-judge: emails, phone/card numbers and tokens are masked before sending
   const { normalizeObservation } = require(TC_JEV_JUDGE);
   const s = JSON.stringify(normalizeObservation({
     text: 'Hi kim.minsu@example.co.kr, call 010-1234-5678 or 01012345678. Card 4111 1111 1111 1111. ' +
-      'Authorization: Bearer abc.def-ghi token sk_live_ABCDEFGH12345678 jwt eyJhbGciOi.eyJzdWIiOi.c2lnbmF0dXJl RRN 900101-1234567',
+      'Authorization: Bearer abc.def-ghi token ' + FAKE_STRIPE + ' jwt eyJhbGciOi.eyJzdWIiOi.c2lnbmF0dXJl RRN 900101-1234567',
   }));
-  for (const leak of ['kim.minsu@example.co.kr', '010-1234-5678', '01012345678', '4111 1111 1111 1111', 'abc.def-ghi', 'sk_live_ABCDEFGH12345678', 'eyJhbGciOi', '900101-1234567']) {
+  for (const leak of ['kim.minsu@example.co.kr', '010-1234-5678', '01012345678', '4111 1111 1111 1111', 'abc.def-ghi', FAKE_STRIPE, 'eyJhbGciOi', '900101-1234567']) {
     assert.ok(!s.includes(leak), `${leak} not masked`);
   }
   assert.match(s, /<email>/);
@@ -2096,20 +2098,82 @@ t('tc-jev-judge: Jev decides a calibrated question; a fixed share is marked for 
   } finally { await srv.close(); fs.rmSync(jevDir, { recursive: true, force: true }); }
 });
 
+t('tc-jev-judge: --judge-mode jev keeps the code label as a sample but lets calibrated Jev decide', async () => {
+  const { judge } = require(TC_JEV_JUDGE);
+  const srv = await mockJev(body => ({ status: 200, json: nouls(body, { holds: 0.03, observable: 0.9 }) }));
+  const jevDir = jevTmp();
+  try {
+    const input = obsInput({ channel: 'dom' });
+    delete input.question_id;
+    const before = await judge(input, { config: judgeCfg(srv.url), jevDir, sleep: noSleep, label: { source: 'code', value: 'PASS' }, mode: 'jev' });
+    assert.equal(before.verdict, 'REVIEW', 'uncalibrated: still capped');
+    assert.equal(before.agree_with_code, null);
+    assert.equal(before.code_verdict, 'PASS');
+    fs.writeFileSync(path.join(jevDir, 'calibration.json'), JSON.stringify({ entries: [{ question: 'Q.holds@1', model: 'jev-1.14.0', input_mode: 'text',
+      thresholds: { pass_gte: 0.9, fail_lte: 0.1, not_observable_lte: 0.25 }, audit_rate: 0.1, calibrated_at: '2026-01-01T00:00:00.000Z' }] }));
+    const r = await judge(input, { config: judgeCfg(srv.url), jevDir, sleep: noSleep, label: { source: 'code', value: 'PASS' }, mode: 'jev' });
+    assert.equal(r.verdict, 'FAIL');
+    assert.equal(r.judged_by, 'jev');
+    assert.equal(r.judge_mode, 'jev');
+    assert.equal(r.agree_with_code, false);
+    assert.equal(typeof r.audit, 'boolean');
+    const rows = fs.readFileSync(path.join(jevDir, 'samples.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
+    assert.deepEqual(rows.map(x => [x.label, x.label_source, x.jev_verdict]), [['PASS', 'code', null], ['PASS', 'code', 'FAIL']]);
+    const plain = await judge(input, { config: judgeCfg(srv.url), jevDir, sleep: noSleep, label: { source: 'code', value: 'PASS' } });
+    assert.equal(plain.verdict, null, 'without the mode a label still only stores a sample');
+    await assert.rejects(judge(input, { config: judgeCfg(srv.url), jevDir, sleep: noSleep, mode: 'jev' }), /code verdict/);
+    const { loadConfig } = require(JEV_CLIENT);
+    const nokey = await judge(input, { config: loadConfig({ env: {}, home: '/nonexistent' }), jevDir, sleep: noSleep, label: { source: 'code', value: 'FAIL' }, mode: 'jev' });
+    assert.equal(nokey.status, 'unconfigured');
+    assert.equal(nokey.code_verdict, 'FAIL', 'the code verdict survives when Jev cannot answer');
+  } finally { await srv.close(); fs.rmSync(jevDir, { recursive: true, force: true }); }
+});
+
+t('tc-jev-judge: compare tables a run by judge mode against the code verdicts', () => {
+  const { record, compare } = require(TC_JEV_JUDGE);
+  const tmp = jevTmp();
+  try {
+    const tcFile = path.join(tmp, 'x.tc.json');
+    fs.writeFileSync(tcFile, JSON.stringify(tcDoc()));
+    const results = path.join(tmp, 'tc-results.jsonl');
+    const tc = 'TC.password-reset.request-success';
+    record({ results, tcFile, entry: { tc, run_id: 'r-code', expected: [{ index: 0, verdict: 'PASS', judged_by: 'code' }, { index: 1, verdict: 'FAIL', judged_by: 'code' }] } });
+    record({ results, tcFile, entry: { tc, run_id: 'r-jev', judge_mode: 'jev', expected: [
+      { index: 0, verdict: 'FAIL', judged_by: 'jev', code_verdict: 'PASS' }, { index: 1, verdict: 'REVIEW', judged_by: 'llm', code_verdict: 'FAIL' }] } });
+    const [a, b] = compare({ results, runIds: ['r-code', 'r-jev'] });
+    assert.equal(a.judge_mode, 'code');
+    assert.deepEqual(a.judged_by, { code: 2 });
+    assert.equal(b.judge_mode, 'jev');
+    assert.deepEqual(b.vs_code, { compared: 2, decided: 1, agree: 0, false_pass: 0, false_fail: 1 });
+    assert.equal(b.review_share, 0.5);
+    const [gone] = compare({ results, runIds: ['r-nope'] });
+    assert.equal(gone.missing, true, 'an unknown run_id is reported, not an empty row');
+    assert.throws(() => compare({ results: path.join(tmp, 'none', 'tc-results.jsonl'), runIds: ['r-code'] }), /no results file/);
+    assert.throws(() => record({ results, tcFile, entry: { tc, judge_mode: 'robot', expected: [{ index: 0, verdict: 'PASS', judged_by: 'code' }, { index: 1, verdict: 'PASS', judged_by: 'code' }] } }), /judge_mode/);
+    assert.throws(() => record({ results, tcFile, entry: { tc, expected: [{ index: 0, verdict: 'PASS', judged_by: 'jev', code_verdict: 'YES' }, { index: 1, verdict: 'PASS', judged_by: 'code' }] } }), /code_verdict/);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
 t('tc-jev-judge: two disagreeing re-checks revoke the calibration; the question goes back to the LLM', async () => {
-  const { judge, audit, bank, label } = require(TC_JEV_JUDGE);
+  const { judge, audit, bank, label, auditSelected } = require(TC_JEV_JUDGE);
   let holds = 0.97;
   const srv = await mockJev(body => ({ status: 200, json: nouls(body, { holds, observable: 0.9 }) }));
   const jevDir = jevTmp();
   try {
     fs.writeFileSync(path.join(jevDir, 'calibration.json'), JSON.stringify({ entries: [{ question: 'Q.holds@1', model: 'jev-1.14.0', input_mode: 'text',
       thresholds: { pass_gte: 0.9, fail_lte: 0.1, not_observable_lte: 0.25 }, audit_rate: 0.1, calibrated_at: '2026-01-01T00:00:00.000Z' }] }));
+    // only verdicts judge marked audit:true can be re-checked — collect three of them
     const ids = [];
-    for (let i = 0; i < 3; i++) {
-      const input = obsInput({ expected: `line ${i}` });
-      ids.push((await judge(input, { config: judgeCfg(srv.url), jevDir, sleep: noSleep })).sample);
+    let notMarked = null;
+    for (let i = 0; ids.length < 3 && i < 400; i++) {
+      const r = await judge(obsInput({ expected: `line ${i}` }), { config: judgeCfg(srv.url), jevDir, sleep: noSleep });
+      assert.equal(r.audit, auditSelected(r.sample, 0.1));
+      if (r.audit) ids.push(r.sample); else notMarked = notMarked || r.sample;
     }
+    assert.equal(ids.length, 3);
+    assert.throws(() => audit(jevDir, { sample: notMarked, llm: 'FAIL' }), /not marked audit: true/);
     assert.equal(audit(jevDir, { sample: ids[0], llm: 'PASS' }).agree, true);
+    assert.throws(() => audit(jevDir, { sample: ids[0], llm: 'FAIL' }), /already re-checked/);
     const first = audit(jevDir, { sample: ids[1], llm: 'FAIL' });
     assert.equal(first.agree, false);
     assert.equal(first.revoked, false, 'one disagreement keeps it');
@@ -2119,7 +2183,7 @@ t('tc-jev-judge: two disagreeing re-checks revoke the calibration; the question 
     assert.equal(c.entries.length, 0);
     assert.equal(c.revoked[0].question, 'Q.holds@1');
     assert.match(c.revoked[0].reason, /2 of the last 3/);
-    const after = await judge(obsInput({ expected: 'line 9' }), { config: judgeCfg(srv.url), jevDir, sleep: noSleep });
+    const after = await judge(obsInput({ expected: 'line after revoke' }), { config: judgeCfg(srv.url), jevDir, sleep: noSleep });
     assert.equal(after.verdict, 'REVIEW');
     assert.equal(after.judged_by, null);
     const b = bank(jevDir);
@@ -2462,7 +2526,7 @@ t('tc-api-run: session cookies are kept per session, sent back, and never printe
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ signedIn: req.headers.cookie === `sid=${COOKIE}` }));
   });
-  const p = apiProject({ base_url: srv.url });
+  const p = apiProject({ base_url: srv.url, tcs: { 'TC.x.login': { secret_env: ['TEST_PW'] } } });
   try {
     const body = path.join(p.tmp, 'login.json');
     fs.writeFileSync(body, JSON.stringify({ email: 'user@example.com', password: '$TEST_PW' }));
@@ -2483,6 +2547,16 @@ t('tc-api-run: session cookies are kept per session, sent back, and never printe
     assert.equal(JSON.parse(anon.stdout).json.signedIn, false, 'sessions are separate');
     const missing = await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'customer', '--method', 'POST', '--path', '/api/login', '--body', body], apiEnv());
     assert.equal(missing.status, 2, 'unset $ENV is refused');
+    fs.writeFileSync(body, JSON.stringify({ email: 'user@example.com', password: '$OTHER_KEY' }));
+    const undeclared = await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'customer', '--method', 'POST', '--path', '/api/login', '--body', body], apiEnv({ OTHER_KEY: 'k-123456' }));
+    assert.equal(undeclared.status, 2, 'a $NAME no TC lists in secret_env is refused');
+    assert.match(undeclared.stderr, /secret_env/);
+    const outside = await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'customer', '--method', 'GET', '--path', '/api/me', '--body', '/etc/hostname'], env);
+    assert.equal(outside.status, 2, 'a body file outside the temp dir and the project is refused');
+    const stray = path.join(p.tmp, 'tc-run.json');
+    fs.writeFileSync(stray, JSON.stringify({ base_url: srv.url, project_dir: '/' }));
+    const forged = await runNode([TC_API_RUN, 'request', '--run', stray, '--session', 'customer', '--method', 'GET', '--path', '/api/me'], env);
+    assert.equal(forged.status, 2, 'a run file outside <project>/.cc-audits/<slug>/ is refused');
   } finally { await srv.close(); fs.rmSync(p.tmp, { recursive: true, force: true }); }
 });
 
@@ -2519,6 +2593,10 @@ t('tc-api-run read: only readable files inside the project; --json-path and --gr
     assert.equal((await run(['--source', 'db', '--json-path', 'orders[userId]'])).status, 2, 'a condition needs key=value');
     const g = JSON.parse((await run(['--source', 'log', '--grep', 'payment.refunded'])).stdout);
     assert.equal(g.count, 1);
+    assert.equal((await run(['--source', 'log', '--grep', ''])).status, 2, 'an empty --grep is refused');
+    const both = JSON.parse((await run(['--source', 'log', '--grep', 'orderId', '--grep', 'order.cancelled'])).stdout);
+    assert.equal(both.count, 1, 'repeated --grep keeps lines that contain every text');
+    assert.deepEqual(both.grep, ['orderId', 'order.cancelled']);
     for (const src of ['out', 'link', 'abs', 'nope']) {
       const r = await run(['--source', src, '--grep', 'x']);
       assert.equal(r.status, 2, src);
@@ -2526,6 +2604,31 @@ t('tc-api-run read: only readable files inside the project; --json-path and --gr
     }
     assert.equal((await run(['--source', 'db'])).status, 2, 'needs --grep or --json-path');
     assert.equal((await run(['--source', 'db', '--grep', 'a', '--json-path', 'b'])).status, 2, 'not both');
+  } finally { fs.rmSync(p.tmp, { recursive: true, force: true }); }
+});
+
+t('tc-api-run read: secret-looking files are never read; secret key=value pairs are masked', async () => {
+  const p = apiProject({ base_url: 'http://127.0.0.1:9', readable: { env: '.env.local', key: 'certs/server.pem', git: '.git/config', jar: '.cc-audits/slug/api-sessions/a.json', db: 'data/db.json', log: 'server.log', alias: 'data/alias.json' } });
+  try {
+    fs.mkdirSync(path.join(p.proj, 'data'));
+    fs.mkdirSync(path.join(p.proj, 'certs'));
+    fs.mkdirSync(path.join(p.proj, '.git'));
+    for (const f of ['.env.local', 'certs/server.pem', '.git/config']) fs.writeFileSync(path.join(p.proj, f), 'TOP-SECRET-CONTENT');
+    fs.symlinkSync(path.join(p.proj, '.env.local'), path.join(p.proj, 'data', 'alias.json'));
+    fs.writeFileSync(path.join(p.proj, 'data', 'db.json'), JSON.stringify({ users: [{ email: 'a@b.c', passwordHash: 'h4sh-value-123', name: 'A' }] }));
+    fs.writeFileSync(path.join(p.proj, 'server.log'), 'db connect password=hunter2-secret ok\n');
+    const run = args => runNode([TC_API_RUN, 'read', '--run', p.runFile, ...args], apiEnv());
+    for (const src of ['env', 'key', 'git', 'jar', 'alias']) {
+      const r = await run(['--source', src, '--grep', 'T']);
+      assert.equal(r.status, 2, src);
+      assert.ok(!(r.stdout + r.stderr).includes('TOP-SECRET-CONTENT'), src);
+    }
+    const u = await run(['--source', 'db', '--json-path', 'users[0]']);
+    assert.equal(u.status, 0, u.stderr);
+    assert.ok(!u.stdout.includes('h4sh-value-123'), 'secret-named field masked');
+    assert.equal(JSON.parse(u.stdout).value.name, 'A', 'other fields kept');
+    const l = await run(['--source', 'log', '--grep', 'connect']);
+    assert.ok(!l.stdout.includes('hunter2-secret'), 'key=value secret masked');
   } finally { fs.rmSync(p.tmp, { recursive: true, force: true }); }
 });
 

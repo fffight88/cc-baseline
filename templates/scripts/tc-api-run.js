@@ -6,7 +6,8 @@
 // code, from the run add-on file written at plan approval:
 //
 //   node tc-api-run.js request --run <tc-run.json> --session <name> --method <M> --path </api/...> [--body <json file>]
-//   node tc-api-run.js read    --run <tc-run.json> --source <name> (--grep <text> | --json-path <a.b[k=v].c> [--count])
+//   node tc-api-run.js read    --run <tc-run.json> --source <name> (--grep <text> [--grep <text> …] | --json-path <a.b[k=v].c> [--count])
+//       repeated --grep keeps only lines that contain every text (e.g. an event name and an order number).
 //
 // request: only base_url's origin; a path, never an absolute URL; redirects are
 //   reported, not followed; a non-loopback base_url needs "api_remote_ok": true.
@@ -19,6 +20,7 @@
 //   capped at 64 KB. Exit 0 = done, 1 = request failed, 2 = refused / usage.
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { parseArgs } = require('./jev-client');
 
@@ -30,6 +32,10 @@ const SESSION_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/;
 const LOOPBACK = ['127.0.0.1', 'localhost', '[::1]', '::1'];
 const SECRET_HEADER_RE = /^(?:set-cookie|cookie|authorization|proxy-authorization)$|auth|token|secret|api[_-]?key/i;
 const ENV_REF_RE = /^\$([A-Z_][A-Z0-9_]*)$/;
+// Project files `read` never opens, even when the run file lists them.
+const DENIED_READ_RE = /(?:^|\/)(?:\.env[^/]*|[^/]*\.(?:pem|key|p12|pfx|kdbx)|id_[^/]*|[^/]*jev\.env)$|(?:^|\/)(?:\.git|\.ssh|api-sessions)(?:\/|$)/i;
+// key=value / "key": value pairs whose key names a secret.
+const SECRET_PAIR_RE = /("?[A-Za-z_]*(?:password|passwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key)[A-Za-z_]*"?\s*[:=]\s*)("[^"]*"|[^\s,;&}\]]+)/gi;
 
 class Refused extends Error {}
 
@@ -39,23 +45,37 @@ function maskTokens(s, extra = []) {
   return out
     .replace(/\bBearer\s+[A-Za-z0-9._~+/=-]+/gi, 'Bearer <masked>')
     .replace(/\beyJ[\w-]+\.[\w-]+\.[\w-]+/g, '<masked>')
-    .replace(/\b(?:sk|pk|api|apikey|key|token|secret)[_-][A-Za-z0-9_-]{8,}/gi, '<masked>');
+    .replace(/\b(?:sk|pk|api|apikey|key|token|secret)[_-][A-Za-z0-9_-]{8,}/gi, '<masked>')
+    .replace(SECRET_PAIR_RE, (all, k, v) => `${k}${v.startsWith('"') ? '"<masked>"' : '<masked>'}`);
 }
 
 function loadRun(runFile) {
+  projectRoot(runFile);
   let run;
   try { run = JSON.parse(fs.readFileSync(runFile, 'utf8')); } catch (e) { throw new Refused(`cannot read run file ${runFile}: ${e.message}`); }
   if (!run || typeof run !== 'object' || Array.isArray(run)) throw new Refused('run file must be a JSON object');
   return run;
 }
 
-// The project root: <root>/.cc-audits/<slug>/tc-run.json, or an absolute
-// "project_dir" in the run file.
-function projectRoot(runFile, run) {
-  const runDir = path.dirname(path.resolve(runFile));
-  if (path.basename(path.dirname(runDir)) === '.cc-audits') return path.dirname(path.dirname(runDir));
-  if (typeof run.project_dir === 'string' && path.isAbsolute(run.project_dir)) return run.project_dir;
-  throw new Refused('run file is not under <project>/.cc-audits/<slug>/ and has no absolute project_dir');
+// The project root. Only a run file at <root>/.cc-audits/<slug>/tc-run.json is
+// accepted, so a run file written anywhere else cannot widen what is allowed.
+function projectRoot(runFile) {
+  const real = fs.realpathSync(path.resolve(runFile));
+  const runDir = path.dirname(real);
+  if (path.basename(real) !== 'tc-run.json' || path.basename(path.dirname(runDir)) !== '.cc-audits') {
+    throw new Refused('run file must be <project>/.cc-audits/<slug>/tc-run.json');
+  }
+  return path.dirname(path.dirname(runDir));
+}
+
+// $NAME body values: only the names a TC in the run file declares in secret_env.
+function allowedEnv(run) {
+  const names = new Set(Array.isArray(run.secret_env) ? run.secret_env : []);
+  for (const t of Object.values(run.tcs && typeof run.tcs === 'object' ? run.tcs : {})) {
+    if (t && Array.isArray(t.secret_env)) for (const n of t.secret_env) names.add(n);
+    if (t && t.api && Array.isArray(t.api.secret_env)) for (const n of t.api.secret_env) names.add(n);
+  }
+  return names;
 }
 
 function baseOrigin(run) {
@@ -123,17 +143,28 @@ function applySetCookie(jar, lines) {
   return { set, values };
 }
 
-function fillEnv(v, env, used) {
+function fillEnv(v, env, used, allowed) {
   if (typeof v === 'string') {
     const m = ENV_REF_RE.exec(v);
     if (!m) return v;
+    if (!allowed.has(m[1])) throw new Refused(`body refers to $${m[1]}, which no TC in the run file lists in secret_env`);
     if (typeof env[m[1]] !== 'string') throw new Refused(`body refers to $${m[1]}, which is not set`);
     used.push(env[m[1]]);
     return env[m[1]];
   }
-  if (Array.isArray(v)) return v.map(x => fillEnv(x, env, used));
-  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, fillEnv(x, env, used)]));
+  if (Array.isArray(v)) return v.map(x => fillEnv(x, env, used, allowed));
+  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, fillEnv(x, env, used, allowed)]));
   return v;
+}
+
+// A body file is a temp file the tester wrote, or a file inside the project.
+function checkBodyFile(bodyFile, runFile) {
+  let real;
+  try { real = fs.realpathSync(bodyFile); } catch (e) { throw new Refused(`--body ${bodyFile}: ${e.code || e.message}`); }
+  const roots = [projectRoot(runFile), fs.realpathSync(os.tmpdir())];
+  if (!roots.some(r => real.startsWith(r + path.sep))) throw new Refused('--body must be a file in the temp dir or inside the project');
+  if (DENIED_READ_RE.test(real)) throw new Refused('--body names a secret-looking file');
+  return real;
 }
 
 function capped(text) {
@@ -154,8 +185,9 @@ async function request({ runFile, session, method, p, bodyFile, env = process.en
   let body;
   if (bodyFile) {
     let parsed;
-    try { parsed = JSON.parse(fs.readFileSync(bodyFile, 'utf8')); } catch (e) { throw new Refused(`--body must be a JSON file: ${e.message}`); }
-    body = JSON.stringify(fillEnv(parsed, env, secrets));
+    const real = checkBodyFile(bodyFile, runFile);
+    try { parsed = JSON.parse(fs.readFileSync(real, 'utf8')); } catch (e) { throw new Refused(`--body must be a JSON file: ${e.message}`); }
+    body = JSON.stringify(fillEnv(parsed, env, secrets, allowedEnv(run)));
   }
   const headers = { Accept: 'application/json' };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
@@ -231,11 +263,13 @@ function readSource({ runFile, source, grep, jsonPathExpr, count = false }) {
   }
   const rel = readable[source];
   if (typeof rel !== 'string' || rel === '' || path.isAbsolute(rel)) throw new Refused(`readable.${source} must be a project-relative path`);
+  if (DENIED_READ_RE.test(rel.split(path.sep).join('/'))) throw new Refused(`readable.${source} names a secret-looking file (${rel}) — not readable`);
   if ((grep === undefined) === (jsonPathExpr === undefined)) throw new Refused('give exactly one of --grep or --json-path');
-  const root = fs.realpathSync(projectRoot(runFile, run));
+  const root = fs.realpathSync(projectRoot(runFile));
   let real;
   try { real = fs.realpathSync(path.resolve(root, rel)); } catch (e) { throw new Refused(`cannot open readable.${source}: ${e.code || e.message}`); }
   if (!real.startsWith(root + path.sep)) throw new Refused(`readable.${source} resolves outside the project root`);
+  if (DENIED_READ_RE.test(path.relative(root, real).split(path.sep).join('/'))) throw new Refused(`readable.${source} resolves to a secret-looking file — not readable`);
   if (!fs.statSync(real).isFile()) throw new Refused(`readable.${source} is not a file`);
   const text = fs.readFileSync(real, 'utf8');
 
@@ -254,7 +288,9 @@ function readSource({ runFile, source, grep, jsonPathExpr, count = false }) {
     }
     return out;
   }
-  const lines = text.split('\n').filter(l => l.includes(grep));
+  const greps = Array.isArray(grep) ? grep : [grep];
+  if (greps.some(g => typeof g !== 'string' || g === '')) throw new Refused('--grep needs a non-empty text');
+  const lines = text.split('\n').filter(l => greps.every(g => l.includes(g)));
   const shown = [];
   let size = 0;
   for (const l of lines.slice(0, GREP_MAX_LINES)) {
@@ -263,17 +299,17 @@ function readSource({ runFile, source, grep, jsonPathExpr, count = false }) {
     shown.push(masked);
     size += masked.length;
   }
-  return { source, grep, count: lines.length, lines: shown, truncated: shown.length < lines.length };
+  return { source, grep: greps.length === 1 ? greps[0] : greps, count: lines.length, lines: shown, truncated: shown.length < lines.length };
 }
 
 const USAGE = 'usage: tc-api-run.js request --run <tc-run.json> --session <name> --method <M> --path </...> [--body <json file>]\n' +
-  '       tc-api-run.js read --run <tc-run.json> --source <name> (--grep <text> | --json-path <a.b[k=v,k2=v2].c> [--count])';
+  '       tc-api-run.js read --run <tc-run.json> --source <name> (--grep <text> [--grep <text> …] | --json-path <a.b[k=v,k2=v2].c> [--count])';
 
 async function main(argv) {
   const [cmd, ...rest] = argv.slice(2);
   const spec = {
     request: { values: ['--run', '--session', '--method', '--path', '--body'] },
-    read: { values: ['--run', '--source', '--grep', '--json-path'], flags: ['--count'] },
+    read: { values: ['--run', '--source', '--json-path'], repeat: ['--grep'], flags: ['--count'] },
   }[cmd];
   if (!spec) { console.error(USAGE); return 2; }
   let opts, positional;

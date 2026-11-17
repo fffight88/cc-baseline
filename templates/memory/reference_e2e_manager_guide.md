@@ -85,14 +85,19 @@ When the plan has a TC file (`docs/tc/<feature>.tc.json`, see `reference_tc_auth
      "tcs": {
        "TC.password-reset.request-success": { "start_path": "/login", "persona": "test user",
          "data": { "email": "reset-test@example.com", "password": "$E2E_TEST_PASSWORD" }, "secret_env": ["E2E_TEST_PASSWORD"] },
-       "TC.password-reset.token-expired": { "persona": "test user", "data": { "token": "expired-token" } },
+       "TC.password-reset.token-expired": { "persona": "test user", "data": { "token": "expired-token" },
+         "api": { "session": "user", "login_path": "/api/login", "login_body": { "email": "reset-test@example.com", "password": "$E2E_TEST_PASSWORD" } } },
        "TC.password-reset.provider-down": { "skip": "server-injection" } } }
    ```
    - `readable` — the only project files `tc-api-run.js read` may open (project-relative). List what the `db` / `log` expected results need, nothing else.
    - `api_remote_ok: true` — only when the user approved API requests to a non-loopback `base_url`; without it `tc-api-run.js` refuses.
    - Skip reasons: `needs-decision` · `external-idp` · `real-input-device` · `server-injection` · `decided-out`. A `ready` TC with no entry is reported as `unmapped`. `api` TCs are run, not skipped.
    - Secrets are env var names (`$NAME`), never values.
-2. **Tester input** — per TC, the `tc` block (`file`, `id`, `steps`, `expected` copied **verbatim**, `run` from the add-on), `results: .cc-audits/<plan-slug>/tc-results.jsonl`, `obs_dir: .cc-audits/<plan-slug>/obs`, `run_file: .cc-audits/<plan-slug>/tc-run.json`, one `run_id` (UTC timestamp) shared by the whole run, and `calibration: true` while any Jev question in use is not calibrated (`node ~/.claude/scripts/tc-jev-judge.js bank` shows it).
+   - `api` — for `api` / `db` / `log` checks: the `tc-api-run.js` session name, `login_path` and `login_body`. Without `login_path` the tester reports those results `NOT_OBSERVABLE` instead of guessing a path.
+   - `data.<name>_command` — a ready command for a step that happens outside the browser (e.g. `step2_command`: the admin ships the order meanwhile). Only the form `node <project script> <plain args>` (no pipes, redirects, `;` `&` `$`, quotes, paths outside the project), and only a command the user saw when approving the plan. The tester refuses any other form.
+   - The run file must stay at `.cc-audits/<plan-slug>/tc-run.json` — `tc-api-run.js` refuses a run file anywhere else, and it is the manager's file: testers never write it.
+   - `$NAME` body values are filled only for names some TC lists in `secret_env`; `readable` never opens `.env*`, key files (`*.pem`, `id_*`, …), `.git/`, `.ssh/` or `api-sessions/`, and values of secret-named fields (`password`, `token`, `secret`, `api_key`, …) are masked in the output.
+2. **Tester input** — per TC, the `tc` block (`file`, `id`, `steps`, `expected` copied **verbatim**, `run` from the add-on), `results: .cc-audits/<plan-slug>/tc-results.jsonl`, `obs_dir: .cc-audits/<plan-slug>/obs`, `run_file: .cc-audits/<plan-slug>/tc-run.json`, one `run_id` (UTC timestamp) shared by the whole run, and `calibration: true` while any Jev question in use is not calibrated (`node ~/.claude/scripts/tc-jev-judge.js bank` shows it). A tester with several TCs stops only the failing TC and goes on with the rest.
 3. **Assignment** — `ui-web` TCs go to testers in parallel. `api` TCs go to **one** tester, after the screen TCs finish, run one at a time — their requests change data other TCs may be looking at.
 4. **One judge per expected result** — code → Jev → LLM (tester **TC Judging**). `api` / `db` / `log` facts are read by the tester with `tc-api-run.js` and judged by code. What the run file does not allow (`artifact`, `env`, a file not in `readable`) comes back `NOT_OBSERVABLE`; the manager may check it with a read-only command and record `judged_by: code` with the actual value. Never let a screen judgment stand in for it.
 5. **Results** — `tc-results.jsonl` gets one line per TC run (`tc_digest` marks which TC text was run, `run_id` which run). The TC file must be unchanged after the run (`git diff --quiet -- docs/tc/`).
@@ -100,8 +105,10 @@ When the plan has a TC file (`docs/tc/<feature>.tc.json`, see `reference_tc_auth
 7. **Jev as the judge** — a question × model with a calibration entry is decided by Jev (PASS / FAIL); the LLM re-checks only the verdicts marked `audit: true` (about 10%).
    - **Applying** a calibration needs the user: show `tc-jev-judge.js calibrate` (it must be `ok`, holdout included), then on their OK run `calibrate --apply --question <Q.id@v> --model <jev-X.Y.Z>`.
    - **Revoking is automatic**: 2 disagreements in the last 20 re-checks remove the entry (`calibration.json` → `revoked`), and the question goes back to the LLM. Tell the user when a run revoked one.
+   - Only the manager stores human labels (`label`), and only with the user's answer. Testers may run `audit` only for a verdict marked `audit: true`, once per sample — the script refuses the rest.
    - **Review queue** — after the run, list the disputed samples (`tc-jev-judge.js bank` → `review`) with the expected result, a short screen summary and both verdicts, and ask the user for the right answer (AskUserQuestion; skipping is fine). Store answers with `tc-jev-judge.js label --sample <id> --label human:PASS|human:FAIL`.
    - NOT_OBSERVABLE and screens with instruction-like text always go to the LLM. When the Jev model version changes, run `tc-jev-judge.js replay --model <new>` first and switch only if it is not worse.
+8. **Comparing judging methods (`judge_mode`, experiment)** — when every screen expected result has a `key`, code decides all of them and a calibrated Jev never judges. To see how Jev (or the LLM) would do on the same screens, run the same TCs again with `judge_mode: jev` or `judge_mode: llm` in the tester input and a new `run_id`; the code assertion still runs and is kept as `code_verdict`. Then `tc-jev-judge.js compare --results <results> --run-id <code run> --run-id <jev run>` gives one row per run (who decided, agreement with code, false PASS / FAIL, REVIEW share). Never use an experiment run as the TC result of a plan — its verdicts are there to be compared. Samples from a `jev` run carry the code label like any other, so they also count for calibration.
 
 ---
 

@@ -155,17 +155,18 @@ async function systemOne(config, body, { sleep = defaultSleep, fetchImpl = fetch
 
 // Strict option parser shared by the TC scripts: known flags only, a value
 // flag must be followed by a value that is not itself a flag.
-function parseArgs(args, { values = [], flags = [] } = {}) {
+// `repeat` options may be given more than once and come back as an array.
+function parseArgs(args, { values = [], flags = [], repeat = [] } = {}) {
   const opts = {};
   const positional = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (!a.startsWith('--')) { positional.push(a); continue; }
     if (flags.includes(a)) { opts[a] = true; continue; }
-    if (values.includes(a)) {
+    if (values.includes(a) || repeat.includes(a)) {
       const v = args[i + 1];
       if (v === undefined || v.startsWith('--')) throw new Error(`${a} needs a value`);
-      opts[a] = v;
+      opts[a] = repeat.includes(a) ? [...(opts[a] || []), v] : v;
       i++;
       continue;
     }

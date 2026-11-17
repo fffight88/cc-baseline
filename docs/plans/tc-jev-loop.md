@@ -60,7 +60,7 @@
 ### 범위 밖
 
 - Jev가 화면 조작을 고르는 실행 루프, 단계 2 수정 루프. 로드맵에 있던 그대로 둔다.
-- V11(판정 방식 비교 실험). 이번 변경 뒤에 별도로 한다.
+- V11(판정 방식 비교 실험). 이번 변경 뒤에 별도로 한다. → Phase F에서 `--judge-mode jev`로 앞당겨 했다(아래 "Phase F 결과").
 
 ---
 
@@ -270,7 +270,7 @@ cc-baseline에는 화면이 없다. 위 TC는 `npm test`의 단위 테스트로 
 - [ ] 기준 적용은 여전히 사용자 승인, 해제만 자동
 - [ ] 문제집·화면 텍스트가 cc-baseline 레포에 들어가지 않음
 - [ ] `npm test`, `--doctor` 통과, 이 서버에 재설치
-- [ ] Phase F: e2e-tester 에이전트 실행, 세 질문 표본 수집과 기준 적용
+- [x] Phase F: e2e-tester 에이전트 실행, 세 질문 표본 수집과 기준 적용 (Q.success_notice는 R7까지 부족)
 - [ ] security-auditor + code-reviewer 통과 후 사용자 확인을 받고 푸시
 
 ---
@@ -281,6 +281,46 @@ cc-baseline에는 화면이 없다. 위 TC는 `npm test`의 단위 테스트로 
 - **자동 해제 창:** "최근 20건"은 그 보정이 적용된 뒤(`calibrated_at` 이후)의 재검사만 센다. 다시 적용하자마자 예전 엇갈림 때문에 곧바로 해제되는 일을 막는다.
 - **검증용 최소 수량:** 검증용 분할에 PASS 2개, FAIL 2개 이상이 있어야 `ok`가 될 수 있다. 플랜에 숫자가 없던 부분이다.
 - **기존 Q.holds 보정:** 새 규칙으로 계산하면 기준용 18개로 부족하다. 플랜대로 항목은 남겨 두고, Phase F 표본으로 다시 계산한다.
-- **`tc-api-run.js` 프로젝트 루트:** `<root>/.cc-audits/<slug>/tc-run.json` 위치에서 루트를 계산한다. 다른 위치면 실행 설정에 절대 경로 `project_dir`가 있어야 한다.
+- **`tc-api-run.js` 프로젝트 루트:** `<root>/.cc-audits/<slug>/tc-run.json` 위치에서 루트를 계산한다. ~~다른 위치면 실행 설정에 절대 경로 `project_dir`가 있어야 한다.~~ 보안 감사(SEC-003) 뒤로는 이 위치의 실행 설정만 받는다.
 - **`bank --export` 무시 여부 확인:** `git check-ignore`에 끝 `/`를 붙인 경로로 묻는다. 아직 없는 폴더도 `dir/` 형식의 무시 패턴에 걸리게 하기 위해서다.
 - **`e2e-tester.md`:** API 실행 절차와 재검사 절차를 Phase A에서 미리 넣었다. 코드는 Phase C·D에서 들어왔다.
+
+---
+
+## Phase F 결과 (2026-11-17)
+
+샘플 앱에서 결함 조합을 바꿔 가며 R1~R8을 돌렸다. R1은 e2e-tester 에이전트 5명, R2부터는 메인 세션이 Playwright 스크립트로 같은 절차(단계 → 코드 판정 → 관찰 파일 → 표본 → `record`)를 돌렸다.
+
+| 항목 | 결과 |
+|---|---|
+| 새 지침 준수 (R1) | 0부터 세는 번호, `obs/<tc>/<run_id>/`와 `channel`, 화면 결과만 표본, `skipped (mutating)`, TC가 기대한 4xx 허용, curl·소스 읽기 없음 — 모두 지켜졌다 |
+| 결함 검출 (R1~R8) | 심은 결함은 하나를 빼고 모두 잡았다. 놓친 하나(주문 후 재고 감소)는 잡을 화면 TC가 없다. 결함 없는 TC를 FAIL로 판정한 일은 없다 |
+| 보정 | Q.holds(이전 적용, 다시 계산해도 `ok`), Q.error_visible(기준용 30 · 검증용 19, 오판 0, 사용자 승인 후 적용). Q.success_notice는 R7까지 기준용 26개로 부족 |
+| 적용 뒤 라운드 (R8, `--judge-mode jev`) | 화면 결과 46개 중 Jev가 35개를 결정(Q.holds 27, Q.error_visible 8)했고 코드 판정과 35개 모두 일치. 나머지 11개(기준 없는 Q.success_notice 6, 중간 점수 5)는 LLM이 판정했고 모두 코드와 일치 |
+| 재검사 | Jev 결정 35개 중 5개(14%)가 `audit: true`, `audits.jsonl`에 5줄, 엇갈림 0 → 검토 대기 없음 |
+| 자동 해제 | 실제 문제집 사본에서 재검사 2건을 일부러 엇갈리게 하자 Q.holds가 `revoked`로 옮겨졌다 |
+
+### V11 — 판정 방식 비교 (R8, 결함 9개 조합)
+
+| 방식 | 판정 주체 (화면 46개) | 코드 정답과 일치 | 잘못된 PASS / FAIL |
+|---|---|---|---|
+| ⓐ 코드 → Jev → LLM (기본) | 코드 46 | — | — |
+| ⓑ Jev 먼저 (`--judge-mode jev`) | Jev 35 · LLM 11 | 46 / 46 | 0 / 0 |
+| ⓒ LLM만 | 실행하지 않음 | — | — |
+
+- Jev가 망설인(중간 점수) 5개는 모두 주소(URL)나 "버튼이 없다"·"행이 1개다"처럼 화면 텍스트로 드러나지 않는 사실이었다. 이런 기대 결과는 코드 키로 두는 편이 맞다.
+- 한계: 표본과 비교가 모두 샘플 앱 하나에서 나왔고, 라운드마다 화면 문구가 거의 같다. ⓒ와 토큰·시간 비교는 하지 않았다.
+
+### 발견해 고친 것
+
+- 지침: TC 하나가 실패해도 나머지 TC는 계속(H1), 실패 로그는 `tc-api-run.js`로만 읽고 판정에 쓰지 않음(H2·H5), 매니저가 준 `*_command` 단계(H3), `api.login_path`(H4), 결함이 있어도 확인되는 `done_when`(H6), 관찰 범위는 기대 결과가 가리키는 영역 + 대상이 있으면 `item` 필수(H9).
+- 코드: `tc-api-run.js read`의 `--grep` 반복(모두 포함, H7), `tc-jev-judge.js`의 `--judge-mode jev`·`record`의 `judge_mode`/`code_verdict`·`compare`(H8, V11).
+- R2 첫 실행은 관찰 범위가 좁아(배너 누락, `item` 없음) Jev와 코드 라벨이 엇갈리는 표본을 만들었다. 그 46개를 문제집에서 지우고 다시 돌렸다. H9가 이 문제를 지침에서 막는다.
+
+---
+
+## Audit History
+- iter-1: 2026-11-17 / critical=0 high=0 medium=5 low=2 / next_action=user_interview → 사용자 결정(SEC-003 위치 고정, SEC-004 형식 제한, SEC-005 코드+지침, SEC-006 문서) 반영, auto 항목(SEC-001·002·007) 수정 → done
+
+## Code Review History
+- code-review-iter-1: 2026-11-17 / critical=0 high=0 medium=1 low=4 / profile_status=cached / next_action=done → QA-001·002·003 수정, QA-004(jev 모드 표본도 보정에 포함, 문서 명시)·QA-005(테스트 추가) 사용자 결정대로 반영

@@ -7,6 +7,11 @@
 //   node tc-jev-judge.js judge <obs.json> [--label code:PASS|code:FAIL|human:PASS|human:FAIL]
 //       prints one JSON verdict. With --label it only stores a labeled sample
 //       (calibration) and returns no verdict.
+//   node tc-jev-judge.js judge <obs.json> --judge-mode jev --label code:PASS|code:FAIL
+//       experiment (V11 judge-mode comparison): the code verdict is stored as the
+//       sample label, and Jev still decides as if code had not (calibrated → PASS /
+//       FAIL with the usual re-check share, otherwise REVIEW). Adds `code_verdict`
+//       and `agree_with_code`.
 //   node tc-jev-judge.js calibrate [--min 30]
 //   node tc-jev-judge.js calibrate --apply --question <Q.id@v> --model <jev-X.Y.Z> [--min 30]
 //       proposes thresholds from code/human-labeled samples; writes one
@@ -20,6 +25,9 @@
 //       disagreements in the last 20 re-checks revoke that calibration entry.
 //   node tc-jev-judge.js label --sample <id> --label human:PASS|human:FAIL
 //       stores a person's answer for a sample (review queue).
+//   node tc-jev-judge.js compare --results <…/tc-results.jsonl> --run-id <id> [--run-id <id> …]
+//       one row per run: judge mode, who decided, accuracy against the code verdicts,
+//       REVIEW / NOT_OBSERVABLE share (the V11 table).
 //   node tc-jev-judge.js bank [--export <dir>]
 //       the sample bank per question × model: counts per split, review queue,
 //       re-check record, calibration state. --export copies it to a private dir.
@@ -59,6 +67,7 @@ const AX_CAP = 6000;
 const LABEL_SOURCES = ['code', 'human'];
 const VERDICTS = ['PASS', 'FAIL', 'REVIEW', 'NOT_OBSERVABLE'];
 const JUDGES = ['code', 'jev', 'llm', 'human'];
+const JUDGE_MODES = ['code', 'jev', 'llm'];   // V11: code → Jev → LLM (default) · Jev first · LLM only
 const SHA_RE = /^[0-9a-f]{64}$/;
 const RUN_ID_RE = /^[0-9A-Za-z][0-9A-Za-z._-]{0,39}$/;
 const HOLDOUT_PERCENT = 30;
@@ -235,29 +244,33 @@ function appendSample(jevDir, body, sample) {
   return requestSha;
 }
 
-async function judge(input, { config = loadConfig(), jevDir = jevDirDefault(), sleep, label = null, env = process.env } = {}) {
+async function judge(input, { config = loadConfig(), jevDir = jevDirDefault(), sleep, label = null, mode = 'code', env = process.env } = {}) {
+  if (mode === 'jev' && !(label && label.source === 'code')) throw new Error('--judge-mode jev needs the code verdict as --label code:PASS|FAIL');
+  // judge-mode jev: the label is stored as usual, but Jev still decides.
+  const sampleOnly = label && mode !== 'jev';
   const base = { tc: input.tc, index: input.index, verdict: null, judged_by: null };
   // A calibration sample is a screen judgment; an api / db / log fact has no screen to learn from.
   if (label && input.channel !== undefined && !SCREEN_CHANNELS.includes(input.channel)) {
     return { ...base, status: 'error', error: `calibration samples come only from screen channels (${SCREEN_CHANNELS.join(' / ')}), not ${input.channel}` };
   }
-  if (config.error) return { ...base, status: 'error', error: redact(config.error, config.key) };
-  if (!config.key) return { ...base, status: 'unconfigured' };
+  const early = r => (mode === 'jev' ? { ...r, judge_mode: 'jev', code_verdict: label.value, agree_with_code: null } : r);
+  if (config.error) return early({ ...base, status: 'error', error: redact(config.error, config.key) });
+  if (!config.key) return early({ ...base, status: 'unconfigured' });
 
   const { body, question } = buildRequest(input, { env });
   if (body.state.loading) {
-    return { ...base, status: 'skipped', verdict: 'REVIEW', reason: 'loading — wait, observe again, then ask', question };
+    return early({ ...base, status: 'skipped', verdict: 'REVIEW', reason: 'loading — wait, observe again, then ask', question });
   }
   const injection = injectionSuspected(input.observation);
 
   const r = await systemOne(config, body, { sleep });
-  if (!r.ok) return { ...base, status: 'error', error: r.error, question, model: config.model };
+  if (!r.ok) return early({ ...base, status: 'error', error: r.error, question, model: config.model });
 
   const answers = r.response.answers || {};
   const scores = { holds: noulOf(answers, 'holds'), observable: noulOf(answers, 'observable') };
   const cal = readCalibration(jevDir).find(e => e.question === question && e.model === config.model && e.input_mode === INPUT_MODE);
   const raw = decide(scores, cal ? { ...DEFAULT_THRESHOLDS, ...cal.thresholds } : DEFAULT_THRESHOLDS);
-  const jevDecides = !label && !injection && cal && (raw === 'PASS' || raw === 'FAIL');
+  const jevDecides = !sampleOnly && !injection && cal && (raw === 'PASS' || raw === 'FAIL');
   ensurePrivateDir(jevDir);
   const sampleId = appendSample(jevDir, body, {
     question, model: config.model, input_mode: INPUT_MODE, scores,
@@ -269,8 +282,12 @@ async function judge(input, { config = loadConfig(), jevDir = jevDirDefault(), s
   });
   const usage = r.response.usage || {};
   const result = { ...base, status: 'ok', question, model: config.model, input_mode: INPUT_MODE, scores, sample: sampleId, usage, ms: r.ms };
-  if (label) return result;
+  if (sampleOnly) return result;
+  const out = decideOrCap(result, { raw, injection, cal, jevDecides, sampleId });
+  return mode === 'jev' ? withCode(out, label.value) : out;
+}
 
+function decideOrCap(result, { raw, injection, cal, jevDecides, sampleId }) {
   const toLlm = reason => ({ ...result, verdict: 'REVIEW', capped: true, shadow: raw, reason });
   if (injection) return toLlm('instruction-like text on the screen — LLM judges, Jev kept as shadow');
   if (!cal) return toLlm('uncalibrated — LLM judges, Jev kept as shadow');
@@ -278,6 +295,12 @@ async function judge(input, { config = loadConfig(), jevDir = jevDirDefault(), s
   if (!jevDecides) return { ...result, verdict: raw, capped: false, judged_by: null };
   const rate = typeof cal.audit_rate === 'number' ? cal.audit_rate : DEFAULT_AUDIT_RATE;
   return { ...result, verdict: raw, capped: false, judged_by: 'jev', audit: auditSelected(sampleId, rate) };
+}
+
+// judge-mode jev: show how Jev's answer compares with the code verdict it did not see.
+function withCode(r, code) {
+  const decided = r.judged_by === 'jev';
+  return { ...r, judge_mode: 'jev', code_verdict: code, agree_with_code: decided ? r.verdict === code : null };
 }
 
 function readSamples(jevDir) {
@@ -380,6 +403,15 @@ function audit(jevDir, { sample, llm, now = new Date() }) {
   const rows = readSamples(jevDir).filter(s => s.request_sha256 === sample && s.jev_verdict);
   if (!SHA_RE.test(String(sample)) || rows.length === 0) throw new Error(`no Jev-decided sample ${sample}`);
   const s = rows[rows.length - 1];
+  // Only verdicts judge marked audit:true can be re-checked, and each once — so
+  // extra re-checks cannot push a calibration out or water disagreements down.
+  const cal = readCalibrationFile(jevDir);
+  const known = [...cal.entries, ...cal.revoked].find(e => e.question === s.question && e.model === s.model && e.input_mode === s.input_mode);
+  const rate = known && typeof known.audit_rate === 'number' ? known.audit_rate : DEFAULT_AUDIT_RATE;
+  if (!auditSelected(sample, rate)) throw new Error(`sample ${sample} was not marked audit: true — re-check only those`);
+  if (readJsonl(path.join(jevDir, 'audits.jsonl')).some(a => a.request_sha256 === sample && a.model === s.model)) {
+    throw new Error(`sample ${sample} was already re-checked`);
+  }
   const line = { request_sha256: sample, question: s.question, model: s.model, input_mode: s.input_mode,
     tc: s.tc, index: s.index, project: s.project, jev: s.jev_verdict, llm, agree: s.jev_verdict === llm, at: now.toISOString() };
   ensurePrivateDir(jevDir);
@@ -524,7 +556,9 @@ function record({ results, tcFile, entry }) {
     seen.add(e.index);
     if (!VERDICTS.includes(e.verdict)) throw new Error(`expected[${e.index}].verdict must be one of ${VERDICTS.join(' | ')}`);
     if (!JUDGES.includes(e.judged_by)) throw new Error(`expected[${e.index}].judged_by must be one of ${JUDGES.join(' | ')}`);
+    if (e.code_verdict !== undefined && !VERDICTS.includes(e.code_verdict)) throw new Error(`expected[${e.index}].code_verdict must be one of ${VERDICTS.join(' | ')}`);
   }
+  if (entry.judge_mode !== undefined && !JUDGE_MODES.includes(entry.judge_mode)) throw new Error(`judge_mode must be one of ${JUDGE_MODES.join(' | ')}`);
   if (seen.size !== count && !Number.isInteger(entry.failed_at_step)) {
     throw new Error(`${entry.tc} has ${count} expected results but ${seen.size} verdicts — judge every one, or set failed_at_step`);
   }
@@ -534,24 +568,52 @@ function record({ results, tcFile, entry }) {
   return line;
 }
 
-const USAGE = 'usage: tc-jev-judge.js judge <obs.json> [--label code|human:PASS|FAIL]\n' +
+// V11 table: per run, who decided, how often the verdict matched the code verdict
+// (only where one is recorded), and how much was left to REVIEW / NOT_OBSERVABLE.
+function compare({ results, runIds }) {
+  if (!fs.existsSync(results)) throw new Error(`no results file ${results}`);
+  const lines = readJsonl(results);
+  return runIds.map(id => {
+    const mine = lines.filter(l => l.run_id === id);
+    if (mine.length === 0) return { run_id: id, missing: true, reason: `no line with this run_id in ${results}` };
+    const ex = mine.flatMap(l => (Array.isArray(l.expected) ? l.expected : []));
+    const by = {};
+    for (const e of ex) { const k = e.judged_by || 'none'; by[k] = (by[k] || 0) + 1; }
+    const withCode = ex.filter(e => e.code_verdict === 'PASS' || e.code_verdict === 'FAIL');
+    const decided = withCode.filter(e => e.verdict === 'PASS' || e.verdict === 'FAIL');
+    const share = n => (ex.length ? n / ex.length : null);
+    return {
+      run_id: id, judge_mode: [...new Set(mine.map(l => l.judge_mode || 'code'))].join(','), tcs: mine.length, expected: ex.length,
+      judged_by: by,
+      vs_code: { compared: withCode.length, decided: decided.length, agree: decided.filter(e => e.verdict === e.code_verdict).length,
+        false_pass: decided.filter(e => e.verdict === 'PASS' && e.code_verdict === 'FAIL').length,
+        false_fail: decided.filter(e => e.verdict === 'FAIL' && e.code_verdict === 'PASS').length },
+      review_share: share(ex.filter(e => e.verdict === 'REVIEW').length),
+      not_observable_share: share(ex.filter(e => e.verdict === 'NOT_OBSERVABLE').length),
+    };
+  });
+}
+
+const USAGE = 'usage: tc-jev-judge.js judge <obs.json> [--label code|human:PASS|FAIL] [--judge-mode jev]\n' +
   '       tc-jev-judge.js calibrate [--min N] [--apply --question <Q.id@v> --model <jev-X.Y.Z>]\n' +
   '       tc-jev-judge.js replay --model <jev-X.Y.Z>\n' +
   '       tc-jev-judge.js record --results <tc-results.jsonl> --tc-file <tc file> --entry <entry.json>\n' +
   '       tc-jev-judge.js audit --sample <id> --llm PASS|FAIL\n' +
   '       tc-jev-judge.js label --sample <id> --label human:PASS|human:FAIL\n' +
+  '       tc-jev-judge.js compare --results <tc-results.jsonl> --run-id <id> [--run-id <id> …]\n' +
   '       tc-jev-judge.js bank [--export <dir>]';
 
 async function main(argv) {
   const [cmd, ...rest] = argv.slice(2);
   const spec = {
-    judge: { values: ['--label'] },
+    judge: { values: ['--label', '--judge-mode'] },
     calibrate: { values: ['--min', '--question', '--model'], flags: ['--apply'] },
     replay: { values: ['--model'] },
     record: { values: ['--results', '--tc-file', '--entry'] },
     audit: { values: ['--sample', '--llm'] },
     label: { values: ['--sample', '--label'] },
     bank: { values: ['--export'] },
+    compare: { values: ['--results'], repeat: ['--run-id'] },
   }[cmd];
   if (!spec) { console.error(USAGE); return 2; }
   let opts, positional;
@@ -565,9 +627,12 @@ async function main(argv) {
       if (!LABEL_SOURCES.includes(source) || !['PASS', 'FAIL'].includes(value)) { console.error('--label must be code|human:PASS|FAIL'); return 2; }
       label = { source, value };
     }
+    const mode = opts['--judge-mode'] || 'code';
+    if (!['code', 'jev'].includes(mode)) { console.error('--judge-mode must be code or jev (llm mode does not ask Jev)'); return 2; }
+    if (mode === 'jev' && !(label && label.source === 'code')) { console.error('--judge-mode jev needs the code verdict as --label code:PASS|FAIL'); return 2; }
     const config = loadConfig();
     const input = JSON.parse(fs.readFileSync(positional[0], 'utf8'));
-    const result = await judge(input, { config, label });
+    const result = await judge(input, { config, label, mode });
     console.log(redact(JSON.stringify(result), config.key));
     return result.status === 'error' ? 1 : 0;
   }
@@ -602,6 +667,11 @@ async function main(argv) {
     console.log(JSON.stringify(bank(jevDirDefault()), null, 2));
     return 0;
   }
+  if (cmd === 'compare') {
+    if (!opts['--results'] || !opts['--run-id']) { console.error(USAGE); return 2; }
+    console.log(JSON.stringify(compare({ results: opts['--results'], runIds: opts['--run-id'] }), null, 2));
+    return 0;
+  }
   if (cmd === 'replay') {
     if (!opts['--model']) { console.error(USAGE); return 2; }
     const cand = loadConfig({ env: { ...process.env, CC_BASELINE_JEV_MODEL: opts['--model'] } });
@@ -623,6 +693,6 @@ if (require.main === module) {
 }
 
 module.exports = {
-  normalizeObservation, buildRequest, injectionSuspected, judge, decide, calibrate, applyCalibration, replay, record,
+  normalizeObservation, buildRequest, injectionSuspected, judge, decide, calibrate, applyCalibration, replay, record, compare,
   audit, label, bank, exportBank, splitOf, auditSelected, STANDARD, DEFAULT_THRESHOLDS,
 };

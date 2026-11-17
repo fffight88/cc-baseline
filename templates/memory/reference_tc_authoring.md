@@ -98,7 +98,7 @@ JSON (Node reads it with no dependency). The plan body shows a TC summary table 
 | `level` | `functional` · `contract` · `integration` |
 | `surface` | `ui-web` (e2e-tester runs it) · `api` · `cli` |
 | `steps[].goal` | one user intent per step |
-| `steps[].done_when.expect` | one sentence: what the screen looks like when the step is done. Required. For `surface: api` / `cli`, the sentence says the response or exit came back ("a response status comes back") — the facts to check go in `expected` |
+| `steps[].done_when.expect` | one sentence: what the screen looks like when the step is done. Required. It must be checkable **whether or not the feature works** — "the URL gets `status=shipped`", "a request for the list is sent", not "the table is redrawn" (an unchanged table cannot show it). For `surface: api` / `cli`, the sentence says the response or exit came back ("a response status comes back") — the facts to check go in `expected` |
 | `steps[].input_refs` | names of inputs; the values come from the run add-on file (`tc-run.json`), never from the TC |
 | `expected[].text` | one fact, non-empty |
 | `expected[].observe.channel` | `dom` · `ax-node` · `api` · `db` · `log` · `artifact` · `env` · `unknown` |
@@ -185,7 +185,7 @@ node ~/.claude/scripts/tc-jev-check.js docs/tc/<feature>.tc.json --out .cc-audit
 
 - [ ] `docs/tc/<feature>.tc.json` exists and parses; IDs are meaning names, unique, and every `action_refs` / `evidence_refs` resolves
 - [ ] Every action has a source; every TC has a `basis`; every `proposal` is `needs-decision`
-- [ ] Every step has `done_when.expect`; every input is an `input_refs` name, never a literal value
+- [ ] Every step has `done_when.expect` that can be checked even when the feature is broken; every input is an `input_refs` name, never a literal value
 - [ ] Every expected result is one fact with an `observe.channel`; off-screen facts use `api` / `db` / `log`
 - [ ] Success and failure flows are separate TCs; no subjective/visual sentences
 - [ ] No URLs, results, thresholds or secrets in the TC file

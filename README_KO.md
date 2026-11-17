@@ -179,7 +179,7 @@ npx github:fffight88/cc-baseline --project --uninstall --yes
 | Design Director 에이전트 (`design-director`) | 그린필드 전용 — 레인 분류 · `DESIGN.md` 카탈로그에서 방향 후보 3개와 각 로컬 미리보기 링크 · 사용자 인터뷰 · publisher용 `.cc-audits/design-profile.md` 시드; 화면 작성 안 함 |
 | Publisher 에이전트 (`publisher`) | 관리자형 프로젝트 UI 퍼블리싱 — 디자인 프로파일 캐싱(스택/토큰/컴포넌트) · 기획서 분석(md/이미지/pdf/html) · 톤앤매너 반영 · 재사용 우선 마크업 + CSS + 정적 컴포넌트 · 모든 UI 상태 + a11y · 망라 렌더 비교(thead+tbody, 전 상태) + 런타임 불변식 단언 + axe-core 스캔(Aside, 대체 Playwright) · Vercel Web Interface Guidelines 자가점검; 마크업/CSS만(로직/바인딩 제외); 기능 검증은 e2e-tester에 핸드오프 |
 | HTML 리포트 생성기 (`scripts/audit-report.js`) | 감사/리뷰 JSON을 심각도 색상 코딩된 HTML로 변환. `node ~/.claude/scripts/audit-report.js <audit-dir>` |
-| TC 도구 (`scripts/tc-lint.js`, `tc-jev-check.js`, `tc-jev-judge.js`, `tc-api-run.js`, `jev-client.js`) | `docs/tc/*.tc.json` 작성 검사(경고만, `--strict`면 실패, `-`면 초안을 표준 입력으로), 기대 결과별 Jev 판정과 문제집(`judge` / `calibrate` / `audit` / `label` / `bank` / `replay` / `record`), 실행 설정의 출처·파일로 제한된 API 요청·데이터 읽기(`tc-api-run.js`). Jev는 선택: 키는 `CC_BASELINE_JEV_KEY`, `TYPESAFE_API_KEY`, `~/.config/cc-baseline/jev.env`(권한 600) 순으로 찾음. 모델은 정확한 판본만(기본 `jev-1.14.0`) |
+| TC 도구 (`scripts/tc-lint.js`, `tc-jev-check.js`, `tc-jev-judge.js`, `tc-api-run.js`, `jev-client.js`) | `docs/tc/*.tc.json` 작성 검사(경고만, `--strict`면 실패, `-`면 초안을 표준 입력으로), 기대 결과별 Jev 판정과 문제집(`judge` / `calibrate` / `audit` / `label` / `bank` / `replay` / `record` / `compare`), 실행 설정의 출처·파일로 제한된 API 요청·데이터 읽기(`tc-api-run.js`). Jev는 선택: 키는 `CC_BASELINE_JEV_KEY`, `TYPESAFE_API_KEY`, `~/.config/cc-baseline/jev.env`(권한 600) 순으로 찾음. 모델은 정확한 판본만(기본 `jev-1.14.0`) |
 | Aside 세션 헬퍼 (`scripts/aside-session.sh`) | 세션 이름별로 `aside repl` 하나를 유지해 브라우저 단계끼리 탭·변수를 공유 (`start` / `send` / `stop` / `list`) |
 | DESIGN.md 미리보기 (`design-previews/` + `scripts/design-preview.js`) | 카탈로그 브랜드마다 하나씩 만든 페이지와 필터 가능한 목록. 각 DESIGN.md의 고유 컴포넌트와 레이아웃으로 만듦. Design Director 인터뷰 동안 `127.0.0.1`에서 띄움 (`start` / `status` / `stop`). 원격 머신이면 `ssh -L <포트>:127.0.0.1:<포트>`로 접속 |
 | 훅 설정 (`settings.json hooks`) | SessionStart 메모리 로드, PreToolUse E2E 가이드 주입 · 경로 가드, SessionEnd 프로세스 정리 |
@@ -434,7 +434,7 @@ cc-baseline은 `~/.claude/settings.json`의 `permissions` 키를 절대 읽거�
 - 훅 명령어의 모든 경로는 `{{HOME}}`으로 저장되고 설치 시 치환됩니다
 - 설치 로그(`~/.claude/.cc-baseline-install.log`), 백업, 감사 리포트(`.cc-audits/`)는 `.gitignore`에 등록됩니다
 - `~/.claude.json`에서는 `playwright-test-1~5`만 읽고 씁니다; 다른 키는 건드리지 않습니다
-- Jev 키가 설정되면 `tc-jev-check.js`는 TC 기대 결과 문장을, `tc-jev-judge.js`는 관측한 화면 텍스트(URL·제목·보이는 글·접근성 요약)를 이메일·전화/카드/주민번호·토큰과 테스터가 지정한 비밀 입력값을 가린 뒤 TypeSafe API로 보냅니다 — 테스트 계정·테스트 데이터를 쓰세요. 키가 없으면 아무것도 보내지 않습니다. 판정 표본·재검사·보정은 `~/.claude/jev/`(권한 700)에 남고, `bank --export`는 무시되지 않은 git 작업 트리 안으로는 복사하지 않습니다. 키는 결과·표본·로그 어디에도 쓰지 않습니다. `tc-api-run.js`는 세션 쿠키를 `.cc-audits/<plan>/api-sessions/`(권한 600)에 두고, 출력에서 쿠키·인증 헤더·토큰을 가립니다
+- Jev 키가 설정되면 `tc-jev-check.js`는 TC 기대 결과 문장을, `tc-jev-judge.js`는 관측한 화면 텍스트(URL·제목·보이는 글·접근성 요약)를 이메일·전화/카드/주민번호·토큰과 테스터가 지정한 비밀 입력값을 가린 뒤 TypeSafe API로 보냅니다 — 테스트 계정·테스트 데이터를 쓰세요. 키가 없으면 아무것도 보내지 않습니다. 판정 표본·재검사·보정은 지우기 전까지 `~/.claude/jev/`(권한 700)에 남습니다(`rm -r ~/.claude/jev`로 전부 삭제, `~/.claude/jev/requests/`에는 가린 화면 텍스트가 있습니다). `bank --export`는 무시되지 않은 git 작업 트리 안으로는 복사하지 않습니다. 키는 결과·표본·로그 어디에도 쓰지 않습니다. `tc-api-run.js`는 세션 쿠키를 `.cc-audits/<plan>/api-sessions/`(권한 600)에 두고, 출력에서 쿠키·인증 헤더·토큰을 가립니다
 
 ---
 
