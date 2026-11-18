@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "feature": "wiki",
+  "title": "Screen and feature wiki metadata",
+  "plan": "wiki-metadata",
+  "sources": [
+    { "id": "REQ.wiki-plan", "kind": "requirement", "locator": "docs/plans/wiki-metadata.md (approved 2026-11-18)" },
+    { "id": "REQ.wiki-purpose", "kind": "requirement", "locator": "user request 2026-11-18: wiki metadata so implemented screens and features are referenced faster and more accurately" },
+    { "id": "DEC.wiki-owner", "kind": "decision", "locator": "user decision 2026-11-18: orchestrator writes pages, /wiki init is manual with a /plan suggestion, stale pages are refreshed before use" }
+  ],
+  "actions": [
+    { "id": "ACT.wiki.check", "title": "Check wiki page status", "actor": "orchestrator", "trigger": "runs wiki.js check", "preconditions": ["docs/wiki exists"], "outputs": ["status per page"], "evidence_refs": ["REQ.wiki-plan", "DEC.wiki-owner"] },
+    { "id": "ACT.wiki.stamp", "title": "Stamp a page after updating it", "actor": "orchestrator", "trigger": "runs wiki.js stamp <slug>", "preconditions": ["the page lists its source files"], "outputs": ["source_hash and stamped_at in the page frontmatter"], "evidence_refs": ["REQ.wiki-plan"] },
+    { "id": "ACT.wiki.index", "title": "Rebuild the wiki index", "actor": "orchestrator", "trigger": "runs wiki.js index", "preconditions": ["docs/wiki exists"], "outputs": ["docs/wiki/index.md"], "evidence_refs": ["REQ.wiki-plan"] },
+    { "id": "ACT.wiki.find", "title": "Find pages for a term", "actor": "orchestrator", "trigger": "runs wiki.js find <term>", "preconditions": ["docs/wiki exists"], "outputs": ["matching pages with matched fields and status"], "evidence_refs": ["REQ.wiki-purpose"] }
+  ],
+  "test_cases": [
+    { "id": "TC.wiki.check-ok", "title": "A page right after stamp is ok", "action_refs": ["ACT.wiki.check"], "level": "functional", "surface": "cli",
+      "preconditions": ["screen page order-detail lists src/order-detail.js", "wiki.js stamp order-detail was run"],
+      "steps": [{ "goal": "Run wiki.js check --json", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The status of order-detail is ok", "observe": { "channel": "artifact", "key": "stdout JSON .pages[order-detail].status" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.wiki-plan"] }, "readiness": "ready" },
+    { "id": "TC.wiki.check-stale", "title": "A page is stale after a listed file changes", "action_refs": ["ACT.wiki.check"], "level": "functional", "surface": "cli",
+      "preconditions": ["pages order-detail and order-list were stamped", "src/order-detail.js was edited afterwards"],
+      "steps": [{ "goal": "Run wiki.js check --json", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The status of order-detail is stale", "observe": { "channel": "artifact", "key": "stdout JSON .pages[order-detail].status" } },
+        { "text": "The status of order-list is ok", "observe": { "channel": "artifact", "key": "stdout JSON .pages[order-list].status" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.wiki-plan"] }, "readiness": "ready" },
+    { "id": "TC.wiki.check-missing-file", "title": "A page is broken when a listed file is missing", "action_refs": ["ACT.wiki.check"], "level": "functional", "surface": "cli",
+      "preconditions": ["page order-detail was stamped", "src/order-detail.js was deleted afterwards"],
+      "steps": [{ "goal": "Run wiki.js check --json", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The status of order-detail is broken", "observe": { "channel": "artifact", "key": "stdout JSON .pages[order-detail].status" } },
+        { "text": "The problems of order-detail name src/order-detail.js", "observe": { "channel": "artifact", "key": "stdout JSON .pages[order-detail].problems" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.wiki-plan"] }, "readiness": "ready" },
+    { "id": "TC.wiki.check-broken-link", "title": "A links_to entry with no matching page makes the page broken", "action_refs": ["ACT.wiki.check"], "level": "functional", "surface": "cli",
+      "preconditions": ["page order-list was stamped and has links_to [order-detail, refund-history]", "no page refund-history exists"],
+      "steps": [{ "goal": "Run wiki.js check --json", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The status of order-list is broken", "observe": { "channel": "artifact", "key": "stdout JSON .pages[order-list].status" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.wiki-plan"] }, "readiness": "ready" },
+    { "id": "TC.wiki.check-invalid", "title": "A page with no kind is invalid", "action_refs": ["ACT.wiki.check"], "level": "functional", "surface": "cli",
+      "preconditions": ["page draft-screen has a frontmatter with no kind key"],
+      "steps": [{ "goal": "Run wiki.js check --json", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The status of draft-screen is invalid", "observe": { "channel": "artifact", "key": "stdout JSON .pages[draft-screen].status" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.wiki-plan"] }, "readiness": "ready" },
+    { "id": "TC.wiki.strict-exit", "title": "With --strict the check exits 1 when a page is not ok", "action_refs": ["ACT.wiki.check"], "level": "functional", "surface": "cli",
+      "preconditions": ["one page is stale and the others are ok"],
+      "steps": [{ "goal": "Run wiki.js check --strict", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The exit code is 1", "observe": { "channel": "artifact", "key": "exit code" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.wiki-plan"] }, "readiness": "ready" },
+    { "id": "TC.wiki.stamp-refreshes", "title": "After stamp a stale page is ok again", "action_refs": ["ACT.wiki.stamp"], "level": "functional", "surface": "cli",
+      "preconditions": ["page order-detail is stale", "the page body has a line 'note: keep this'"],
+      "steps": [
+        { "goal": "Run wiki.js stamp order-detail", "done_when": { "expect": "The command exits" } },
+        { "goal": "Run wiki.js check --json", "done_when": { "expect": "The command exits" } }
+      ],
+      "expected": [
+        { "text": "The status of order-detail is ok", "observe": { "channel": "artifact", "key": "stdout JSON .pages[order-detail].status" } },
+        { "text": "The page body still has the line 'note: keep this'", "observe": { "channel": "artifact", "key": "docs/wiki/screens/order-detail.md body" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.wiki-plan", "DEC.wiki-owner"] }, "readiness": "ready" },
+    { "id": "TC.wiki.stamp-outside-root", "title": "Stamping a page that lists a file outside the project is refused", "action_refs": ["ACT.wiki.stamp"], "level": "functional", "surface": "cli",
+      "preconditions": ["page evil lists ../outside.js in files", "page evil has no source_hash"],
+      "steps": [{ "goal": "Run wiki.js stamp evil", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The exit code is 2", "observe": { "channel": "artifact", "key": "exit code" } },
+        { "text": "Page evil still has no source_hash", "observe": { "channel": "artifact", "key": "docs/wiki/screens/evil.md frontmatter" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.wiki-plan"] }, "readiness": "ready" },
+    { "id": "TC.wiki.index-lists-pages", "title": "index.md lists every screen with its status", "action_refs": ["ACT.wiki.index"], "level": "functional", "surface": "cli",
+      "preconditions": ["screen pages order-list (ok) and order-detail (stale) exist"],
+      "steps": [{ "goal": "Run wiki.js index", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "docs/wiki/index.md has a row for order-list with status ok", "observe": { "channel": "artifact", "key": "docs/wiki/index.md screens table" } },
+        { "text": "docs/wiki/index.md has a row for order-detail with status stale", "observe": { "channel": "artifact", "key": "docs/wiki/index.md screens table" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.wiki-plan"] }, "readiness": "ready" },
+    { "id": "TC.wiki.find-component", "title": "Searching a component name finds the screens that use it", "action_refs": ["ACT.wiki.find"], "level": "functional", "surface": "cli",
+      "preconditions": ["order-list has components [DataTable, Pager]", "order-detail has components [StatusBadge]"],
+      "steps": [{ "goal": "Run wiki.js find datatable --json", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The output results list holds order-list with matched field components", "observe": { "channel": "artifact", "key": "stdout JSON .results" } },
+        { "text": "order-detail is not in the output results list", "observe": { "channel": "artifact", "key": "stdout JSON .results" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.wiki-purpose"] }, "readiness": "ready" },
+    { "id": "TC.wiki.symlink-wiki-refused", "title": "index is refused when docs/wiki is a symlink", "action_refs": ["ACT.wiki.index"], "level": "functional", "surface": "cli",
+      "preconditions": ["docs/wiki is a symlink to a directory outside the project"],
+      "steps": [{ "goal": "Run wiki.js index", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The exit code is 2", "observe": { "channel": "artifact", "key": "exit code" } },
+        { "text": "No index.md is created in the symlink target", "observe": { "channel": "artifact", "key": "<symlink target>/index.md" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.wiki-plan"] }, "readiness": "ready" }
+  ],
+  "open_questions": []
+}
