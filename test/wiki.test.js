@@ -238,6 +238,57 @@ t('wiki usage: unknown option, unknown command, empty find term exit 2', () => {
   assert.equal(wiki(root, 'stamp', 'no-such-page').code, 2);
 });
 
+t('wiki audit fixes: control characters / long entries invalid, non-file page invalid, CRLF kept, --all with no pages', () => {
+  const root = twoScreens();
+  write(root, 'src/x.js', 'x\n');
+  screen(root, 'esc', { title: 'bad\u001b[31m', files: '[src/x.js]' });
+  screen(root, 'long', { components: `[${'a'.repeat(301)}]`, files: '[src/x.js]' });
+  fs.mkdirSync(path.join(root, 'docs/wiki/screens/dir.md'));
+  const pages = wiki(root, 'check', '--json').json.pages;
+  assert.equal(pages.esc.status, 'invalid');
+  assert.equal(pages.long.status, 'invalid');
+  assert.equal(pages.dir.status, 'invalid');
+  const crlf = '---\r\nkind: screen\r\nslug: crlf\r\ntitle: t\r\nroute: /c\r\nfiles: [src/x.js]\r\n---\r\n\r\nbody\r\n';
+  write(root, 'docs/wiki/screens/crlf.md', crlf);
+  assert.equal(wiki(root, 'stamp', 'crlf').code, 0);
+  const after = fs.readFileSync(path.join(root, 'docs/wiki/screens/crlf.md'), 'utf8');
+  assert.equal(after.replace(/\r\n/g, '').includes('\n'), false, 'no bare LF after stamping a CRLF page');
+  const empty = project();
+  const r = wiki(empty, 'stamp', '--all');
+  assert.equal(r.code, 2);
+  assert.match(r.stderr, /no pages to stamp/);
+});
+
+t('wiki review fixes: a feature goes stale with its screens; missing tc is broken; features table; text output; quoted commas', () => {
+  const root = twoScreens();
+  write(root, 'docs/wiki/features/order-cancel.md', '---\nkind: feature\nslug: order-cancel\ntitle: 주문 취소\nscreens: [order-detail]\n---\n');
+  assert.equal(wiki(root, 'stamp', 'order-cancel').code, 0);
+  assert.equal(statusOf(root, 'order-cancel').status, 'ok');
+  write(root, 'src/order-detail.js', 'detail v2\n');
+  assert.equal(statusOf(root, 'order-cancel').status, 'stale', 'a change in a screen file makes its feature stale');
+  assert.equal(statusOf(root, 'order-list').status, 'ok');
+  // a tc file that does not exist
+  screen(root, 'order-list', { components: '[DataTable, Pager]', links_to: '[order-detail]', tc: 'docs/tc/nope.tc.json' });
+  const p = statusOf(root, 'order-list');
+  assert.equal(p.status, 'broken');
+  assert.ok(p.problems.some(x => x.includes('nope.tc.json')));
+  // features table in index.md
+  assert.equal(wiki(root, 'index').code, 0);
+  const idx = fs.readFileSync(path.join(root, 'docs/wiki/index.md'), 'utf8');
+  assert.match(idx, /^\| \[order-cancel\]\(features\/order-cancel\.md\) \| 주문 취소 \| order-detail \| stale \|$/m);
+  // plain text output
+  const c = wiki(root, 'check');
+  assert.match(c.stdout, /^stale\s+feature\s+order-cancel/m);
+  assert.match(c.stdout, /^wiki: 0 invalid, 1 broken, 0 unstamped, 2 stale, 0 ok$/m);
+  assert.match(wiki(root, 'find', 'statusbadge').stdout, /^stale\s+screen\s+order-detail\s+docs\/wiki\/screens\/order-detail\.md\s+\(components\)$/m);
+  assert.match(wiki(root, 'find', 'zzz').stdout, /nothing matches/);
+  // quoted list items keep their commas; an open quote is an error
+  const q = parseFrontmatter('---\napis: ["GET /a,b", \'POST /c\', d]\n---\n');
+  assert.deepEqual(q.errors, []);
+  assert.deepEqual(q.data.apis, ['GET /a,b', 'POST /c', 'd']);
+  assert.ok(parseFrontmatter('---\napis: ["GET /a, b]\n---\n').errors.some(e => e.includes('unbalanced quote')));
+});
+
 // ── runner (same output as test/run.js) ──────────────────────────────────
 
 (async () => {
