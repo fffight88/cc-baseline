@@ -310,6 +310,10 @@ function stamp(loc, slugs, all) {
   const bySlug = new Map(pages.filter(p => !p.errors.length).map(p => [p.slug, p]));
   const plan = targets.map(p => {
     if (p.errors.length) throw new Refused(`${p.slug} is invalid: ${p.errors.join('; ')}`);
+    for (const sl of p.dirKind === 'feature' ? p.data.screens || [] : []) {
+      const sc = pages.find(x => x.slug === sl);
+      if (sc && sc.errors.length) throw new Refused(`${p.slug}: screen page ${sl} is invalid — fix it first`);
+    }
     return { p, hash: sourceHash(loc.root, hashedFiles(p, bySlug)) };
   });
   const at = new Date().toISOString();

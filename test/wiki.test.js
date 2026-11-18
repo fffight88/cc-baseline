@@ -289,6 +289,15 @@ t('wiki review fixes: a feature goes stale with its screens; missing tc is broke
   assert.ok(parseFrontmatter('---\napis: ["GET /a, b]\n---\n').errors.some(e => e.includes('unbalanced quote')));
 });
 
+t('wiki stamp: a feature listing an invalid screen names that screen', () => {
+  const root = twoScreens();
+  screen(root, 'order-detail', { kind: undefined });
+  write(root, 'docs/wiki/features/order-cancel.md', '---\nkind: feature\nslug: order-cancel\ntitle: t\nscreens: [order-detail]\n---\n');
+  const r = wiki(root, 'stamp', 'order-cancel');
+  assert.equal(r.code, 2);
+  assert.match(r.stderr, /screen page order-detail is invalid/);
+});
+
 // ── runner (same output as test/run.js) ──────────────────────────────────
 
 (async () => {
