@@ -77,7 +77,7 @@ For `surface: api` TCs the `tc` block has no browser part: the steps are request
 - ❌ No git commits or pushes
 - ❌ No changing scenarios without manager approval
 - ❌ No spawning sub-agents or workers
-- ❌ No `tc-jev-judge.js label` — human labels come only from the user through the manager. `audit` only for a verdict whose judge line said `audit: true`, once (the script refuses anything else)
+- ❌ No `tc-jev-judge.js label` — human labels come only from the user through the manager. `audit` only for a verdict whose judge line said `audit: true` (the script refuses the rest); a screen re-checked in an earlier run comes back `already_rechecked: true` with that earlier result — keep it
 
 ---
 
@@ -206,6 +206,7 @@ The TC steps and expected results are frozen — run them exactly as given. Valu
    ```
    - `ax` / `text` cover **the region the expected result talks about**: the main region, plus the banner / main menu, dialogs or the status area when the sentence names them ("the cart link in the main menu shows …"). A judge can only use what the observation holds.
    - `item` is **required** when the sentence points at a target ("the target order's row", "the chosen product") — the run-data value that identifies it (order number, product name).
+   - `judge` checks both: a line with `status: "needs_fix"` (labelled sample) or `observation_gaps` means the observation misses what the sentence is about. Fix the file and ask again — the sample is not stored until it is fixed.
 
    Then: `node ~/.claude/scripts/tc-jev-judge.js judge <obs file>` → one JSON line (`verdict`, `judged_by`, `capped`, `shadow`, `scores`, `sample`, `audit`). If it says `loading`, wait, re-observe once, ask again. The script masks emails, phone/card numbers and tokens before sending; still list every secret input in `secret_env`.
 4. **Re-check (`audit: true`)** — when Jev decided and the line says `audit: true`, judge the same observation yourself, then run `node ~/.claude/scripts/tc-jev-judge.js audit --sample <sample> --llm PASS|FAIL`. Its line says `agree: true|false`:
@@ -213,7 +214,7 @@ The TC steps and expected results are frozen — run them exactly as given. Valu
    - disagree → record **your** verdict (`judged_by: llm`, `jev_disputed: true`); the sample goes to the review queue. Never re-ask Jev to get a different answer
    Do not re-check verdicts without `audit: true` — that is the double work this step avoids.
 5. **Calibration samples** — when the manager sets `calibration: true`, for every expected result layer 1 decided on a screen (`dom` / `ax-node` — never `api` / `db` / `log`; the script refuses them), also run `tc-jev-judge.js judge <obs file> --label code:PASS|code:FAIL` on the same screen. This only stores a sample; the code verdict stays the verdict.
-6. **Record** — needs a verdict for every expected result; if a step failed, record what was judged and set `failed_at_step`. Write `{tc, run_id, judge_mode?, expected: [{index, verdict, judged_by, observed, code_verdict?, jev?, audit?, jev_disputed?}], browser_tool, fallback_reason, failed_at_step?}` to a temp file and run `node ~/.claude/scripts/tc-jev-judge.js record --results <results> --tc-file <tc.file> --entry <temp file>`. One line per TC run. `browser_tool` is `none` for an api TC.
+6. **Record** — needs a verdict for every expected result; if a step failed, record what was judged and set `failed_at_step`. Write `{tc, run_id, judge_mode?, expected: [{index, verdict, judged_by, observed, code_verdict?, jev?, audit?, jev_disputed?, jev_ms?, jev_tokens?}], browser_tool, fallback_reason, failed_at_step?}` (`jev_ms` = the judge line's `ms`, `jev_tokens` = its `usage` input + output tokens, for every expected result Jev was asked about) to a temp file and run `node ~/.claude/scripts/tc-jev-judge.js record --results <results> --tc-file <tc.file> --entry <temp file>`. One line per TC run. `browser_tool` is `none` for an api TC.
 7. TC PASS = every expected result `PASS` (or `NOT_OBSERVABLE` the manager accepted) **∧** §0 invariants held **∧** sweep clean (screen TCs). Any `FAIL` → TC FAIL → Log Collection Policy.
 8. **`judge_mode` (experiment, only when the manager sets it)** — compares judging methods on screen results that layer 1 *could* decide (`dom` / `ax-node` with a `key`). Run the code assertion first in every mode; it becomes `code_verdict`. `api` / `db` / `log` stay code-judged in every mode.
    - `code` (default): steps 2–7 as written.

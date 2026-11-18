@@ -167,6 +167,23 @@ function normalizeObservation(o = {}, { secretEnv = [], env = process.env } = {}
   };
 }
 
+// Signs that the observation misses what the expected result talks about. A
+// labelled sample built on such an observation teaches Jev the wrong thing.
+const MENU_RE = /주\s?메뉴|메뉴|헤더|\bmenu\b|\bnav(?:igation)?\b|\bheader\b/i;
+const MENU_AX_RE = /banner|navigation|\bnav\b|메뉴|\bmenu\b/i;
+const TARGET_RE = /대상|선택한|\bthe (?:target|chosen|selected)\b/i;
+function observationGaps(input = {}) {
+  const o = input.observation || {};
+  const gaps = [];
+  if (MENU_RE.test(String(input.expected || '')) && !MENU_AX_RE.test(String(o.ax || ''))) {
+    gaps.push('expected result names the menu/header, but observation.ax has no banner / navigation region');
+  }
+  if (TARGET_RE.test(String(input.expected || '')) && !(typeof input.item === 'string' && input.item.trim())) {
+    gaps.push('expected result points at a target — set item to the run-data value that identifies it');
+  }
+  return gaps;
+}
+
 function injectionSuspected(o = {}) {
   const parts = [o.text, o.ax, o.title, o.last_effect, ...(Array.isArray(o.alerts) ? o.alerts : [])];
   return parts.some(p => INJECTION_RE.test(String(p == null ? '' : p)));
@@ -254,6 +271,8 @@ async function judge(input, { config = loadConfig(), jevDir = jevDirDefault(), s
     return { ...base, status: 'error', error: `calibration samples come only from screen channels (${SCREEN_CHANNELS.join(' / ')}), not ${input.channel}` };
   }
   const early = r => (mode === 'jev' ? { ...r, judge_mode: 'jev', code_verdict: label.value, agree_with_code: null } : r);
+  const gaps = observationGaps(input);
+  if (gaps.length && sampleOnly) return { ...base, status: 'needs_fix', observation_gaps: gaps, reason: 'sample not stored — fix the observation file and ask again' };
   if (config.error) return early({ ...base, status: 'error', error: redact(config.error, config.key) });
   if (!config.key) return early({ ...base, status: 'unconfigured' });
 
@@ -281,7 +300,8 @@ async function judge(input, { config = loadConfig(), jevDir = jevDirDefault(), s
     run_at: new Date().toISOString(),
   });
   const usage = r.response.usage || {};
-  const result = { ...base, status: 'ok', question, model: config.model, input_mode: INPUT_MODE, scores, sample: sampleId, usage, ms: r.ms };
+  const result = { ...base, status: 'ok', question, model: config.model, input_mode: INPUT_MODE, scores, sample: sampleId, usage, ms: r.ms,
+    ...(gaps.length ? { observation_gaps: gaps } : {}) };
   if (sampleOnly) return result;
   const out = decideOrCap(result, { raw, injection, cal, jevDecides, sampleId });
   return mode === 'jev' ? withCode(out, label.value) : out;
@@ -367,7 +387,9 @@ function calibrate(samples, { minSamples = 30, target = 0.02 } = {}) {
       reports.push({ ...rep, status: 'unsafe', proposed, at_proposed: atCalib, holdout_check: atHold, reason: `holdout false PASS / false FAIL above ${target}` });
       continue;
     }
-    reports.push({ ...rep, status: 'ok', proposed, at_proposed: atCalib, holdout_check: atHold });
+    const ok = { ...rep, status: 'ok', proposed, at_proposed: atCalib, holdout_check: atHold };
+    if (rep.projects < 2) ok.warning = `every sample comes from ${rep.projects === 1 ? 'one project' : 'unnamed projects'} — check it on another project before relying on it`;
+    reports.push(ok);
   }
   return reports;
 }
@@ -409,9 +431,10 @@ function audit(jevDir, { sample, llm, now = new Date() }) {
   const known = [...cal.entries, ...cal.revoked].find(e => e.question === s.question && e.model === s.model && e.input_mode === s.input_mode);
   const rate = known && typeof known.audit_rate === 'number' ? known.audit_rate : DEFAULT_AUDIT_RATE;
   if (!auditSelected(sample, rate)) throw new Error(`sample ${sample} was not marked audit: true — re-check only those`);
-  if (readJsonl(path.join(jevDir, 'audits.jsonl')).some(a => a.request_sha256 === sample && a.model === s.model)) {
-    throw new Error(`sample ${sample} was already re-checked`);
-  }
+  // The same screen gives the same sample id, so a later run may meet a sample
+  // that was re-checked before: return that re-check, without counting it again.
+  const earlier = readJsonl(path.join(jevDir, 'audits.jsonl')).find(a => a.request_sha256 === sample && a.model === s.model);
+  if (earlier) return { ...earlier, already_rechecked: true, revoked: false };
   const line = { request_sha256: sample, question: s.question, model: s.model, input_mode: s.input_mode,
     tc: s.tc, index: s.index, project: s.project, jev: s.jev_verdict, llm, agree: s.jev_verdict === llm, at: now.toISOString() };
   ensurePrivateDir(jevDir);
@@ -557,6 +580,9 @@ function record({ results, tcFile, entry }) {
     if (!VERDICTS.includes(e.verdict)) throw new Error(`expected[${e.index}].verdict must be one of ${VERDICTS.join(' | ')}`);
     if (!JUDGES.includes(e.judged_by)) throw new Error(`expected[${e.index}].judged_by must be one of ${JUDGES.join(' | ')}`);
     if (e.code_verdict !== undefined && !VERDICTS.includes(e.code_verdict)) throw new Error(`expected[${e.index}].code_verdict must be one of ${VERDICTS.join(' | ')}`);
+    for (const k of ['jev_ms', 'jev_tokens']) {
+      if (e[k] !== undefined && !(Number.isFinite(e[k]) && e[k] >= 0)) throw new Error(`expected[${e.index}].${k} must be a number >= 0`);
+    }
   }
   if (entry.judge_mode !== undefined && !JUDGE_MODES.includes(entry.judge_mode)) throw new Error(`judge_mode must be one of ${JUDGE_MODES.join(' | ')}`);
   if (seen.size !== count && !Number.isInteger(entry.failed_at_step)) {
@@ -588,6 +614,7 @@ function compare({ results, runIds }) {
       vs_code: { compared: withCode.length, decided: decided.length, agree: decided.filter(e => e.verdict === e.code_verdict).length,
         false_pass: decided.filter(e => e.verdict === 'PASS' && e.code_verdict === 'FAIL').length,
         false_fail: decided.filter(e => e.verdict === 'FAIL' && e.code_verdict === 'PASS').length },
+      jev_cost: { calls: ex.filter(e => e.jev_ms !== undefined).length, ms: ex.reduce((a, e) => a + (e.jev_ms || 0), 0), tokens: ex.reduce((a, e) => a + (e.jev_tokens || 0), 0) },
       review_share: share(ex.filter(e => e.verdict === 'REVIEW').length),
       not_observable_share: share(ex.filter(e => e.verdict === 'NOT_OBSERVABLE').length),
     };
@@ -693,6 +720,6 @@ if (require.main === module) {
 }
 
 module.exports = {
-  normalizeObservation, buildRequest, injectionSuspected, judge, decide, calibrate, applyCalibration, replay, record, compare,
+  normalizeObservation, buildRequest, injectionSuspected, observationGaps, judge, decide, calibrate, applyCalibration, replay, record, compare,
   audit, label, bank, exportBank, splitOf, auditSelected, STANDARD, DEFAULT_THRESHOLDS,
 };

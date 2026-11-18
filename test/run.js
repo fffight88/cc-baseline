@@ -690,6 +690,7 @@ t('browser layer: agents and commands are Aside-first with a Playwright fallback
   assert.doesNotMatch(clean, /pgrep -f "claude"/, 'a bare "claude" match also hits tmux -L claude and kills the running session');
   assert.match(clean, /pgrep -u "\$\(id -u\)" -x claude/);
   assert.match(clean, /case "\$ANC" in \*" \$pid "\*\) continue/, 'ancestors of the running shell are never killed');
+  assert.match(clean, /\[ -z "\$tty" \] \|\| \[ "\$tty" = "\?" \] \|\| continue/, 'a claude still attached to a terminal is left alone');
   assert.doesNotMatch(clean.split('Then kill stale playwright-mcp')[0], /\[\[/, 'orphan step runs under /bin/sh');
   assert.doesNotMatch(publisher, /default playwright-test-1/, 'test-1 is reserved for /open-browser');
   assert.match(openBrowser, /\^https\?:\/\/\[A-Za-z0-9\._~:\/\?#@!\*\+,;=%&-\]\+\$/, 'URL allowlist excludes $ and backticks');
@@ -1435,6 +1436,17 @@ t('tc-lint: done_when — every step needs a completion sentence', () => {
   assert.ok(lintRules(d).includes('done_when'));
 });
 
+t('tc-lint: done_when — "redrawn / updated" warns, a named change does not', () => {
+  for (const expect of ['주문 목록 표가 다시 그려진다', 'The table is redrawn', '목록이 갱신된다']) {
+    const d = tcDoc();
+    d.test_cases[0].steps[1].done_when = { expect };
+    assert.ok(lintRules(d).includes('done_when'), expect);
+  }
+  const d = tcDoc();
+  d.test_cases[0].steps[1].done_when = { expect: '주소에 status=shipped가 붙는다' };
+  assert.ok(!lintRules(d).includes('done_when'));
+});
+
 t('tc-lint: single_fact — bundled checks warn (Korean and English)', () => {
   for (const text of ['저장되고 메일이 발송된다', 'The order is saved and a receipt is shown', '목록 및 합계가 갱신된다']) {
     const d = tcDoc();
@@ -2005,6 +2017,10 @@ t('tc-jev-judge: calibrate refuses with too few samples, proposes otherwise, app
   assert.ok(rep.holdout.pass >= 2 && rep.holdout.fail >= 2, 'both splits used');
   assert.equal(rep.holdout_check.false_pass, 0);
   assert.ok(rep.proposed.pass_gte >= 0.9 && rep.proposed.fail_lte <= 0.1);
+  assert.match(rep.warning, /unnamed projects/, 'samples without a second project carry a warning');
+  const spread = many.map((x, i) => ({ ...x, project: i % 2 ? 'a' : 'b' }));
+  assert.equal(calibrate(spread, { minSamples: 30 })[0].warning, undefined, 'two projects: no warning');
+  assert.match(calibrate(many.map(x => ({ ...x, project: 'a' })), { minSamples: 30 })[0].warning, /one project/);
   const jevDir = jevTmp();
   try {
     applyCalibration(jevDir, rep);
@@ -2134,6 +2150,27 @@ t('tc-jev-judge: --judge-mode jev keeps the code label as a sample but lets cali
   } finally { await srv.close(); fs.rmSync(jevDir, { recursive: true, force: true }); }
 });
 
+t('tc-jev-judge: observation gaps — menu not observed or target without item; a labelled sample is not stored', async () => {
+  const { judge, observationGaps } = require(TC_JEV_JUDGE);
+  const menu = obsInput({ channel: 'dom', expected: "주 메뉴의 장바구니 링크가 '장바구니 (1)'로 보인다" });
+  assert.equal(observationGaps(menu).length, 1);
+  assert.equal(observationGaps({ ...menu, observation: { ...menu.observation, ax: 'banner: navigation "주 메뉴": link "장바구니 (1)"' } }).length, 0);
+  const target = obsInput({ channel: 'dom', expected: "대상 주문 행의 상태 배지가 '배송 중'으로 보인다" });
+  assert.match(observationGaps(target)[0], /set item/);
+  assert.equal(observationGaps({ ...target, item: 'ORD-1' }).length, 0);
+  const srv = await mockJev(body => ({ status: 200, json: nouls(body, { holds: 0.9, observable: 0.9 }) }));
+  const jevDir = jevTmp();
+  try {
+    const r = await judge(menu, { config: judgeCfg(srv.url), jevDir, sleep: noSleep, label: { source: 'code', value: 'PASS' } });
+    assert.equal(r.status, 'needs_fix');
+    assert.equal(srv.seen.length, 0, 'no request sent');
+    assert.ok(!fs.existsSync(path.join(jevDir, 'samples.jsonl')), 'no sample stored');
+    const v = await judge(menu, { config: judgeCfg(srv.url), jevDir, sleep: noSleep });
+    assert.equal(v.status, 'ok');
+    assert.equal(v.observation_gaps.length, 1, 'a verdict call still answers, with the gap shown');
+  } finally { await srv.close(); fs.rmSync(jevDir, { recursive: true, force: true }); }
+});
+
 t('tc-jev-judge: compare tables a run by judge mode against the code verdicts', () => {
   const { record, compare } = require(TC_JEV_JUDGE);
   const tmp = jevTmp();
@@ -2144,13 +2181,15 @@ t('tc-jev-judge: compare tables a run by judge mode against the code verdicts', 
     const tc = 'TC.password-reset.request-success';
     record({ results, tcFile, entry: { tc, run_id: 'r-code', expected: [{ index: 0, verdict: 'PASS', judged_by: 'code' }, { index: 1, verdict: 'FAIL', judged_by: 'code' }] } });
     record({ results, tcFile, entry: { tc, run_id: 'r-jev', judge_mode: 'jev', expected: [
-      { index: 0, verdict: 'FAIL', judged_by: 'jev', code_verdict: 'PASS' }, { index: 1, verdict: 'REVIEW', judged_by: 'llm', code_verdict: 'FAIL' }] } });
+      { index: 0, verdict: 'FAIL', judged_by: 'jev', code_verdict: 'PASS', jev_ms: 800, jev_tokens: 110 }, { index: 1, verdict: 'REVIEW', judged_by: 'llm', code_verdict: 'FAIL', jev_ms: 700, jev_tokens: 110 }] } });
     const [a, b] = compare({ results, runIds: ['r-code', 'r-jev'] });
     assert.equal(a.judge_mode, 'code');
     assert.deepEqual(a.judged_by, { code: 2 });
     assert.equal(b.judge_mode, 'jev');
     assert.deepEqual(b.vs_code, { compared: 2, decided: 1, agree: 0, false_pass: 0, false_fail: 1 });
     assert.equal(b.review_share, 0.5);
+    assert.deepEqual(b.jev_cost, { calls: 2, ms: 1500, tokens: 220 });
+    assert.throws(() => record({ results, tcFile, entry: { tc, expected: [{ index: 0, verdict: 'PASS', judged_by: 'jev', jev_ms: -1 }, { index: 1, verdict: 'PASS', judged_by: 'code' }] } }), /jev_ms/);
     const [gone] = compare({ results, runIds: ['r-nope'] });
     assert.equal(gone.missing, true, 'an unknown run_id is reported, not an empty row');
     assert.throws(() => compare({ results: path.join(tmp, 'none', 'tc-results.jsonl'), runIds: ['r-code'] }), /no results file/);
@@ -2178,7 +2217,10 @@ t('tc-jev-judge: two disagreeing re-checks revoke the calibration; the question 
     assert.equal(ids.length, 3);
     assert.throws(() => audit(jevDir, { sample: notMarked, llm: 'FAIL' }), /not marked audit: true/);
     assert.equal(audit(jevDir, { sample: ids[0], llm: 'PASS' }).agree, true);
-    assert.throws(() => audit(jevDir, { sample: ids[0], llm: 'FAIL' }), /already re-checked/);
+    const again = audit(jevDir, { sample: ids[0], llm: 'FAIL' });
+    assert.equal(again.already_rechecked, true, 'a second re-check returns the first one');
+    assert.equal(again.agree, true, 'and does not count the new answer');
+    assert.equal(fs.readFileSync(path.join(jevDir, 'audits.jsonl'), 'utf8').trim().split('\n').length, 1);
     const first = audit(jevDir, { sample: ids[1], llm: 'FAIL' });
     assert.equal(first.agree, false);
     assert.equal(first.revoked, false, 'one disagreement keeps it');

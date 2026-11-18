@@ -52,6 +52,8 @@ const RE = {
   needsState: /로그인(?:한|된|\s?상태)|기존|등록된|저장된|logged in|signed in|existing|previously/i,
   failure: /오류|에러|실패|거절|거부|차단|잘못된|\berror\b|\bfail|reject|denied|invalid/i,
   negated: /없다|없음|않는다|않음|안 보인다|\bno\b|\bnot\b|never|without/i,
+  // "the table is redrawn" also holds when nothing changed — a broken feature passes the step.
+  redrawOnly: /다시 그려|다시 표시|갱신된다|새로\s?고쳐|\bredrawn\b|\bre-?render|\brefresh(?:es|ed)\b|\bis updated\b/i,
   standard: [
     ['Q.error_visible', /오류|에러|실패|\berror\b|\bfailed\b/i],
     ['Q.loading', /로딩|불러오는|loading/i],
@@ -157,6 +159,9 @@ function lint(doc) {
         warn('run_data', where, 'URLs belong in tc-run.json (start_path / base_url), not in the TC');
       }
       if (!isStr(step.done_when && step.done_when.expect)) warn('done_when', where, 'add done_when.expect — one sentence for what the screen looks like when the step is done');
+      else if (RE.redrawOnly.test(step.done_when.expect)) {
+        warn('done_when', where, '"redrawn / updated" also looks done when nothing happened — name what changes (the URL, a request sent, a new value)');
+      }
       if (step.input_refs !== undefined && !(Array.isArray(step.input_refs) && step.input_refs.every(isStr))) {
         warn('format', where, 'input_refs must be a list of input names (values live in tc-run.json)');
       }
