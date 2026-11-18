@@ -21,6 +21,7 @@
     "memory/reference_agent_pipeline.md",
     "memory/reference_browser_tools.md",
     "memory/reference_tc_authoring.md",
+    "memory/reference_wiki.md",
     "scripts/audit-report.js",
     "scripts/aside-session.sh",
     "scripts/design-preview.js",
@@ -32,6 +33,7 @@
     "scripts/tc-fix-loop.js",
     "scripts/tc-replay.js",
     "scripts/tc-sweep.js",
+    "scripts/wiki.js",
     "agents/e2e-tester.md",
     "agents/security-auditor.md",
     "agents/code-reviewer.md",
@@ -40,7 +42,8 @@
     "commands/plan.md",
     "commands/clean.md",
     "commands/check-log.md",
-    "commands/open-browser.md"
+    "commands/open-browser.md",
+    "commands/wiki.md"
   ],
   "overwriteDirs": [
     "design-previews"

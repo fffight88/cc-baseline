@@ -8,6 +8,12 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Screen / feature wiki** (`docs/plans/wiki-metadata.md`).
+  - Projects keep a map of what is built in `docs/wiki/`: `screens/<slug>.md` (route, files, components used, APIs, states, `links_to`) and `features/<slug>.md` (the screens of one user flow), with a short body (role, composition, caveats).
+  - `scripts/wiki.js`: `check` (status `ok` / `stale` / `unstamped` / `broken` / `invalid`; `--strict` exits 1), `stamp` (hash of the listed files; refuses files outside the project, symlinks and invalid pages, and then writes nothing), `index` (rewrites `index.md`), `find` (route / component / API / file search with page status). It writes only `.md` files inside `docs/wiki/`; a symlinked `docs/wiki` is refused.
+  - `/wiki init` (first build after the user confirms the screen list), `/wiki update`, `/wiki check`; guide `memory/reference_wiki.md`.
+  - `/plan` looks up existing screens in the wiki before searching the code and refreshes pages that are not `ok` first; it suggests `/wiki init` when a project with screens has no wiki. `phase_end.md` updates and stamps the pages of changed screens. Publisher briefing and publisher Step 2 pick reference screens and reuse anchors from the wiki; publisher never edits it.
+  - Tests in `test/wiki.test.js` (`npm test` runs both suites).
 - **Replay rounds and a dead-control sweep script** (`docs/plans/tc-replay.md`).
   - `scripts/tc-replay.js`:
     - e2e-tester writes each TC it runs (`record: true`) as data — a fixed list of ops (`goto` / `click` / `fill` / `select` / `check_box` / `press` / `wait` / `capture` / `request`) and one check per expected result — in `.cc-audits/<plan>/replay/<tc>.json`. A recording is never code.

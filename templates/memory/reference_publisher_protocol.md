@@ -49,6 +49,7 @@ The orchestrator **briefs**, it does not raw-forward the spec. Resolve these bef
 - [ ] **Data structure (read-only)** → `data_shape`: columns/fields the screen renders, so static markup is correct (not data binding).
 - [ ] **Tone & manner basis** → `reference_screens` + `reference_notes`: which existing screen is the canonical example, and *what to mirror vs. skip*. A bare path is not enough.
 - [ ] **Reuse anchors** → `reuse_anchors`: existing components you already know should be preferred, to prevent wrong new-class creation.
+- [ ] **Wiki lookup** (when `docs/wiki/` exists) → fill `reference_screens` and `reuse_anchors` from `node ~/.claude/scripts/wiki.js find <route / component / similar screen>`: screens with a similar route or the same components are the reference candidates, their `components` the anchors. A hit that is not `ok` is refreshed and stamped first (`reference_wiki.md` §4).
 - [ ] **Reachability for visual verify** → `base_url` + `auth_note`: admin screens sit behind login; without `auth_note`, visual verification hits the login wall. State the authenticated route or a bypass.
 - [ ] **Quality scope (decide, don't defer)** → `quality_flags`: set `i18n` / `responsive` / `dark_mode` from the project reality (e.g., i18n true if the project uses i18n everywhere). publisher must not guess these.
 - [ ] **Profile freshness** → `regenerate_profile: true` only if the design system materially changed since the cached `design-profile.md`.

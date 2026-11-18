@@ -88,6 +88,7 @@ See each agent's protocol: `reference_design_director_protocol.md`, `reference_p
 | Runtime a11y (axe-core) | publisher (Step 6) | code-reviewer / e2e-tester skip a11y |
 | Static UI rule set (Vercel Web Interface Guidelines — focus, forms, animation, perf, i18n) | publisher (Step 5) | code-reviewer / e2e-tester do not re-run it |
 | Logic errors, edge cases, CLAUDE.md, conventions, dead code, async | code-reviewer | — |
+| **Map of built screens / features** (`docs/wiki/`: route, files, components used, APIs, states, links) | orchestrator (`reference_wiki.md`; status by `wiki.js`) | publisher / e2e-tester read it, never edit it; component **definitions** stay in `design-profile.md` (publisher) |
 | XSS / `innerHTML` / inline secrets / dependency vulns | security-auditor | — |
 | Functional interaction (click→result, nav, form submit, console-clean) | e2e-tester | publisher does not test interaction |
 | **What correct behavior is** (actions, TC steps, expected results, basis) | orchestrator at plan time (`reference_tc_authoring.md`) | e2e manager / tester never add or rewrite expected results |

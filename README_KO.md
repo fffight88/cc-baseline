@@ -43,6 +43,7 @@
 - **안정적인 알림** — macOS에서 `terminal-notifier` 자동 설치. design/business 결정 인터뷰 프롬프트를 놓치지 않도록 보장
 - **E2E 테스터 에이전트** — **Aside** 우선(테스터마다 `aside repl` 세션 1개, 테스트 계정 전용), 실패 시 5개 병렬 Playwright MCP 서버로 대체. 토스트 같은 일시적 컨트롤도 검사하고 `BROWSER_TOOL` / `FALLBACK_REASON` 기록. FAIL 시 브라우저 콘솔·네트워크 헤더/페이로드·서버 로그 자동 수집 → `e2e-results/fail-{N}-{timestamp}.md` 저장. PASS 시 로그 수집 없음
 - **플랜 작성 때 TC 함께 생성** — `Behavior Impact: Yes/Unknown`인 플랜은 사용자 행위와 TC를 `docs/tc/<feature>.tc.json`에 씁니다(기대 결과 한 줄에 확인 하나, 줄마다 관측 채널, 근거 `requirement` / `source-observation` / `proposal`). 작성 직후 `tc-lint.js`(코드 규칙)와, TypeSafe **Jev** 키가 있으면 `tc-jev-check.js`(`single` / `hidden` / `screen` 점수)로 검사합니다. e2e는 TC를 원문 그대로 실행하고 기대 결과마다 한 번만 판정합니다 — 코드 → Jev → LLM 순, `judged_by`를 `.cc-audits/<plan>/tc-results.jsonl`에 기록. TC는 플랜 본문에 초안으로 쓰고, 승인 직후 파일로 저장합니다. `api` / `db` / `log` 사실은 `tc-api-run.js`로 확인하며, 이 스크립트는 실행 설정의 `base_url`과 지정된 데이터 파일에만 접근합니다. 코드·사람 정답 표본으로 만들고 검증용 표본으로 확인한 보정을 사용자가 승인하면 그 질문은 Jev가 직접 판정합니다. LLM은 약 10%만 재검사하고, 최근 20건 중 2건이 엇갈리면 보정이 자동 해제됩니다. 실패한 TC는 **수정 루프**(`tc-fix-loop.js`)를 거칩니다. 실패마다 분류하고 제품 결함만 고칩니다. 같은 실패 지문이 반복되거나 라운드 상한에 닿으면 그 TC를 사용자에게 넘기고, 마지막에 전체 회귀 라운드를 한 번 돌고 끝냅니다. 테스터는 TC를 처음 돌릴 때 조작을 데이터로 기록합니다. 검증 재생에서 판정이 일치하면 이후 라운드는 LLM 없이 **재생**합니다(`tc-replay.js`). 죽은 버튼 점검은 데이터를 바꾸지 않는 스크립트로 합니다(`tc-sweep.js`)
+- **화면·기능 위키** (`docs/wiki/`, `/wiki` + `wiki.js`) — 구현된 화면 하나, 여러 화면에 걸친 기능 하나마다 문서 한 장을 두고 route, 파일, 쓰는 컴포넌트, API, 상태, 연결된 화면을 적습니다. `/plan`과 publisher는 코드를 찾기 전에 여기서 기존 화면을 찾습니다(`wiki.js find`). 문서마다 나열한 파일의 해시를 기록해서, 코드가 바뀐 문서는 `stale`로 나오고 누가 참고하기 전에 갱신됩니다. 문서는 오케스트레이터가 씁니다(기존 프로젝트는 `/wiki init`, 이후 phase가 끝날 때마다). `wiki.js`는 상태, stamp, index, 검색을 맡습니다
 - **`/open-browser` 스킬** — 직접 조작할 탭을 엶: Aside 테스트 계정 창, 대체로 창이 뜨는 `playwright-test-1`. 세션 상태를 저장해 `/check-log`가 같은 브라우저를 읽게 함
 - **`/check-log` 스킬** — 열린 브라우저에서 버그를 재현한 후 실행하면, 콘솔 에러·네트워크 요청/응답 상세·서버 로그를 e2e-tester 아티팩트와 동일한 수준으로 `e2e-results/fail-manual-{timestamp}.md`에 수집
 - **안전한 병합 전략** — CLAUDE.md와 MEMORY.md는 마커 블록 병합. 훅은 statusMessage 중복 제거. 개인 설정은 절대 건드리지 않음
@@ -172,7 +173,7 @@ npx github:fffight88/cc-baseline --project --uninstall --yes
 | 컴포넌트 | 설명 |
 |---|---|
 | 행동 규칙 (`CLAUDE.md`, `memory/*.md`) | 11가지 세션 규칙: 응답 언어, 불확실성, 병렬 읽기, 최소 수정, git 안전성 등 |
-| 커스텀 스킬 (`/plan`, `/clean`, `/open-browser`, `/check-log`) | 플랜 모드 진입; 고아 프로세스 + 프로젝트 개발 서버 + e2e 아티팩트 정리; 수동 테스트용 브라우저 탭(Aside, 대체 Playwright); Fail 진단 수집기 |
+| 커스텀 스킬 (`/plan`, `/clean`, `/open-browser`, `/check-log`, `/wiki`) | 플랜 모드 진입; 고아 프로세스 + 프로젝트 개발 서버 + e2e 아티팩트 정리; 수동 테스트용 브라우저 탭(Aside, 대체 Playwright); Fail 진단 수집기; 화면·기능 위키 생성·갱신·점검 |
 | E2E 테스터 에이전트 (`e2e-tester`) | 브라우저 기반 E2E 테스트 러너 — 매니저 시나리오에 더해 모든 화면에서 런타임 불변식 + 데드컨트롤 스윕을 내장 실행(화이트라벨/콘솔에러 없음; 모든 클릭요소가 효과를 내야 함, 파괴적 컨트롤은 스킵); PASS: 로그 수집 없음; FAIL: 콘솔 + 네트워크 + 서버 로그 → `e2e-results/fail-{N}-{timestamp}.md` |
 | Security Auditor 에이전트 (`security-auditor`) | SAST · SCA · 시크릿 스캔 · 프롬프트 인젝션 탐지; 이슈별 구조화된 리포트; 스캐너 미설치 gap 이슈 (HIGH/MEDIUM) |
 | Code Reviewer 에이전트 (`code-reviewer`) | 로직 오류 · 엣지 케이스 · CLAUDE.md 위반 · 컨벤션 검사 · 크로스파일 영향 분석 · async/Promise 오류 · 테스트 커버리지 갭; 프로필 무결성 검증; 보안은 security-auditor에 위임 |
@@ -183,6 +184,7 @@ npx github:fffight88/cc-baseline --project --uninstall --yes
 | Aside 세션 헬퍼 (`scripts/aside-session.sh`) | 세션 이름별로 `aside repl` 하나를 유지해 브라우저 단계끼리 탭·변수를 공유 (`start` / `send` / `stop` / `list`) |
 | DESIGN.md 미리보기 (`design-previews/` + `scripts/design-preview.js`) | 카탈로그 브랜드마다 하나씩 만든 페이지와 필터 가능한 목록. 각 DESIGN.md의 고유 컴포넌트와 레이아웃으로 만듦. Design Director 인터뷰 동안 `127.0.0.1`에서 띄움 (`start` / `status` / `stop`). 원격 머신이면 `ssh -L <포트>:127.0.0.1:<포트>`로 접속 |
 | 훅 설정 (`settings.json hooks`) | SessionStart 메모리 로드, PreToolUse E2E 가이드 주입 · 경로 가드, SessionEnd 프로세스 정리 |
+| 위키 도구 (`scripts/wiki.js`) | `docs/wiki/` 문서 상태(`ok` / `stale` / `unstamped` / `broken` / `invalid`, `--strict`면 실패), `stamp`(나열한 파일의 해시 기록, 프로젝트 밖 경로 거부), `index`, route·컴포넌트·API로 `find`. `docs/wiki/` 안의 `.md` 파일만 씀 |
 | MCP 서버 (`~/.claude.json`) | `playwright-test-1~5` 전역 MCP 서버 엔트리 — Playwright 대체 경로 (`playwright-test-1`은 창이 뜨는 `/open-browser` 전용, 2–5는 headless) |
 
 ### 파일 설치 상세
@@ -466,8 +468,8 @@ cc-baseline/
     ├── CLAUDE.md
     ├── memory/             # MEMORY.md + 12개 규칙 파일
     ├── agents/             # e2e-tester.md, security-auditor.md, code-reviewer.md, publisher.md
-    ├── commands/           # plan.md, clean.md, open-browser.md, check-log.md
-    ├── scripts/            # audit-report.js, aside-session.sh, design-preview.js, tc-lint.js, jev-client.js, tc-jev-check.js, tc-jev-judge.js, tc-api-run.js, tc-fix-loop.js, tc-replay.js, tc-sweep.js
+    ├── commands/           # plan.md, clean.md, open-browser.md, check-log.md, wiki.md
+    ├── scripts/            # audit-report.js, aside-session.sh, design-preview.js, tc-lint.js, jev-client.js, tc-jev-check.js, tc-jev-judge.js, tc-api-run.js, tc-fix-loop.js, tc-replay.js, tc-sweep.js, wiki.js
     ├── design-previews/    # DESIGN.md 카탈로그 브랜드별 미리보기 페이지 + 목록
     ├── settings-hooks.json # hooks 섹션만
     └── mcp-servers.json    # playwright-test-1~5만

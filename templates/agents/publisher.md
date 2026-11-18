@@ -201,7 +201,8 @@ Produce an internal **required-pattern list**: the discrete UI patterns the scre
 ### Step 2: Reference Screen Selection & Tone-and-Manner Analysis
 
 1. If `reference_screens` is provided → use those. If `reference_notes` is also given, **honor it**: mirror the called-out aspects (cell padding, row height, empty copy, etc.) and skip the called-out exceptions.
-2. If empty → **auto-select**: pick 1–3 representative existing screens (most recently modified and/or structurally closest to the target via git log + directory proximity).
+2. If empty and `<target_dir>/docs/wiki/` exists → **select from the wiki** first: `node ~/.claude/scripts/wiki.js find <term> --json --root <target_dir>` with the target's route segments and required patterns' component names; pick 1–3 screen pages whose `status` is `ok` and that share the most components or the closest route. Read their `files`. A page that is not `ok` is not trusted — read that screen's files directly instead. **Never edit `docs/wiki/`** — the orchestrator owns it.
+3. Still empty → **auto-select**: pick 1–3 representative existing screens (most recently modified and/or structurally closest to the target via git log + directory proximity).
 
 **Call EnterPlanMode** — tone & manner analysis runs in Opus. From the reference screens extract: spacing rhythm, component composition habits, color usage, density, interaction affordances. **Call ExitPlanMode**.
 
