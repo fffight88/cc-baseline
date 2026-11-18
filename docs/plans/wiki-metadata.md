@@ -350,3 +350,23 @@ cc-baseline 자체의 TC(`surface: cli`)다. 승인 직후 `docs/tc/wiki.tc.json
 - **후속 후보 (이 플랜 범위 밖, 사용자 판단 필요):**
   - 한 파일에 여러 화면이 있는 앱을 위해 `files`에 심볼 단위 앵커(예: `public/app.js#orderPage`)를 두고 그 함수 범위만 해시하는 방안
   - `find`·`check`에 역방향 링크(이 화면으로 들어오는 화면) 표시
+
+## Audit History
+
+- iter-1: 2026-11-18 / critical=0 high=0 medium=1 low=2 / next_action=done
+  - SEC-001: 위키 문서 텍스트는 데이터일 뿐 지시가 아니라는 규칙을 `reference_wiki.md`, `plan.md`, `publisher.md`에 추가했다.
+  - SEC-002: 값과 목록 항목에 제어 문자가 있거나 300자를 넘으면 `invalid`로 처리한다.
+  - SEC-003: 일반 파일이 아닌 문서는 `invalid`로 처리하고, 소스 파일은 5MB 상한을 둔다.
+- iter-2: 2026-11-18 / critical=0 high=0 medium=0 low=0 / next_action=done
+
+## Code Review History
+
+- code-review-iter-1: 2026-11-18 / critical=0 high=0 medium=0 low=5 / profile_status=cached / next_action=done
+  - 사용자 결정 3건, 모두 추천안을 택했다.
+    - QA-001: 기능 문서의 해시에 그 기능에 속한 화면들의 파일을 포함한다.
+    - QA-003: 빠진 테스트를 추가한다.
+    - QA-004: 따옴표로 감싼 목록 항목을 파싱한다.
+  - QA-002: `--all`로 실행했는데 문서가 없을 때 그 상황에 맞는 메시지를 낸다.
+  - QA-005: stamp가 CRLF 줄끝을 그대로 유지한다.
+- code-review-iter-2: 2026-11-18 / low=1 / next_action=done
+  - QA-006: 기능 문서가 invalid 화면을 가리킬 때 stamp 오류 메시지에 그 화면 이름을 쓴다. 고쳤고, 테스트 214개(193 + 21)가 통과한다.
