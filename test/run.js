@@ -3290,6 +3290,14 @@ t('tc-replay: api checks — all_equals / not_in with field, own GET request, db
     assert.equal(r.status, 0, r.stderr);
     const last = p.lines().pop();
     assert.deepEqual(last.expected.map(e => e.verdict), ['FAIL', 'PASS', 'PASS'], 'one order is not cancelled; A3 is not on page 1; total 2 = db 2');
+    // a response header check
+    const hdr = { ...rec, expected: [{ index: 0, check: { op: 'api', response: 'r', header: 'content-type', includes: 'application/json' } }, rec.expected[1], rec.expected[2]] };
+    p.write(hdr, { accept: true });
+    await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'A2', '--tcs', 'TC.f.api']);
+    assert.equal(p.lines().pop().expected[0].verdict, 'PASS');
+    p.write({ ...hdr, expected: [{ index: 0, check: { op: 'api', response: 'r', header: 'x-frame-options', equals: 'DENY' } }, rec.expected[1], rec.expected[2]] }, { accept: true });
+    await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'A3', '--tcs', 'TC.f.api']);
+    assert.match(p.lines().pop().expected[0].observed, /no x-frame-options header/);
     assert.equal(last.browser_tool, 'replay');
   } finally { await srv.close(); p.done(); }
 });
@@ -3297,6 +3305,16 @@ t('tc-replay: api checks — all_equals / not_in with field, own GET request, db
 t('tc-sweep: controls of a page that re-renders after load are clicked, not reported transient or dead', async () => {
   if (!HAS_BROWSER) { console.log('     (skipped: no Playwright module)'); return; }
   const srv = await httpServer((req, res) => {
+    if (req.url === '/covered') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(`<!doctype html><body><main><button type=button>아래 버튼</button></main>
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,.6)"><div role=dialog aria-modal=true><button type=button onclick="this.textContent='ok'">확인</button></div></div></body>`);
+    }
+    if (req.url === '/late') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(`<!doctype html><body><main><p id=p>x</p><button type=button id=b>늦게 붙음</button></main><script>
+        setTimeout(() => { document.getElementById('b').onclick = () => { document.getElementById('p').textContent = 'y'; }; }, 2500);</script></body>`);
+    }
     if (req.url === '/spa') {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       return res.end(`<!doctype html><body><main id="m"></main><script>
@@ -3325,6 +3343,16 @@ t('tc-sweep: controls of a page that re-renders after load are clicked, not repo
     const v = r2.json.results['/spa'];
     assert.equal(v.status, 'clean', JSON.stringify(v));
     assert.ok(!v.skipped.some(s => /transient/.test(s.reason)), JSON.stringify(v.skipped));
+    // a handler attached late (hydration) with no DOM change: retried, not dead
+    const r3 = await cliAsync(TC_SWEEP, ['--run', p.runFile, '--run-id', 'S5', '--urls', '/late']);
+    const w = r3.json.results['/late'];
+    assert.equal(w.status, 'clean', JSON.stringify(w));
+    // controls under an open modal backdrop are skipped as covered, not failed
+    const r4 = await cliAsync(TC_SWEEP, ['--run', p.runFile, '--run-id', 'S6', '--urls', '/covered']);
+    const cv = r4.json.results['/covered'];
+    assert.equal(cv.status, 'clean', JSON.stringify(cv));
+    assert.equal(cv.covered, 1, 'covered skips are counted in the summary');
+    assert.ok(cv.skipped.some(x => x.control === '아래 버튼' && /covered/.test(x.reason)), JSON.stringify(cv.skipped));
   } finally { await srv.close(); p.done(); }
 });
 
@@ -3352,6 +3380,9 @@ t('tc-replay check / tc-sweep: hardening from the audits (regex, TC name, api sc
     const r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'Z1', '--tcs', 'TC.f.db']);
     assert.equal(r.json.tcs[0].reason, 'bad_recording');
   } finally { p.done(); }
+  assert.deepEqual(sweepMod.browserOrigins({ browser_origins: ['https://abc.supabase.co'] }), ['https://abc.supabase.co']);
+  assert.throws(() => sweepMod.browserOrigins({ browser_origins: ['http://abc.example'] }), /https origin/);
+  assert.throws(() => sweepMod.browserOrigins({ browser_origins: ['https://abc.example/path'] }), /bare https origin/);
   assert.ok(sweepMod.DESTRUCTIVE_RE.test('Pay now') && sweepMod.DESTRUCTIVE_RE.test('/logout') && sweepMod.DESTRUCTIVE_RE.test('주문 삭제'));
   assert.ok(!sweepMod.DESTRUCTIVE_RE.test('Display') && !sweepMod.DESTRUCTIVE_RE.test('Company') && !sweepMod.DESTRUCTIVE_RE.test('Paypal-free list'));
   if (!HAS_BROWSER) { console.log('     (sweep part skipped: no Playwright module)'); return; }

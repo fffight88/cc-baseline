@@ -270,7 +270,7 @@ File: `<project_dir>/.cc-audits/<plan-slug>/replay/<tc id>.json`, then `node ~/.
     - `all_equals` (every item; an empty list fails)
     - `in` / `not_in` against a captured list (`"{{p1}}"`)
     - `field` picks one key of each item (e.g. `"field": "status"`)
-  - `api`: `{ "op": "api", "response": "<save_as>", "status": 403 }` or its own read: `{ "op": "api", "request": { "method": "GET", "path": "/api/orders?page=2", "session": "<name>" }, "json_path": "orders[0].id", "field": "id", "not_in": "{{p1}}" }`
+  - `api`: `{ "op": "api", "response": "<save_as>", "status": 403 }`, a response header `{ "op": "api", "response": "<save_as>", "header": "x-frame-options", "equals": "DENY" }`, or its own read: `{ "op": "api", "request": { "method": "GET", "path": "/api/orders?page=2", "session": "<name>" }, "json_path": "orders[0].id", "field": "id", "not_in": "{{p1}}" }`
   - `db`: `{ "op": "db", "json_path": "…", "equals": … }` or `"count": n` / `"count": "{{captured_total}}"`
   - `log`: `{ "op": "log_count", "grep": [...], "equals": n }`
   - Jev / LLM-judged screen results: `"judge": "jev"` (+ `region`, `item`)

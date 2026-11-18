@@ -433,3 +433,34 @@ cc-baseline 자체의 TC(`surface: cli`)다. 승인 직후 `docs/tc/tc-replay.tc
   - 9개가 PASS로 기록됐다.
   - 1개는 Jev REVIEW라 매니저가 판정했다(PASS).
 - **남은 관찰:** `filter-by-status`[1]("주소의 status 값이 shipped이다")은 테스터가 `judge: jev`로 기록해 매 라운드 REVIEW가 난다. `url` 검사가 생겼으니 다시 기록하면 코드 판정이 된다.
+
+## 실제 프로젝트(grimbang) 적용에서 고친 것 (2026-11-18)
+
+- `browser_origins`: 앱의 브라우저 코드가 부르는 다른 https 출처(예: Supabase)를 실행 설정에서 허용한다. 재생과 스윕은 `base_url`과 이 목록만 통과시킨다.
+- 재생기:
+  - api 검사에 응답 헤더(`header`)를 추가했다.
+  - 기대 결과를 확인한 뒤 진행 중인 요청이 끝날 때까지(최대 3초) 기다렸다가 불변 조건을 판정한다.
+- 스윕:
+  - 단계마다 시간 제한, 화면당 3분 상한, DOM 안정 대기를 둔다.
+  - "효과 없음"이면 재시도하고, 클릭 실패는 판정하지 않는다.
+  - 덮인 컨트롤은 건너뛰고 개수를 기록한다.
+  - 같은 출처 웹소켓은 열어 두되, 쓰기 방지를 위해 페이지→서버 메시지를 버린다.
+  - `CC_SWEEP_DEBUG=1`로 진단 로그를 남긴다.
+- **남은 한계:** 애니메이션처럼 DOM이 계속 바뀌는 앱에서는 효과 판정이 부정확하다(모든 클릭이 "효과 있음"). 판정 방식 재설계는 별도 작업이다.
+- **알려진 약점:** 검증 재생은 판정 결과만 비교한다. 이유가 달라도 결과가 같으면 채택된다(grimbang 1라운드에서 CSP 차단 FAIL과 잘못된 선택자 FAIL이 일치로 채택됨).
+
+## Audit History (iter-2, 실제 프로젝트 후속)
+
+- iter-2: 2026-11-18 / critical=0 high=0 medium=2 low=1 / next_action=self_fix
+  - SEC-001: 웹소켓 페이지→서버 메시지를 버리도록 반영했다.
+  - SEC-002: `browser_origins`는 계획 승인으로만 늘어나며, 지침에 명시했다.
+  - gitleaks 이력 3건은 테스트용 가짜 값(`sk_live_ABCD…` 마스킹 문자열, `apikey_test_…`)이다.
+
+## Code Review History (iter-2)
+
+- code-review-iter-2: 2026-11-18 / critical=0 high=0 medium=1 low=3 / profile_status=cached / next_action=self_fix
+  - QA-007: 웹소켓(SEC-001과 같음)을 반영했다.
+  - QA-008: 덮임 판정에 scrollIntoView와 ShadowRoot를 반영하고 개수를 기록한다.
+  - QA-009: 들여쓰기를 고쳤다.
+  - QA-010: 시간 상한을 늦게 생긴 요소와 재시도에도 적용했다.
+  - 테스트 193개가 통과한다. 웹소켓 메시지 차단은 자동 테스트가 없다.

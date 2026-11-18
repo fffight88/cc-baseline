@@ -213,7 +213,12 @@ function checkCondition(c, where, rc, allowed) {
       checkPath(q.path, where, rc);
       if (typeof q.session !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/.test(q.session)) throw new Refused(`${where}: request needs a session name`);
     }
-    if (c.status === undefined && c.json_path === undefined) throw new Refused(`${where}: api check needs status or json_path`);
+    if (c.status === undefined && c.json_path === undefined && c.header === undefined) throw new Refused(`${where}: api check needs status, json_path or header`);
+    if (c.header !== undefined) {
+      if (typeof c.header !== 'string' || !/^[A-Za-z0-9-]{1,80}$/.test(c.header)) throw new Refused(`${where}: header must be a response header name`);
+      if (c.json_path !== undefined) throw new Refused(`${where}: give either header or json_path, not both`);
+      checkCompare(c, where);
+    }
     if (c.status !== undefined && !Number.isInteger(c.status)) throw new Refused(`${where}: status must be an integer`);
     if (c.json_path !== undefined) { checkTemplate(c.json_path, where); checkCompare(c, where); }
   }
@@ -406,6 +411,10 @@ async function dataCheck(rc, c, scope) {
       : scope.responses[c.response];
     if (!r) return { ok: false, observed: `no response saved as ${c.response}` };
     if (c.status !== undefined && r.status !== c.status) return { ok: false, observed: `status=${r.status}` };
+    if (c.header !== undefined) {
+      const v = (r.headers || {})[c.header.toLowerCase()];
+      return { ok: v !== undefined && compare(c, v, scope), observed: v === undefined ? `no ${c.header} header` : `${c.header}: ${String(v).slice(0, 300)}` };
+    }
     if (c.json_path === undefined) return { ok: true, observed: `status=${r.status}` };
     const v = api.jsonPath(r.json, resolve(c.json_path, scope));
     return { ok: v.found && compare(c, v.value, scope), observed: v.found ? JSON.stringify(v.value).slice(0, 300) : 'not found' };
@@ -512,6 +521,10 @@ async function replayTc(browser, rc, rec, tc, runId, opts) {
     scope.ctx = ctx;
     scope.session = rec.session;
     page = await ctx.newPage();
+    seen.inflight = 0;
+    page.on('request', () => { seen.inflight++; });
+    page.on('requestfinished', () => { seen.inflight = Math.max(0, seen.inflight - 1); });
+    page.on('requestfailed', () => { seen.inflight = Math.max(0, seen.inflight - 1); });
     page.on('response', r => { if (r.status() >= 400) { try { seen.http.add(`${r.request().method()} ${sw.normPath(new URL(r.url()).pathname)} ${r.status()}`); } catch { /* bad url */ } } });
     page.on('console', m => { if (m.type() === 'error' && !/^Failed to load resource/.test(m.text())) seen.console.add(normConsole(m.text())); });
     page.on('pageerror', e => seen.pageErrors.push(String(e.message).slice(0, 200)));
@@ -548,6 +561,17 @@ async function replayTc(browser, rc, rec, tc, runId, opts) {
       if ((j.verdict === 'PASS' || j.verdict === 'FAIL') && j.judged_by === 'jev' && !j.audit) expected.push({ index: e.index, verdict: j.verdict, judged_by: 'jev', observed: `jev ${j.verdict}`, ...extra });
       else pending.push({ index: e.index, obs_file: obsFile, jev: { verdict: j.verdict, audit: !!j.audit, sample: j.sample, status: j.status }, ...extra });
     }
+    // let requests the page already started finish, so their errors count (at most 3 s;
+    // a live connection never "finishes", so it only delays up to the cap)
+    if (page) {
+      const end = Date.now() + 3000;
+      let quietSince = Date.now();
+      while (Date.now() < end) {
+        if (seen.inflight > 0) quietSince = Date.now();
+        else if (Date.now() - quietSince >= 500) break;
+        await page.waitForTimeout(100);
+      }
+    }
     // invariants against what the tester accepted when recording
     const base = rec.invariants_baseline || {};
     const okHttp = new Set((base.http || []).map(h => { const [m, p, s] = h.split(' '); return `${m} ${sw.normPath(p || '')} ${s}`; }));
@@ -564,6 +588,7 @@ async function replayTc(browser, rc, rec, tc, runId, opts) {
         const { ctx: sctx } = await sw.openContext(browser, rc, { session: rec.session, blockMutations: true });
         try {
           await sctx.addCookies(await ctx.cookies());
+          if (process.env.CC_SWEEP_DEBUG === '1') process.stderr.write(`[replay] sweep todo ${JSON.stringify(todo)}\n`);
           for (const u of todo) res[u] = await sw.sweepUrl(sctx, rc, u);
         } catch (e) {
           for (const u of todo) if (!res[u]) res[u] = { status: 'error', error: String(e.message).split('\n')[0].slice(0, 200), fail: [], skipped: [], clicked: 0 };
