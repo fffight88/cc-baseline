@@ -690,7 +690,7 @@ t('browser layer: agents and commands are Aside-first with a Playwright fallback
   assert.doesNotMatch(clean, /pgrep -f "claude"/, 'a bare "claude" match also hits tmux -L claude and kills the running session');
   assert.match(clean, /pgrep -u "\$\(id -u\)" -x claude/);
   assert.match(clean, /case "\$ANC" in \*" \$pid "\*\) continue/, 'ancestors of the running shell are never killed');
-  assert.match(clean, /\[ -z "\$tty" \] \|\| \[ "\$tty" = "\?" \] \|\| continue/, 'a claude still attached to a terminal is left alone');
+  assert.match(clean, /case "\$tty" in ''\|'\?'\|'\?\?'\) ;; \*\) continue;; esac/, 'a claude still attached to a terminal is left alone ("?" on Linux, "??" on macOS mean none)');
   assert.doesNotMatch(clean.split('Then kill stale playwright-mcp')[0], /\[\[/, 'orphan step runs under /bin/sh');
   assert.doesNotMatch(publisher, /default playwright-test-1/, 'test-1 is reserved for /open-browser');
   assert.match(openBrowser, /\^https\?:\/\/\[A-Za-z0-9\._~:\/\?#@!\*\+,;=%&-\]\+\$/, 'URL allowlist excludes $ and backticks');
@@ -2158,6 +2158,7 @@ t('tc-jev-judge: observation gaps — menu not observed or target without item; 
   const target = obsInput({ channel: 'dom', expected: "대상 주문 행의 상태 배지가 '배송 중'으로 보인다" });
   assert.match(observationGaps(target)[0], /set item/);
   assert.equal(observationGaps({ ...target, item: 'ORD-1' }).length, 0);
+  assert.equal(observationGaps({ ...menu, channel: 'api' }).length, 0, 'only screen channels are checked');
   const srv = await mockJev(body => ({ status: 200, json: nouls(body, { holds: 0.9, observable: 0.9 }) }));
   const jevDir = jevTmp();
   try {

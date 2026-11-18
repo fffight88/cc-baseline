@@ -173,6 +173,7 @@ const MENU_RE = /주\s?메뉴|메뉴|헤더|\bmenu\b|\bnav(?:igation)?\b|\bheade
 const MENU_AX_RE = /banner|navigation|\bnav\b|메뉴|\bmenu\b/i;
 const TARGET_RE = /대상|선택한|\bthe (?:target|chosen|selected)\b/i;
 function observationGaps(input = {}) {
+  if (input.channel !== undefined && !SCREEN_CHANNELS.includes(input.channel)) return [];
   const o = input.observation || {};
   const gaps = [];
   if (MENU_RE.test(String(input.expected || '')) && !MENU_AX_RE.test(String(o.ax || ''))) {

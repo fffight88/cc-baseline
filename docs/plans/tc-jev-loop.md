@@ -331,6 +331,8 @@ cc-baseline에는 화면이 없다. 위 TC는 `npm test`의 단위 테스트로 
 
 ## Audit History
 - iter-1: 2026-11-17 / critical=0 high=0 medium=5 low=2 / next_action=user_interview → 사용자 결정(SEC-003 위치 고정, SEC-004 형식 제한, SEC-005 코드+지침, SEC-006 문서) 반영, auto 항목(SEC-001·002·007) 수정 → done
+- iter-2: 2026-11-18 / critical=0 high=0 medium=0 low=0 / next_action=done (범위 cfecb8b..167f7fe)
 
 ## Code Review History
 - code-review-iter-1: 2026-11-17 / critical=0 high=0 medium=1 low=4 / profile_status=cached / next_action=done → QA-001·002·003 수정, QA-004(jev 모드 표본도 보정에 포함, 문서 명시)·QA-005(테스트 추가) 사용자 결정대로 반영
+- code-review-iter-2: 2026-11-18 / critical=0 high=0 medium=1 low=2 / profile_status=cached / next_action=done → QA-006(macOS `??` tty)·QA-008(화면 채널만 검사) 수정, QA-007(재검사 재호출의 `revoked: false`)은 의도대로 유지
