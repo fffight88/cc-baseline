@@ -8,6 +8,41 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Replay rounds and a dead-control sweep script** (`docs/plans/tc-replay.md`).
+  - `scripts/tc-replay.js`:
+    - e2e-tester writes each TC it runs (`record: true`) as data — a fixed list of ops (`goto` / `click` / `fill` / `select` / `check_box` / `press` / `wait` / `capture` / `request`) and one check per expected result — in `.cc-audits/<plan>/replay/<tc>.json`. A recording is never code.
+    - `check` validates a recording against its TC: one entry per step and per expected result, the check kind matching the `observe.channel`, paths only on `base_url`, `{{data.x}}` / `{{captured}}` / integer `+ -` templates, `$ENV` only for `secret_env` names, no nested-quantifier regexes, `tc_file` under `docs/tc/`.
+    - `run --verify` replays a recording on the tester's code and compares every verdict, `failed_at_step` and the invariants with the tester's line. Equal → `accepted`, else `rejected`. Results Jev left as REVIEW are kept as `unverified`.
+    - Acceptance lives only in `replay-accepted.json`. A changed recording is no longer accepted; `--retry-rejected` re-verifies after an outside cause is fixed.
+    - `run` replays accepted recordings for a round and writes `tc-results.jsonl` lines (`browser_tool: replay`) with code verdicts, `failed_at_step` when a step's done check fails, `invariants` against the tester's baseline of allowed 4xx / console errors, and `sweep`.
+    - A replay that cannot find its controls, a stale TC digest, or a missing or unaccepted recording gives `fallback` with no line — that TC goes back to a tester.
+    - Jev REVIEW or re-check results come back `pending`; the manager judges the observation file and runs `finish`.
+    - Checks: `text` / `count` / `visible` / `hidden` / `enabled` / `disabled` / `value` / `url_path` / `url`; `api` (a saved response, or its own GET / HEAD); `db` (value or `count`, also from a capture); `log_count`. Comparisons: `equals` / `includes` / `starts` / `excludes`, plus `all_equals` / `in` / `not_in` with `field` for lists.
+    - A request under the recording's session uses the browser's login, so a reset server does not leave it signed out.
+  - `scripts/tc-sweep.js`:
+    - The dead-control sweep (§0-B) in code, used by testers on every screen and by replays on the screens they visit.
+    - It opens each path fresh per control, waits for the network to settle, and clicks every visible control (same-looking controls each once).
+    - A control with no effect — no navigation, popup, request, DOM change or dialog — or a page error is `fail`.
+    - Requests other than GET / HEAD are aborted, so a sweep never changes data. Destructive-looking controls (word-bounded `delete` / `pay` / `logout`… and `삭제` / `결제`…) are skipped.
+    - Disabled, re-rendered or unclickable controls are skipped, not failed. Controls that appear after a click are swept unless the click moved to another view.
+    - Results go to `.cc-audits/<plan>/sweep/<run_id>/` (one file per URL, so parallel testers never overwrite each other).
+    - Browser contexts are limited to `base_url`'s origin; service workers and off-origin WebSockets are blocked.
+  - `tc-run.json` gains `reset_command` (same `node <project script> <args>` form as `*_command`), run before every round and every verify replay.
+  - The manager guide adds §2-C (replay rounds); e2e-tester gains a Recording section, sweeps with `tc-sweep.js`, and records `invariants` / `sweep` on each TC line.
+  - `--doctor` gains `Replay browser`: a Playwright module for the replay and the sweep (the one inside `@playwright/mcp` is enough; `CC_BASELINE_PLAYWRIGHT` overrides).
+  - `tc-jev-judge.js record` refuses a `failed_at_step` that is not a 0-based step index. `tc-api-run.js read` also refuses `replay-state/`, `replay-pending/` and `obs/`.
+  - Sample app (fix loop on 9 TCs, 4 seeded defects): done in 3 rounds, the last one fully replayed (90 s with sweep, no LLM tokens). The whole loop cost about 580k tokens against about 1.2M for tester-only rounds.
+- **Stage-2 TC fix loop** (`docs/plans/tc-fix-loop.md`).
+  - `scripts/tc-fix-loop.js`:
+    - Keeps the loop state in `.cc-audits/<plan>/findings.json`.
+    - `next` tells the manager what to do: `run_round` / `wait_results` / `classify` / `fix` / `cap_reached` / `final_regression` / `ask_user` / `done`, with an `ask_user` list alongside.
+    - `start` freezes the ready, non-skipped TCs (digest). A round is refused when TC text changed without `tc-change` (the user's OK and a reason). A TC removed with the user's OK leaves the loop through `tc-change`.
+    - Every failure gets one class: `product` / `env` / `fixture` / `runner` / `case` / `decision`. Only `product` gets a `fix`, which needs a repro test path or `--test none:<reason>`; the other classes go to the user while the rest of the loop goes on (`resume` brings a TC back).
+    - The same failure fingerprint (failed step + failing expected indices, plus `invariants` / `sweep` fails) after a fix marks the TC `stuck`.
+    - Limits come from `tc-run.json` → `loop` (defaults 3 fixes per TC, 5 rounds; the closing full round may go one past). After partial re-runs pass, one full round runs before `done`; a TC that passed earlier and fails now is listed as a regression.
+    - `accept` takes a NOT_OBSERVABLE result as passed with a reason, `no-result` closes a TC the runner left without a line, and `report` sums rounds, fixes, classes, time and Jev cost.
+  - The manager guide adds §2-B (the loop, the class table, fix rules: repro test first, never branch on TC data, never touch `docs/tc/`). `/plan` and the TC authoring guide point to it.
+  - Sample app (9 TCs, 4 seeded defects): done in 4 rounds; `case` → `ask_user`, `stuck` and `final_regression` all seen.
 - **TC/Jev stage 2: Jev as the judge, a sample bank, an API TC runner** (`docs/plans/tc-jev-loop.md`).
   - `scripts/tc-jev-judge.js`: a calibrated question × model is decided by Jev; about 10% of its verdicts (fixed by request digest) come back `audit: true` and the tester re-checks them with its own judgment (`audit --sample --llm`). Two disagreements in the last 20 re-checks since calibration revoke the entry automatically (`calibration.json` → `revoked`); applying a calibration still needs the user. Samples are split 70/30 `calib` / `holdout` by digest, and `calibrate` proposes on `calib` and must also hold on `holdout` (else `unsafe`). New `label --sample --label human:PASS|FAIL` (review queue), `bank` (per-question counts per split, review queue, re-check record, calibration state) and `bank --export <dir>` (private copy, refused inside a git work tree unless ignored). `record` accepts a `run_id`.
   - `scripts/tc-api-run.js`: the tester's only way to send API requests and read project data for `api` / `db` / `log` expected results. `request` sends to `base_url`'s origin only (paths only, redirects reported not followed, a non-loopback `base_url` needs `api_remote_ok: true`), keeps a cookie jar per `--session` (0600), fills `$ENV` body values, and masks cookies, auth headers, tokens and secret values; `read` opens only the run file's `readable` files inside the project root (`--json-path a.b[k=v].c` or `--grep`). Output capped at 64 KB.
