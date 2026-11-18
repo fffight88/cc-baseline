@@ -101,7 +101,7 @@ When the plan has a TC file (`docs/tc/<feature>.tc.json`, see `reference_tc_auth
 3. **Assignment** — `ui-web` TCs go to testers in parallel. `api` TCs go to **one** tester, after the screen TCs finish, run one at a time — their requests change data other TCs may be looking at.
 4. **One judge per expected result** — code → Jev → LLM (tester **TC Judging**). `api` / `db` / `log` facts are read by the tester with `tc-api-run.js` and judged by code. What the run file does not allow (`artifact`, `env`, a file not in `readable`) comes back `NOT_OBSERVABLE`; the manager may check it with a read-only command and record `judged_by: code` with the actual value. Never let a screen judgment stand in for it.
 5. **Results** — `tc-results.jsonl` gets one line per TC run (`tc_digest` marks which TC text was run, `run_id` which run). The TC file must be unchanged after the run (`git diff --quiet -- docs/tc/`).
-6. **A failing TC** — fix the product and re-run the same TC. If the TC sentence itself looks wrong, stop and ask the user; change the TC file only with their OK and a recorded reason. Never reword a TC so it passes.
+6. **A failing TC** — go through the fix loop (§2-B): fix the product and re-run the same TC. If the TC sentence itself looks wrong, stop and ask the user; change the TC file only with their OK and a recorded reason (`tc-fix-loop.js tc-change`). Never reword a TC so it passes.
 7. **Jev as the judge** — a question × model with a calibration entry is decided by Jev (PASS / FAIL); the LLM re-checks only the verdicts marked `audit: true` (about 10%).
    - **Applying** a calibration needs the user: show `tc-jev-judge.js calibrate` (it must be `ok`, holdout included; show its `warning` too — e.g. every sample from one project), then on their OK run `calibrate --apply --question <Q.id@v> --model <jev-X.Y.Z>`.
    - **Revoking is automatic**: 2 disagreements in the last 20 re-checks remove the entry (`calibration.json` → `revoked`), and the question goes back to the LLM. Tell the user when a run revoked one.
@@ -109,6 +109,62 @@ When the plan has a TC file (`docs/tc/<feature>.tc.json`, see `reference_tc_auth
    - **Review queue** — after the run, list the disputed samples (`tc-jev-judge.js bank` → `review`) with the expected result, a short screen summary and both verdicts, and ask the user for the right answer (AskUserQuestion; skipping is fine). Store answers with `tc-jev-judge.js label --sample <id> --label human:PASS|human:FAIL`.
    - NOT_OBSERVABLE and screens with instruction-like text always go to the LLM. When the Jev model version changes, run `tc-jev-judge.js replay --model <new>` first and switch only if it is not worse.
 8. **Comparing judging methods (`judge_mode`, experiment)** — when every screen expected result has a `key`, code decides all of them and a calibrated Jev never judges. To see how Jev (or the LLM) would do on the same screens, run the same TCs again with `judge_mode: jev` or `judge_mode: llm` in the tester input and a new `run_id`; the code assertion still runs and is kept as `code_verdict`. Then `tc-jev-judge.js compare --results <results> --run-id <code run> --run-id <jev run>` gives one row per run (who decided, agreement with code, false PASS / FAIL, REVIEW share, Jev calls / time / tokens). Never use an experiment run as the TC result of a plan — its verdicts are there to be compared. Samples from a `jev` run carry the code label like any other, so they also count for calibration.
+
+## 2-B. Fix loop (until every ready TC passes)
+
+When a TC run has failures, the manager loops: fix the product → re-run the same TCs → until every `ready` TC passes. `~/.claude/scripts/tc-fix-loop.js` keeps the loop state in `.cc-audits/<plan-slug>/findings.json` and decides what comes next; the manager does what its `next` line says and never picks the TCs to re-run or the moment to stop on its own.
+
+```bash
+L=~/.claude/scripts/tc-fix-loop.js; RUN=.cc-audits/<plan-slug>/tc-run.json
+node $L start --run $RUN --tc-file docs/tc/<feature>.tc.json   # freezes the ready, non-skipped TCs
+node $L next  --run $RUN                                        # → { action, tcs, ask_user, regressions, … }
+node $L round --run $RUN --run-id <UTC id>                      # only when next says run_round / final_regression
+node $L classify --run $RUN --tc <id> --class <class> --note "<why>"
+node $L fix   --run $RUN --tc <id> --files <a,b> --test <repro test path | none:<reason>> --summary "<what>" [--affected <id,…>]
+node $L report --run $RUN                                       # at the end: rounds, fixes, classes, time, Jev cost
+```
+
+1. **Loop** — `start` once, then repeat `next` and do what `action` says:
+
+   | `action` | Do |
+   |---|---|
+   | `run_round` / `final_regression` | `round --run-id <id>`, then run exactly `tcs` as in §2-A with that `run_id` (testers or the project's own driver; the result line's `browser_tool` names it) |
+   | `wait_results` | a TC of the open round has no result line yet — finish running it. If the runner cannot produce one (crashed, aborted), close it with `no-result --tc <id> --reason "<what happened>"`; it then counts as a failure to classify (usually `runner` / `env`) |
+   | `classify` | read the failure (result line, fail log) and record a class for each TC |
+   | `fix` | fix the product for each TC (rules below), then record it with `fix` |
+   | `tc_changed` | the TC file changed after `start` — stop and ask the user (item 4) |
+   | `cap_reached` | stop; report to the user with `report`. To go on, the user raises `loop` limits in `tc-run.json` |
+   | `ask_user` | only TCs waiting on the user are left — ask them (item 4) |
+   | `done` | every TC in the loop passed in a full round — run `report`, then the audit gates |
+
+   `ask_user` can come with any action: those TCs wait for the user while the rest of the loop goes on.
+2. **Classes** — exactly one per failure; only `product` gets a fix:
+
+   | Class | Meaning | Who handles it |
+   |---|---|---|
+   | `product` | the product does not do what the TC says | manager fixes it in the loop |
+   | `env` | server down, port, missing service, network | manager fixes the environment, then `resume` |
+   | `fixture` | seed data / account / run-file value missing or wrong | manager fixes `tc-run.json` or the seed (never the TC), then `resume` |
+   | `runner` | the tester / driver did it wrong (wrong element, timing, observation gap) | fix the runner input, then `resume` |
+   | `case` | the TC sentence itself looks wrong or untestable | **user** — propose the text fix |
+   | `decision` | the behaviour is a product decision nobody made | **user** |
+3. **Fix rules**
+   - When the project has a test suite, first write a test that reproduces the failure and see it fail, then fix (`--test <path>`). No suite → `--test none:<reason>`.
+   - Fix the cause. Never branch on TC data, test accounts, run ids or "test mode"; never weaken a check the TC relies on.
+   - Never touch `docs/tc/` — `git diff --quiet -- docs/tc/` must hold through the whole loop.
+   - Name every TC the change can affect with `--affected`, so it runs again too.
+4. **Asking the user** (AskUserQuestion) — for each `ask_user` entry show the TC, the class or `stuck` / `fix_cap`, the failing expected results and what was tried.
+   - `case`: on their OK, edit the TC file, then `tc-change --tc <id> --reason "<user OK + why>"`. It re-freezes that TC, which runs again.
+   - The user drops a TC: on their OK remove it from the TC file, then `tc-change` the same way — the TC leaves the loop and `report` lists it under `removed`.
+   - Anything else they settle: `resume --tc <id>` puts the TC back in the loop.
+   - They say it is a product bug after all: `resume`, then `classify --class product` and `fix` as usual, so the fix is on record.
+   - Skipped: the TC stays out; the final report lists it as not passed.
+5. **Stops built in** (defaults, `tc-run.json` → `"loop": { "max_fixes_per_tc": 3, "max_rounds": 5, "stuck_after": 2 }`)
+   - The same failure fingerprint (failed step + failing expected indices) after a fix → that TC is `stuck` and goes to the user.
+   - A TC that used up its fixes → `fix_cap`, to the user.
+   - Round limit → `cap_reached`. The closing full round may go one past the limit, since it only confirms.
+   - A TC that passed earlier in the loop and fails now is listed in `regressions`.
+6. **Closing** — partial re-runs passing is not the end: `next` asks for one full round (`final_regression`) before `done`. Record `report` in the plan; it feeds the decision on repeat runners.
 
 ---
 
@@ -318,6 +374,7 @@ authenticated result (not a login redirect). Same-origin means all headers
 - [ ] **(§2-A)** With a TC file: TCs ran verbatim from `tc-run.json`, every `ready` `ui-web` TC is run / skipped with a reason / reported `unmapped`, each expected result has exactly one `judged_by`, and `git diff --quiet -- docs/tc/` holds after the run
 - [ ] **(§2-A)** Jev verdicts were capped at `REVIEW` for any question × model without an approved calibration entry; `audit: true` verdicts were re-checked and the review queue was offered to the user
 - [ ] **(§2-A)** `api` TCs ran with `tc-api-run.js` on one tester after the screen TCs; no TC skipped as `api-only`
+- [ ] **(§2-B)** Failures went through `tc-fix-loop.js`: every failure classified, only `product` fixed (repro test first when a suite exists), `ask_user` TCs asked, loop ended on `done` or reported `cap_reached`, `report` recorded
 - [ ] Checked `aside-session.sh account` once and set `browser:` for every tester; reports carry `BROWSER_TOOL` / `FALLBACK_REASON`
 - [ ] Distinct N (2–5) per tester for `aside_session: e2e-{N}` and fallback `mcp_server`; never `manual` / `playwright-test-1`
 - [ ] No `e2e-*` Aside session left running after the run

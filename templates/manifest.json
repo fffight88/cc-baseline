@@ -29,6 +29,7 @@
     "scripts/tc-jev-check.js",
     "scripts/tc-jev-judge.js",
     "scripts/tc-api-run.js",
+    "scripts/tc-fix-loop.js",
     "agents/e2e-tester.md",
     "agents/security-auditor.md",
     "agents/code-reviewer.md",

@@ -179,6 +179,8 @@ node ~/.claude/scripts/tc-jev-check.js docs/tc/<feature>.tc.json --out .cc-audit
 | Append results to `tc-results.jsonl` | Write results into the TC file |
 | Propose a TC text fix to the user when the sentence itself is wrong | Apply that fix without the user's OK and a recorded reason |
 
+The same holds inside the fix loop (`reference_e2e_manager_guide.md` §2-B): a failing TC is fixed in the product; a TC text change needs the user's OK and is recorded with `tc-fix-loop.js tc-change`.
+
 ---
 
 ## ✅ Checklist (per plan with `Behavior Impact: Yes/Unknown`)

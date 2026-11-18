@@ -2712,6 +2712,327 @@ t('tc-lint / tc-jev-check: "-" reads the TC draft from stdin', async () => {
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });
 
+// ──────────────────────────────────────────────────────────────────────────
+// tc-fix-loop.js — stage-2 fix loop bookkeeping (docs/tc/tc-fix-loop.tc.json)
+// ──────────────────────────────────────────────────────────────────────────
+
+const TC_FIX_LOOP = path.join(ROOT, 'templates', 'scripts', 'tc-fix-loop.js');
+const fixLoop = require(TC_FIX_LOOP);
+
+// <tmp>/proj with docs/tc/f.tc.json and .cc-audits/slug/tc-run.json
+function loopProject({ ids = ['A', 'B', 'C'], extra = [], run = {} } = {}) {
+  const tmp = jevTmp();
+  const proj = path.join(tmp, 'proj');
+  const runDir = path.join(proj, '.cc-audits', 'slug');
+  fs.mkdirSync(runDir, { recursive: true });
+  fs.mkdirSync(path.join(proj, 'docs', 'tc'), { recursive: true });
+  const mk = (id, readiness = 'ready') => ({ id, title: id, surface: 'cli', readiness, steps: [{ goal: 'g', done_when: { expect: 'e' } }],
+    expected: [{ text: `${id} first fact`, observe: { channel: 'artifact', key: 'k' } }, { text: `${id} second fact`, observe: { channel: 'artifact', key: 'k' } }] });
+  const doc = { schema_version: 1, feature: 'f', test_cases: [...ids.map(id => mk(id)), ...extra.map(([id, r]) => mk(id, r))] };
+  const tcFile = path.join(proj, 'docs', 'tc', 'f.tc.json');
+  fs.writeFileSync(tcFile, JSON.stringify(doc));
+  const runFile = path.join(runDir, 'tc-run.json');
+  fs.writeFileSync(runFile, JSON.stringify({ base_url: 'http://127.0.0.1:1', ...run }));
+  const results = path.join(runDir, 'tc-results.jsonl');
+  const loopFile = path.join(runDir, 'findings.json');
+  const cli = (...args) => {
+    const r = require('child_process').spawnSync(process.execPath, [TC_FIX_LOOP, args[0], '--run', runFile, ...args.slice(1)], { encoding: 'utf8' });
+    let json = null;
+    try { json = JSON.parse(r.stdout); } catch { /* refusals print nothing on stdout */ }
+    return { status: r.status, json, stderr: r.stderr };
+  };
+  // one tc-results line the way tc-jev-judge.js record writes it; fails = failing expected indices
+  const result = (runId, id, fails = [], extra2 = {}) => {
+    const tc = JSON.parse(fs.readFileSync(tcFile, 'utf8')).test_cases.find(t => t.id === id);
+    const expected = [0, 1].map(i => ({ index: i, verdict: fails.includes(i) ? 'FAIL' : 'PASS', judged_by: 'code', observed: 'x' }));
+    fs.appendFileSync(results, JSON.stringify({ tc: id, run_id: runId, expected, ...extra2, tc_digest: fixLoop.tcDigest(tc), run_at: new Date().toISOString() }) + '\n');
+  };
+  // open a round and write results for every TC in it: fails = { id: [indices] }
+  const round = (runId, fails = {}) => {
+    const r = cli('round', '--run-id', runId);
+    assert.equal(r.status, 0, r.stderr);
+    for (const id of r.json.tcs) result(runId, id, fails[id] || []);
+    return r.json;
+  };
+  const productFix = (id, extraArgs = []) => {
+    assert.equal(cli('classify', '--tc', id, '--class', 'product', '--note', 'bug').status, 0);
+    const f = cli('fix', '--tc', id, '--files', 'src/x.js', '--test', 'none:no test suite', '--summary', 'fixed', ...extraArgs);
+    assert.equal(f.status, 0, f.stderr);
+  };
+  const start = () => { const s = cli('start', '--tc-file', tcFile); assert.equal(s.status, 0, s.stderr); return s.json; };
+  return { tmp, proj, tcFile, runFile, results, loopFile, cli, result, round, productFix, start,
+    done: () => fs.rmSync(tmp, { recursive: true, force: true }) };
+}
+
+t('tc-fix-loop: first round runs every ready TC that is not skipped (TC first-round-all)', () => {
+  const p = loopProject({ extra: [['D', 'needs-decision']], run: { tcs: { C: { skip: 'decided-out' } } } });
+  try {
+    p.start();
+    const n = p.cli('next');
+    assert.equal(n.status, 0);
+    assert.equal(n.json.action, 'run_round');
+    assert.deepEqual(n.json.tcs, ['A', 'B']);
+    assert.equal((fs.statSync(p.loopFile).mode & 0o777), 0o600);
+  } finally { p.done(); }
+});
+
+t('tc-fix-loop: an unclassified failure blocks the next round; wait_results until every line is in (TC unclassified-blocks)', () => {
+  const p = loopProject();
+  try {
+    p.start();
+    assert.equal(p.cli('round', '--run-id', 'R1').status, 0);
+    p.result('R1', 'A', [1]);
+    let n = p.cli('next').json;
+    assert.equal(n.action, 'wait_results');
+    assert.deepEqual(n.tcs, ['B', 'C']);
+    p.result('R1', 'B'); p.result('R1', 'C');
+    n = p.cli('next').json;
+    assert.equal(n.action, 'classify');
+    assert.deepEqual(n.tcs, ['A']);
+    assert.equal(p.cli('round', '--run-id', 'R2').status, 2);
+    assert.equal(p.cli('classify', '--tc', 'B', '--class', 'product', '--note', 'x').status, 2, 'B passed — nothing to classify');
+    assert.equal(p.cli('classify', '--tc', 'A', '--class', 'typo', '--note', 'x').status, 2);
+  } finally { p.done(); }
+});
+
+t('tc-fix-loop: after a fix only the fixed and affected TCs run again (TC rerun-only-fixed)', () => {
+  const p = loopProject();
+  try {
+    p.start();
+    p.round('R1', { A: [0] });
+    assert.equal(p.cli('next').json.action, 'classify');
+    assert.equal(p.cli('classify', '--tc', 'A', '--class', 'product', '--note', 'bug').status, 0);
+    assert.equal(p.cli('next').json.action, 'fix');
+    assert.equal(p.cli('fix', '--tc', 'A', '--files', 'src/x.js', '--test', 'none:no suite', '--summary', 's', '--affected', 'B').status, 0);
+    const n = p.cli('next').json;
+    assert.equal(n.action, 'run_round');
+    assert.deepEqual(n.tcs, ['A', 'B']);
+    assert.equal(p.cli('fix', '--tc', 'A', '--files', 'src/x.js', '--test', 'none:x', '--summary', 's').status, 2, 'second fix before a rerun');
+  } finally { p.done(); }
+});
+
+t('tc-fix-loop: a case-class failure goes to the user, the rest goes on; resume brings it back (TC non-product-to-user)', () => {
+  const p = loopProject();
+  try {
+    p.start();
+    p.round('R1', { A: [1], B: [0] });
+    assert.equal(p.cli('classify', '--tc', 'A', '--class', 'case', '--note', 'sentence looks wrong').status, 0);
+    assert.equal(p.cli('fix', '--tc', 'A', '--files', 'src/x.js', '--test', 'none:x', '--summary', 's').status, 2, 'no fix for case');
+    p.productFix('B');
+    const n = p.cli('next').json;
+    assert.deepEqual(n.ask_user.map(a => [a.tc, a.reason, a.class]), [['A', 'class', 'case']]);
+    assert.equal(n.action, 'run_round');
+    assert.deepEqual(n.tcs, ['B']);
+    assert.equal(p.cli('resume', '--tc', 'B').status, 2, 'B is not waiting on the user');
+    assert.equal(p.cli('resume', '--tc', 'A').status, 0);
+    const m = p.cli('next').json;
+    assert.deepEqual(m.ask_user, []);
+    assert.deepEqual(m.tcs, ['A', 'B']);
+    // the user says it is a product bug after all: re-classify the failure they looked at and record the fix
+    assert.equal(p.cli('classify', '--tc', 'A', '--class', 'product', '--note', 'user: product bug').status, 0);
+    assert.equal(p.cli('fix', '--tc', 'A', '--files', 'src/y.js', '--test', 'none:x', '--summary', 's').status, 0);
+    assert.deepEqual(p.cli('next').json.tcs, ['A', 'B']);
+  } finally { p.done(); }
+});
+
+t('tc-fix-loop: a fix without --test is refused; the test path must be in the project (TC fix-needs-test)', () => {
+  const p = loopProject();
+  try {
+    p.start();
+    p.round('R1', { A: [0] });
+    assert.equal(p.cli('classify', '--tc', 'A', '--class', 'product', '--note', 'bug').status, 0);
+    const r = p.cli('fix', '--tc', 'A', '--files', 'src/x.js', '--summary', 's');
+    assert.equal(r.status, 2);
+    assert.match(r.stderr, /--test is required/);
+    assert.deepEqual(JSON.parse(fs.readFileSync(p.loopFile, 'utf8')).fixes, []);
+    assert.equal(p.cli('fix', '--tc', 'A', '--files', 'src/x.js', '--test', '/etc/hosts', '--summary', 's').status, 2);
+    assert.equal(p.cli('fix', '--tc', 'A', '--files', 'src/x.js', '--test', 'none:', '--summary', 's').status, 2);
+    fs.mkdirSync(path.join(p.proj, 'test'));
+    fs.writeFileSync(path.join(p.proj, 'test', 'repro.test.js'), '');
+    const ok = p.cli('fix', '--tc', 'A', '--files', 'src/x.js', '--test', path.join(p.proj, 'test', 'repro.test.js'), '--summary', 's');
+    assert.equal(ok.status, 0, ok.stderr);
+    assert.deepEqual(ok.json.test, { path: path.join('test', 'repro.test.js') });
+  } finally { p.done(); }
+});
+
+t('tc-fix-loop: the same fingerprint after a fix stops that TC; a new fingerprint does not (TC stuck-same-fingerprint)', () => {
+  const p = loopProject();
+  try {
+    p.start();
+    p.round('R1', { A: [1], B: [0] });
+    p.productFix('A'); p.productFix('B');
+    p.round('R2', { A: [1], B: [1] });
+    const n = p.cli('next').json;
+    assert.deepEqual(n.ask_user.map(a => [a.tc, a.reason]), [['A', 'stuck']]);
+    assert.ok(!n.tcs.includes('A'));
+    assert.equal(n.action, 'classify');
+    assert.deepEqual(n.tcs, ['B']);
+  } finally { p.done(); }
+});
+
+t('tc-fix-loop: fix limit per TC parks the TC; a sixth round is refused (TC round-cap)', () => {
+  const p = loopProject({ ids: ['A'] });
+  try {
+    p.start();
+    p.round('R1', { A: [0] }); p.productFix('A');
+    p.round('R2', { A: [1] }); p.productFix('A');
+    p.round('R3', { A: [0, 1] }); p.productFix('A');
+    p.round('R4', { A: [], }); // passes, then
+    // reopen: A passed in a partial round → final regression is round 5
+    let n = p.cli('next').json;
+    assert.equal(n.action, 'final_regression');
+    const r5 = p.cli('round', '--run-id', 'R5');
+    assert.equal(r5.status, 0);
+    p.result('R5', 'A', [0]);
+    n = p.cli('next').json;
+    assert.deepEqual(n.regressions, ['A']);
+    assert.equal(n.ask_user[0].reason, 'fix_cap', 'three fixes used');
+    assert.equal(p.cli('resume', '--tc', 'A').status, 0);
+    p.productFix('A');
+    n = p.cli('next').json;
+    assert.equal(n.action, 'cap_reached');
+    const r6 = p.cli('round', '--run-id', 'R6');
+    assert.equal(r6.status, 2);
+    assert.match(r6.stderr, /round limit/);
+  } finally { p.done(); }
+});
+
+t('tc-fix-loop: loop limits come from tc-run.json and are validated', () => {
+  assert.deepEqual(fixLoop.limitsOf({}), fixLoop.DEFAULT_LIMITS);
+  assert.deepEqual(fixLoop.limitsOf({ loop: { max_rounds: 8 } }), { ...fixLoop.DEFAULT_LIMITS, max_rounds: 8 });
+  assert.throws(() => fixLoop.limitsOf({ loop: { max_rounds: 0 } }), /1\.\.50/);
+  assert.throws(() => fixLoop.limitsOf({ loop: { forever: true } }), /unknown/);
+});
+
+t('tc-fix-loop: TC text changed without tc-change refuses a round; tc-change re-freezes and reruns it (TC tc-text-frozen)', () => {
+  const p = loopProject();
+  try {
+    p.start();
+    p.round('R1', { A: [0] });
+    const doc = JSON.parse(fs.readFileSync(p.tcFile, 'utf8'));
+    doc.test_cases[0].expected[0].text = 'A weaker fact';
+    fs.writeFileSync(p.tcFile, JSON.stringify(doc));
+    const r = p.cli('round', '--run-id', 'R2');
+    assert.equal(r.status, 2);
+    assert.match(r.stderr, /\bA\b/);
+    assert.equal(p.cli('next').json.action, 'tc_changed');
+    assert.equal(p.cli('tc-change', '--tc', 'B', '--reason', 'x').status, 2, 'B is unchanged');
+    assert.equal(p.cli('tc-change', '--tc', 'A', '--reason', 'user OK 2026-11-18: wrong wording').status, 0);
+    const n = p.cli('next').json;
+    assert.equal(n.action, 'run_round');
+    assert.deepEqual(n.tcs, ['A'], 'old results of A no longer count');
+  } finally { p.done(); }
+});
+
+t('tc-fix-loop: when reruns pass, one full round runs before done (TC final-regression)', () => {
+  const p = loopProject({ ids: ['A', 'B'] });
+  try {
+    p.start();
+    p.round('R1', { A: [0] });
+    p.productFix('A');
+    p.round('R2');
+    let n = p.cli('next').json;
+    assert.equal(n.action, 'final_regression');
+    assert.deepEqual(n.tcs, ['A', 'B']);
+    p.round('R3');
+    n = p.cli('next').json;
+    assert.equal(n.action, 'done');
+    assert.equal(p.cli('round', '--run-id', 'R4').status, 2);
+    const rep = p.cli('report').json;
+    assert.equal(rep.status, 'done');
+    assert.deepEqual(rep.rounds.map(r => [r.kind, r.tcs, r.pass]), [['full', 2, 1], ['partial', 1, 1], ['final', 2, 2]]);
+    assert.deepEqual(rep.failures_by_class, { product: 1 });
+    assert.equal(rep.tests.none, 1);
+  } finally { p.done(); }
+});
+
+t('tc-fix-loop: a TC that passed before and fails now is a regression (TC regression-flagged)', () => {
+  const p = loopProject({ ids: ['A', 'B'] });
+  try {
+    p.start();
+    p.round('R1', { A: [0] });
+    p.productFix('A', ['--affected', 'B']);
+    p.round('R2', { B: [1] });
+    const n = p.cli('next').json;
+    assert.deepEqual(n.regressions, ['B']);
+    assert.equal(n.action, 'classify');
+    assert.equal(p.cli('classify', '--tc', 'B', '--class', 'product', '--note', 'x').json.regression, true);
+  } finally { p.done(); }
+});
+
+t('tc-fix-loop: accepted NOT_OBSERVABLE counts as pass; a first full round that passes is done', () => {
+  const p = loopProject({ ids: ['A'] });
+  try {
+    p.start();
+    assert.equal(p.cli('round', '--run-id', 'R1').status, 0);
+    p.result('R1', 'A', [], {});
+    const lines = fs.readFileSync(p.results, 'utf8').trim().split('\n').map(l => JSON.parse(l));
+    lines[0].expected[1].verdict = 'NOT_OBSERVABLE';
+    fs.writeFileSync(p.results, JSON.stringify(lines[0]) + '\n');
+    assert.equal(p.cli('next').json.action, 'classify');
+    assert.equal(p.cli('accept', '--tc', 'A', '--index', '0', '--reason', 'x').status, 2, 'index 0 passed');
+    assert.equal(p.cli('accept', '--tc', 'A', '--index', '1', '--reason', 'db not readable, checked by hand').status, 0);
+    assert.equal(p.cli('next').json.action, 'done');
+  } finally { p.done(); }
+});
+
+t('tc-fix-loop: run file outside .cc-audits, TC file outside the project, a second start and lines of another TC text are refused or ignored', () => {
+  const p = loopProject({ ids: ['A'] });
+  try {
+    const stray = path.join(p.tmp, 'tc-run.json');
+    fs.writeFileSync(stray, '{}');
+    const r = require('child_process').spawnSync(process.execPath, [TC_FIX_LOOP, 'next', '--run', stray], { encoding: 'utf8' });
+    assert.equal(r.status, 2);
+    const outside = path.join(p.tmp, 'f.tc.json');
+    fs.copyFileSync(p.tcFile, outside);
+    assert.equal(p.cli('start', '--tc-file', outside).status, 2);
+    assert.equal(p.cli('next').status, 2, 'no loop yet');
+    p.start();
+    assert.equal(p.cli('start', '--tc-file', p.tcFile).status, 2);
+    assert.equal(p.cli('start', '--tc-file', p.tcFile, '--restart').status, 0);
+    assert.equal(p.cli('round', '--run-id', '../x').status, 2);
+    assert.equal(p.cli('round', '--run-id', 'R1').status, 0);
+    fs.appendFileSync(p.results, JSON.stringify({ tc: 'A', run_id: 'R1', expected: [{ index: 0, verdict: 'PASS' }, { index: 1, verdict: 'PASS' }], tc_digest: 'other' }) + '\n');
+    assert.equal(p.cli('next').json.action, 'wait_results');
+    // an edited loop file cannot point reads outside the project
+    const st = JSON.parse(fs.readFileSync(p.loopFile, 'utf8'));
+    fs.writeFileSync(p.loopFile, JSON.stringify({ ...st, tc_file: outside }));
+    assert.equal(p.cli('next').status, 2);
+    fs.writeFileSync(p.loopFile, JSON.stringify({ ...st, results: '/etc/tc-results.jsonl' }));
+    assert.equal(p.cli('next').status, 2);
+  } finally { p.done(); }
+});
+
+t('tc-fix-loop: no-result closes a missing result as a failure; a removed TC leaves via tc-change; a broken loop file is refused (code review QA-001..003)', () => {
+  const p = loopProject();
+  try {
+    p.start();
+    assert.equal(p.cli('round', '--run-id', 'R1').status, 0);
+    p.result('R1', 'A'); p.result('R1', 'B');
+    assert.equal(p.cli('next').json.action, 'wait_results');
+    assert.equal(p.cli('no-result', '--tc', 'A', '--reason', 'x').status, 2, 'A has a result');
+    assert.equal(p.cli('no-result', '--tc', 'C', '--reason', 'runner crashed').status, 0);
+    let n = p.cli('next').json;
+    assert.equal(n.action, 'classify');
+    assert.deepEqual(n.tcs, ['C']);
+    assert.equal(p.cli('classify', '--tc', 'C', '--class', 'runner', '--note', 'driver crashed').status, 0);
+    assert.equal(p.cli('resume', '--tc', 'C').status, 0);
+    assert.deepEqual(p.cli('next').json.tcs, ['C']);
+    const doc = JSON.parse(fs.readFileSync(p.tcFile, 'utf8'));
+    doc.test_cases = doc.test_cases.filter(t => t.id !== 'C');
+    fs.writeFileSync(p.tcFile, JSON.stringify(doc));
+    assert.equal(p.cli('next').json.action, 'tc_changed');
+    assert.equal(p.cli('tc-change', '--tc', 'C', '--reason', 'user OK: TC dropped').status, 0);
+    n = p.cli('next').json;
+    assert.equal(n.action, 'done', 'A and B passed in the full round');
+    assert.deepEqual(p.cli('report').json.removed, ['C']);
+    fs.writeFileSync(p.loopFile, '{broken');
+    const r = p.cli('next');
+    assert.equal(r.status, 2);
+    assert.match(r.stderr, /--restart/);
+  } finally { p.done(); }
+});
+
 async function run() {
   let pass = 0, fail = 0;
   const failures = [];

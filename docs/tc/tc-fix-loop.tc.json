@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "feature": "tc-fix-loop",
+  "title": "Stage-2 TC fix loop",
+  "plan": "tc-fix-loop",
+  "sources": [
+    { "id": "REQ.tc-fix-loop-plan", "kind": "requirement", "locator": "docs/plans/tc-fix-loop.md (approved 2026-11-18)" },
+    { "id": "REQ.stage2-skeleton", "kind": "requirement", "locator": "docs/plans/tc-generation.md, stage 2 fix loop section (decided 2026-11-08)" },
+    { "id": "DEC.loop-limits", "kind": "decision", "locator": "user decision 2026-11-18: progress-based stop plus safety caps (3 fixes per TC, 5 rounds), script plus guide, auto-fix product failures, repro test required when a suite exists" }
+  ],
+  "actions": [
+    { "id": "ACT.tc-fix-loop.next", "title": "Ask the loop what to do next", "actor": "e2e manager", "trigger": "runs tc-fix-loop.js next", "preconditions": ["tc-fix-loop.js start was run"], "outputs": ["one JSON line with action and TC list"], "evidence_refs": ["REQ.tc-fix-loop-plan", "REQ.stage2-skeleton"] },
+    { "id": "ACT.tc-fix-loop.round", "title": "Open a run round", "actor": "e2e manager", "trigger": "runs tc-fix-loop.js round --run-id <id>", "preconditions": ["next returned run_round or final_regression"], "outputs": ["round entry in findings.json"], "evidence_refs": ["REQ.tc-fix-loop-plan"] },
+    { "id": "ACT.tc-fix-loop.classify", "title": "Classify a failing TC", "actor": "e2e manager", "trigger": "runs tc-fix-loop.js classify --tc <id> --class <class>", "preconditions": ["the TC failed in the current round"], "outputs": ["failure entry with class and fingerprint"], "evidence_refs": ["REQ.stage2-skeleton"] },
+    { "id": "ACT.tc-fix-loop.fix", "title": "Record a product fix", "actor": "e2e manager", "trigger": "runs tc-fix-loop.js fix --tc <id> --files <list> --test <path or none:reason>", "preconditions": ["the TC failure is classified product"], "outputs": ["fix entry in findings.json"], "evidence_refs": ["REQ.stage2-skeleton", "DEC.loop-limits"] }
+  ],
+  "test_cases": [
+    { "id": "TC.tc-fix-loop.first-round-all", "title": "The first round runs every ready TC that is not skipped", "action_refs": ["ACT.tc-fix-loop.next"], "level": "functional", "surface": "cli",
+      "preconditions": ["a TC file with 3 ready TCs and 1 needs-decision TC", "tc-run.json skips one ready TC", "tc-fix-loop.js start was run"],
+      "steps": [{ "goal": "Run tc-fix-loop.js next", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The output action is run_round", "observe": { "channel": "artifact", "key": "stdout JSON .action" } },
+        { "text": "The output tcs list holds exactly the 2 ready TCs that are not skipped", "observe": { "channel": "artifact", "key": "stdout JSON .tcs" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.stage2-skeleton"] }, "readiness": "ready" },
+    { "id": "TC.tc-fix-loop.unclassified-blocks", "title": "A failure with no class blocks the next round", "action_refs": ["ACT.tc-fix-loop.next"], "level": "functional", "surface": "cli",
+      "preconditions": ["round 1 recorded one FAIL line and no classify call"],
+      "steps": [{ "goal": "Run tc-fix-loop.js next", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The output action is classify", "observe": { "channel": "artifact", "key": "stdout JSON .action" } },
+        { "text": "The output tcs list holds the failing TC id", "observe": { "channel": "artifact", "key": "stdout JSON .tcs" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.stage2-skeleton"] }, "readiness": "ready" },
+    { "id": "TC.tc-fix-loop.rerun-only-fixed", "title": "After a fix only the fixed and affected TCs run again", "action_refs": ["ACT.tc-fix-loop.next"], "level": "functional", "surface": "cli",
+      "preconditions": ["round 1: TC A failed, TC B and C passed", "A classified product", "fix recorded for A with --affected B"],
+      "steps": [{ "goal": "Run tc-fix-loop.js next", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The output action is run_round", "observe": { "channel": "artifact", "key": "stdout JSON .action" } },
+        { "text": "The output tcs list equals [A, B]", "observe": { "channel": "artifact", "key": "stdout JSON .tcs" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.stage2-skeleton"] }, "readiness": "ready" },
+    { "id": "TC.tc-fix-loop.non-product-to-user", "title": "A case-class failure goes to the user and is not run again", "action_refs": ["ACT.tc-fix-loop.classify"], "level": "functional", "surface": "cli",
+      "preconditions": ["round 1: TC A failed", "A classified case with a note"],
+      "steps": [{ "goal": "Run tc-fix-loop.js next", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The output ask_user list holds A with class case", "observe": { "channel": "artifact", "key": "stdout JSON .ask_user" } },
+        { "text": "A is not in the output tcs list", "observe": { "channel": "artifact", "key": "stdout JSON .tcs" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.stage2-skeleton"] }, "readiness": "ready" },
+    { "id": "TC.tc-fix-loop.fix-needs-test", "title": "A fix record with no --test is refused", "action_refs": ["ACT.tc-fix-loop.fix"], "level": "functional", "surface": "cli",
+      "preconditions": ["TC A failed and is classified product"],
+      "steps": [{ "goal": "Run tc-fix-loop.js fix --tc A --files src/x.js without --test", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The exit code is 2", "observe": { "channel": "artifact", "key": "exit code" } },
+        { "text": "findings.json has no fix entry for A", "observe": { "channel": "artifact", "key": "findings.json .fixes" } }
+      ], "basis": { "kind": "requirement", "refs": ["DEC.loop-limits"] }, "readiness": "ready" },
+    { "id": "TC.tc-fix-loop.stuck-same-fingerprint", "title": "The same failure fingerprint after a fix stops that TC", "action_refs": ["ACT.tc-fix-loop.next"], "level": "functional", "surface": "cli",
+      "preconditions": ["TC A failed in round 1 at expected index 1", "A classified product and fixed", "A failed again in round 2 at expected index 1 only"],
+      "steps": [{ "goal": "Run tc-fix-loop.js next", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The output ask_user list holds A with reason stuck", "observe": { "channel": "artifact", "key": "stdout JSON .ask_user" } },
+        { "text": "A is not in the output tcs list", "observe": { "channel": "artifact", "key": "stdout JSON .tcs" } }
+      ], "basis": { "kind": "requirement", "refs": ["DEC.loop-limits"] }, "readiness": "ready" },
+    { "id": "TC.tc-fix-loop.round-cap", "title": "A sixth round is refused", "action_refs": ["ACT.tc-fix-loop.round"], "level": "functional", "surface": "cli",
+      "preconditions": ["5 rounds opened with the default limits", "one TC still fails"],
+      "steps": [{ "goal": "Run tc-fix-loop.js round --run-id with a new id", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The exit code is 2", "observe": { "channel": "artifact", "key": "exit code" } },
+        { "text": "tc-fix-loop.js next prints action cap_reached", "observe": { "channel": "artifact", "key": "stdout JSON .action" } }
+      ], "basis": { "kind": "requirement", "refs": ["DEC.loop-limits"] }, "readiness": "ready" },
+    { "id": "TC.tc-fix-loop.tc-text-frozen", "title": "A round is refused after TC text changed without an approved change", "action_refs": ["ACT.tc-fix-loop.round"], "level": "functional", "surface": "cli",
+      "preconditions": ["loop started", "one expected text in the TC file was edited afterwards", "no tc-change entry"],
+      "steps": [{ "goal": "Run tc-fix-loop.js round --run-id with a new id", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The exit code is 2", "observe": { "channel": "artifact", "key": "exit code" } },
+        { "text": "The error output names the changed TC id", "observe": { "channel": "artifact", "key": "stderr" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.stage2-skeleton"] }, "readiness": "ready" },
+    { "id": "TC.tc-fix-loop.final-regression", "title": "When reruns pass, one full round runs before done", "action_refs": ["ACT.tc-fix-loop.next"], "level": "functional", "surface": "cli",
+      "preconditions": ["round 1: A failed, B passed", "A fixed", "round 2 ran only A and it passed"],
+      "steps": [{ "goal": "Run tc-fix-loop.js next", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The output action is final_regression", "observe": { "channel": "artifact", "key": "stdout JSON .action" } },
+        { "text": "The output tcs list equals [A, B]", "observe": { "channel": "artifact", "key": "stdout JSON .tcs" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.stage2-skeleton"] }, "readiness": "ready" },
+    { "id": "TC.tc-fix-loop.regression-flagged", "title": "A TC that passed before and fails now is marked as a regression", "action_refs": ["ACT.tc-fix-loop.next"], "level": "functional", "surface": "cli",
+      "preconditions": ["TC B passed in round 1", "B failed in round 2"],
+      "steps": [{ "goal": "Run tc-fix-loop.js next", "done_when": { "expect": "The command exits" } }],
+      "expected": [
+        { "text": "The output regressions list holds B", "observe": { "channel": "artifact", "key": "stdout JSON .regressions" } }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.stage2-skeleton"] }, "readiness": "ready" }
+  ],
+  "open_questions": []
+}

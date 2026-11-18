@@ -722,5 +722,5 @@ if (require.main === module) {
 
 module.exports = {
   normalizeObservation, buildRequest, injectionSuspected, observationGaps, judge, decide, calibrate, applyCalibration, replay, record, compare,
-  audit, label, bank, exportBank, splitOf, auditSelected, STANDARD, DEFAULT_THRESHOLDS,
+  audit, label, bank, exportBank, splitOf, auditSelected, canonical, STANDARD, DEFAULT_THRESHOLDS,
 };
