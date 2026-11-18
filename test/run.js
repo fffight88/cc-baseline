@@ -3033,6 +3033,341 @@ t('tc-fix-loop: no-result closes a missing result as a failure; a removed TC lea
   } finally { p.done(); }
 });
 
+t('tc-fix-loop: a result line with sweep or invariants fail is a failure (TC loop-sweep-fail)', () => {
+  const p = loopProject({ ids: ['A'] });
+  try {
+    p.start();
+    assert.equal(p.cli('round', '--run-id', 'R1').status, 0);
+    p.result('R1', 'A', [], { sweep: 'fail' });
+    const n = p.cli('next').json;
+    assert.equal(n.action, 'classify');
+    const c = p.cli('classify', '--tc', 'A', '--class', 'product', '--note', 'dead pager').json;
+    assert.deepEqual(c.failing, ['sweep']);
+    assert.equal(fixLoop.outcomeOf({ accepted: [] }, { tc: 'A', expected: [{ index: 0, verdict: 'PASS' }], invariants: 'fail' }).pass, false);
+    assert.equal(fixLoop.outcomeOf({ accepted: [] }, { tc: 'A', expected: [{ index: 0, verdict: 'PASS' }], invariants: 'clean', sweep: 'clean' }).pass, true);
+  } finally { p.done(); }
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// tc-replay.js / tc-sweep.js — recorded replay and dead-control sweep (docs/tc/tc-replay.tc.json)
+// ──────────────────────────────────────────────────────────────────────────
+
+const TC_REPLAY = path.join(ROOT, 'templates', 'scripts', 'tc-replay.js');
+const TC_SWEEP = path.join(ROOT, 'templates', 'scripts', 'tc-sweep.js');
+const replayMod = require(TC_REPLAY);
+const sweepMod = require(TC_SWEEP);
+const HAS_BROWSER = !!sweepMod.loadPlaywright();
+
+function cliAsync(script, args, env = {}) {
+  return new Promise(resolve => {
+    require('child_process').execFile(process.execPath, [script, ...args], { encoding: 'utf8', env: { ...process.env, ...env }, timeout: 120000 }, (err, stdout, stderr) => {
+      let json = null;
+      try { json = JSON.parse(stdout); } catch { /* refused */ }
+      resolve({ status: err ? (typeof err.code === 'number' ? err.code : 1) : 0, json, stderr });
+    });
+  });
+}
+
+// mode: ok | wrong | nobutton | missing404
+function replayServer() {
+  const state = { mode: 'ok', posts: 0 };
+  const page = body => `<!doctype html><html><head><title>t</title></head><body><main>${body}</main></body></html>`;
+  return httpServer((req, res) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') { state.posts++; res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end('{}'); }
+    if (req.url === '/missing') { res.writeHead(404); return res.end('no'); }
+    if (req.url === '/sweep') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(page(`<p id="p">x</p><button type="button">Dead</button><button type="button" onclick="fetch('/api/save',{method:'POST'})">Save</button>
+        <button type="button" onclick="window.flag=1;document.getElementById('p').textContent='deleted'">삭제</button><button type="button" onclick="this.textContent='ok'">Live</button>`));
+    }
+    const done = state.mode === 'wrong' ? 'Wrong' : 'Done';
+    const btn = state.mode === 'nobutton' ? '' : `<button type="button" onclick="document.getElementById('h').textContent='${done}'">Go</button>`;
+    const extra = state.mode === 'missing404' ? `<script>fetch('/missing')</script>` : '';
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(page(`<h1 id="h">Start</h1>${btn}${extra}`));
+  }).then(srv => Object.assign(srv, { state }));
+}
+
+function replayProject(baseUrl) {
+  const tmp = jevTmp();
+  const proj = path.join(tmp, 'proj');
+  const runDir = path.join(proj, '.cc-audits', 'slug');
+  fs.mkdirSync(runDir, { recursive: true });
+  fs.mkdirSync(path.join(proj, 'docs', 'tc'), { recursive: true });
+  const doc = { schema_version: 1, feature: 'f', test_cases: [
+    { id: 'TC.f.go', title: 'go', surface: 'ui-web', readiness: 'ready', steps: [{ goal: 'press Go', done_when: { expect: 'heading is visible' } }],
+      expected: [{ text: "The heading reads 'Done'", observe: { channel: 'dom', key: 'h1' } }] },
+    { id: 'TC.f.db', title: 'db', surface: 'ui-web', readiness: 'ready', steps: [{ goal: 'press Go', done_when: { expect: 'x' } }],
+      expected: [{ text: 'the row is stored', observe: { channel: 'db', key: 'rows' } }] },
+  ] };
+  const tcFile = path.join(proj, 'docs', 'tc', 'f.tc.json');
+  fs.writeFileSync(tcFile, JSON.stringify(doc));
+  const runFile = path.join(runDir, 'tc-run.json');
+  fs.writeFileSync(runFile, JSON.stringify({ base_url: baseUrl, readable: {}, tcs: {} }));
+  const digest = id => require('crypto').createHash('sha256').update(require(path.join(ROOT, 'templates', 'scripts', 'tc-jev-judge.js')).canonical(JSON.parse(fs.readFileSync(tcFile, 'utf8')).test_cases.find(t => t.id === id))).digest('hex');
+  const rec = (over = {}) => ({ schema: 1, tc: 'TC.f.go', tc_file: 'docs/tc/f.tc.json', tc_digest: digest('TC.f.go'), status: 'candidate', start_path: '/',
+    steps: [{ step: 0, actions: [{ op: 'click', target: { role: 'button', name: 'Go' } }], done_when: { op: 'visible', target: { selector: '#h' } } }],
+    expected: [{ index: 0, check: { op: 'text', target: { selector: 'h1' }, equals: 'Done' } }], invariants_baseline: { http: [], console: [] }, ...over });
+  // accept: stands in for a passed verify replay (replay-accepted.json, the only acceptance source)
+  const write = (r, { accept = false } = {}) => {
+    const x = { ...r };
+    fs.mkdirSync(path.join(runDir, 'replay'), { recursive: true });
+    fs.writeFileSync(path.join(runDir, 'replay', `${x.tc}.json`), JSON.stringify(x));
+    const af = path.join(runDir, 'replay-accepted.json');
+    const store = fs.existsSync(af) ? JSON.parse(fs.readFileSync(af, 'utf8')) : {};
+    if (accept) store[x.tc] = { status: 'accepted', digest: replayMod.contentDigest(x), run_id: 'test' }; else delete store[x.tc];
+    fs.writeFileSync(af, JSON.stringify(store));
+  };
+  const accepted = id => { const af = path.join(runDir, 'replay-accepted.json'); return fs.existsSync(af) ? JSON.parse(fs.readFileSync(af, 'utf8'))[id] : undefined; };
+  const results = path.join(runDir, 'tc-results.jsonl');
+  const lines = () => (fs.existsSync(results) ? fs.readFileSync(results, 'utf8').trim().split('\n').filter(Boolean).map(l => JSON.parse(l)) : []);
+  return { tmp, proj, runDir, runFile, tcFile, rec, write, accepted, lines, results, done: () => fs.rmSync(tmp, { recursive: true, force: true }) };
+}
+
+t('tc-replay check: unknown op, absolute goto and a screen check on a db result are refused (TC check-*)', async () => {
+  const p = replayProject('http://127.0.0.1:9');
+  try {
+    p.write(p.rec());
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.go'])).status, 0);
+    const evalRec = p.rec();
+    evalRec.steps[0].actions.push({ op: 'eval', code: 'alert(1)' });
+    p.write(evalRec);
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.go'])).status, 2);
+    p.write(p.rec({ start_path: 'https://example.com/' }));
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.go'])).status, 2);
+    const g = p.rec();
+    g.steps[0].actions = [{ op: 'goto', path: '//evil.example/x' }];
+    p.write(g);
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.go'])).status, 2);
+    const dbRec = p.rec({ tc: 'TC.f.db', tc_digest: undefined });
+    dbRec.tc_digest = JSON.parse(JSON.stringify(p.rec())).tc_digest; // wrong on purpose, fixed below
+    const dig = require('crypto').createHash('sha256').update(require(path.join(ROOT, 'templates', 'scripts', 'tc-jev-judge.js')).canonical(JSON.parse(fs.readFileSync(p.tcFile, 'utf8')).test_cases[1])).digest('hex');
+    p.write({ ...dbRec, tc_digest: dig });
+    const mis = await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.db']);
+    assert.equal(mis.status, 2);
+    assert.match(mis.stderr, /channel db needs a db check/);
+    const tmpl = p.rec();
+    tmpl.expected[0].check.equals = '{{process.exit}}';
+    p.write(tmpl);
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.go'])).status, 2);
+  } finally { p.done(); }
+});
+
+t('tc-replay run: PASS and FAIL lines are code verdicts; a missing button and stale TC text fall back without a line (TC run-*, locator-missing, stale)', async () => {
+  if (!HAS_BROWSER) { console.log('     (skipped: no Playwright module)'); return; }
+  const srv = await replayServer();
+  const p = replayProject(srv.url);
+  try {
+    p.write(p.rec(), { accept: true });
+    let r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'R1', '--tcs', 'TC.f.go']);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.json.tcs[0].outcome, 'recorded');
+    let last = p.lines().pop();
+    assert.deepEqual([last.expected[0].verdict, last.expected[0].judged_by, last.browser_tool, last.invariants, last.sweep], ['PASS', 'code', 'replay', 'clean', 'clean']);
+    srv.state.mode = 'wrong';
+    r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'R2', '--tcs', 'TC.f.go']);
+    last = p.lines().pop();
+    assert.equal(last.run_id, 'R2');
+    assert.deepEqual([last.expected[0].verdict, last.expected[0].judged_by, last.expected[0].observed], ['FAIL', 'code', 'Wrong']);
+    srv.state.mode = 'nobutton';
+    r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'R3', '--tcs', 'TC.f.go']);
+    assert.equal(r.json.tcs[0].outcome, 'fallback');
+    assert.match(r.json.tcs[0].reason, /^locator_missing/);
+    assert.ok(!p.lines().some(l => l.run_id === 'R3'));
+    srv.state.mode = 'ok';
+    p.write(p.rec());
+    r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'R4', '--tcs', 'TC.f.go']);
+    assert.equal(r.json.tcs[0].reason, 'not_accepted', 'a candidate is never replayed as a round');
+    p.write(p.rec(), { accept: true });
+    const doc = JSON.parse(fs.readFileSync(p.tcFile, 'utf8'));
+    doc.test_cases[0].expected[0].text = "The heading reads 'Finished'";
+    fs.writeFileSync(p.tcFile, JSON.stringify(doc));
+    r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'R5', '--tcs', 'TC.f.go']);
+    assert.equal(r.json.tcs[0].reason, 'stale');
+  } finally { await srv.close(); p.done(); }
+});
+
+t('tc-replay verify: a replay that disagrees with the tester rejects the recording; agreement accepts it (TC verify-mismatch-rejected)', async () => {
+  if (!HAS_BROWSER) { console.log('     (skipped: no Playwright module)'); return; }
+  const srv = await replayServer();
+  const p = replayProject(srv.url);
+  const jjm = require(path.join(ROOT, 'templates', 'scripts', 'tc-jev-judge.js'));
+  try {
+    p.write(p.rec());
+    jjm.record({ results: p.results, tcFile: p.tcFile, entry: { tc: 'TC.f.go', run_id: 'T1', expected: [{ index: 0, verdict: 'FAIL', judged_by: 'code', observed: 'x' }], browser_tool: 'playwright' } });
+    let r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'T1', '--tcs', 'TC.f.go', '--verify']);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(p.accepted('TC.f.go').status, 'rejected');
+    assert.match(p.accepted('TC.f.go').mismatch[0], /tester FAIL replay PASS/);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(p.runDir, 'replay', 'TC.f.go.json'), 'utf8')).status, 'candidate', 'verify never edits the recording');
+    assert.equal(p.lines().length, 1, 'verify writes no result line');
+    p.write(p.rec());
+    jjm.record({ results: p.results, tcFile: p.tcFile, entry: { tc: 'TC.f.go', run_id: 'T2', expected: [{ index: 0, verdict: 'PASS', judged_by: 'code', observed: 'Done' }], browser_tool: 'playwright' } });
+    r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'T2', '--tcs', 'TC.f.go', '--verify']);
+    assert.equal(p.accepted('TC.f.go').status, 'accepted');
+    assert.equal((fs.statSync(path.join(p.runDir, 'replay-accepted.json')).mode & 0o777), 0o600);
+    // a recording that claims acceptance itself is refused; hand-editing an accepted recording voids it
+    const saved = JSON.parse(fs.readFileSync(path.join(p.runDir, 'replay', 'TC.f.go.json'), 'utf8'));
+    fs.writeFileSync(path.join(p.runDir, 'replay', 'TC.f.go.json'), JSON.stringify({ ...saved, status: 'accepted' }));
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.go'])).status, 2);
+    saved.expected[0].check.equals = 'Start';
+    fs.writeFileSync(path.join(p.runDir, 'replay', 'TC.f.go.json'), JSON.stringify(saved));
+    r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'T3', '--tcs', 'TC.f.go']);
+    assert.equal(r.json.tcs[0].reason, 'not_accepted');
+  } finally { await srv.close(); p.done(); }
+});
+
+t('tc-replay run: a 4xx outside the baseline fails the invariants (TC unknown-4xx-invariant)', async () => {
+  if (!HAS_BROWSER) { console.log('     (skipped: no Playwright module)'); return; }
+  const srv = await replayServer();
+  const p = replayProject(srv.url);
+  try {
+    srv.state.mode = 'missing404';
+    p.write(p.rec(), { accept: true });
+    await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'R1', '--tcs', 'TC.f.go', '--no-sweep']);
+    let last = p.lines().pop();
+    assert.equal(last.invariants, 'fail');
+    assert.ok(last.invariants_detail.includes('GET /missing 404'));
+    p.write(p.rec({ invariants_baseline: { http: ['GET /missing 404'], console: [] } }), { accept: true });
+    await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'R2', '--tcs', 'TC.f.go', '--no-sweep']);
+    last = p.lines().pop();
+    assert.equal(last.invariants, 'clean');
+  } finally { await srv.close(); p.done(); }
+});
+
+t('tc-sweep: a dead button fails, 삭제 is skipped, a POST never reaches the server (TC sweep-*)', async () => {
+  if (!HAS_BROWSER) { console.log('     (skipped: no Playwright module)'); return; }
+  const srv = await replayServer();
+  const p = replayProject(srv.url);
+  try {
+    const r = await cliAsync(TC_SWEEP, ['--run', p.runFile, '--run-id', 'S1', '--urls', '/sweep']);
+    assert.equal(r.status, 0, r.stderr);
+    const u = sweepMod.readSweep(sweepMod.runContext(p.runFile), 'S1').urls['/sweep'];
+    assert.equal(u.status, 'fail');
+    assert.deepEqual(u.fail.map(f => f.control), ['Dead']);
+    assert.deepEqual(u.skipped.map(s => s.control), ['삭제']);
+    assert.equal(srv.state.posts, 0, 'the Save click was aborted before reaching the server');
+    assert.ok(r.json.blocked_mutations >= 1);
+    assert.equal((await cliAsync(TC_SWEEP, ['--run', p.runFile, '--run-id', 'S1', '--urls', 'https://example.com/'])).status, 2);
+  } finally { await srv.close(); p.done(); }
+});
+
+t('tc-replay: api checks — all_equals / not_in with field, own GET request, db count from a capture; POST in a check is refused', async () => {
+  const srv = await httpServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    if (req.url.startsWith('/api/orders?page=1')) return res.end(JSON.stringify({ orders: [{ id: 'A1', status: 'paid' }, { id: 'A2', status: 'paid' }], total: 3 }));
+    if (req.url.startsWith('/api/orders?page=2')) return res.end(JSON.stringify({ orders: [{ id: 'A3', status: 'paid' }], total: 3 }));
+    res.end(JSON.stringify({ orders: [{ id: 'A1', status: 'cancelled' }, { id: 'A2', status: 'paid' }], total: 2 }));
+  });
+  const p = replayProject(srv.url);
+  try {
+    fs.mkdirSync(path.join(p.proj, 'data'));
+    fs.writeFileSync(path.join(p.proj, 'data', 'db.json'), JSON.stringify({ orders: [{ id: 'A1', userId: 1, status: 'cancelled' }, { id: 'A9', userId: 1, status: 'cancelled' }] }));
+    fs.writeFileSync(p.runFile, JSON.stringify({ base_url: srv.url, readable: { db: 'data/db.json' }, tcs: {} }));
+    const doc = JSON.parse(fs.readFileSync(p.tcFile, 'utf8'));
+    doc.test_cases.push({ id: 'TC.f.api', title: 'api', surface: 'api', readiness: 'ready', steps: [{ goal: 'GET', done_when: { expect: 'answers' } }],
+      expected: [{ text: 'every order is cancelled', observe: { channel: 'api', key: 'orders[].status' } },
+        { text: 'page 2 first id is not on page 1', observe: { channel: 'api', key: 'x' } },
+        { text: 'total equals the db count', observe: { channel: 'db', key: 'orders' } }] });
+    fs.writeFileSync(p.tcFile, JSON.stringify(doc));
+    const jjm = require(path.join(ROOT, 'templates', 'scripts', 'tc-jev-judge.js'));
+    const dig = require('crypto').createHash('sha256').update(jjm.canonical(doc.test_cases[2])).digest('hex');
+    const rec = { schema: 1, tc: 'TC.f.api', tc_file: 'docs/tc/f.tc.json', tc_digest: dig, status: 'candidate',
+      steps: [{ step: 0, actions: [
+        { op: 'request', method: 'GET', path: '/api/orders?status=cancelled', session: 's1', save_as: 'r', capture: { total: 'json:total' } },
+        { op: 'request', method: 'GET', path: '/api/orders?page=1', session: 's1', capture: { p1: 'json:orders' } }] }],
+      expected: [{ index: 0, check: { op: 'api', response: 'r', json_path: 'orders', field: 'status', all_equals: 'cancelled' } },
+        { index: 1, check: { op: 'api', request: { method: 'GET', path: '/api/orders?page=2', session: 's1' }, json_path: 'orders[0].id', field: 'id', not_in: '{{p1}}' } },
+        { index: 2, check: { op: 'db', json_path: 'orders[userId=1,status=cancelled]', count: '{{total}}' } }] };
+    p.write(rec);
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.api'])).status, 0);
+    p.write({ ...rec, expected: [rec.expected[0], { index: 1, check: { ...rec.expected[1].check, request: { method: 'POST', path: '/api/x', session: 's1' } } }, rec.expected[2]] });
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.api'])).status, 2, 'a check may not POST');
+    p.write({ ...rec, expected: [{ index: 0, check: { op: 'api', response: 'r', json_path: 'total', field: 'id', equals: 2 } }, rec.expected[1], rec.expected[2]] });
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.api'])).status, 2, 'field goes with list compares only');
+    p.write(rec, { accept: true });
+    const r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'A1', '--tcs', 'TC.f.api']);
+    assert.equal(r.status, 0, r.stderr);
+    const last = p.lines().pop();
+    assert.deepEqual(last.expected.map(e => e.verdict), ['FAIL', 'PASS', 'PASS'], 'one order is not cancelled; A3 is not on page 1; total 2 = db 2');
+    assert.equal(last.browser_tool, 'replay');
+  } finally { await srv.close(); p.done(); }
+});
+
+t('tc-sweep: controls of a page that re-renders after load are clicked, not reported transient or dead', async () => {
+  if (!HAS_BROWSER) { console.log('     (skipped: no Playwright module)'); return; }
+  const srv = await httpServer((req, res) => {
+    if (req.url === '/spa') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(`<!doctype html><body><main id="m"></main><script>
+        const views = { '/spa': '<a href="/spa/b" id=go>다른 화면</a>', '/spa/b': '<button type=button>B1</button><button type=button>B2</button>' };
+        const show = () => { document.getElementById('m').innerHTML = views[location.pathname] || ''; const a = document.getElementById('go');
+          if (a) a.onclick = e => { e.preventDefault(); history.pushState({}, '', '/spa/b'); show(); }; };
+        show();</script></body>`);
+    }
+    if (req.url === '/api/me') { setTimeout(() => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end('{"name":"x"}'); }, 300); return; }
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(`<!doctype html><body><main id="m"></main><script>
+      const draw = n => { document.getElementById('m').innerHTML = '<p id=c>' + n + '</p><button type=button id=b>더하기</button>';
+        document.getElementById('b').onclick = () => { document.getElementById('c').textContent = 'clicked'; }; };
+      draw('loading'); fetch('/api/me').then(r => r.json()).then(() => draw('ready'));</script></body>`);
+  });
+  const p = replayProject(srv.url);
+  try {
+    const r = await cliAsync(TC_SWEEP, ['--run', p.runFile, '--run-id', 'S2', '--urls', '/']);
+    assert.equal(r.status, 0, r.stderr);
+    const u = r.json.results['/'];
+    assert.equal(u.status, 'clean', JSON.stringify(u));
+    assert.equal(u.clicked, 1);
+    assert.ok(!u.skipped.some(s => /transient|gone/.test(s.reason)), JSON.stringify(u.skipped));
+    // a client-side route change brings another view's controls: not transient, not clicked here
+    const r2 = await cliAsync(TC_SWEEP, ['--run', p.runFile, '--run-id', 'S3', '--urls', '/spa']);
+    const v = r2.json.results['/spa'];
+    assert.equal(v.status, 'clean', JSON.stringify(v));
+    assert.ok(!v.skipped.some(s => /transient/.test(s.reason)), JSON.stringify(v.skipped));
+  } finally { await srv.close(); p.done(); }
+});
+
+t('tc-jev-judge record: failed_at_step must be a 0-based step index', () => {
+  const p = replayProject('http://127.0.0.1:9');
+  try {
+    const jjm = require(path.join(ROOT, 'templates', 'scripts', 'tc-jev-judge.js'));
+    assert.throws(() => jjm.record({ results: p.results, tcFile: p.tcFile, entry: { tc: 'TC.f.go', run_id: 'X1', expected: [{ index: 0, verdict: 'FAIL', judged_by: 'code' }], failed_at_step: 1 } }), /0-based/);
+    jjm.record({ results: p.results, tcFile: p.tcFile, entry: { tc: 'TC.f.go', run_id: 'X1', expected: [{ index: 0, verdict: 'FAIL', judged_by: 'code' }], failed_at_step: 0 } });
+  } finally { p.done(); }
+});
+
+t('tc-replay check / tc-sweep: hardening from the audits (regex, TC name, api screen ops, destructive words, same-name controls)', async () => {
+  const p = replayProject('http://127.0.0.1:9');
+  try {
+    const bad = p.rec();
+    bad.steps[0].actions.push({ op: 'capture', name: 'x', url_regex: '(a+)+$' });
+    p.write(bad);
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.go'])).status, 2, 'nested quantifier');
+    p.write({ ...p.rec(), tc_file: '../../etc/x.tc.json' });
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.go'])).status, 2, 'tc_file outside docs/tc');
+    // a file named for one TC that holds another TC's recording
+    fs.writeFileSync(path.join(p.runDir, 'replay', 'TC.f.db.json'), JSON.stringify(p.rec()));
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.db'])).status, 2);
+    const r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'Z1', '--tcs', 'TC.f.db']);
+    assert.equal(r.json.tcs[0].reason, 'bad_recording');
+  } finally { p.done(); }
+  assert.ok(sweepMod.DESTRUCTIVE_RE.test('Pay now') && sweepMod.DESTRUCTIVE_RE.test('/logout') && sweepMod.DESTRUCTIVE_RE.test('주문 삭제'));
+  assert.ok(!sweepMod.DESTRUCTIVE_RE.test('Display') && !sweepMod.DESTRUCTIVE_RE.test('Company') && !sweepMod.DESTRUCTIVE_RE.test('Paypal-free list'));
+  if (!HAS_BROWSER) { console.log('     (sweep part skipped: no Playwright module)'); return; }
+  const srv = await httpServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end('<!doctype html><body><main><p id=p>x</p><button type=button onclick="document.getElementById(\'p\').textContent=1">열기</button><button type=button>열기</button></main></body>');
+  });
+  const q = replayProject(srv.url);
+  try {
+    const out = await cliAsync(TC_SWEEP, ['--run', q.runFile, '--run-id', 'S4', '--urls', '/']);
+    const u = out.json.results['/'];
+    assert.equal(u.clicked, 2, 'both 열기 buttons are swept');
+    assert.deepEqual(u.fail.map(f => f.control), ['열기']);
+  } finally { await srv.close(); q.done(); }
+});
+
 async function run() {
   let pass = 0, fail = 0;
   const failures = [];

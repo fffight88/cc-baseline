@@ -140,6 +140,9 @@ function outcomeOf(st, line) {
   const bad = (Array.isArray(line.expected) ? line.expected : [])
     .filter(e => e.verdict !== 'PASS' && !(e.verdict === 'NOT_OBSERVABLE' && isAccepted(st, line.tc, e.index)))
     .map(e => `${e.index}:${e.verdict}`).sort();
+  // a TC passes only with its invariants held and its screens' sweep clean (e2e-tester §0 / tc-replay.js)
+  if (line.invariants === 'fail') bad.push('invariants');
+  if (line.sweep === 'fail') bad.push('sweep');
   const step = Number.isInteger(line.failed_at_step) ? line.failed_at_step : null;
   if (bad.length === 0 && step === null) return { pass: true };
   return { pass: false, fingerprint: sha256(JSON.stringify({ step, bad })).slice(0, 12), failing: bad, failed_at_step: step };

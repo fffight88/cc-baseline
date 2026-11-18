@@ -33,7 +33,7 @@ const LOOPBACK = ['127.0.0.1', 'localhost', '[::1]', '::1'];
 const SECRET_HEADER_RE = /^(?:set-cookie|cookie|authorization|proxy-authorization)$|auth|token|secret|api[_-]?key/i;
 const ENV_REF_RE = /^\$([A-Z_][A-Z0-9_]*)$/;
 // Project files `read` never opens, even when the run file lists them.
-const DENIED_READ_RE = /(?:^|\/)(?:\.env[^/]*|[^/]*\.(?:pem|key|p12|pfx|kdbx)|id_[^/]*|[^/]*jev\.env)$|(?:^|\/)(?:\.git|\.ssh|api-sessions)(?:\/|$)/i;
+const DENIED_READ_RE = /(?:^|\/)(?:\.env[^/]*|[^/]*\.(?:pem|key|p12|pfx|kdbx)|id_[^/]*|[^/]*jev\.env)$|(?:^|\/)(?:\.git|\.ssh|api-sessions|replay-state|replay-pending|obs)(?:\/|$)/i;
 // key=value / "key": value pairs whose key names a secret.
 const SECRET_PAIR_RE = /("?[A-Za-z_]*(?:password|passwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key)[A-Za-z_]*"?\s*[:=]\s*)("[^"]*"|[^\s,;&}\]]+)/gi;
 
@@ -335,4 +335,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { request, readSource, jsonPath, applySetCookie, targetUrl, Refused };
+module.exports = { request, readSource, jsonPath, applySetCookie, targetUrl, Refused, loadRun, projectRoot, baseOrigin, sessionFile, readCookies, maskTokens };

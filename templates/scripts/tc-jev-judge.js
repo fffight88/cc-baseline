@@ -586,6 +586,10 @@ function record({ results, tcFile, entry }) {
     }
   }
   if (entry.judge_mode !== undefined && !JUDGE_MODES.includes(entry.judge_mode)) throw new Error(`judge_mode must be one of ${JUDGE_MODES.join(' | ')}`);
+  const stepCount = Array.isArray(tc.steps) ? tc.steps.length : 0;
+  if (entry.failed_at_step !== undefined && !(Number.isInteger(entry.failed_at_step) && entry.failed_at_step >= 0 && entry.failed_at_step < stepCount)) {
+    throw new Error(stepCount === 0 ? `${entry.tc} has no steps — failed_at_step does not apply` : `failed_at_step must be a 0-based step index (0..${stepCount - 1}) of ${entry.tc}`);
+  }
   if (seen.size !== count && !Number.isInteger(entry.failed_at_step)) {
     throw new Error(`${entry.tc} has ${count} expected results but ${seen.size} verdicts — judge every one, or set failed_at_step`);
   }

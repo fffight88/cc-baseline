@@ -1,0 +1,562 @@
+{
+  "schema_version": 1,
+  "feature": "tc-replay",
+  "title": "Replay rounds and dead-control sweep script",
+  "plan": "tc-replay",
+  "sources": [
+    {
+      "id": "REQ.tc-replay-plan",
+      "kind": "requirement",
+      "locator": "docs/plans/tc-replay.md (approved 2026-11-18)"
+    },
+    {
+      "id": "DEC.replay-design",
+      "kind": "decision",
+      "locator": "user decision 2026-11-18: record-and-replay as data, reset_command, verify before accepting, sweep always by script, recordings under .cc-audits"
+    }
+  ],
+  "actions": [
+    {
+      "id": "ACT.tc-replay.check",
+      "title": "Check a recording",
+      "actor": "e2e-tester",
+      "trigger": "runs tc-replay.js check --run <tc-run.json> --tc <id>",
+      "preconditions": [
+        "a recording file exists"
+      ],
+      "outputs": [
+        "exit code and one JSON line"
+      ],
+      "evidence_refs": [
+        "REQ.tc-replay-plan"
+      ]
+    },
+    {
+      "id": "ACT.tc-replay.run",
+      "title": "Replay TCs for a round",
+      "actor": "e2e manager",
+      "trigger": "runs tc-replay.js run --run <tc-run.json> --run-id <id> --tcs <ids>",
+      "preconditions": [
+        "accepted recordings",
+        "the app is running at base_url"
+      ],
+      "outputs": [
+        "one JSON line per TC",
+        "tc-results.jsonl lines"
+      ],
+      "evidence_refs": [
+        "REQ.tc-replay-plan",
+        "DEC.replay-design"
+      ]
+    },
+    {
+      "id": "ACT.tc-replay.sweep",
+      "title": "Sweep screens for dead controls",
+      "actor": "e2e manager or e2e-tester",
+      "trigger": "runs tc-sweep.js --run <tc-run.json> --run-id <id> --urls <paths>",
+      "preconditions": [
+        "the app is running at base_url"
+      ],
+      "outputs": [
+        "sweep/<run_id>.json"
+      ],
+      "evidence_refs": [
+        "REQ.tc-replay-plan",
+        "DEC.replay-design"
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "id": "TC.tc-replay.check-unknown-op",
+      "title": "A recording with an op outside the allowed list is refused",
+      "action_refs": [
+        "ACT.tc-replay.check"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a recording whose step has op eval"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js check for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 2",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.tc-replay-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.check-absolute-goto",
+      "title": "A recording that goes to an absolute URL is refused",
+      "action_refs": [
+        "ACT.tc-replay.check"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a recording with goto path https://example.com/"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js check for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 2",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.tc-replay-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.check-channel-mismatch",
+      "title": "A screen check on a db expected result is refused",
+      "action_refs": [
+        "ACT.tc-replay.check"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a TC whose expected[0] has channel db",
+        "a recording whose expected[0] check op is text"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js check for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 2",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.tc-replay-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.run-pass-recorded",
+      "title": "Replay on a working server records a code PASS line",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a local test server whose page shows the expected heading",
+        "an accepted recording for the TC"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The output line for the TC says recorded",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .tcs[0].outcome"
+          }
+        },
+        {
+          "text": "The new tc-results line has verdict PASS judged by code",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-results.jsonl last line .expected[0]"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.tc-replay-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.run-fail-recorded",
+      "title": "A wrong heading records a code FAIL line",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the test server shows a different heading",
+        "an accepted recording for the TC"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The new tc-results line has verdict FAIL judged by code",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-results.jsonl last line .expected[0]"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.tc-replay-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.locator-missing-fallback",
+      "title": "A missing click target gives fallback and no result line",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the test server page lacks the button the recording clicks"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The output line for the TC says fallback",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .tcs[0].outcome"
+          }
+        },
+        {
+          "text": "tc-results.jsonl has no line with this run_id",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-results.jsonl"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.replay-design"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.stale-digest-fallback",
+      "title": "A recording made for older TC text is stale",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "an accepted recording",
+        "the TC expected text edited afterwards"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The output fallback reason is stale",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .tcs[0].reason"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.tc-replay-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.verify-mismatch-rejected",
+      "title": "A verify replay that disagrees with the tester rejects the recording",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a candidate recording",
+        "a tester result line with verdict FAIL for expected[0]",
+        "the test server makes the check pass"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run with --verify for that run_id",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The recording file status is rejected",
+          "observe": {
+            "channel": "artifact",
+            "key": "replay/<tc>.json .status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.replay-design"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.unknown-4xx-invariant",
+      "title": "A 4xx outside the baseline fails the invariants",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "an accepted recording with an empty invariants baseline",
+        "the test page requests a path that returns 404"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The new tc-results line has invariants fail",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-results.jsonl last line .invariants"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.tc-replay-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.sweep-dead-button",
+      "title": "A button with no effect is a sweep failure",
+      "action_refs": [
+        "ACT.tc-replay.sweep"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a test page with a button that has no handler"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-sweep.js on that page",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The sweep file lists that button under fail for the page",
+          "observe": {
+            "channel": "artifact",
+            "key": "sweep/<run_id>/"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.tc-replay-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.sweep-no-mutation",
+      "title": "A POST started by the sweep never reaches the server",
+      "action_refs": [
+        "ACT.tc-replay.sweep"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a test page with a button that sends POST /api/save"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-sweep.js on that page",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The test server received no POST request",
+          "observe": {
+            "channel": "artifact",
+            "key": "test server request log"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.replay-design"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.sweep-destructive-skipped",
+      "title": "A delete button is not clicked and is reported skipped",
+      "action_refs": [
+        "ACT.tc-replay.sweep"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a test page with a button named 삭제 whose click handler sets a flag"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-sweep.js on that page",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The sweep file lists the 삭제 button under skipped",
+          "observe": {
+            "channel": "artifact",
+            "key": "sweep/<run_id>/"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.tc-replay-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.loop-sweep-fail",
+      "title": "A result line with sweep fail counts as a failure in the fix loop",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a fix loop with one TC",
+        "its round result line has every expected PASS and sweep fail"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-fix-loop.js next",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The output action is classify",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .action"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.tc-replay-plan"
+        ]
+      },
+      "readiness": "ready"
+    }
+  ],
+  "open_questions": []
+}

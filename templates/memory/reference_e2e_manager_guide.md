@@ -94,6 +94,7 @@ When the plan has a TC file (`docs/tc/<feature>.tc.json`, see `reference_tc_auth
    - Skip reasons: `needs-decision` · `external-idp` · `real-input-device` · `server-injection` · `decided-out`. A `ready` TC with no entry is reported as `unmapped`. `api` TCs are run, not skipped.
    - Secrets are env var names (`$NAME`), never values.
    - `api` — for `api` / `db` / `log` checks: the `tc-api-run.js` session name, `login_path` and `login_body`. Without `login_path` the tester reports those results `NOT_OBSERVABLE` instead of guessing a path.
+   - `reset_command` — puts the data back to the TCs' starting state (seed, restart). Same form as `*_command`: `node <project script> <plain args>`, a command the user saw when approving the plan. The manager runs it before every round and before a verify replay (§2-C); without it, replay rounds are not used.
    - `data.<name>_command` — a ready command for a step that happens outside the browser (e.g. `step2_command`: the admin ships the order meanwhile). Only the form `node <project script> <plain args>` (no pipes, redirects, `;` `&` `$`, quotes, paths outside the project), and only a command the user saw when approving the plan. The tester refuses any other form.
    - The run file must stay at `.cc-audits/<plan-slug>/tc-run.json` — `tc-api-run.js` refuses a run file anywhere else, and it is the manager's file: testers never write it.
    - `$NAME` body values are filled only for names some TC lists in `secret_env`; `readable` never opens `.env*`, key files (`*.pem`, `id_*`, …), `.git/`, `.ssh/` or `api-sessions/`, and values of secret-named fields (`password`, `token`, `secret`, `api_key`, …) are masked in the output.
@@ -128,7 +129,7 @@ node $L report --run $RUN                                       # at the end: ro
 
    | `action` | Do |
    |---|---|
-   | `run_round` / `final_regression` | `round --run-id <id>`, then run exactly `tcs` as in §2-A with that `run_id` (testers or the project's own driver; the result line's `browser_tool` names it) |
+   | `run_round` / `final_regression` | `round --run-id <id>`, then run exactly `tcs` with that `run_id` — by replay where a recording is accepted, testers for the rest (§2-C) |
    | `wait_results` | a TC of the open round has no result line yet — finish running it. If the runner cannot produce one (crashed, aborted), close it with `no-result --tc <id> --reason "<what happened>"`; it then counts as a failure to classify (usually `runner` / `env`) |
    | `classify` | read the failure (result line, fail log) and record a class for each TC |
    | `fix` | fix the product for each TC (rules below), then record it with `fix` |
@@ -165,6 +166,36 @@ node $L report --run $RUN                                       # at the end: ro
    - Round limit → `cap_reached`. The closing full round may go one past the limit, since it only confirms.
    - A TC that passed earlier in the loop and fails now is listed in `regressions`.
 6. **Closing** — partial re-runs passing is not the end: `next` asks for one full round (`final_regression`) before `done`. Record `report` in the plan; it feeds the decision on repeat runners.
+
+## 2-C. Replay rounds (recordings instead of testers)
+
+A tester round costs ~600k tokens; a replayed round costs none. Testers record each TC once (`record: true`); after a verify replay agrees with them, later rounds replay the recordings with `~/.claude/scripts/tc-replay.js`, and only what cannot be replayed goes back to a tester. Needs `reset_command` in `tc-run.json` and a Playwright module (`--doctor`: "Replay browser").
+
+```bash
+R=~/.claude/scripts/tc-replay.js; RUN=.cc-audits/<plan-slug>/tc-run.json
+node <reset_command>                                                   # before every round and every verify
+node $R run --run $RUN --run-id <id> --tcs <ids> --verify             # after the tester round: accept / reject recordings
+node $R run --run $RUN --run-id <id> --tcs <ids>                      # a replay round (sweeps the screens it visits)
+node $R finish --run $RUN --run-id <id> --verdicts <json>             # judgments for `pending` TCs
+```
+
+1. **First round** — `reset_command`, then testers as in §2-A with `record: true`. Each tester writes `replay/<tc>.json` (status `candidate`, `tc-replay.js check` passing) and sweeps with `tc-sweep.js`.
+2. **Verify** — right after the tester round and **before any fix** (the replay must see the same code the tester saw): `reset_command`, then `run --verify` with the **tester's** `run_id` for the recorded TCs. It replays without writing results and compares every verdict (and `failed_at_step`, invariants) with the tester's line:
+   - equal → `accepted`
+   - different → `rejected` (with `mismatch`)
+   - Both are kept in `.cc-audits/<plan-slug>/replay-accepted.json`, the only place acceptance is read from. The recording itself is never marked.
+   - A rejected or unverified TC stays with testers. A recording changed after verify is no longer accepted.
+   - Results Jev left as REVIEW in the verify replay are listed as `unverified`. The TC is accepted on its code verdicts, and those results are judged again in every replay round (`pending`).
+   - `--retry-rejected` verifies a rejected recording again — only after you fixed what made the replay differ outside the recording (environment, replayer); write the reason in the plan.
+3. **Later rounds** — `reset_command`, then `run` with the round's `tcs`. Per TC:
+
+   | Outcome | Meaning | Do |
+   |---|---|---|
+   | `recorded` | result line written (code verdicts, `invariants`, `sweep`, `failed_at_step` when a step's done check failed) | nothing — the fix loop reads it |
+   | `fallback` | no line: `no_recording`, `not_accepted`, `rejected`, `stale` (TC text changed), `locator_missing:<step>` / `wait_failed` (the screen changed), `no_browser`, `error` | run that TC with a tester (`record: true`) in the same round; verify the new recording before the next one |
+   | `pending` | Jev returned REVIEW or asked for a re-check | judge each listed observation file yourself (as a tester's layer 3 / re-check), then `finish` with `{ "<tc>": { "<index>": { "verdict": "PASS", "judged_by": "llm" } } }` |
+4. **Never** count a fallback as a product failure, edit a recording by hand to make it pass, or run a recording that `check` refuses.
+5. `report` (fix loop) shows how many TCs each round replayed vs. ran with testers (`browser_tool: replay`).
 
 ---
 
@@ -374,6 +405,7 @@ authenticated result (not a login redirect). Same-origin means all headers
 - [ ] **(§2-A)** With a TC file: TCs ran verbatim from `tc-run.json`, every `ready` `ui-web` TC is run / skipped with a reason / reported `unmapped`, each expected result has exactly one `judged_by`, and `git diff --quiet -- docs/tc/` holds after the run
 - [ ] **(§2-A)** Jev verdicts were capped at `REVIEW` for any question × model without an approved calibration entry; `audit: true` verdicts were re-checked and the review queue was offered to the user
 - [ ] **(§2-A)** `api` TCs ran with `tc-api-run.js` on one tester after the screen TCs; no TC skipped as `api-only`
+- [ ] **(§2-C)** Replay only after `reset_command` and an accepted verify; every `fallback` TC ran with a tester in the same round; `pending` TCs judged and `finish`ed
 - [ ] **(§2-B)** Failures went through `tc-fix-loop.js`: every failure classified, only `product` fixed (repro test first when a suite exists), `ask_user` TCs asked, loop ended on `done` or reported `cap_reached`, `report` recorded
 - [ ] Checked `aside-session.sh account` once and set `browser:` for every tester; reports carry `BROWSER_TOOL` / `FALLBACK_REASON`
 - [ ] Distinct N (2–5) per tester for `aside_session: e2e-{N}` and fallback `mcp_server`; never `manual` / `playwright-test-1`

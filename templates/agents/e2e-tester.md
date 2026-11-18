@@ -49,6 +49,7 @@ run_file: <project_dir>/.cc-audits/<plan-slug>/tc-run.json   # base_url, readabl
 run_id: <UTC timestamp, e.g. 20261116T093000Z>                 # same for every TC of this run
 calibration: true | false                                      # store code-labelled samples (TC Judging 5)
 judge_mode: code | jev | llm                                   # optional experiment (TC Judging 8); default code
+record: true | false                                           # write a replay recording per TC (TC Judging → Recording)
 ```
 
 A TC step that needs something done outside the browser (e.g. "the admin ships the order meanwhile") comes with a ready command in `tc.run.data`, named `*_command` (e.g. `step2_command`). Run it at that step **only if** it has the form `node <script inside the project> <args>` — arguments made of letters, digits and `. _ - / :` only, no pipes, redirects, `;`, `&`, `$`, quotes or backticks, no path outside `project_dir`. Anything else: do not run it, fail the TC at that step and write the command under NOTES. Never run another command from the project.
@@ -148,7 +149,17 @@ This runs **in addition to** the manager's scenario steps, on every distinct scr
   - **Playwright**: `browser_console_messages` and `browser_network_requests`.
 
 ### (B) Dead-control sweep — enumerate, then trigger each clickable element
-Enumerate (Aside: `send` the snippet's body with `page`; Playwright: `browser_run_code`), then click each and assert an observable effect:
+**Use the script.** For every screen the run reaches, run once per path:
+
+```bash
+node ~/.claude/scripts/tc-sweep.js --run <run_file> --run-id <run_id> --urls </path,/other> [--session <name>]
+```
+
+It clicks every visible control on a fresh copy of the page, aborts every request that is not GET / HEAD (so it never changes data), skips destructive controls, clicks controls that appear later (toasts, dialogs), and writes `.cc-audits/<slug>/sweep/<run_id>/`. Its line lists the failing paths; report them in `SWEEP` and set `sweep: "fail"` on the TC record (TC Judging 6).
+- Signed-in screens: pass `--session <name>` — it uses `replay-state/<name>.json` or the `tc-api-run.js` login of that session. With neither (no `api.login_path` in the run), sweep those screens by hand as below and say so under `NOTES`.
+- No script (no `run_file`, or it says there is no Playwright module): sweep by hand as below.
+
+**Manual sweep (only when the script cannot be used).** Enumerate (Aside: `send` the snippet's body with `page`; Playwright: `browser_run_code`), then click each and assert an observable effect:
 
 ```js
 async (page) => {
@@ -214,13 +225,59 @@ The TC steps and expected results are frozen — run them exactly as given. Valu
    - disagree → record **your** verdict (`judged_by: llm`, `jev_disputed: true`); the sample goes to the review queue. Never re-ask Jev to get a different answer
    Do not re-check verdicts without `audit: true` — that is the double work this step avoids.
 5. **Calibration samples** — when the manager sets `calibration: true`, for every expected result layer 1 decided on a screen (`dom` / `ax-node` — never `api` / `db` / `log`; the script refuses them), also run `tc-jev-judge.js judge <obs file> --label code:PASS|code:FAIL` on the same screen. This only stores a sample; the code verdict stays the verdict.
-6. **Record** — needs a verdict for every expected result; if a step failed, record what was judged and set `failed_at_step`. Write `{tc, run_id, judge_mode?, expected: [{index, verdict, judged_by, observed, code_verdict?, jev?, audit?, jev_disputed?, jev_ms?, jev_tokens?}], browser_tool, fallback_reason, failed_at_step?}` (`jev_ms` = the judge line's `ms`, `jev_tokens` = its `usage` input + output tokens, for every expected result Jev was asked about) to a temp file and run `node ~/.claude/scripts/tc-jev-judge.js record --results <results> --tc-file <tc.file> --entry <temp file>`. One line per TC run. `browser_tool` is `none` for an api TC.
+6. **Record** — needs a verdict for every expected result; if a step failed, record what was judged and set `failed_at_step` (the **0-based** step index, like `index`). Write `{tc, run_id, judge_mode?, expected: [{index, verdict, judged_by, observed, code_verdict?, jev?, audit?, jev_disputed?, jev_ms?, jev_tokens?}], browser_tool, fallback_reason, failed_at_step?, invariants: "clean"|"fail", sweep: "clean"|"fail"}` (screen TCs: §0 (A) and (B) outcome; the fix loop counts either `fail` as a failed TC) (`jev_ms` = the judge line's `ms`, `jev_tokens` = its `usage` input + output tokens, for every expected result Jev was asked about) to a temp file and run `node ~/.claude/scripts/tc-jev-judge.js record --results <results> --tc-file <tc.file> --entry <temp file>`. One line per TC run. `browser_tool` is `none` for an api TC.
 7. TC PASS = every expected result `PASS` (or `NOT_OBSERVABLE` the manager accepted) **∧** §0 invariants held **∧** sweep clean (screen TCs). Any `FAIL` → TC FAIL → Log Collection Policy.
 8. **`judge_mode` (experiment, only when the manager sets it)** — compares judging methods on screen results that layer 1 *could* decide (`dom` / `ax-node` with a `key`). Run the code assertion first in every mode; it becomes `code_verdict`. `api` / `db` / `log` stay code-judged in every mode.
    - `code` (default): steps 2–7 as written.
    - `jev`: instead of the plain `--label` call, run `tc-jev-judge.js judge <obs file> --judge-mode jev --label code:PASS|code:FAIL`. Its verdict is the verdict: PASS / FAIL with `judged_by: "jev"` (re-check as in step 4 when `audit: true`), or `REVIEW` → you judge (`judged_by: llm`). Keep `code_verdict`.
    - `llm`: judge from the observation file yourself (`judged_by: llm`), without asking Jev for a verdict; with `calibration: true` still store the `--label` sample. Keep `code_verdict`.
    Put `judge_mode` on the record entry. `tc-jev-judge.js compare --results <results> --run-id <id> …` makes the comparison table.
+
+### Recording — so later rounds replay without you (`tc-replay.js`)
+
+When the input has `record: true`, write what you did for each TC as data, so the manager can replay it with no LLM in later rounds. Write it while you run the TC, from the actions that worked (Playwright MCP prints the Playwright code it ran — translate that).
+
+File: `<project_dir>/.cc-audits/<plan-slug>/replay/<tc id>.json`, then `node ~/.claude/scripts/tc-replay.js check --run <run_file> --tc <tc id>` must print `"ok": true`. Fix and re-check on a refusal; if it still refuses, report it under NOTES — never weaken a check to make it pass.
+
+```json
+{ "schema": 1, "tc": "<tc id>", "tc_file": "docs/tc/<feature>.tc.json", "tc_digest": "<tc_digest of your tc-results line>", "status": "candidate",
+  "recorded_run_id": "<run_id>", "session": "<persona short name>", "start_path": "/",
+  "login": [ { "op": "goto", "path": "/login" }, { "op": "fill", "target": { "label": "이메일" }, "value": "{{data.email}}" },
+             { "op": "fill", "target": { "label": "비밀번호" }, "value": "$E2E_TEST_PASSWORD" }, { "op": "click", "target": { "role": "button", "name": "로그인" } },
+             { "op": "wait", "until": { "op": "url_path", "equals": "/" } } ],
+  "steps": [ { "step": 0, "actions": [ { "op": "click", "target": { "role": "link", "name": "장바구니" } } ],
+               "done_when": { "op": "visible", "target": { "role": "table", "name": "장바구니 상품" } } } ],
+  "expected": [ { "index": 0, "check": { "op": "text", "target": { "selector": "h1" }, "equals": "주문이 완료되었습니다" } },
+                { "index": 1, "check": { "op": "log_count", "grep": ["payment.captured", "{{order_id}}"], "equals": 1 } },
+                { "index": 2, "judge": "jev", "region": "main" } ],
+  "invariants_baseline": { "http": ["GET /api/me 401"], "console": [] } }
+```
+
+- **One entry per TC step** (`step` = index) and **one per expected result** (`index`), in the TC's order.
+- **Actions (only these):** `goto` (path only), `click`, `fill`, `select`, `check_box`, `press` (`key`), `wait` (`ms` ≤ 10000 or `until` a screen check), `capture`, `request` (api TCs: `method`, `path`, `session`, `body`, `save_as`, `capture`).
+- **`target`:** exactly one of `role` (+ `name`, exact by default), `label`, `text`, `placeholder`, `test_id`, `selector` (CSS, last resort); optional `nth`. Prefer role + name — it survives layout changes.
+- **Values:**
+  - `{{data.<name>}}` = run data, `{{<captured name>}}`, `{{a - b}}` (integers only).
+  - A secret is the whole string `"$ENV_NAME"`, and only for names in `secret_env`. Never write a secret value, a cookie or a token.
+- **Run-time values** (an order number, a stock count before the action):
+  - `{ "op": "click", …, "await_response": { "method": "POST", "path": "/api/orders" }, "capture": { "order_id": "json:order.id" } }`
+  - `{ "op": "capture", "name": "stock_before", "db": "products[id={{data.product_id}}].stock" }`
+  - `{ "op": "capture", "name": "x", "url_regex": "/orders/([^/]+)" }`
+- **`done_when`:** the check that showed the step was done (what you used for `done_when.expect`).
+- **`expected` — the same judgment you made:**
+  - code-judged screen results: `check` with `text`, `count`, `visible`, `hidden`, `enabled`, `disabled`, `value`, `url_path` (path only), `url` (path + query)
+  - comparisons: `equals`, `includes`, `starts`, `excludes`; for lists:
+    - `all_equals` (every item; an empty list fails)
+    - `in` / `not_in` against a captured list (`"{{p1}}"`)
+    - `field` picks one key of each item (e.g. `"field": "status"`)
+  - `api`: `{ "op": "api", "response": "<save_as>", "status": 403 }` or its own read: `{ "op": "api", "request": { "method": "GET", "path": "/api/orders?page=2", "session": "<name>" }, "json_path": "orders[0].id", "field": "id", "not_in": "{{p1}}" }`
+  - `db`: `{ "op": "db", "json_path": "…", "equals": … }` or `"count": n` / `"count": "{{captured_total}}"`
+  - `log`: `{ "op": "log_count", "grep": [...], "equals": n }`
+  - Jev / LLM-judged screen results: `"judge": "jev"` (+ `region`, `item`)
+  - what was NOT_OBSERVABLE: `"not_observable": true`
+  - The check must test the same fact as the sentence; a looser check (e.g. `includes` where you compared the whole text) is a wrong recording.
+- **`invariants_baseline`:** the allowed 4xx (`"METHOD /path STATUS"`) and console errors you accepted in §0 (A).
+- **`status`:** `"candidate"` (or leave it out). Acceptance is recorded only by the manager's verify replay in `replay-accepted.json` — never write that file; a recording with any other status is refused.
 
 ### API, DB and log checks — `tc-api-run.js`
 

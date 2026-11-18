@@ -314,6 +314,15 @@ function checkPlaywrightMcp() {
     'npm install -g @playwright/mcp --prefix ~/.npm-global');
 }
 
+// tc-replay.js / tc-sweep.js need a Playwright module (the one inside @playwright/mcp is enough)
+function checkReplayBrowser() {
+  let found = null;
+  try { found = require(path.join(__dirname, '..', 'templates', 'scripts', 'tc-sweep.js')).loadPlaywright(); } catch { found = null; }
+  if (found) return ok('Replay browser (tc-replay / tc-sweep)', String(found.from).replace(HOME, '~'));
+  return warn('Replay browser (tc-replay / tc-sweep)', 'no Playwright module found — replay rounds fall back to e2e-tester',
+    'npm install -g @playwright/mcp --prefix ~/.npm-global (or set CC_BASELINE_PLAYWRIGHT)');
+}
+
 function checkNotifier() {
   if (process.platform === 'darwin') {
     if (checkCmd('terminal-notifier')) {
@@ -375,6 +384,7 @@ function runChecks(opts) {
     checkMcpServers(target.mcpJsonPath, target),
     checkScanners(),
     checkPlaywrightMcp(),
+    checkReplayBrowser(),
     checkAside({ configPath: path.join(target.claudeDir, 'cc-baseline-browser.json') }),
     checkNotifier(),
     checkJev(),
