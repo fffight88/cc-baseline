@@ -446,7 +446,7 @@ cc-baseline 자체의 TC(`surface: cli`)다. 승인 직후 `docs/tc/tc-replay.tc
   - 덮인 컨트롤은 건너뛰고 개수를 기록한다.
   - 같은 출처 웹소켓은 열어 두되, 쓰기 방지를 위해 페이지→서버 메시지를 버린다.
   - `CC_SWEEP_DEBUG=1`로 진단 로그를 남긴다.
-- **남은 한계:** 애니메이션처럼 DOM이 계속 바뀌는 앱에서는 효과 판정이 부정확하다(모든 클릭이 "효과 있음"). 판정 방식 재설계는 별도 작업이다.
+- **남은 한계:** 애니메이션처럼 DOM이 계속 바뀌는 앱에서는 효과 판정이 부정확하다(모든 클릭이 "효과 있음"). 판정 방식 재설계는 별도 작업이다. → 2026-11-19에 고쳤다(아래 "스윕 효과 판정 재설계").
 - **알려진 약점:** 검증 재생은 판정 결과만 비교한다. 이유가 달라도 결과가 같으면 채택된다(grimbang 1라운드에서 CSP 차단 FAIL과 잘못된 선택자 FAIL이 일치로 채택됨). → 2026-11-19에 고쳤다(아래).
 
 ## Audit History (iter-2, 실제 프로젝트 후속)
@@ -480,3 +480,31 @@ cc-baseline 자체의 TC(`surface: cli`)다. 승인 직후 `docs/tc/tc-replay.tc
 
 - code-review-iter-1: 2026-11-19 / critical=0 high=0 medium=0 low=1 / profile_status=cached / next_action=done
   - QA-001: 300자에서 잘린 재생 값은 앞부분만 맞으면 일치로 본다.
+
+## 스윕 효과 판정 재설계 (2026-11-19)
+
+- **기준선:** 클릭 전에 600ms 동안 페이지를 지켜본다. 이때 바뀐 노드와 요청, 스크롤 요소는 소음이라 효과에서 뺀다. 소음 노드의 하위 트리도 뺀다. 다만 html, body, 클릭한 컨트롤을 감싼 요소는 예외다.
+- **소음 페이지의 죽은 버튼:** fail로 남기고 사유에 `page changes on its own: N nodes`를 붙인다(사용자 결정).
+- **스크롤:** 스크롤 이동도 효과로 친다.
+- **열 때 뜨는 모달:** `aria-modal` 또는 모달 `dialog`면 Escape를 누르고, 안 닫히면 닫기 계열 버튼을 누른다. 결과는 `startup_overlay`에 남긴다(사용자 결정). `role=dialog`인 쿠키 배너처럼 모달이 아닌 것은 대상이 아니다.
+- **상태 복원(실행 중 추가, 사용자 결정):** 다시 열 때마다 첫 열기의 쿠키와 localStorage로 되돌린다. 그래도 없는 컨트롤은 `gone after reopening`으로 기록한다. 그전에는 언어 전환 클릭 뒤 컨트롤 10개가 기록 없이 빠졌다.
+- **시간:** `networkidle`은 최대 1초, 렌더링 대기는 최대 3초다. 렌더링 대기는 이미 바뀌던 노드만 바뀌는 상태면 바로 끝난다.
+- **grimbang 실측(테스트 환경, 로그인 없음):**
+  - 이전: `/`는 클릭 0개였다. 20개가 모달에 가려져 건너뛰었고, 185초가 걸려 상한에 닿았다.
+  - 이후: `/`는 클릭 19개, fail 0개, `startup_overlay`가 Escape로 닫혔다. `/dashboard`(로그인 없으면 로그인 모달)는 클릭 21개, fail 0개였다. 두 경로를 합쳐 233초였다. 리뷰를 반영한 뒤 `/`만 다시 돌렸을 때는 90초에 같은 결과였다.
+  - 예전 fail 8개(`DBG-SW2~4`)는 이번 실행에서 다시 나오지 않았다. 당시 원인(모달, 소음)은 기록으로 확정할 수 없다.
+- **남은 것:**
+  - 쿠키 배너가 아래쪽 링크를 가려 covered가 6개 남는다.
+  - `Continue with …` 로그인 버튼은 `transient-missed`로 남는다(모달 안의 늦은 컨트롤).
+  - 600ms보다 주기가 긴 변화(예: 폴링)는 소음으로 잡히지 않는다.
+- TC 5개를 추가했다(`sweep-noisy-*`, `sweep-scroll-effect`, `sweep-startup-overlay-dismissed`, `sweep-state-restored`).
+
+## Code Review History (sweep-effect-baseline)
+
+- code-review-iter-1: 2026-11-19 / critical=0 high=0 medium=2 low=4 / profile_status=regenerated / next_action=done
+  - QA-001: 클릭한 컨트롤을 감싼 소음 요소는 그 자신의 변화만 소음으로 본다. 애니메이션 래퍼가 죽은 버튼을 통과시키지 않게 했다.
+  - QA-002: 두 번째 열기에서 모달이 다시 뜨지 않으면 그다음부터 모달 대기를 하지 않는다.
+  - QA-003: 늦게 나타난 컨트롤 id는 reset되지 않는 카운터로 붙인다.
+  - QA-004: 렌더링 대기에서 같은 부모에 이어 붙는 자식도 새 노드로 센다.
+  - QA-005: 저장한 localStorage는 `base_url` 출처일 때만 복원한다.
+  - QA-006: 닫은 방법(`by`)과 폴링 요청 소음을 테스트에 추가했다. `hint`는 테스트가 없다.

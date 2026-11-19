@@ -3075,6 +3075,30 @@ function replayServer() {
   return httpServer((req, res) => {
     if (req.method !== 'GET' && req.method !== 'HEAD') { state.posts++; res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end('{}'); }
     if (req.url === '/missing') { res.writeHead(404); return res.end('no'); }
+    if (req.url === '/noisy') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(page(`<p id="clock">0</p><button type="button">Dead</button><button type="button" onclick="this.textContent='Done'">Live</button>
+        <script>let n = 0; setInterval(() => { document.getElementById('clock').textContent = String(++n); fetch('/poll').catch(() => {}); }, 100);</script>`));
+    }
+    if (req.url === '/scroll') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(page(`<button type="button" onclick="document.getElementById('low').scrollIntoView()">Jump</button><div style="height:3000px"></div><p id="low">low</p>`));
+    }
+    if (req.url === '/overlay') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(page(`<button type="button" onclick="this.textContent='Done'">Live</button>
+        <script>setTimeout(() => { const d = document.createElement('div'); d.id = 'ov';
+          d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center';
+          d.innerHTML = '<div role="dialog" aria-modal="true" aria-label="Notice" style="background:#fff;padding:20px"><p>Beta</p><button type="button" onclick="document.getElementById(\\'ov\\').remove()">닫기</button></div>';
+          document.body.appendChild(d); }, 1000);</script>`));
+    }
+    if (req.url === '/lang') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(page(`<button type="button" id="t">Toggle</button><button type="button" id="h"></button>
+        <script>const ko = localStorage.getItem('lang') === 'ko'; const h = document.getElementById('h'); h.textContent = ko ? '안녕' : 'Hello';
+          h.onclick = () => { h.dataset.x = '1'; };
+          document.getElementById('t').onclick = () => { localStorage.setItem('lang', ko ? 'en' : 'ko'); h.textContent = ko ? 'Hello' : '안녕'; };</script>`));
+    }
     if (req.url === '/sweep') {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       return res.end(page(`<p id="p">x</p><button type="button">Dead</button><button type="button" onclick="fetch('/api/save',{method:'POST'})">Save</button>
@@ -3305,6 +3329,26 @@ t('tc-sweep: a dead button fails, 삭제 is skipped, a POST never reaches the se
     assert.equal(srv.state.posts, 0, 'the Save click was aborted before reaching the server');
     assert.ok(r.json.blocked_mutations >= 1);
     assert.equal((await cliAsync(TC_SWEEP, ['--run', p.runFile, '--run-id', 'S1', '--urls', 'https://example.com/'])).status, 2);
+  } finally { await srv.close(); p.done(); }
+});
+
+t('tc-sweep: noise does not count as an effect; scrolling does; a dialog that opens on load is dismissed; saved state is restored per open (TC sweep-noisy-*, sweep-scroll-effect, sweep-startup-overlay-dismissed, sweep-state-restored)', async () => {
+  if (!HAS_BROWSER) { console.log('     (skipped: no Playwright module)'); return; }
+  const srv = await replayServer();
+  const p = replayProject(srv.url);
+  try {
+    const r = await cliAsync(TC_SWEEP, ['--run', p.runFile, '--run-id', 'N1', '--urls', '/noisy,/scroll,/overlay,/lang']);
+    assert.equal(r.status, 0, r.stderr);
+    const u = sweepMod.readSweep(sweepMod.runContext(p.runFile), 'N1').urls;
+    assert.deepEqual(u['/noisy'].fail.map(f => f.control), ['Dead'], JSON.stringify(u['/noisy']));
+    assert.match(u['/noisy'].fail[0].reason, /page changes on its own/);
+    assert.deepEqual(u['/scroll'].fail, [], JSON.stringify(u['/scroll']));
+    assert.equal(u['/overlay'].startup_overlay.dismissed, true, JSON.stringify(u['/overlay']));
+    assert.equal(u['/overlay'].startup_overlay.by, 'button:닫기');
+    assert.ok(!u['/overlay'].skipped.some(x => x.control === 'Live'), JSON.stringify(u['/overlay']));
+    assert.equal(u['/overlay'].status, 'clean');
+    assert.ok(!u['/lang'].skipped.some(x => x.control === 'Hello'), JSON.stringify(u['/lang']));
+    assert.equal(u['/lang'].clicked, 2, JSON.stringify(u['/lang']));
   } finally { await srv.close(); p.done(); }
 });
 

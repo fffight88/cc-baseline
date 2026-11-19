@@ -33,6 +33,31 @@
       "id": "SRC.replay-verify",
       "kind": "source",
       "locator": "templates/scripts/tc-replay.js run() verify block, replayTc openContext (commit 487fe78)"
+    },
+    {
+      "id": "REQ.sweep-effect-baseline",
+      "kind": "requirement",
+      "locator": ".cc-audits/HANDOFF-next.md 할 일 2 (2026-11-19)"
+    },
+    {
+      "id": "DEC.sweep-noisy-fail",
+      "kind": "decision",
+      "locator": "user decision 2026-11-19: on a page that changes on its own, a control with no effect still fails, with the reason noted"
+    },
+    {
+      "id": "DEC.sweep-startup-overlay",
+      "kind": "decision",
+      "locator": "user decision 2026-11-19: a dialog that opens on load is dismissed automatically (Escape, then a close-like button)"
+    },
+    {
+      "id": "SRC.sweep-effect",
+      "kind": "source",
+      "locator": "templates/scripts/tc-sweep.js watch / clickAndSee / sweepUrl (commit 3e060f6)"
+    },
+    {
+      "id": "DEC.sweep-state-restore",
+      "kind": "decision",
+      "locator": "user decision 2026-11-19: every reopen starts from the first open's cookies and localStorage; a control still missing is listed as skipped"
     }
   ],
   "actions": [
@@ -83,7 +108,8 @@
       ],
       "evidence_refs": [
         "REQ.tc-replay-plan",
-        "DEC.replay-design"
+        "DEC.replay-design",
+        "REQ.sweep-effect-baseline"
       ]
     }
   ],
@@ -791,6 +817,207 @@
         "refs": [
           "REQ.replay-verify-cause",
           "DEC.harness-blocked"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.sweep-noisy-dead-fails",
+      "title": "A button with no effect fails on a page that changes on its own",
+      "action_refs": [
+        "ACT.tc-replay.sweep"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a test page whose clock text changes every 100 ms",
+        "a button on that page with no handler"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-sweep.js on that page",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The sweep file lists that button under fail for the page",
+          "observe": {
+            "channel": "artifact",
+            "key": "sweep/<run_id>/ .fail[].control"
+          }
+        },
+        {
+          "text": "The fail reason of that button says the page changes on its own",
+          "observe": {
+            "channel": "artifact",
+            "key": "sweep/<run_id>/ .fail[].reason"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.sweep-effect-baseline",
+          "DEC.sweep-noisy-fail"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.sweep-noisy-live-clean",
+      "title": "A working button is not a failure on a page that changes on its own",
+      "action_refs": [
+        "ACT.tc-replay.sweep"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a test page whose clock text changes every 100 ms",
+        "a button on that page that changes its own text"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-sweep.js on that page",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The sweep file does not list that button under fail",
+          "observe": {
+            "channel": "artifact",
+            "key": "sweep/<run_id>/ .fail[].control"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.sweep-effect-baseline"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.sweep-scroll-effect",
+      "title": "A button that only scrolls the page is not a failure",
+      "action_refs": [
+        "ACT.tc-replay.sweep"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a test page with a button that scrolls to a lower section and changes nothing else"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-sweep.js on that page",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The sweep file does not list that button under fail",
+          "observe": {
+            "channel": "artifact",
+            "key": "sweep/<run_id>/ .fail[].control"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.sweep-effect-baseline"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.sweep-startup-overlay-dismissed",
+      "title": "A dialog that opens on load is dismissed and the controls behind it are clicked",
+      "action_refs": [
+        "ACT.tc-replay.sweep"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a test page that opens an aria-modal dialog with a close button 1 s after load",
+        "a working button behind the dialog"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-sweep.js on that page",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The sweep file shows the startup dialog as dismissed",
+          "observe": {
+            "channel": "artifact",
+            "key": "sweep/<run_id>/ .startup_overlay.dismissed"
+          }
+        },
+        {
+          "text": "The sweep file does not list the button behind the dialog under skipped",
+          "observe": {
+            "channel": "artifact",
+            "key": "sweep/<run_id>/ .skipped[].control"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.sweep-effect-baseline",
+          "DEC.sweep-startup-overlay"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.sweep-state-restored",
+      "title": "A click that saves state does not hide later controls",
+      "action_refs": [
+        "ACT.tc-replay.sweep"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a test page whose second button is named from a localStorage value",
+        "a first button that changes that localStorage value"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-sweep.js on that page",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The sweep file does not list the second button under skipped",
+          "observe": {
+            "channel": "artifact",
+            "key": "sweep/<run_id>/ .skipped[].control"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.sweep-effect-baseline",
+          "DEC.sweep-state-restore"
         ]
       },
       "readiness": "ready"

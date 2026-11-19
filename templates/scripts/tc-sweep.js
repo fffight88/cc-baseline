@@ -8,8 +8,13 @@
 //
 // For every URL: collect the visible, enabled clickable elements, then open the
 // URL fresh for each one, click it and look for one effect — navigation, popup,
-// request started, DOM change or dialog. No effect, or a page error during the
-// click, is a dead control (`fail`). Controls that appear after a click (toasts,
+// request started, DOM change, scroll or dialog. Before each click the page is
+// watched for BASELINE_MS: nodes, requests and scrollers that change on their own
+// (animations, typing effects, polling) are noise and do not count. No effect, or a
+// page error during the click, is a dead control (`fail`; on a noisy page the reason
+// says so). A dialog that opens on load (a notice shown on every fresh tab) is
+// dismissed first — Escape, else a close-like button in it — and reported as
+// `startup_overlay`. Controls that appear after a click (toasts,
 // dialogs) are clicked right away too. Requests other than GET / HEAD are aborted,
 // so a sweep never changes data (starting the request still counts as an effect).
 // Destructive-looking controls are not clicked (`skipped`). Only base_url's origin
@@ -33,10 +38,15 @@ const CLICKABLE = 'a[href], button, [role=button], [role=link], [role=tab], [rol
 const MAX_CONTROLS = 60;
 const dbg = (...a) => { if (process.env.CC_SWEEP_DEBUG === '1') process.stderr.write(`[sweep ${new Date().toISOString().slice(11, 19)}] ${a.join(' ')}\n`); };
 const SETTLE_MS = 500;
+const BASELINE_MS = 600;             // watch before a click: what changes on its own is noise
 const STEP_TIMEOUT_MS = 8000;        // any single in-page call
 const URL_BUDGET_MS = 180000;        // one path, all controls
-const QUIET_MS = 500;                // DOM quiet period that counts as "rendered"
-const QUIET_MAX_MS = 5000;
+const QUIET_MS = 500;                // no change on a new node for this long counts as "rendered"
+const QUIET_MAX_MS = 3000;
+const NETWORK_IDLE_MS = 1000;
+const OVERLAY_WAIT_MS = 1500;        // how long a dialog that opens on load may take to appear
+const OVERLAY_SEL = '[aria-modal="true"], dialog[open]';   // modal only: a cookie banner with role=dialog does not block the page
+const CLOSE_RE = /^(?:close|dismiss|닫기|×|✕|✖|x|got it|ok|okay|확인|괜찮아요)$/i;
 
 // A page call that never returns (a navigation racing an evaluate, a stuck
 // renderer) must not stall the whole run.
@@ -45,12 +55,20 @@ function withTimeout(promise, ms, label) {
   return Promise.race([promise, new Promise((_, rej) => { t = setTimeout(() => rej(new Error(`${label} timed out after ${ms} ms`)), ms); })]).finally(() => clearTimeout(t));
 }
 
-// Wait until the DOM stops changing for QUIET_MS (client rendering / hydration
-// done), at most QUIET_MAX_MS. Apps with live connections never reach networkidle.
+// Wait until no node changes for the first time for QUIET_MS (client rendering /
+// hydration done), at most QUIET_MAX_MS. A node that keeps changing (an animation)
+// does not hold the wait. Apps with live connections never reach networkidle.
 function settleDom(page) {
   return withTimeout(page.evaluate(({ quiet, max }) => new Promise(resolve => {
     let last = Date.now();
-    const obs = new MutationObserver(() => { last = Date.now(); });
+    const seen = new Set();
+    const obs = new MutationObserver(list => {
+      for (const m of list) {
+        const t = m.target.nodeType === 1 ? m.target : m.target.parentElement;
+        if (t && !seen.has(t)) { seen.add(t); last = Date.now(); }
+        for (const n of m.addedNodes || []) if (n.nodeType === 1 && !seen.has(n)) { seen.add(n); last = Date.now(); }   // children streamed into one parent
+      }
+    });
     obs.observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
     const start = Date.now();
     const tick = () => {
@@ -197,34 +215,113 @@ function listControls(page) {
   }, { sel: CLICKABLE, max: MAX_CONTROLS });
 }
 
+// In-page recorder: which nodes changed, which elements scrolled, which clickables
+// were added. mark() turns what changed so far into noise; result() reports what
+// changed since then outside the noise.
 async function watch(page) {
   await page.evaluate(sel => {
-    window.__ccSweep = { mutations: 0, added: [] };
+    const S = window.__ccSweep = { added: [], seq: 0, targets: new Set(), scrolls: new Set(), noisy: new Set(), noisyScroll: new Set() };
     const obs = new MutationObserver(list => {
       for (const m of list) {
         if (m.type === 'attributes' && m.attributeName === 'data-cc-sweep') continue;
-        window.__ccSweep.mutations++;
+        const t = m.target.nodeType === 1 ? m.target : m.target.parentElement;
+        if (t) S.targets.add(t);
         for (const n of m.addedNodes || []) {
           if (n.nodeType !== 1) continue;
           const found = n.matches(sel) ? [n] : [...n.querySelectorAll(sel)];
           for (const el of found) {
             const name = (el.getAttribute('aria-label') || el.innerText || el.value || el.title || '').trim().replace(/\s+/g, ' ').slice(0, 80);
             const href = el.tagName === 'A' ? el.getAttribute('href') || '' : '';
-            const i = `late-${window.__ccSweep.added.length}`;
+            const i = `late-${S.seq++}`;   // never reset: an id may still be in the DOM
             el.setAttribute('data-cc-sweep', i);
-            window.__ccSweep.added.push({ key: `${el.tagName.toLowerCase()}|${name}|${href}`, tag: el.tagName.toLowerCase(), name, id: i });
+            S.added.push({ key: `${el.tagName.toLowerCase()}|${name}|${href}`, tag: el.tagName.toLowerCase(), name, id: i });
           }
         }
       }
     });
     obs.observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
+    document.addEventListener('scroll', e => { S.scrolls.add(e.target === document ? document.scrollingElement : e.target); }, true);
+    S.reset = () => { S.targets = new Set(); S.scrolls = new Set(); S.added = []; };
+    S.mark = () => { S.noisy = S.targets; S.noisyScroll = S.scrolls; S.reset(); };
+    S.result = ctlSel => {
+      const ctl = ctlSel ? document.querySelector(ctlSel) : null;
+      // a noisy element covers its subtree, except the page roots and anything around the clicked
+      // control — those only count as noise themselves, so their other descendants can still show an effect
+      const roots = [...S.noisy].filter(n => n.isConnected && n !== document.documentElement && n !== document.body && !(ctl && n.contains(ctl)));
+      const noise = t => S.noisy.has(t) || roots.some(r => r === t || r.contains(t));
+      return {
+        changed: [...S.targets].filter(t => !noise(t)).length,
+        scrolled: [...S.scrolls].filter(x => !S.noisyScroll.has(x)).length,
+        noise: S.noisy.size + S.noisyScroll.size,
+        added: S.added,
+      };
+    };
   }, CLICKABLE);
+}
+
+function requestKey(req) {
+  try { const u = new URL(req.url()); return `${req.method()} ${u.origin}${u.pathname}`; } catch { return `${req.method()} ?`; }
+}
+
+// In-page: the name of a visible dialog, or null.
+function findOverlay(page) {
+  return withTimeout(page.evaluate(sel => {
+    for (const el of document.querySelectorAll(sel)) {
+      const r = el.getBoundingClientRect();
+      const st = getComputedStyle(el);
+      if (r.width === 0 || r.height === 0 || st.visibility === 'hidden' || st.display === 'none') continue;
+      if (el.tagName === 'DIALOG' && !el.matches(':modal')) continue;
+      const h = el.querySelector('h1, h2, h3, [role=heading]');
+      return (el.getAttribute('aria-label') || (h && h.innerText) || el.tagName.toLowerCase()).trim().replace(/\s+/g, ' ').slice(0, 80);
+    }
+    return null;
+  }, OVERLAY_SEL), STEP_TIMEOUT_MS, 'find dialog').catch(() => null);
+}
+
+// A dialog that opens on load: wait up to `waitMs` for it, then Escape, else one
+// close-like (never destructive-looking) button inside it. Returns null when none.
+async function dismissStartupOverlay(page, waitMs) {
+  const end = Date.now() + waitMs;
+  let name = await findOverlay(page);
+  while (name === null && Date.now() < end) { await page.waitForTimeout(250); name = await findOverlay(page); }
+  if (name === null) return null;
+  await page.keyboard.press('Escape').catch(() => {});
+  await page.waitForTimeout(300);
+  if (await findOverlay(page) === null) return { name, dismissed: true, by: 'escape' };
+  const btn = await withTimeout(page.evaluate(({ sel, close, destructive }) => {
+    const closeRe = new RegExp(close, 'i');
+    const destRe = new RegExp(destructive, 'i');
+    for (const d of document.querySelectorAll(sel)) {
+      const r = d.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue;
+      if (d.tagName === 'DIALOG' && !d.matches(':modal')) continue;
+      for (const el of d.querySelectorAll('button, [role=button], input[type=button]')) {
+        const n = (el.getAttribute('aria-label') || el.innerText || el.value || el.title || '').trim().replace(/\s+/g, ' ');
+        if (closeRe.test(n) && !destRe.test(n)) { el.setAttribute('data-cc-close', '1'); return n.slice(0, 80); }
+      }
+    }
+    return null;
+  }, { sel: OVERLAY_SEL, close: CLOSE_RE.source, destructive: DESTRUCTIVE_RE.source }), STEP_TIMEOUT_MS, 'find close').catch(() => null);
+  if (btn !== null) {
+    await page.click('[data-cc-close="1"]', { timeout: 2000, noWaitAfter: true }).catch(() => {});
+    await page.waitForTimeout(300);
+    if (await findOverlay(page) === null) return { name, dismissed: true, by: `button:${btn}` };
+  }
+  return { name, dismissed: false };
 }
 
 // Click one control and report whether anything happened.
 async function clickAndSee(page, ctx, selector, startUrl) {
   const events = { requests: 0, popup: false, dialog: false, errors: [] };
-  const onReq = () => { events.requests++; };
+  // baseline: what changes on its own right now is noise, not an effect of the click
+  const quietReq = new Set();
+  const onBase = r => quietReq.add(requestKey(r));
+  page.on('request', onBase);
+  try { await withTimeout(page.evaluate(() => window.__ccSweep && window.__ccSweep.reset()), STEP_TIMEOUT_MS, 'reset'); } catch { /* page gone */ }
+  await page.waitForTimeout(BASELINE_MS);
+  page.off('request', onBase);
+  try { await withTimeout(page.evaluate(() => window.__ccSweep && window.__ccSweep.mark()), STEP_TIMEOUT_MS, 'mark'); } catch { /* page gone */ }
+  const onReq = r => { if (!quietReq.has(requestKey(r))) events.requests++; };
   const onPopup = p => { events.popup = true; p.close().catch(() => {}); };
   const onDialog = d => { events.dialog = true; d.dismiss().catch(() => {}); };
   const onErr = e => { events.errors.push(String(e && e.message || e).slice(0, 200)); };
@@ -241,25 +338,45 @@ async function clickAndSee(page, ctx, selector, startUrl) {
   ctx.off('page', onPopup);
   page.off('dialog', onDialog);
   page.off('pageerror', onErr);
-  let mutations = 0;
-  let added = [];
-  try { ({ mutations, added } = await withTimeout(page.evaluate(() => window.__ccSweep || { mutations: 0, added: [] }), STEP_TIMEOUT_MS, 'read effects')); } catch { /* navigated away */ }
+  let seen = { changed: 0, scrolled: 0, noise: 0, added: [] };
+  try { seen = await withTimeout(page.evaluate(sel => (window.__ccSweep ? window.__ccSweep.result(sel) : null), selector), STEP_TIMEOUT_MS, 'read effects') || seen; } catch { /* navigated away */ }
   const navigated = page.url() !== startUrl;
-  const effect = navigated || events.popup || events.dialog || events.requests > 0 || mutations > 0;
-  return { effect, navigated, clickError, errors: events.errors, added };
+  const effect = navigated || events.popup || events.dialog || events.requests > 0 || seen.changed > 0 || seen.scrolled > 0;
+  return { effect, navigated, clickError, errors: events.errors, added: seen.added, noise: seen.noise };
 }
 
 async function sweepUrl(ctx, rc, urlPath) {
   const target = api.targetUrl(rc.base, urlPath).toString();
   const page = await ctx.newPage();
   const result = { status: 'clean', fail: [], skipped: [], clicked: 0 };
+  let overlayWait = OVERLAY_WAIT_MS;   // after the first open: wait only if a dialog opened then
+  let saved = null;                    // cookies + localStorage as the first open left them
   try {
     const open = async () => {
+      // a click may have saved state (language, theme, filters): start every open from the first one's
+      if (saved) {
+        await ctx.clearCookies().catch(() => {});
+        if (saved.cookies.length) await ctx.addCookies(saved.cookies).catch(() => {});
+        let here = null;
+        try { here = new URL(page.url()).origin; } catch { /* about:blank */ }
+        if (here === rc.base.origin && saved.origin === rc.base.origin) {
+          await withTimeout(page.evaluate(items => { localStorage.clear(); for (const [k, v] of items) localStorage.setItem(k, v); }, saved.local), STEP_TIMEOUT_MS, 'restore').catch(() => {});
+        }
+      }
       dbg(urlPath, 'goto');
       await page.goto(target, { waitUntil: 'load', timeout: 15000 });
       dbg(urlPath, 'loaded', page.url());
-      await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
+      await page.waitForLoadState('networkidle', { timeout: NETWORK_IDLE_MS }).catch(() => {});
       await settleDom(page);
+      const ov = await dismissStartupOverlay(page, overlayWait);
+      if (!('startup_overlay' in result)) { result.startup_overlay = ov; overlayWait = ov ? OVERLAY_WAIT_MS : 0; } else if (!ov) overlayWait = 0;   // dismissed for good (stored state)
+      if (ov) { dbg(urlPath, 'startup dialog', JSON.stringify(ov)); if (ov.dismissed) await settleDom(page); }
+      if (!saved) {
+        const local = await withTimeout(page.evaluate(() => Object.entries(localStorage)), STEP_TIMEOUT_MS, 'save').catch(() => []);
+        let origin = null;
+        try { origin = new URL(page.url()).origin; } catch { /* about:blank */ }
+        saved = { cookies: await ctx.cookies().catch(() => []), local, origin };
+      }
       dbg(urlPath, 'list');
       const list = await withTimeout(listControls(page), STEP_TIMEOUT_MS, 'list controls');
       await withTimeout(watch(page), STEP_TIMEOUT_MS, 'watch');
@@ -304,7 +421,7 @@ async function sweepUrl(ctx, rc, urlPath) {
       }
       dbg('effect', JSON.stringify(c.name).slice(0, 30), JSON.stringify({ effect: r.effect, nav: r.navigated, err: r.clickError, errors: r.errors.length }));
       const dead = r.errors.some(e => /ReferenceError|TypeError/.test(e)) || !r.effect;
-      if (dead) result.fail.push({ control: c.name || c.tag, tag: c.tag, reason: r.errors.length ? r.errors[0] : 'no effect' });
+      if (dead) result.fail.push({ control: c.name || c.tag, tag: c.tag, reason: r.errors.length ? r.errors[0] : r.noise ? `no effect (page changes on its own: ${r.noise} nodes)` : 'no effect' });
       return r;
     };
     for (let i = 0; i < first.length; i++) {
@@ -317,7 +434,7 @@ async function sweepUrl(ctx, rc, urlPath) {
       const list = await open();
       dbg(urlPath, `#${i}`, 'click');
       const same = list[i] && list[i].key === c.key ? i : list.findIndex(x => x.key === c.key);
-      if (same < 0) continue;
+      if (same < 0) { result.skipped.push({ control: c.name || c.tag, reason: 'gone after reopening (the page differs from the first open)' }); continue; }
       const reopen = async () => {
         const l2 = await open();
         const k = l2[i] && l2[i].key === c.key ? i : l2.findIndex(x => x.key === c.key);
@@ -346,6 +463,8 @@ async function sweepUrl(ctx, rc, urlPath) {
   if (result.status !== 'error' && result.fail.length) result.status = 'fail';
   if (result.status === 'error' && result.fail.length) result.status = 'fail';
   result.covered = result.skipped.filter(x => /^covered/.test(x.reason)).length;   // many covered = an overlay hid the page
+  if (result.covered && result.covered * 2 > result.clicked + result.skipped.length) result.hint = 'a dialog that opens on load covers the page';
+  if (result.startup_overlay === null) delete result.startup_overlay;
   dbg(urlPath, 'done', result.status, `clicked=${result.clicked}`);
   return result;
 }

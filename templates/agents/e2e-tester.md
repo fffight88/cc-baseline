@@ -155,7 +155,7 @@ This runs **in addition to** the manager's scenario steps, on every distinct scr
 node ~/.claude/scripts/tc-sweep.js --run <run_file> --run-id <run_id> --urls </path,/other> [--session <name>]
 ```
 
-It clicks every visible control on a fresh copy of the page, aborts every request that is not GET / HEAD (so it never changes data), skips destructive controls, clicks controls that appear later (toasts, dialogs), and writes `.cc-audits/<slug>/sweep/<run_id>/`. Its line lists the failing paths; report them in `SWEEP` and set `sweep: "fail"` on the TC record (TC Judging 6).
+It clicks every visible control on a fresh copy of the page (cookies and localStorage put back as the first open left them, a modal that opens on load dismissed first), ignores what changes on its own (animations, polling), aborts every request that is not GET / HEAD (so it never changes data), skips destructive controls, clicks controls that appear later (toasts, dialogs), and writes `.cc-audits/<slug>/sweep/<run_id>/`. Its line lists the failing paths; report them in `SWEEP` and set `sweep: "fail"` on the TC record (TC Judging 6).
 - Signed-in screens: pass `--session <name>` — it uses `replay-state/<name>.json` or the `tc-api-run.js` login of that session. With neither (no `api.login_path` in the run), sweep those screens by hand as below and say so under `NOTES`.
 - No script (no `run_file`, or it says there is no Playwright module): sweep by hand as below.
 
