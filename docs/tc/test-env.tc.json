@@ -1,0 +1,275 @@
+{
+  "schema_version": 1,
+  "feature": "test-env",
+  "title": "Test environment check",
+  "plan": "test-env",
+  "sources": [
+    {
+      "id": "REQ.test-env",
+      "kind": "requirement",
+      "locator": ".cc-audits/HANDOFF-next.md 할 일 3 (2026-11-19)"
+    },
+    {
+      "id": "DEC.test-env-scope",
+      "kind": "decision",
+      "locator": "user decision 2026-11-19: a guide plus a check script"
+    },
+    {
+      "id": "DEC.external-stubs",
+      "kind": "decision",
+      "locator": "user decision 2026-11-19: paid third-party APIs may be replaced by a loopback fake server when approved, recorded and reported"
+    }
+  ],
+  "actions": [
+    {
+      "id": "ACT.test-env.check",
+      "title": "Check a project's test environment",
+      "actor": "e2e manager",
+      "trigger": "runs test-env-check.js --run <tc-run.json> before the first round",
+      "preconditions": [
+        "a tc-run.json",
+        "the app runs at base_url"
+      ],
+      "outputs": [
+        "one result per check",
+        "exit code"
+      ],
+      "evidence_refs": [
+        "REQ.test-env",
+        "DEC.test-env-scope"
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "id": "TC.test-env.check-clean",
+      "title": "A test environment with no problem passes",
+      "action_refs": [
+        "ACT.test-env.check"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a test server whose CSP allows the run file's browser_origins",
+        "no redirect to another host",
+        "a valid reset_command whose script exists"
+      ],
+      "steps": [
+        {
+          "goal": "Run test-env-check.js on that run file",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 0",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.test-env"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.test-env.csp-blocks-origin",
+      "title": "A CSP that blocks a browser origin fails the check",
+      "action_refs": [
+        "ACT.test-env.check"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a test server whose CSP connect-src is 'self' only",
+        "a run file whose browser_origins lists another https origin"
+      ],
+      "steps": [
+        {
+          "goal": "Run test-env-check.js on that run file",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The csp check has status fail",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .checks[name=csp].status"
+          }
+        },
+        {
+          "text": "The csp check detail names the blocked origin",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .checks[name=csp].detail"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.test-env"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.test-env.host-mismatch",
+      "title": "A redirect to the other loopback name fails the check",
+      "action_refs": [
+        "ACT.test-env.check"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a run file whose base_url uses 127.0.0.1",
+        "a test server that redirects / to the same port on localhost"
+      ],
+      "steps": [
+        {
+          "goal": "Run test-env-check.js on that run file",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The host check has status fail",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .checks[name=host].status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.test-env"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.test-env.reset-command-form",
+      "title": "A reset_command with shell syntax fails the check",
+      "action_refs": [
+        "ACT.test-env.check"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a run file whose reset_command contains a semicolon"
+      ],
+      "steps": [
+        {
+          "goal": "Run test-env-check.js on that run file",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The reset_command check has status fail",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .checks[name=reset_command].status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.test-env"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.test-env.test-login-off",
+      "title": "A test login path that answers 404 fails the check",
+      "action_refs": [
+        "ACT.test-env.check"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a run file with test_login_path",
+        "a test server that answers 404 on that path"
+      ],
+      "steps": [
+        {
+          "goal": "Run test-env-check.js on that run file",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The test_login_path check has status fail",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .checks[name=test_login_path].status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.test-env"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.test-env.stub-not-loopback",
+      "title": "A fake external API server outside loopback fails the check",
+      "action_refs": [
+        "ACT.test-env.check"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a run file whose external_stubs entry has a url on a public host"
+      ],
+      "steps": [
+        {
+          "goal": "Run test-env-check.js on that run file",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The external_stubs check has status fail",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .checks[name=external_stubs].status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.test-env",
+          "DEC.external-stubs"
+        ]
+      },
+      "readiness": "ready"
+    }
+  ],
+  "open_questions": []
+}

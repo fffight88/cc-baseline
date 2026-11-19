@@ -184,6 +184,7 @@ npx github:fffight88/cc-baseline --project --uninstall --yes
 | Aside 세션 헬퍼 (`scripts/aside-session.sh`) | 세션 이름별로 `aside repl` 하나를 유지해 브라우저 단계끼리 탭·변수를 공유 (`start` / `send` / `stop` / `list`) |
 | DESIGN.md 미리보기 (`design-previews/` + `scripts/design-preview.js`) | 카탈로그 브랜드마다 하나씩 만든 페이지와 필터 가능한 목록. 각 DESIGN.md의 고유 컴포넌트와 레이아웃으로 만듦. Design Director 인터뷰 동안 `127.0.0.1`에서 띄움 (`start` / `status` / `stop`). 원격 머신이면 `ssh -L <포트>:127.0.0.1:<포트>`로 접속 |
 | 훅 설정 (`settings.json hooks`) | SessionStart 메모리 로드, PreToolUse E2E 가이드 주입 · 경로 가드, SessionEnd 프로세스 정리 |
+| 테스트 환경 점검 (`scripts/test-env-check.js`, 지침 `memory/reference_test_env.md`) | 첫 e2e 라운드 전에 `base_url` 응답, 리다이렉트가 한 호스트에 머무는지(쿠키), 앱 CSP가 `browser_origins`를 허용하는지, `reset_command` 형식, `test_login_path`가 404가 아닌지, 가짜 외부 API 서버(`external_stubs`)가 loopback인지 점검. `base_url`과 가짜 서버에만 GET, 아무것도 쓰지 않음. 지침은 스키마만 옮긴 테스트 백엔드, 3중 가드 테스트 로그인, 테스트 대상이 아니면 거부하는 reset, 유료 API를 가짜로 바꿔도 되는 조건을 다룸 |
 | 위키 도구 (`scripts/wiki.js`) | `docs/wiki/` 문서 상태(`ok` / `stale` / `unstamped` / `broken` / `invalid`, `--strict`면 실패), `stamp`(나열한 파일의 해시 기록, 프로젝트 밖 경로 거부), `index`, route·컴포넌트·API로 `find`. `docs/wiki/` 안의 `.md` 파일만 씀 |
 | MCP 서버 (`~/.claude.json`) | `playwright-test-1~5` 전역 MCP 서버 엔트리 — Playwright 대체 경로 (`playwright-test-1`은 창이 뜨는 `/open-browser` 전용, 2–5는 headless) |
 
@@ -469,7 +470,7 @@ cc-baseline/
     ├── memory/             # MEMORY.md + 12개 규칙 파일
     ├── agents/             # e2e-tester.md, security-auditor.md, code-reviewer.md, publisher.md
     ├── commands/           # plan.md, clean.md, open-browser.md, check-log.md, wiki.md
-    ├── scripts/            # audit-report.js, aside-session.sh, design-preview.js, tc-lint.js, jev-client.js, tc-jev-check.js, tc-jev-judge.js, tc-api-run.js, tc-fix-loop.js, tc-replay.js, tc-sweep.js, wiki.js
+    ├── scripts/            # audit-report.js, aside-session.sh, design-preview.js, tc-lint.js, jev-client.js, tc-jev-check.js, tc-jev-judge.js, tc-api-run.js, tc-fix-loop.js, tc-replay.js, tc-sweep.js, test-env-check.js, wiki.js
     ├── design-previews/    # DESIGN.md 카탈로그 브랜드별 미리보기 페이지 + 목록
     ├── settings-hooks.json # hooks 섹션만
     └── mcp-servers.json    # playwright-test-1~5만

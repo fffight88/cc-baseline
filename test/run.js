@@ -3352,6 +3352,82 @@ t('tc-sweep: noise does not count as an effect; scrolling does; a dialog that op
   } finally { await srv.close(); p.done(); }
 });
 
+t('test-env-check: clean env passes; CSP block, host redirect, bad reset_command, test login 404 and a non-loopback stub fail (TC test-env.*)', async () => {
+  const CHECK = path.join(ROOT, 'templates', 'scripts', 'test-env-check.js');
+  const st = { csp: "default-src 'self'; connect-src 'self' https://*.example-backend.com", redirect: false, login: 302 };
+  const srv = await httpServer((req, res) => {
+    if (req.url === '/auth/test-login') { res.writeHead(st.login, st.login === 302 ? { Location: '/dash' } : {}); return res.end(); }
+    if (req.url === '/' && st.redirect) { res.writeHead(302, { Location: srv.url.replace('127.0.0.1', 'localhost') + '/home' }); return res.end(); }
+    res.writeHead(200, { 'Content-Type': 'text/html', 'Content-Security-Policy': st.csp });
+    res.end('<!doctype html><title>t</title>');
+  });
+  const tmp = jevTmp();
+  const proj = path.join(tmp, 'proj');
+  const runDir = path.join(proj, '.cc-audits', 'env');
+  fs.mkdirSync(runDir, { recursive: true });
+  fs.mkdirSync(path.join(proj, 'scripts'));
+  fs.writeFileSync(path.join(proj, 'scripts', 'reset.mjs'), '');
+  const runFile = path.join(runDir, 'tc-run.json');
+  const write = over => fs.writeFileSync(runFile, JSON.stringify({ base_url: srv.url, browser_origins: ['https://db.example-backend.com'], reset_command: 'node scripts/reset.mjs --all', test_login_path: '/auth/test-login', tcs: {}, ...over }));
+  const byName = (r, n) => (r.json && r.json.checks || []).find(c => c.name === n);
+  try {
+    write({});
+    let r = await cliAsync(CHECK, ['--run', runFile, '--json']);
+    assert.equal(r.status, 0, JSON.stringify(r));
+    // TC csp-blocks-origin
+    st.csp = "connect-src 'self'";
+    r = await cliAsync(CHECK, ['--run', runFile, '--json']);
+    assert.equal(r.status, 1);
+    assert.equal(byName(r, 'csp').status, 'fail');
+    assert.match(byName(r, 'csp').detail, /https:\/\/db\.example-backend\.com/);
+    st.csp = "default-src 'self'; connect-src 'self' https://*.example-backend.com";
+    // TC host-mismatch
+    st.redirect = true;
+    r = await cliAsync(CHECK, ['--run', runFile, '--json']);
+    assert.equal(byName(r, 'host').status, 'fail', JSON.stringify(r.json));
+    st.redirect = false;
+    // TC reset-command-form
+    write({ reset_command: 'node scripts/reset.mjs; rm -rf /' });
+    r = await cliAsync(CHECK, ['--run', runFile, '--json']);
+    assert.equal(byName(r, 'reset_command').status, 'fail');
+    write({ reset_command: 'node ../outside.mjs' });
+    r = await cliAsync(CHECK, ['--run', runFile, '--json']);
+    assert.equal(byName(r, 'reset_command').status, 'fail');
+    // TC test-login-off
+    write({});
+    st.login = 404;
+    r = await cliAsync(CHECK, ['--run', runFile, '--json']);
+    assert.equal(byName(r, 'test_login_path').status, 'fail');
+    st.login = 302;
+    // TC stub-not-loopback
+    write({ external_stubs: [{ name: 'gemini', url: 'https://fake.example.com', env: 'GEMINI_BASE_URL' }] });
+    r = await cliAsync(CHECK, ['--run', runFile, '--json']);
+    assert.equal(byName(r, 'external_stubs').status, 'fail');
+    write({ external_stubs: [{ name: 'gemini', url: srv.url + '/stub', env: 'GEMINI_BASE_URL' }] });
+    r = await cliAsync(CHECK, ['--run', runFile, '--json']);
+    assert.equal(byName(r, 'external_stubs').status, 'ok');
+    assert.equal(r.status, 0);
+    // a remote base_url without api_remote_ok is refused; nothing is requested from it
+    write({ base_url: 'https://example.com' });
+    assert.equal((await cliAsync(CHECK, ['--run', runFile, '--json'])).status, 2);
+    assert.ok(srv.seen.every(x => x.method === 'GET'), 'GET only');
+    assert.equal(srv.seen.filter(x => x.url === '/auth/test-login').length, 8, 'the test login is requested once per run (8 runs reached it)');
+    // stub entries need an env var name
+    write({ external_stubs: [{ name: 'gemini', url: srv.url + '/stub' }] });
+    assert.equal(byName(await cliAsync(CHECK, ['--run', runFile, '--json']), 'external_stubs').status, 'fail');
+    // CSP source matching
+    const m = require(CHECK);
+    const b = new URL('http://127.0.0.1:3200');
+    assert.deepEqual(m.cspBlocked("default-src 'self'; connect-src 'self' https://*.supabase.co", ['https://abc.supabase.co'], b), []);
+    assert.deepEqual(m.cspBlocked("default-src 'self' https:", ['https://abc.supabase.co'], b), []);
+    assert.deepEqual(m.cspBlocked("script-src 'self'", ['https://abc.supabase.co'], b), [], 'no connect-src / default-src allows all');
+    assert.deepEqual(m.cspBlocked("connect-src 'self', connect-src https://abc.supabase.co", ['https://abc.supabase.co'], b), ['https://abc.supabase.co'], 'every policy must allow it');
+    assert.equal(m.sourceAllows('https://abc.supabase.co:8443', 'https://abc.supabase.co', b), false);
+    assert.equal(m.sourceAllows("'nonce-x'", 'https://abc.supabase.co', b), false);
+    assert.equal(m.sourceAllows('*.supabase.co', 'https://supabase.co', b), false, 'a wildcard needs a subdomain');
+  } finally { await srv.close(); fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
 t('tc-replay: api checks — all_equals / not_in with field, own GET request, db count from a capture; POST in a check is refused', async () => {
   const srv = await httpServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' });

@@ -96,6 +96,9 @@ When the plan has a TC file (`docs/tc/<feature>.tc.json`, see `reference_tc_auth
    - Secrets are env var names (`$NAME`), never values.
    - `api` — for `api` / `db` / `log` checks: the `tc-api-run.js` session name, `login_path` and `login_body`. Without `login_path` the tester reports those results `NOT_OBSERVABLE` instead of guessing a path.
    - `browser_origins` — other `https://` origins the app's own browser code must reach (e.g. its Supabase project), approved at planning. Replays and sweeps allow only `base_url` plus these; everything else is aborted.
+   - `test_login_path` — the test-only login route (three guards, `reference_test_env.md` §3); recordings use it as their login step.
+   - `external_stubs` — approved fake servers for paid third-party APIs: `[{ "name", "url" (loopback), "env" }]` (`reference_test_env.md` §7). Name each in the report.
+   - **Before the first round** of a project with a real backend: set it up as in `reference_test_env.md`, then run `node ~/.claude/scripts/test-env-check.js --run <run file>` and fix every `fail` (CSP blocking `browser_origins`, redirects to another host, a bad `reset_command`, a test login answering 404, a fake server off loopback).
    - `reset_command` — puts the data back to the TCs' starting state (seed, restart). Same form as `*_command`: `node <project script> <plain args>`, a command the user saw when approving the plan. The manager runs it before every round and before a verify replay (§2-C); without it, replay rounds are not used.
    - `data.<name>_command` — a ready command for a step that happens outside the browser (e.g. `step2_command`: the admin ships the order meanwhile). Only the form `node <project script> <plain args>` (no pipes, redirects, `;` `&` `$`, quotes, paths outside the project), and only a command the user saw when approving the plan. The tester refuses any other form.
    - The run file must stay at `.cc-audits/<plan-slug>/tc-run.json` — `tc-api-run.js` refuses a run file anywhere else, and it is the manager's file: testers never write it.
@@ -222,6 +225,7 @@ Agent(e2e-tester, { browser: aside, aside_session: e2e-4, mcp_server: playwright
 - ❌ Under no circumstances use JS mocks (function overrides, fake return value injection) to conduct tests
 - ❌ Mock-based tests only verify "code structure" — they are not E2E validation and must never be reported as PASS
 - ✅ Must verify actual server API calls, actual DB/Redis state, and actual browser behavior
+- Exception: a **paid or irreversible third-party API** may be a loopback fake server reached through an env-configured address — only when approved in the plan, listed in `external_stubs`, and named in the report; results about the external output itself are `NOT_OBSERVABLE` (`reference_test_env.md` §7). JS overrides stay forbidden.
 - ✅ Repeat modify-test-modify-test cycles until the intended behavior is actually verified
 
 ---
@@ -301,6 +305,7 @@ e2e-results/fail-{N}-{YYYYMMDD-HHmmss}.md
 
 - Receive tester reports in English
 - Manager summarizes and delivers to user in the user's language
+- Name every faked external API (`external_stubs`) in the summary and the HTML report
 - After all tests complete, always generate an HTML report → open immediately via web server (see section 9 below)
 
 ---

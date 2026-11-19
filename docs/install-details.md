@@ -26,6 +26,7 @@
 | `memory/reference_browser_tools.md` | 〃 | Overwrite |
 | `memory/reference_tc_authoring.md` | 〃 | Overwrite |
 | `memory/reference_wiki.md` | 〃 | Overwrite |
+| `memory/reference_test_env.md` | 〃 | Overwrite |
 | `agents/e2e-tester.md` | `~/.claude/agents/e2e-tester.md` | Overwrite |
 | `agents/security-auditor.md` | `~/.claude/agents/security-auditor.md` | Overwrite |
 | `agents/code-reviewer.md` | `~/.claude/agents/code-reviewer.md` | Overwrite |
@@ -48,6 +49,7 @@
 | `scripts/tc-replay.js` | `~/.claude/scripts/tc-replay.js` | Overwrite |
 | `scripts/tc-sweep.js` | `~/.claude/scripts/tc-sweep.js` | Overwrite |
 | `scripts/wiki.js` | `~/.claude/scripts/wiki.js` | Overwrite |
+| `scripts/test-env-check.js` | `~/.claude/scripts/test-env-check.js` | Overwrite |
 | `design-previews/` (69 files) | `~/.claude/design-previews/` | Overwrite each file; uninstall removes them and any folder left empty |
 
 ## JSON merge details

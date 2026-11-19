@@ -26,6 +26,7 @@
 | `memory/reference_browser_tools.md` | 〃 | 덮어쓰기 |
 | `memory/reference_tc_authoring.md` | 〃 | 덮어쓰기 |
 | `memory/reference_wiki.md` | 〃 | 덮어쓰기 |
+| `memory/reference_test_env.md` | 〃 | 덮어쓰기 |
 | `agents/e2e-tester.md` | `~/.claude/agents/e2e-tester.md` | 덮어쓰기 |
 | `agents/security-auditor.md` | `~/.claude/agents/security-auditor.md` | 덮어쓰기 |
 | `agents/code-reviewer.md` | `~/.claude/agents/code-reviewer.md` | 덮어쓰기 |
@@ -48,6 +49,7 @@
 | `scripts/tc-replay.js` | `~/.claude/scripts/tc-replay.js` | 덮어쓰기 |
 | `scripts/tc-sweep.js` | `~/.claude/scripts/tc-sweep.js` | 덮어쓰기 |
 | `scripts/wiki.js` | `~/.claude/scripts/wiki.js` | 덮어쓰기 |
+| `scripts/test-env-check.js` | `~/.claude/scripts/test-env-check.js` | 덮어쓰기 |
 | `design-previews/` (파일 69개) | `~/.claude/design-previews/` | 파일마다 덮어쓰기. 제거할 때 파일과 비게 된 폴더를 지움 |
 
 ## JSON 병합 상세
