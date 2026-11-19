@@ -13,6 +13,26 @@
       "id": "DEC.replay-design",
       "kind": "decision",
       "locator": "user decision 2026-11-18: record-and-replay as data, reset_command, verify before accepting, sweep always by script, recordings under .cc-audits"
+    },
+    {
+      "id": "REQ.replay-verify-cause",
+      "kind": "requirement",
+      "locator": ".cc-audits/HANDOFF-next.md 할 일 1 (2026-11-19)"
+    },
+    {
+      "id": "DEC.verify-fail-observed",
+      "kind": "decision",
+      "locator": "user decision 2026-11-19: both FAIL by code with different observed values rejects the recording"
+    },
+    {
+      "id": "DEC.harness-blocked",
+      "kind": "decision",
+      "locator": "user decision 2026-11-19: a failing replay that blocked off-site requests is rejected in verify and falls back in rounds"
+    },
+    {
+      "id": "SRC.replay-verify",
+      "kind": "source",
+      "locator": "templates/scripts/tc-replay.js run() verify block, replayTc openContext (commit 487fe78)"
     }
   ],
   "actions": [
@@ -46,7 +66,8 @@
       ],
       "evidence_refs": [
         "REQ.tc-replay-plan",
-        "DEC.replay-design"
+        "DEC.replay-design",
+        "REQ.replay-verify-cause"
       ]
     },
     {
@@ -553,6 +574,223 @@
         "kind": "requirement",
         "refs": [
           "REQ.tc-replay-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.verify-fail-observed-differs-rejected",
+      "title": "Both FAIL with different observed values rejects the recording",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a candidate recording",
+        "a tester result line with verdict FAIL, judged_by code, for expected[0] whose observed value differs from what the replay reads",
+        "the test server makes the check fail"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run with --verify for that run_id",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "replay-accepted.json shows status rejected for the TC",
+          "observe": {
+            "channel": "artifact",
+            "key": "replay-accepted.json .<tc>.status"
+          }
+        },
+        {
+          "text": "The mismatch list quotes the replay's observed value for expected[0]",
+          "observe": {
+            "channel": "artifact",
+            "key": "replay-accepted.json .<tc>.mismatch"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.replay-verify-cause",
+          "DEC.verify-fail-observed"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.verify-fail-observed-same-accepted",
+      "title": "Both FAIL with the same observed value accepts the recording",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a candidate recording",
+        "a tester result line with verdict FAIL, judged_by code, for expected[0] whose observed value starts with the value the replay reads, followed by a note in parentheses",
+        "the test server makes the check fail"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run with --verify for that run_id",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "replay-accepted.json shows status accepted for the TC",
+          "observe": {
+            "channel": "artifact",
+            "key": "replay-accepted.json .<tc>.status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.replay-verify-cause",
+          "DEC.verify-fail-observed"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.verify-blocked-offsite-rejected",
+      "title": "A failing verify replay that blocked an off-site request rejects the recording",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a candidate recording",
+        "a tester result line with verdict FAIL for expected[0] and the same observed value",
+        "the test page requests an origin that is not base_url and not in browser_origins",
+        "the test server makes the check fail"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run with --verify for that run_id",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "replay-accepted.json shows status rejected for the TC",
+          "observe": {
+            "channel": "artifact",
+            "key": "replay-accepted.json .<tc>.status"
+          }
+        },
+        {
+          "text": "The mismatch list names the blocked origin",
+          "observe": {
+            "channel": "artifact",
+            "key": "replay-accepted.json .<tc>.mismatch"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.replay-verify-cause",
+          "DEC.harness-blocked"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.run-blocked-offsite-fallback",
+      "title": "A failing round replay that blocked an off-site request falls back to a tester",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "an accepted recording",
+        "the test page requests an origin that is not base_url and not in browser_origins",
+        "the test server makes the check fail"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run for a new run_id",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The TC's reason starts with blocked_offsite",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout .tcs[0].reason"
+          }
+        },
+        {
+          "text": "tc-results.jsonl has no line for that run_id",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-results.jsonl"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.replay-verify-cause",
+          "DEC.harness-blocked"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.run-blocked-offsite-pass-recorded",
+      "title": "A passing round replay that blocked an off-site request is still recorded",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "an accepted recording",
+        "the test page requests an origin that is not base_url and not in browser_origins",
+        "the test server makes the check pass"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run for a new run_id",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The TC's outcome is recorded",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout .tcs[0].outcome"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.replay-verify-cause",
+          "DEC.harness-blocked"
         ]
       },
       "readiness": "ready"

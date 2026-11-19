@@ -3068,9 +3068,9 @@ function cliAsync(script, args, env = {}) {
   });
 }
 
-// mode: ok | wrong | nobutton | missing404
+// mode: ok | wrong | nobutton | missing404; offsite: the page also fetches another origin
 function replayServer() {
-  const state = { mode: 'ok', posts: 0 };
+  const state = { mode: 'ok', posts: 0, offsite: false };
   const page = body => `<!doctype html><html><head><title>t</title></head><body><main>${body}</main></body></html>`;
   return httpServer((req, res) => {
     if (req.method !== 'GET' && req.method !== 'HEAD') { state.posts++; res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end('{}'); }
@@ -3082,7 +3082,8 @@ function replayServer() {
     }
     const done = state.mode === 'wrong' ? 'Wrong' : 'Done';
     const btn = state.mode === 'nobutton' ? '' : `<button type="button" onclick="document.getElementById('h').textContent='${done}'">Go</button>`;
-    const extra = state.mode === 'missing404' ? `<script>fetch('/missing')</script>` : '';
+    const extra = (state.mode === 'missing404' ? `<script>fetch('/missing')</script>` : '') +
+      (state.offsite ? `<script>fetch('http://localhost:1/x').catch(() => {})</script>` : '');
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(page(`<h1 id="h">Start</h1>${btn}${extra}`));
   }).then(srv => Object.assign(srv, { state }));
@@ -3214,6 +3215,61 @@ t('tc-replay verify: a replay that disagrees with the tester rejects the recordi
     fs.writeFileSync(path.join(p.runDir, 'replay', 'TC.f.go.json'), JSON.stringify(saved));
     r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'T3', '--tcs', 'TC.f.go']);
     assert.equal(r.json.tcs[0].reason, 'not_accepted');
+  } finally { await srv.close(); p.done(); }
+});
+
+t('tc-replay verify: both FAIL by code compares observed values (TC verify-fail-observed-differs-rejected, verify-fail-observed-same-accepted)', async () => {
+  if (!HAS_BROWSER) { console.log('     (skipped: no Playwright module)'); return; }
+  const srv = await replayServer();
+  const p = replayProject(srv.url);
+  const jjm = require(path.join(ROOT, 'templates', 'scripts', 'tc-jev-judge.js'));
+  try {
+    srv.state.mode = 'wrong';   // the replay reads 'Wrong'
+    p.write(p.rec());
+    jjm.record({ results: p.results, tcFile: p.tcFile, entry: { tc: 'TC.f.go', run_id: 'V1', expected: [{ index: 0, verdict: 'FAIL', judged_by: 'code', observed: 'not found' }], browser_tool: 'playwright' } });
+    let r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'V1', '--tcs', 'TC.f.go', '--verify']);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(p.accepted('TC.f.go').status, 'rejected');
+    assert.match(p.accepted('TC.f.go').mismatch[0], /expected\[0\] both FAIL, observed tester "not found" replay "Wrong"/);
+    p.write(p.rec());
+    jjm.record({ results: p.results, tcFile: p.tcFile, entry: { tc: 'TC.f.go', run_id: 'V2', expected: [{ index: 0, verdict: 'FAIL', judged_by: 'code', observed: 'Wrong (button writes the wrong text)' }], browser_tool: 'playwright' } });
+    r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'V2', '--tcs', 'TC.f.go', '--verify', '--retry-rejected']);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(p.accepted('TC.f.go').status, 'accepted', JSON.stringify(p.accepted('TC.f.go')));
+    // a longer word that only starts with the replay value is not the same value
+    p.write(p.rec());
+    jjm.record({ results: p.results, tcFile: p.tcFile, entry: { tc: 'TC.f.go', run_id: 'V3', expected: [{ index: 0, verdict: 'FAIL', judged_by: 'code', observed: 'Wrongly placed' }], browser_tool: 'playwright' } });
+    await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'V3', '--tcs', 'TC.f.go', '--verify']);
+    assert.equal(p.accepted('TC.f.go').status, 'rejected');
+  } finally { await srv.close(); p.done(); }
+});
+
+t('tc-replay: a failing replay that blocked an off-site request is rejected in verify and falls back in a round; a passing one is recorded (TC verify-blocked-offsite-rejected, run-blocked-offsite-*)', async () => {
+  if (!HAS_BROWSER) { console.log('     (skipped: no Playwright module)'); return; }
+  const srv = await replayServer();
+  const p = replayProject(srv.url);
+  const jjm = require(path.join(ROOT, 'templates', 'scripts', 'tc-jev-judge.js'));
+  try {
+    srv.state.mode = 'wrong';
+    srv.state.offsite = true;
+    p.write(p.rec());
+    jjm.record({ results: p.results, tcFile: p.tcFile, entry: { tc: 'TC.f.go', run_id: 'B1', expected: [{ index: 0, verdict: 'FAIL', judged_by: 'code', observed: 'Wrong' }], browser_tool: 'playwright' } });
+    let r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'B1', '--tcs', 'TC.f.go', '--verify']);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(p.accepted('TC.f.go').status, 'rejected');
+    assert.ok(p.accepted('TC.f.go').mismatch.some(m => /^replay blocked http:\/\/localhost:1\b/.test(m)), JSON.stringify(p.accepted('TC.f.go')));
+    p.write(p.rec(), { accept: true });
+    const before = p.lines().length;
+    r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'B2', '--tcs', 'TC.f.go', '--no-sweep']);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.json.tcs[0].outcome, 'fallback');
+    assert.match(r.json.tcs[0].reason, /^blocked_offsite:http:\/\/localhost:1/);
+    assert.equal(p.lines().length, before);
+    assert.ok(!p.lines().some(l => l.run_id === 'B2'));
+    srv.state.mode = 'ok';
+    r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'B3', '--tcs', 'TC.f.go', '--no-sweep']);
+    assert.equal(r.json.tcs[0].outcome, 'recorded');
+    assert.equal(p.lines().pop().expected[0].verdict, 'PASS');
   } finally { await srv.close(); p.done(); }
 });
 

@@ -182,6 +182,8 @@ node $R finish --run $RUN --run-id <id> --verdicts <json>             # judgment
 
 1. **First round** — `reset_command`, then testers as in §2-A with `record: true`. Each tester writes `replay/<tc>.json` (status `candidate`, `tc-replay.js check` passing) and sweeps with `tc-sweep.js`.
 2. **Verify** — right after the tester round and **before any fix** (the replay must see the same code the tester saw): `reset_command`, then `run --verify` with the **tester's** `run_id` for the recorded TCs. It replays without writing results and compares every verdict (and `failed_at_step`, invariants) with the tester's line:
+   - Where both judged a result FAIL by code, the values must match too: the tester's `observed` must start with the value the replay read (a note after it is fine). A different value means a different cause → `rejected`.
+   - A replay that FAILs while it blocked requests outside `base_url` / `browser_origins` → `rejected` (`mismatch` names the origins). The failure may be the replayer's own block, not the app's.
    - equal → `accepted`
    - different → `rejected` (with `mismatch`)
    - Both are kept in `.cc-audits/<plan-slug>/replay-accepted.json`, the only place acceptance is read from. The recording itself is never marked.
@@ -193,7 +195,7 @@ node $R finish --run $RUN --run-id <id> --verdicts <json>             # judgment
    | Outcome | Meaning | Do |
    |---|---|---|
    | `recorded` | result line written (code verdicts, `invariants`, `sweep`, `failed_at_step` when a step's done check failed) | nothing — the fix loop reads it |
-   | `fallback` | no line: `no_recording`, `not_accepted`, `rejected`, `stale` (TC text changed), `locator_missing:<step>` / `wait_failed` (the screen changed), `no_browser`, `error` | run that TC with a tester (`record: true`) in the same round; verify the new recording before the next one |
+   | `fallback` | no line: `no_recording`, `not_accepted`, `rejected`, `stale` (TC text changed), `locator_missing:<step>` / `wait_failed` (the screen changed), `blocked_offsite:<origins>` (a failing replay blocked those origins — add them to `browser_origins` with the user's OK, or keep the TC with testers), `no_browser`, `error` | run that TC with a tester (`record: true`) in the same round; verify the new recording before the next one |
    | `pending` | Jev returned REVIEW or asked for a re-check | judge each listed observation file yourself (as a tester's layer 3 / re-check), then `finish` with `{ "<tc>": { "<index>": { "verdict": "PASS", "judged_by": "llm" } } }` |
 4. **Never** count a fallback as a product failure, edit a recording by hand to make it pass, or run a recording that `check` refuses.
 5. `report` (fix loop) shows how many TCs each round replayed vs. ran with testers (`browser_tool: replay`).

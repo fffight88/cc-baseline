@@ -447,7 +447,7 @@ cc-baseline 자체의 TC(`surface: cli`)다. 승인 직후 `docs/tc/tc-replay.tc
   - 같은 출처 웹소켓은 열어 두되, 쓰기 방지를 위해 페이지→서버 메시지를 버린다.
   - `CC_SWEEP_DEBUG=1`로 진단 로그를 남긴다.
 - **남은 한계:** 애니메이션처럼 DOM이 계속 바뀌는 앱에서는 효과 판정이 부정확하다(모든 클릭이 "효과 있음"). 판정 방식 재설계는 별도 작업이다.
-- **알려진 약점:** 검증 재생은 판정 결과만 비교한다. 이유가 달라도 결과가 같으면 채택된다(grimbang 1라운드에서 CSP 차단 FAIL과 잘못된 선택자 FAIL이 일치로 채택됨).
+- **알려진 약점:** 검증 재생은 판정 결과만 비교한다. 이유가 달라도 결과가 같으면 채택된다(grimbang 1라운드에서 CSP 차단 FAIL과 잘못된 선택자 FAIL이 일치로 채택됨). → 2026-11-19에 고쳤다(아래).
 
 ## Audit History (iter-2, 실제 프로젝트 후속)
 
@@ -464,3 +464,19 @@ cc-baseline 자체의 TC(`surface: cli`)다. 승인 직후 `docs/tc/tc-replay.tc
   - QA-009: 들여쓰기를 고쳤다.
   - QA-010: 시간 상한을 늦게 생긴 요소와 재시도에도 적용했다.
   - 테스트 193개가 통과한다. 웹소켓 메시지 차단은 자동 테스트가 없다.
+
+## 검증 재생이 이유까지 비교 (2026-11-19)
+
+- **원인:** grimbang 1라운드의 일치 채택은 선택자 문제가 아니었을 가능성이 높다. 테스터는 앱 CSP 때문에 `0`을, 재생은 재생기 자신의 출처 차단(`browser_origins` 도입 전) 때문에 같은 `0`을 봤다. `replayTc`는 `openContext`가 돌려주는 막힌 출처 목록을 버리고 있었다.
+- **verify:**
+  - 둘 다 code로 FAIL인 결과는 observed도 비교한다. 테스터 값이 재생 값으로 시작하고 뒤에 공백, `(`, `;`, `,`가 오면 일치로 본다. 다르면 rejected다.
+  - 재생이 FAIL이고 외부 출처를 막았다면 rejected이고, mismatch에 출처를 적는다.
+- **라운드:** 같은 조건이면 결과 줄 없이 `fallback`(`blocked_offsite:<origins>`)으로 넘긴다. 모두 PASS면 그대로 기록한다.
+- e2e-tester는 code 결과의 observed를 "읽은 값 + 괄호 메모" 형식으로 쓴다.
+- TC 5개를 추가했다(`verify-fail-observed-*`, `verify-blocked-offsite-rejected`, `run-blocked-offsite-*`). 사용자 결정 두 건은 `DEC.verify-fail-observed`, `DEC.harness-blocked`에 있다.
+- **남은 한계:** 막힌 요청이 없고 값까지 같은데 이유만 다른 FAIL은 잡지 못한다. Jev가 판정한 FAIL끼리는 비교하지 않는다.
+
+## Code Review History (replay-verify-cause)
+
+- code-review-iter-1: 2026-11-19 / critical=0 high=0 medium=0 low=1 / profile_status=cached / next_action=done
+  - QA-001: 300자에서 잘린 재생 값은 앞부분만 맞으면 일치로 본다.

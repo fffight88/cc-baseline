@@ -203,7 +203,7 @@ The TC steps and expected results are frozen — run them exactly as given. Valu
 
 | Layer | When | How | `judged_by` |
 |---|---|---|---|
-| 1 code | `dom` / `ax-node` with a `key` (URL part, selector, text, element state); `api` / `db` / `log` the run file allows (`tc-api-run.js`, below) | executed assertion, actual value as `observed` | `code` |
+| 1 code | `dom` / `ax-node` with a `key` (URL part, selector, text, element state); `api` / `db` / `log` the run file allows (`tc-api-run.js`, below) | executed assertion, actual value as `observed` — the value as read (`0`, `not found`, `visible`, `status=403`, the text), any note after it in parentheses: `0 (credits request blocked by CSP)`. A verify replay compares that leading value | `code` |
 | — | `artifact` / `env`, or an `api` / `db` / `log` source the run file does not list | `NOT_OBSERVABLE` — never decide it from the screen | `code` |
 | 2 Jev | remaining screen judgments (`question_id`, or no `key`) | save the observation, run `tc-jev-judge.js judge` (below) | `jev` when it returns PASS / FAIL with `judged_by: "jev"` |
 | 3 LLM | Jev returned `REVIEW` (uncalibrated, not-observable, instruction-like screen text, middle score), `unconfigured` or `error` | your own judgment from the same observation; keep Jev's `shadow` / scores | `llm` |

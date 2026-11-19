@@ -16,12 +16,14 @@
 //   recorded — a result line was written (code verdicts, failed_at_step when a step's
 //              done_when did not hold — the same as a tester)
 //   fallback — no line; run this TC with e2e-tester (stale, no_recording, not_accepted,
-//              locator_missing:<step>, no_browser, error)
+//              locator_missing:<step>, no_browser, error, blocked_offsite:<origins> — a
+//              failing replay that blocked requests outside base_url / browser_origins)
 //   pending  — Jev returned REVIEW or asked for a re-check: judge the observation files
 //              and run `finish`
 // --verify writes no result line: it compares the replay with the tester's line of the
-// same run id and records the recording as accepted (all verdicts equal) or rejected in
-// replay-accepted.json — the only place acceptance is read from.
+// same run id and records the recording as accepted (all verdicts equal, code results that
+// both FAIL read the same value, and a failing replay blocked no off-site request) or
+// rejected in replay-accepted.json — the only place acceptance is read from.
 // Exit 0 = done, 1 = error, 2 = refused / usage.
 
 const crypto = require('crypto');
@@ -516,8 +518,9 @@ async function replayTc(browser, rc, rec, tc, runId, opts) {
   const seen = { http: new Set(), console: new Set(), pageErrors: [], visited: new Set() };
   let ctx = null;
   let page = null;
+  let blocked = null;
   if (surfaceScreen) {
-    ({ ctx } = await sw.openContext(browser, rc, {}));
+    ({ ctx, blocked } = await sw.openContext(browser, rc, {}));
     scope.ctx = ctx;
     scope.session = rec.session;
     page = await ctx.newPage();
@@ -604,6 +607,7 @@ async function replayTc(browser, rc, rec, tc, runId, opts) {
       expected, pending, failedAt, visited: [...seen.visited],
       invariants: surfaceScreen ? (bad.length ? 'fail' : 'clean') : undefined, invariants_detail: bad.slice(0, 10),
       sweep, sweep_fail: scope.sweepFail,
+      blocked_offsite: blocked ? [...new Set(blocked.offsite)] : [],
     };
   } finally {
     if (ctx) await ctx.close().catch(() => {});
@@ -617,6 +621,24 @@ function resultEntry(rec, runId, r) {
     ...(r.invariants ? { invariants: r.invariants } : {}), ...(r.invariants_detail && r.invariants_detail.length ? { invariants_detail: r.invariants_detail } : {}),
     ...(r.sweep ? { sweep: r.sweep } : {}), ...(r.sweep_fail ? { sweep_fail: r.sweep_fail } : {}),
   };
+}
+
+// A replay failed when an expected result is FAIL or a step's done_when did not hold
+// (pending Jev results have no verdict yet).
+function failed(r) {
+  return Number.isInteger(r.failedAt) || r.expected.some(e => e.verdict === 'FAIL');
+}
+
+// Both sides FAILed one code check: the tester's observed value must start with the value
+// the replay read; a note after it (space, "(", ";" or ",") is allowed. The replay cuts long
+// values at 300 characters, so a cut value only has to be a prefix.
+function observedMatches(tester, replay) {
+  const norm = v => String(v === undefined || v === null ? '' : v).replace(/\s+/g, ' ').trim();
+  const t = norm(tester);
+  const r = norm(replay);
+  if (t === r) return true;
+  if (!r || !t.startsWith(r)) return false;
+  return String(replay).length >= 300 || /^[ (;,]/.test(t.slice(r.length));
 }
 
 function pendingFile(rc, runId) {
@@ -662,11 +684,18 @@ async function run({ runFile, runId, tcs, verify = false, retryRejected = false,
         const mismatch = [];
         if (!t) mismatch.push('no tester line for this run id');
         else {
-          const tv = new Map((t.expected || []).map(e => [e.index, e.verdict]));
-          for (const e of r.expected) if (tv.get(e.index) !== e.verdict) mismatch.push(`expected[${e.index}] tester ${tv.get(e.index)} replay ${e.verdict}`);
+          const te = new Map((t.expected || []).map(e => [e.index, e]));
+          for (const e of r.expected) {
+            const x = te.get(e.index) || {};
+            if (x.verdict !== e.verdict) mismatch.push(`expected[${e.index}] tester ${x.verdict} replay ${e.verdict}`);
+            else if (e.verdict === 'FAIL' && e.judged_by === 'code' && x.judged_by === 'code' && !observedMatches(x.observed, e.observed)) {
+              mismatch.push(`expected[${e.index}] both FAIL, observed tester ${JSON.stringify(String(x.observed === undefined ? '' : x.observed).slice(0, 120))} replay ${JSON.stringify(String(e.observed).slice(0, 120))}`);
+            }
+          }
           if ((Number.isInteger(t.failed_at_step) ? t.failed_at_step : null) !== (Number.isInteger(r.failedAt) ? r.failedAt : null)) mismatch.push(`failed_at_step tester ${t.failed_at_step} replay ${r.failedAt}`);
           if (t.invariants && r.invariants && t.invariants !== r.invariants) mismatch.push(`invariants tester ${t.invariants} replay ${r.invariants}`);
         }
+        if (r.blocked_offsite.length && failed(r)) mismatch.push(`replay blocked ${r.blocked_offsite.join(', ')} — add them to browser_origins or keep this TC with testers`);
         // Jev REVIEW results could not be compared: accepted on the code verdicts, listed as unverified
         const unverified = r.pending.map(q => q.index);
         const store = readAccepted(rc);
@@ -676,6 +705,8 @@ async function run({ runFile, runId, tcs, verify = false, retryRejected = false,
         out.push({ tc: rec.tc, outcome: store[rec.tc].status, ...(mismatch.length ? { mismatch } : {}), ...(unverified.length ? { unverified } : {}) });
         continue;
       }
+      // a failure the replay itself may have caused: no line, a tester runs this TC
+      if (r.blocked_offsite.length && failed(r)) { out.push({ tc: rec.tc, outcome: 'fallback', reason: `blocked_offsite:${r.blocked_offsite.join(',')}` }); continue; }
       const entry = resultEntry(rec, runId, r);
       if (r.pending.length) {
         pend[rec.tc] = { entry, tc_file: info.tcFile, pending: r.pending };
