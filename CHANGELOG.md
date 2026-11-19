@@ -76,6 +76,9 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
   - The gallery's thumbnails are embedded as data URIs because templates are copied as UTF-8 text. `tools/design-previews/` (not shipped) holds the scripts that rebuild them.
 
 ### Fixed
+- Found while validating on the real project's first new feature (grimbang C):
+  - `tc-sweep.js`: a button that opens a file picker no longer counts as dead; an active control (`aria-pressed` / `-selected` / `-current`) that changes nothing is skipped instead of failed; the page budget scales with the controls (6 s each, late ones too, 180–600 s) — a 36-control dashboard had hit the fixed 180 s and failed every TC on it.
+  - `tc-fix-loop.js tc-change` lets a new ready TC join a running loop (a TC split in two with the user's OK); before, a split meant restarting the loop.
 - The dead-control sweep (`tc-sweep.js`) judged badly on real pages (`docs/plans/tc-replay.md`).
   - On a page that changes on its own (animations, typing effects), every click counted as "effect", so dead controls passed. It now watches the page for 600 ms before each click; nodes, requests and scrollers that change then are noise. A dead control on such a page still fails, with the reason `page changes on its own: N nodes`. Scrolling now counts as an effect.
   - A modal that opens on load (a notice shown on every fresh tab) covered the page, so the controls behind it were never clicked. It is dismissed first — Escape, else a close-like button inside it (never a destructive-looking one) — and reported as `startup_overlay`. A page mostly covered by a dialog it could not close gets `hint`.

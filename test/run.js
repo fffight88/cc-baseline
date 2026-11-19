@@ -2904,7 +2904,7 @@ t('tc-fix-loop: loop limits come from tc-run.json and are validated', () => {
   assert.throws(() => fixLoop.limitsOf({ loop: { forever: true } }), /unknown/);
 });
 
-t('tc-fix-loop: TC text changed without tc-change refuses a round; tc-change re-freezes and reruns it (TC tc-text-frozen)', () => {
+t('tc-fix-loop: TC text changed without tc-change refuses a round; tc-change re-freezes and reruns it (TC tc-text-frozen, tc-added-joins)', () => {
   const p = loopProject();
   try {
     p.start();
@@ -2921,6 +2921,17 @@ t('tc-fix-loop: TC text changed without tc-change refuses a round; tc-change re-
     const n = p.cli('next').json;
     assert.equal(n.action, 'run_round');
     assert.deepEqual(n.tcs, ['A'], 'old results of A no longer count');
+    // a new ready TC (one split in two, with the user's OK) joins the loop through tc-change
+    const d2 = JSON.parse(fs.readFileSync(p.tcFile, 'utf8'));
+    d2.test_cases.push({ ...JSON.parse(JSON.stringify(d2.test_cases[0])), id: 'A2', title: 'split from A' });
+    fs.writeFileSync(p.tcFile, JSON.stringify(d2));
+    assert.equal(p.cli('tc-change', '--tc', 'Z', '--reason', 'x').status, 2, 'not in the loop nor in the file');
+    const d3 = JSON.parse(fs.readFileSync(p.tcFile, 'utf8'));
+    d3.test_cases.push({ ...JSON.parse(JSON.stringify(d3.test_cases[0])), id: 'A3', readiness: 'needs-decision' });
+    fs.writeFileSync(p.tcFile, JSON.stringify(d3));
+    assert.equal(p.cli('tc-change', '--tc', 'A3', '--reason', 'x').status, 2, 'a TC that is not ready cannot join');
+    assert.equal(p.cli('tc-change', '--tc', 'A2', '--reason', 'user OK: A split in two').status, 0);
+    assert.deepEqual(p.cli('next').json.tcs.sort(), ['A', 'A2']);
   } finally { p.done(); }
 });
 
@@ -3079,6 +3090,11 @@ function replayServer() {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       return res.end(page(`<p id="clock">0</p><button type="button">Dead</button><button type="button" onclick="this.textContent='Done'">Live</button>
         <script>let n = 0; setInterval(() => { document.getElementById('clock').textContent = String(++n); fetch('/poll').catch(() => {}); }, 100);</script>`));
+    }
+    if (req.url === '/picker') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(page(`<input type="file" id="f" style="display:none"><button type="button" onclick="document.getElementById('f').click()">Attach</button>
+        <button type="button" aria-pressed="true">Mode A</button><button type="button" aria-pressed="false">Mode B</button>`));
     }
     if (req.url === '/scroll') {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -3332,12 +3348,12 @@ t('tc-sweep: a dead button fails, 삭제 is skipped, a POST never reaches the se
   } finally { await srv.close(); p.done(); }
 });
 
-t('tc-sweep: noise does not count as an effect; scrolling does; a dialog that opens on load is dismissed; saved state is restored per open (TC sweep-noisy-*, sweep-scroll-effect, sweep-startup-overlay-dismissed, sweep-state-restored)', async () => {
+t('tc-sweep: noise does not count as an effect; scrolling does; a dialog that opens on load is dismissed; saved state is restored per open (TC sweep-noisy-*, sweep-scroll-effect, sweep-startup-overlay-dismissed, sweep-state-restored, sweep-file-picker-effect, sweep-active-control-skipped)', async () => {
   if (!HAS_BROWSER) { console.log('     (skipped: no Playwright module)'); return; }
   const srv = await replayServer();
   const p = replayProject(srv.url);
   try {
-    const r = await cliAsync(TC_SWEEP, ['--run', p.runFile, '--run-id', 'N1', '--urls', '/noisy,/scroll,/overlay,/lang']);
+    const r = await cliAsync(TC_SWEEP, ['--run', p.runFile, '--run-id', 'N1', '--urls', '/noisy,/scroll,/overlay,/lang,/picker']);
     assert.equal(r.status, 0, r.stderr);
     const u = sweepMod.readSweep(sweepMod.runContext(p.runFile), 'N1').urls;
     assert.deepEqual(u['/noisy'].fail.map(f => f.control), ['Dead'], JSON.stringify(u['/noisy']));
@@ -3349,6 +3365,11 @@ t('tc-sweep: noise does not count as an effect; scrolling does; a dialog that op
     assert.equal(u['/overlay'].status, 'clean');
     assert.ok(!u['/lang'].skipped.some(x => x.control === 'Hello'), JSON.stringify(u['/lang']));
     assert.equal(u['/lang'].clicked, 2, JSON.stringify(u['/lang']));
+    // TC sweep-file-picker-effect, sweep-active-control-skipped
+    assert.ok(!u['/picker'].fail.some(f => f.control === 'Attach'), JSON.stringify(u['/picker']));
+    assert.ok(!u['/picker'].fail.some(f => f.control === 'Mode A'), JSON.stringify(u['/picker']));
+    assert.ok(u['/picker'].skipped.some(s => s.control === 'Mode A' && /already active/.test(s.reason)), JSON.stringify(u['/picker']));
+    assert.deepEqual(u['/picker'].fail.map(f => f.control), ['Mode B'], 'a dead control that is not active still fails');
   } finally { await srv.close(); p.done(); }
 });
 

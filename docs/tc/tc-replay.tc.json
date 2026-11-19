@@ -58,6 +58,11 @@
       "id": "DEC.sweep-state-restore",
       "kind": "decision",
       "locator": "user decision 2026-11-19: every reopen starts from the first open's cookies and localStorage; a control still missing is listed as skipped"
+    },
+    {
+      "id": "DEC.sweep-picker-active",
+      "kind": "decision",
+      "locator": "user decision 2026-11-19 (grimbang C run): a file picker counts as an effect; an active control (aria-pressed/selected/current) with no effect is skipped"
     }
   ],
   "actions": [
@@ -1018,6 +1023,85 @@
         "refs": [
           "REQ.sweep-effect-baseline",
           "DEC.sweep-state-restore"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.sweep-file-picker-effect",
+      "title": "A button that opens a file picker is not a failure",
+      "action_refs": [
+        "ACT.tc-replay.sweep"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a test page with a button that opens a hidden file input"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-sweep.js on that page",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The sweep file does not list that button under fail",
+          "observe": {
+            "channel": "artifact",
+            "key": "sweep/<run_id>/ .fail[].control"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.sweep-picker-active"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.sweep-active-control-skipped",
+      "title": "An already-pressed control with no effect is skipped, not failed",
+      "action_refs": [
+        "ACT.tc-replay.sweep"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a test page with a button marked aria-pressed=true that has no handler"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-sweep.js on that page",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The sweep file lists that button under skipped",
+          "observe": {
+            "channel": "artifact",
+            "key": "sweep/<run_id>/ .skipped[].control"
+          }
+        },
+        {
+          "text": "The sweep file does not list that button under fail",
+          "observe": {
+            "channel": "artifact",
+            "key": "sweep/<run_id>/ .fail[].control"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.sweep-picker-active"
         ]
       },
       "readiness": "ready"

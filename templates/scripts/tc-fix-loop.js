@@ -12,7 +12,8 @@
 //   node tc-fix-loop.js classify --run <tc-run.json> --tc <id> --class <product|env|fixture|runner|case|decision> --note <text>
 //   node tc-fix-loop.js fix      --run <tc-run.json> --tc <id> --files <a,b> --test <path|none:<reason>> --summary <text> [--affected <id,…>]
 //   node tc-fix-loop.js accept   --run <tc-run.json> --tc <id> --index <n> --reason <text>
-//   node tc-fix-loop.js tc-change --run <tc-run.json> --tc <id> --reason <text>     (a TC removed from the file leaves the loop)
+//   node tc-fix-loop.js tc-change --run <tc-run.json> --tc <id> --reason <text>     (a TC removed from the file leaves the loop;
+//                                                                                   a new ready TC added with the user's OK joins it)
 //   node tc-fix-loop.js no-result --run <tc-run.json> --tc <id> --reason <text>     (the runner left no result line in the open round)
 //   node tc-fix-loop.js resume   --run <tc-run.json> --tc <id>
 //   node tc-fix-loop.js report   --run <tc-run.json>
@@ -361,6 +362,19 @@ function accept(loc, st, { tc, index, reason }) {
 }
 
 function tcChange(loc, st, { tc, reason }) {
+  if (typeof tc === 'string' && !Object.prototype.hasOwnProperty.call(st.frozen, tc)) {
+    // a TC added to the file with the user's OK (e.g. one TC split in two) joins the loop
+    const added = readTcs(st.tc_file).get(tc);
+    const runTc = loc.run.tcs && typeof loc.run.tcs === 'object' ? loc.run.tcs[tc] : null;
+    if (!added) throw new Refused(`${tc} is not in this loop or in the TC file`);
+    if (added.readiness !== 'ready') throw new Refused(`${tc} is not ready — only a ready TC can join the loop`);
+    if (runTc && runTc.skip) throw new Refused(`${tc} is skipped in the run file`);
+    const entry = { tc, reason: text(reason, '--reason'), from: null, to: tcDigest(added), added: true, round: st.rounds.length, at: now() };
+    st.frozen[tc] = entry.to;
+    st.tc_changes.push(entry);
+    saveLoop(loc, st);
+    return entry;
+  }
   frozenTc(st, tc);
   const cur = readTcs(st.tc_file).get(tc);
   if (!cur) {

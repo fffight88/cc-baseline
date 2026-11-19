@@ -6,7 +6,8 @@
   "sources": [
     { "id": "REQ.tc-fix-loop-plan", "kind": "requirement", "locator": "docs/plans/tc-fix-loop.md (approved 2026-11-18)" },
     { "id": "REQ.stage2-skeleton", "kind": "requirement", "locator": "docs/plans/tc-generation.md, stage 2 fix loop section (decided 2026-11-08)" },
-    { "id": "DEC.loop-limits", "kind": "decision", "locator": "user decision 2026-11-18: progress-based stop plus safety caps (3 fixes per TC, 5 rounds), script plus guide, auto-fix product failures, repro test required when a suite exists" }
+    { "id": "DEC.loop-limits", "kind": "decision", "locator": "user decision 2026-11-18: progress-based stop plus safety caps (3 fixes per TC, 5 rounds), script plus guide, auto-fix product failures, repro test required when a suite exists" },
+    { "id": "DEC.tc-added-joins", "kind": "decision", "locator": "user decision 2026-11-19 (grimbang C run): a TC split in two with the user's OK — the new ready TC joins the running loop through tc-change" }
   ],
   "actions": [
     { "id": "ACT.tc-fix-loop.next", "title": "Ask the loop what to do next", "actor": "e2e manager", "trigger": "runs tc-fix-loop.js next", "preconditions": ["tc-fix-loop.js start was run"], "outputs": ["one JSON line with action and TC list"], "evidence_refs": ["REQ.tc-fix-loop-plan", "REQ.stage2-skeleton"] },
@@ -83,7 +84,8 @@
       "steps": [{ "goal": "Run tc-fix-loop.js next", "done_when": { "expect": "The command exits" } }],
       "expected": [
         { "text": "The output regressions list holds B", "observe": { "channel": "artifact", "key": "stdout JSON .regressions" } }
-      ], "basis": { "kind": "requirement", "refs": ["REQ.stage2-skeleton"] }, "readiness": "ready" }
+      ], "basis": { "kind": "requirement", "refs": ["REQ.stage2-skeleton"] }, "readiness": "ready" },
+    {"id": "TC.tc-fix-loop.tc-added-joins", "title": "A new ready TC added with the user's OK joins the loop", "action_refs": ["ACT.tc-fix-loop.round"], "level": "functional", "surface": "cli", "preconditions": ["a running loop", "a new ready TC added to the TC file"], "steps": [{"goal": "Run tc-fix-loop.js tc-change for the new TC", "done_when": {"expect": "The command exits"}}, {"goal": "Run tc-fix-loop.js next", "done_when": {"expect": "The command exits"}}], "expected": [{"text": "next lists the new TC among the TCs to run", "observe": {"channel": "artifact", "key": "stdout .tcs"}}], "basis": {"kind": "requirement", "refs": ["DEC.tc-added-joins"]}, "readiness": "ready"}
   ],
   "open_questions": []
 }

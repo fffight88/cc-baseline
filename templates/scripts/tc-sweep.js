@@ -8,7 +8,8 @@
 //
 // For every URL: collect the visible, enabled clickable elements, then open the
 // URL fresh for each one, click it and look for one effect — navigation, popup,
-// request started, DOM change, scroll or dialog. Before each click the page is
+// request started, DOM change, scroll, dialog or file picker. A control marked active
+// (aria-pressed / -selected / -current) with no effect is skipped, not failed. Before each click the page is
 // watched for BASELINE_MS: nodes, requests and scrollers that change on their own
 // (animations, typing effects, polling) are noise and do not count. No effect, or a
 // page error during the click, is a dead control (`fail`; on a noisy page the reason
@@ -40,7 +41,9 @@ const dbg = (...a) => { if (process.env.CC_SWEEP_DEBUG === '1') process.stderr.w
 const SETTLE_MS = 500;
 const BASELINE_MS = 600;             // watch before a click: what changes on its own is noise
 const STEP_TIMEOUT_MS = 8000;        // any single in-page call
-const URL_BUDGET_MS = 180000;        // one path, all controls
+const URL_BUDGET_MS = 180000;        // one path: at least this long …
+const PER_CONTROL_MS = 6000;         // … plus this per control (late ones too) …
+const URL_BUDGET_MAX_MS = 600000;    // … but never more than this
 const QUIET_MS = 500;                // no change on a new node for this long counts as "rendered"
 const QUIET_MAX_MS = 3000;
 const NETWORK_IDLE_MS = 1000;
@@ -324,10 +327,12 @@ async function clickAndSee(page, ctx, selector, startUrl) {
   const onReq = r => { if (!quietReq.has(requestKey(r))) events.requests++; };
   const onPopup = p => { events.popup = true; p.close().catch(() => {}); };
   const onDialog = d => { events.dialog = true; d.dismiss().catch(() => {}); };
+  const onChooser = () => { events.dialog = true; };   // a file picker opened (nothing is chosen)
   const onErr = e => { events.errors.push(String(e && e.message || e).slice(0, 200)); };
   page.on('request', onReq);
   ctx.on('page', onPopup);
   page.on('dialog', onDialog);
+  page.on('filechooser', onChooser);
   page.on('pageerror', onErr);
   let clickError = null;
   try {
@@ -337,6 +342,7 @@ async function clickAndSee(page, ctx, selector, startUrl) {
   page.off('request', onReq);
   ctx.off('page', onPopup);
   page.off('dialog', onDialog);
+  page.off('filechooser', onChooser);
   page.off('pageerror', onErr);
   let seen = { changed: 0, scrolled: 0, noise: 0, added: [] };
   try { seen = await withTimeout(page.evaluate(sel => (window.__ccSweep ? window.__ccSweep.result(sel) : null), selector), STEP_TIMEOUT_MS, 'read effects') || seen; } catch { /* navigated away */ }
@@ -383,9 +389,13 @@ async function sweepUrl(ctx, rc, urlPath) {
       dbg(urlPath, 'watching');
       return list;
     };
-    const deadline = Date.now() + URL_BUDGET_MS;
+    const started = Date.now();
     const first = await open();
     dbg(urlPath, 'controls', first.length);
+    // a page with many controls gets more time; a late control adds its share when it is queued
+    let budget = Math.min(URL_BUDGET_MAX_MS, Math.max(URL_BUDGET_MS, PER_CONTROL_MS * first.length));
+    let deadline = started + budget;
+    const grow = () => { budget = Math.min(URL_BUDGET_MAX_MS, budget + PER_CONTROL_MS); deadline = started + budget; };
     const seen = new Set();
     const known = new Set(first.map(c => c.base));   // a re-render of these is not a new control
     const judgeOne = async (c, selector, retry) => {
@@ -398,7 +408,9 @@ async function sweepUrl(ctx, rc, urlPath) {
         const top = root.elementFromPoint(x, y);
         // something else (a modal backdrop, an overlay) sits on top of the control
         const covered = !!top && top !== el && !el.contains(top) && !top.contains(el) && r.top < innerHeight && r.bottom > 0;
-        return { disabled: !!el.disabled || el.getAttribute('aria-disabled') === 'true', covered };
+        // the current tab / pressed segment / current page link: clicking it again may change nothing
+        const active = ['aria-pressed', 'aria-selected', 'aria-current'].some(a => { const v = el.getAttribute(a); return v !== null && v !== 'false'; });
+        return { disabled: !!el.disabled || el.getAttribute('aria-disabled') === 'true', covered, active };
       }), STEP_TIMEOUT_MS, 'state').catch(() => null);
       if (!state) { result.skipped.push({ control: c.name || c.tag, reason: 'gone (re-rendered)' }); return { added: [] }; }
       if (state.disabled) { result.skipped.push({ control: c.name || c.tag, reason: 'disabled' }); return { added: [] }; }
@@ -420,12 +432,13 @@ async function sweepUrl(ctx, rc, urlPath) {
         }
       }
       dbg('effect', JSON.stringify(c.name).slice(0, 30), JSON.stringify({ effect: r.effect, nav: r.navigated, err: r.clickError, errors: r.errors.length }));
+      if (!r.effect && !r.errors.length && state.active) { result.skipped.push({ control: c.name || c.tag, reason: 'already active (aria-pressed / selected / current), no change expected' }); return r; }
       const dead = r.errors.some(e => /ReferenceError|TypeError/.test(e)) || !r.effect;
       if (dead) result.fail.push({ control: c.name || c.tag, tag: c.tag, reason: r.errors.length ? r.errors[0] : r.noise ? `no effect (page changes on its own: ${r.noise} nodes)` : 'no effect' });
       return r;
     };
     for (let i = 0; i < first.length; i++) {
-      if (Date.now() > deadline) { result.status = 'error'; result.error = `time budget (${URL_BUDGET_MS / 1000} s) used up after ${i} of ${first.length} controls`; break; }
+      if (Date.now() > deadline) { result.status = 'error'; result.error = `time budget (${Math.round(budget / 1000)} s) used up after ${i} of ${first.length} controls`; break; }
       const c = first[i];
       if (seen.has(c.key)) continue;
       seen.add(c.key);
@@ -444,12 +457,13 @@ async function sweepUrl(ctx, rc, urlPath) {
       // controls that appeared after the click (toast buttons, dialogs): click them now —
       // unless the click moved to another view, whose controls belong to that page's sweep
       for (const a of r.navigated ? [] : r.added || []) {
-        if (Date.now() > deadline) break;
         if (seen.has(a.key) || known.has(a.key)) continue;   // late controls are keyed without an occurrence index
         seen.add(a.key);
         if (DESTRUCTIVE_RE.test(a.name)) { result.skipped.push({ control: a.name || a.tag, reason: 'destructive' }); continue; }
+        if (Date.now() > deadline) { result.skipped.push({ control: a.name || a.tag, reason: 'time budget used up' }); continue; }
         const exists = await withTimeout(page.$(`[data-cc-sweep="${a.id}"]`), STEP_TIMEOUT_MS, 'find').catch(() => null);
         if (!exists) { result.skipped.push({ control: a.name || a.tag, reason: 'transient-missed' }); continue; }
+        grow();   // a late control that will be clicked adds its share
         try { await withTimeout(watch(page), STEP_TIMEOUT_MS, 'watch'); } catch { /* page gone */ }
         await judgeOne(a, `[data-cc-sweep="${a.id}"]`);
       }
