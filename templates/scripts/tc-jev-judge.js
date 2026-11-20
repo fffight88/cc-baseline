@@ -67,7 +67,9 @@ const AX_CAP = 6000;
 const LABEL_SOURCES = ['code', 'human'];
 const VERDICTS = ['PASS', 'FAIL', 'REVIEW', 'NOT_OBSERVABLE'];
 const JUDGES = ['code', 'jev', 'llm', 'human'];
-const JUDGE_MODES = ['code', 'jev', 'llm'];   // V11: code → Jev → LLM (default) · Jev first · LLM only
+const JUDGE_MODES = ['code', 'jev', 'llm'];
+const INVARIANT_OUTCOMES = ['clean', 'fail'];
+const SWEEP_OUTCOMES = ['clean', 'fail', 'skipped'];   // skipped = the sweep did not run; never write clean for it   // V11: code → Jev → LLM (default) · Jev first · LLM only
 const SHA_RE = /^[0-9a-f]{64}$/;
 const RUN_ID_RE = /^[0-9A-Za-z][0-9A-Za-z._-]{0,39}$/;
 const HOLDOUT_PERCENT = 30;
@@ -586,6 +588,8 @@ function record({ results, tcFile, entry }) {
     }
   }
   if (entry.judge_mode !== undefined && !JUDGE_MODES.includes(entry.judge_mode)) throw new Error(`judge_mode must be one of ${JUDGE_MODES.join(' | ')}`);
+  if (entry.invariants !== undefined && !INVARIANT_OUTCOMES.includes(entry.invariants)) throw new Error(`invariants must be one of ${INVARIANT_OUTCOMES.join(' | ')}`);
+  if (entry.sweep !== undefined && !SWEEP_OUTCOMES.includes(entry.sweep)) throw new Error(`sweep must be one of ${SWEEP_OUTCOMES.join(' | ')} — skipped when the sweep did not run`);
   const stepCount = Array.isArray(tc.steps) ? tc.steps.length : 0;
   if (entry.failed_at_step !== undefined && !(Number.isInteger(entry.failed_at_step) && entry.failed_at_step >= 0 && entry.failed_at_step < stepCount)) {
     throw new Error(stepCount === 0 ? `${entry.tc} has no steps — failed_at_step does not apply` : `failed_at_step must be a 0-based step index (0..${stepCount - 1}) of ${entry.tc}`);

@@ -2255,6 +2255,9 @@ t('tc-jev-judge: compare tables a run by judge mode against the code verdicts', 
     assert.equal(gone.missing, true, 'an unknown run_id is reported, not an empty row');
     assert.throws(() => compare({ results: path.join(tmp, 'none', 'tc-results.jsonl'), runIds: ['r-code'] }), /no results file/);
     assert.throws(() => record({ results, tcFile, entry: { tc, judge_mode: 'robot', expected: [{ index: 0, verdict: 'PASS', judged_by: 'code' }, { index: 1, verdict: 'PASS', judged_by: 'code' }] } }), /judge_mode/);
+    assert.throws(() => record({ results, tcFile, entry: { tc, sweep: 'not run', expected: [{ index: 0, verdict: 'PASS', judged_by: 'code' }, { index: 1, verdict: 'PASS', judged_by: 'code' }] } }), /sweep must be/);
+    assert.throws(() => record({ results, tcFile, entry: { tc, invariants: 'ok', expected: [{ index: 0, verdict: 'PASS', judged_by: 'code' }, { index: 1, verdict: 'PASS', judged_by: 'code' }] } }), /invariants must be/);
+    assert.equal(record({ results, tcFile, entry: { tc, run_id: 'r-skip', sweep: 'skipped', invariants: 'clean', expected: [{ index: 0, verdict: 'PASS', judged_by: 'code' }, { index: 1, verdict: 'PASS', judged_by: 'code' }] } }).sweep, 'skipped');
     assert.throws(() => record({ results, tcFile, entry: { tc, expected: [{ index: 0, verdict: 'PASS', judged_by: 'jev', code_verdict: 'YES' }, { index: 1, verdict: 'PASS', judged_by: 'code' }] } }), /code_verdict/);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });
