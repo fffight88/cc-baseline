@@ -16,17 +16,21 @@
 //   csp             — the page's Content-Security-Policy connect-src (else default-src)
 //                     allows every browser_origins origin
 //   browser_origins — well-formed (the rule replays and sweeps use)
-//   reset_command   — `node <project script> <plain args>` and the script exists (never run)
+//   reset_command   — `<node|bash|sh|python3> <committed project script> <plain args>` (never run)
+//   docker_ports    — warns when a compose container of this project publishes a port on all
+//                     interfaces (Docker bypasses the host firewall); read-only `docker ps`
 //   test_login_path — when set, does not answer 404 (the test login is switched on);
 //                     requested once, and only on a loopback base_url (it signs in)
 //   external_stubs  — every fake external API server is on loopback and answers
-// It writes nothing and requests only base_url and the external_stubs URLs, with GET,
+// It writes nothing, reads `docker ps`, and requests only base_url and the external_stubs URLs, with GET,
 // reading redirects instead of following them off the base origin. The CSP is read
 // from / only.
 // Prints one line per check, then one JSON line (--json: the JSON line only).
 // Exit 0 = no fail, 1 = a check failed, 2 = refused / usage, 3 = unexpected error.
 
 const fs = require('fs');
+const path = require('path');
+const { execFileSync } = require('child_process');
 const { parseArgs } = require('./jev-client');
 const api = require('./tc-api-run');
 const sw = require('./tc-sweep');
@@ -132,6 +136,34 @@ async function hostCheck(run, base, { withLogin }) {
   return { check: out, first };
 }
 
+// docker ps lines "<compose working dir>\t<name>\t<ports>": containers of this project that
+// publish on 0.0.0.0 / [::]. Returns null when no container belongs to the project.
+function dockerExposure(root, psText) {
+  const mine = [];
+  const open = [];
+  for (const line of String(psText).split('\n')) {
+    const [dir, name, ports = ''] = line.split('\t');
+    if (!dir || !name) continue;
+    let real;
+    try { real = fs.realpathSync(dir); } catch { real = dir; }
+    if (real !== root && !real.startsWith(root + path.sep)) continue;
+    mine.push(name);
+    for (const p of ports.split(',').map(x => x.trim())) if (/^(?:0\.0\.0\.0|\[::\]):\d+(?:-\d+)?->/.test(p)) open.push(`${name} ${p}`);
+  }
+  if (!mine.length) return null;
+  return open.length
+    ? { status: 'warn', detail: `${[...new Set(open)].slice(0, 5).join('; ')} — published on every interface (Docker bypasses the firewall); bind to 127.0.0.1 with an uncommitted docker-compose.override.yml` }
+    : { status: 'ok', detail: `${mine.length} container(s), no port on all interfaces` };
+}
+
+function dockerCheck(root) {
+  let out;
+  try {
+    out = execFileSync('docker', ['ps', '--format', '{{.Label "com.docker.compose.project.working_dir"}}\t{{.Names}}\t{{.Ports}}'], { encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'ignore'] });
+  } catch { return null; }   // no docker, no permission: nothing to check
+  return dockerExposure(root, out);
+}
+
 async function stubsCheck(run) {
   const list = run.external_stubs;
   if (list === undefined) return null;
@@ -200,6 +232,7 @@ async function check({ runFile }) {
   }
 
   add('external_stubs', await stubsCheck(run));
+  add('docker_ports', dockerCheck(root));
 
   return { checks, fail: checks.filter(c => c.status === 'fail').length, warn: checks.filter(c => c.status === 'warn').length };
 }
@@ -223,4 +256,4 @@ async function main(argv) {
 
 if (require.main === module) main(process.argv).then(c => { process.exitCode = c; });
 
-module.exports = { check, cspBlocked, sourceAllows, resetCheck };
+module.exports = { check, cspBlocked, sourceAllows, resetCheck, dockerExposure };

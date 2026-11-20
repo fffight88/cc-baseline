@@ -78,6 +78,11 @@
       "id": "REQ.sweep-login-label",
       "kind": "requirement",
       "locator": "cc-baseline .cc-audits/HANDOFF-next.md ontology-demo 일반화 검증, 다음 후보 1–2 (2026-11-20)"
+    },
+    {
+      "id": "DEC.commands-docker",
+      "kind": "decision",
+      "locator": "user decision 2026-11-20: run-file commands accept node, bash, sh, python3"
     }
   ],
   "actions": [
@@ -1458,6 +1463,43 @@
         "kind": "requirement",
         "refs": [
           "REQ.sweep-login-label"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.command-bash-runs",
+      "title": "A command op runs an approved bash script",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "an accepted recording whose setup names data.before_command",
+        "the run file gives before_command as bash <committed script> that writes a marker file"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The marker file written by the bash script exists",
+          "observe": {
+            "channel": "artifact",
+            "key": "marker file in the project"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.commands-docker"
         ]
       },
       "readiness": "ready"

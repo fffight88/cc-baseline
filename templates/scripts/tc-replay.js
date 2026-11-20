@@ -12,7 +12,7 @@
 // Recording: <project>/.cc-audits/<slug>/replay/<tc id>.json (see the manager guide §2-C
 // for the format). `run` opens one browser context per TC (only base_url's origin),
 // runs setup → login → steps → expected → teardown (setup / teardown / `command` run the
-// TC's run-file data.<name>_command — node <project script> <plain args>, no shell;
+// TC's run-file data.<name>_command — <node|bash|sh|python3> <committed script> <plain args>, no shell;
 // `new_tab` and `parallel` requests are actions too), sweeps the screens it visited (tc-sweep.js) and
 // records one tc-results line (browser_tool "replay"). Per TC it prints:
 //   recorded — a result line was written (code verdicts, failed_at_step when a step's
@@ -476,11 +476,16 @@ async function dataCheck(rc, c, scope) {
   return { ok: n === c.equals, observed: `${n} line(s)` };
 }
 
-// Runs a run-file command without a shell: node <project script> <plain args>, in the project root.
+// Runs a run-file command without a shell: <node|bash|sh|python3> <project script> <plain args>,
+// in the project root (node is this very Node binary; the others are found on PATH).
+// Variables that make an interpreter run other code first are dropped.
+const COMMAND_ENV_DROP = /^(?:BASH_ENV|ENV|PYTHONPATH|PYTHONSTARTUP|PYTHONHOME|PYTHONINSPECT|NODE_OPTIONS|NODE_PATH|PERL5OPT|LD_PRELOAD|LD_LIBRARY_PATH)$/;
 function runCommand(rc, tcId, name, where) {
-  const { script, args } = commandOf(rc, tcId, name, where);
+  const { interpreter, script, args } = commandOf(rc, tcId, name, where);
+  const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !COMMAND_ENV_DROP.test(k)));
+  const argv = interpreter === 'python3' ? ['-B', script, ...args] : [script, ...args];   // -B: no .pyc written into the project
   return new Promise((resolve, reject) => {
-    execFile(process.execPath, [script, ...args], { cwd: rc.root, timeout: COMMAND_TIMEOUT, maxBuffer: 1 << 20 }, err => (err ? reject(new Blocked(`command_failed:${where}`)) : resolve()));
+    execFile(interpreter === 'node' ? process.execPath : interpreter, argv, { cwd: rc.root, env, timeout: COMMAND_TIMEOUT, maxBuffer: 1 << 20 }, err => (err ? reject(new Blocked(`command_failed:${where}`)) : resolve()));
   });
 }
 

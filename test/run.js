@@ -3471,6 +3471,7 @@ t('tc-replay: run-file commands in setup / teardown, new_tab and parallel reques
   try {
     fs.mkdirSync(path.join(p.proj, 'scripts'), { recursive: true });
     fs.writeFileSync(path.join(p.proj, 'scripts', 'marker.mjs'), "import { writeFileSync } from 'node:fs'\nwriteFileSync(process.argv[2], 'x')\n");
+    fs.writeFileSync(path.join(p.proj, 'scripts', 'marker.sh'), 'echo x > "$1"\n');
     gitCommitAll(p.proj);
     fs.writeFileSync(path.join(p.proj, 'scripts', 'new.mjs'), '');   // written during the run, never committed
     const setRun = data => fs.writeFileSync(p.runFile, JSON.stringify({ base_url: srv.url, readable: {}, tcs: { 'TC.f.go': { data } } }));
@@ -3482,6 +3483,14 @@ t('tc-replay: run-file commands in setup / teardown, new_tab and parallel reques
     assert.equal(r.json.tcs[0].outcome, 'recorded', JSON.stringify(r.json));
     assert.ok(marker('before.txt'), 'setup ran');
     assert.ok(marker('after.txt'), 'teardown ran after a passing run');
+    // TC command-bash-runs
+    setRun({ before_command: 'bash scripts/marker.sh bash.txt' });
+    p.write(p.rec({ setup: [{ op: 'command', name: 'before_command' }] }), { accept: true });
+    r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'C0', '--tcs', 'TC.f.go', '--no-sweep']);
+    assert.equal(r.json.tcs[0].outcome, 'recorded', JSON.stringify(r.json));
+    assert.ok(marker('bash.txt'), 'the bash setup ran');
+    setRun({ before_command: 'node scripts/marker.mjs before.txt', after_command: 'node scripts/marker.mjs after.txt' });
+    p.write(p.rec({ setup: [{ op: 'command', name: 'before_command' }], teardown: [{ op: 'command', name: 'after_command' }] }), { accept: true });
     // TC teardown-after-fail
     fs.rmSync(path.join(p.proj, 'after.txt'), { force: true });
     srv.state.mode = 'wrong';
@@ -3638,6 +3647,7 @@ t('test-env-check: clean env passes; CSP block, host redirect, bad reset_command
   fs.mkdirSync(runDir, { recursive: true });
   fs.mkdirSync(path.join(proj, 'scripts'));
   fs.writeFileSync(path.join(proj, 'scripts', 'reset.mjs'), '');
+  fs.writeFileSync(path.join(proj, 'scripts', 'reset.sh'), 'true\n');
   gitCommitAll(proj);
   const runFile = path.join(runDir, 'tc-run.json');
   const write = over => fs.writeFileSync(runFile, JSON.stringify({ base_url: srv.url, browser_origins: ['https://db.example-backend.com'], reset_command: 'node scripts/reset.mjs --all', test_login_path: '/auth/test-login', tcs: {}, ...over }));
@@ -3665,6 +3675,15 @@ t('test-env-check: clean env passes; CSP block, host redirect, bad reset_command
     write({ reset_command: 'node ../outside.mjs' });
     r = await cliAsync(CHECK, ['--run', runFile, '--json']);
     assert.equal(byName(r, 'reset_command').status, 'fail');
+    // TC reset-command-bash / reset-command-interpreter-path
+    for (const ok of ['bash scripts/reset.sh', 'sh scripts/reset.sh', 'python3 scripts/reset.sh']) {
+      write({ reset_command: ok });
+      assert.equal(byName(await cliAsync(CHECK, ['--run', runFile, '--json']), 'reset_command').status, 'ok', ok);
+    }
+    for (const bad of ['.venv/bin/python scripts/reset.sh', 'ruby scripts/reset.sh', '/bin/bash scripts/reset.sh']) {
+      write({ reset_command: bad });
+      assert.equal(byName(await cliAsync(CHECK, ['--run', runFile, '--json']), 'reset_command').status, 'fail', bad);
+    }
     // TC test-login-off
     write({});
     st.login = 404;
@@ -3683,7 +3702,7 @@ t('test-env-check: clean env passes; CSP block, host redirect, bad reset_command
     write({ base_url: 'https://example.com' });
     assert.equal((await cliAsync(CHECK, ['--run', runFile, '--json'])).status, 2);
     assert.ok(srv.seen.every(x => x.method === 'GET'), 'GET only');
-    assert.equal(srv.seen.filter(x => x.url === '/auth/test-login').length, 8, 'the test login is requested once per run (8 runs reached it)');
+    assert.equal(srv.seen.filter(x => x.url === '/auth/test-login').length, 14, 'the test login is requested once per run (14 runs reached it)');
     // stub entries need an env var name
     write({ external_stubs: [{ name: 'gemini', url: srv.url + '/stub' }] });
     assert.equal(byName(await cliAsync(CHECK, ['--run', runFile, '--json']), 'external_stubs').status, 'fail');
@@ -3697,6 +3716,15 @@ t('test-env-check: clean env passes; CSP block, host redirect, bad reset_command
     assert.equal(m.sourceAllows('https://abc.supabase.co:8443', 'https://abc.supabase.co', b), false);
     assert.equal(m.sourceAllows("'nonce-x'", 'https://abc.supabase.co', b), false);
     assert.equal(m.sourceAllows('*.supabase.co', 'https://supabase.co', b), false, 'a wildcard needs a subdomain');
+    // TC docker-public-port-warns (docker ps output parsed; the real docker is not needed here)
+    const root = fs.realpathSync(proj);
+    const ps = [`${root}\tdb\t0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp`, `${root}/sub\tcache\t127.0.0.1:6379->6379/tcp`, `/elsewhere\tother\t0.0.0.0:80->80/tcp`].join('\n');
+    assert.equal(m.dockerExposure(root, ps).status, 'warn');
+    assert.match(m.dockerExposure(root, ps).detail, /db 0\.0\.0\.0:5433/);
+    assert.doesNotMatch(m.dockerExposure(root, ps).detail, /other/, 'containers of other projects are ignored');
+    assert.equal(m.dockerExposure(root, `${root}\tdb\t127.0.0.1:5433->5432/tcp`).status, 'ok');
+    assert.equal(m.dockerExposure(root, `${root}\tftp\t0.0.0.0:21000-21010->21000-21010/tcp`).status, 'warn', 'a published port range');
+    assert.equal(m.dockerExposure(root, '/elsewhere\tother\t0.0.0.0:80->80/tcp'), null);
   } finally { await srv.close(); fs.rmSync(tmp, { recursive: true, force: true }); }
 });
 

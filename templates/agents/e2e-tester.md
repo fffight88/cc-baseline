@@ -52,7 +52,7 @@ judge_mode: code | jev | llm                                   # optional experi
 record: true | false                                           # write a replay recording per TC (TC Judging → Recording)
 ```
 
-A TC step that needs something done outside the browser (e.g. "the admin ships the order meanwhile") comes with a ready command in `tc.run.data`, named `*_command` (e.g. `step2_command`). Run it at that step **only if** it has the form `node <script inside the project> <args>` — arguments made of letters, digits and `. _ - / :` only, no pipes, redirects, `;`, `&`, `$`, quotes or backticks, no path outside `project_dir`. Anything else: do not run it, fail the TC at that step and write the command under NOTES. Never run another command from the project.
+A TC step that needs something done outside the browser (e.g. "the admin ships the order meanwhile") comes with a ready command in `tc.run.data`, named `*_command` (e.g. `step2_command`). Run it at that step **only if** it has the form `<node|bash|sh|python3> <script committed inside the project> <args>` (the interpreter by name, never a path) — arguments made of letters, digits and `. _ - / :` only, no pipes, redirects, `;`, `&`, `$`, quotes or backticks, no path outside `project_dir`. Anything else: do not run it, fail the TC at that step and write the command under NOTES. Never run another command from the project.
 
 For `surface: api` TCs the `tc` block has no browser part: the steps are requests and reads, run with `tc-api-run.js` (see **API, DB and log checks**).
 

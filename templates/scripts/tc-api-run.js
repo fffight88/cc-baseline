@@ -78,15 +78,17 @@ function allowedEnv(run) {
   return names;
 }
 
-// A run-file command (`reset_command`, `data.<name>_command`): `node <project script>
-// <plain args>` — no shell syntax, no quoting, a script file committed to git inside the
-// project (not under .cc-audits/ or node_modules/). The user saw it when approving the
-// plan. Returns { script (absolute), args }.
+// A run-file command (`reset_command`, `data.<name>_command`): `<node|bash|sh|python3>
+// <project script> <plain args>` — an interpreter by name (found on PATH, never a path), no
+// shell syntax, no quoting, a script file committed to git inside the project (not under
+// .cc-audits/ or node_modules/). The user saw it when approving the plan.
+// Returns { interpreter, script (absolute), args }.
 const COMMAND_ARG_RE = /^[A-Za-z0-9._=:,@/+-]+$/;
+const INTERPRETERS = ['node', 'bash', 'sh', 'python3'];
 function checkCommand(cmd, root) {
   if (typeof cmd !== 'string') throw new Refused('a command must be a string');
   const parts = cmd.trim().split(/\s+/);
-  if (parts[0] !== 'node' || parts.length < 2) throw new Refused('a command must be `node <project script> <plain args>`');
+  if (!INTERPRETERS.includes(parts[0]) || parts.length < 2) throw new Refused(`a command must be \`<${INTERPRETERS.join('|')}> <project script> <plain args>\``);
   const bad = parts.slice(1).find(a => !COMMAND_ARG_RE.test(a));
   if (bad !== undefined) throw new Refused(`a command has shell syntax or quoting: ${JSON.stringify(bad.slice(0, 40))}`);
   const script = parts[1];
@@ -100,7 +102,7 @@ function checkCommand(cmd, root) {
   try { require('child_process').execFileSync('git', ['-C', root, 'ls-files', '--error-unmatch', '--', rel], { stdio: 'ignore', timeout: 5000 }); } catch {
     throw new Refused(`command script ${script} is not tracked by git — commit it first`);
   }
-  return { script: real, args: parts.slice(2) };
+  return { interpreter: parts[0], script: real, args: parts.slice(2) };
 }
 
 // A Bearer-token API (the login response carries the token, later requests send it in a

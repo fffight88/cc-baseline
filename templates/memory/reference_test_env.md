@@ -13,6 +13,7 @@ type: reference
 | Make the reset script refuse unless it points at the test project | Write a reset that deletes before checking its target |
 | Read backend hosts in the CSP from env; list them in `browser_origins` | Hard-code the production host in the CSP |
 | Use one host everywhere (`localhost` **or** `127.0.0.1`) | Mix them — cookies are per host |
+| Bind test databases and dev servers to 127.0.0.1 | Publish a dev database on 0.0.0.0 on a public machine |
 | Replace a paid third-party API with a loopback fake server only when approved, recorded in `external_stubs` and named in the report | Override functions in JS, or report faked results without saying so |
 | Run `test-env-check.js` before the first round; fix every `fail` | Discover CSP or cookie problems in the middle of a round |
 
@@ -70,7 +71,23 @@ export async function GET(request: Request) {
 `reset_command` puts the data back to the TCs' starting state before every round and every verify replay.
 - First compare the configured backend host with the test project's; on any difference print a refusal and exit 2 **before** any request.
 - Touch only the test account: delete its rows and files, restore its starting values (credits, plan). Running it twice gives the same state.
-- Form: `node scripts/<name>.mjs <plain args>` (no shell syntax, a script committed to git inside the project, not under `.cc-audits/`). Record it as `reset_command`. The same form and rule hold for every `data.<name>_command` (e.g. switching a fake server's mode), which recordings run by name.
+- Form: `<node|bash|sh|python3> scripts/<name> <plain args>` — the interpreter by name, never a path such as `.venv/bin/python`; no shell syntax; a script committed to git inside the project, not under `.cc-audits/`.
+- A test reset is not the project's dev reset: it puts back only what the TCs change, in seconds. A reset that drops volumes, takes minutes or touches the developer's own database does not belong in `reset_command` — give the tests their own database (e.g. a second database in the same container) and reset that one. Record it as `reset_command`. The same form and rule hold for every `data.<name>_command` (e.g. switching a fake server's mode), which recordings run by name.
+
+---
+
+## 4-B. Local ports on a shared or public machine
+
+- Databases and other infrastructure for tests listen on `127.0.0.1` only. Docker publishes ports past the host firewall (ufw does not stop it), and dev databases use well-known passwords.
+- When the repository's `docker-compose.yml` publishes on all interfaces (`"5433:5432"`), add an uncommitted `docker-compose.override.yml` and list it in `.git/info/exclude`:
+  ```yaml
+  services:
+    postgres:
+      ports: !override
+        - "127.0.0.1:5433:5432"
+  ```
+- Start dev servers on loopback too (`vite --host 127.0.0.1`, `uvicorn --host 127.0.0.1`).
+- `test-env-check.js` warns (`docker_ports`) when a compose container of the project publishes on `0.0.0.0` / `[::]`.
 
 ---
 
@@ -106,7 +123,7 @@ The No Mock policy (`reference_e2e_manager_guide.md` §4) still holds. One excep
 node ~/.claude/scripts/test-env-check.js --run .cc-audits/<plan-slug>/tc-run.json
 ```
 
-It requests only `base_url` and the `external_stubs` URLs (GET), writes nothing, and checks: `base_url` answers; redirects stay on one host; the CSP allows `browser_origins`; `browser_origins` is well-formed; `reset_command` has the allowed form and its script is committed; `test_login_path` does not answer 404; every fake server is on loopback and answers. Exit 1 = a `fail` — fix it before running testers. Notes: requesting `test_login_path` signs in the test account, so it is requested once and only on a loopback `base_url`. The CSP is read from `/` only — a page with its own CSP is not checked. Exit 3 = the check itself broke.
+It requests only `base_url` and the `external_stubs` URLs (GET), writes nothing, and checks: `base_url` answers; redirects stay on one host; the CSP allows `browser_origins`; `browser_origins` is well-formed; `reset_command` has the allowed form and its script is committed; no compose container of the project publishes on all interfaces (warn); `test_login_path` does not answer 404; every fake server is on loopback and answers. Exit 1 = a `fail` — fix it before running testers. Notes: requesting `test_login_path` signs in the test account, so it is requested once and only on a loopback `base_url`. The CSP is read from `/` only — a page with its own CSP is not checked. Exit 3 = the check itself broke.
 
 ---
 
@@ -115,6 +132,7 @@ It requests only `base_url` and the `external_stubs` URLs (GET), writes nothing,
 - [ ] Test backend separate from production; schema-only migration committed and applied; no production rows
 - [ ] Test login answers 404 unless not-production + flag + test backend; production checked by hand
 - [ ] Reset script refuses anything but the test project; touches only the test account; `reset_command` set
+- [ ] Test databases and dev servers listen on 127.0.0.1 (`docker_ports` not warned)
 - [ ] CSP reads backend hosts from env; `browser_origins` lists them
 - [ ] One host in `base_url`, site URL and redirects
 - [ ] Faked paid APIs approved, in `external_stubs`, named in the report; no JS overrides

@@ -18,6 +18,11 @@
       "id": "DEC.external-stubs",
       "kind": "decision",
       "locator": "user decision 2026-11-19: paid third-party APIs may be replaced by a loopback fake server when approved, recorded and reported"
+    },
+    {
+      "id": "DEC.commands-docker",
+      "kind": "decision",
+      "locator": "user decision 2026-11-20: run-file commands accept node, bash, sh, python3; test-env-check warns on project containers publishing on 0.0.0.0"
     }
   ],
   "actions": [
@@ -266,6 +271,115 @@
         "refs": [
           "REQ.test-env",
           "DEC.external-stubs"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.test-env.reset-command-bash",
+      "title": "A committed bash reset script passes the check",
+      "action_refs": [
+        "ACT.test-env.check"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a run file whose reset_command is bash scripts/reset.sh",
+        "scripts/reset.sh committed to git"
+      ],
+      "steps": [
+        {
+          "goal": "Run test-env-check.js on that run file",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The reset_command check has status ok",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .checks[name=reset_command].status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.commands-docker"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.test-env.reset-command-interpreter-path",
+      "title": "An interpreter given as a path fails the check",
+      "action_refs": [
+        "ACT.test-env.check"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a run file whose reset_command starts with .venv/bin/python"
+      ],
+      "steps": [
+        {
+          "goal": "Run test-env-check.js on that run file",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The reset_command check has status fail",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .checks[name=reset_command].status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.commands-docker"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.test-env.docker-public-port-warns",
+      "title": "A project container publishing on all interfaces is warned",
+      "action_refs": [
+        "ACT.test-env.check"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "docker ps output listing a container whose compose working dir is the project and whose port is 0.0.0.0:5433->5432/tcp"
+      ],
+      "steps": [
+        {
+          "goal": "Evaluate the docker_ports check on that output",
+          "done_when": {
+            "expect": "A check result comes back"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The docker_ports check has status warn",
+          "observe": {
+            "channel": "artifact",
+            "key": "docker_ports status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.commands-docker"
         ]
       },
       "readiness": "ready"
