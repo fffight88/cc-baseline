@@ -530,3 +530,8 @@ cc-baseline 자체의 TC(`surface: cli`)다. 승인 직후 `docs/tc/tc-replay.tc
 ## Code Review History (replay-ops)
 
 - code-review-iter-1: 2026-11-20 / critical=0 high=0 medium=1 low=4 / next_action=self_fix → QA-001·002·003·005 반영, QA-004(탭 사이 진행 중 요청 수 공유)는 무해해서 그대로 뒀다.
+
+## 스윕 로그인과 재생 `label` 대상 (2026-11-20, ontology-demo에서 발견)
+
+- `tc-sweep.js --login-from <TC id>`: 기록의 login 단계를 한 번 실행하고 브라우저 상태(쿠키와 localStorage)를 `replay-state/<session>.json`에 저장한 뒤 그 상태로 스윕한다. localStorage 토큰 앱에서도 첫 라운드 스윕을 손으로 하지 않아도 된다.
+- 재생 `label` 대상: 정확 일치에 더해 같은 이름의 폼 역할(combobox, textbox 등)을 접근 이름으로 찾는다. `<label>`이 컨트롤을 감싸 라벨 텍스트에 옵션 글자가 붙는 경우(`StatusAllFailure`)를 해결한다. 테스터 지침에는 "폼 컨트롤은 role+name"을 적었다.

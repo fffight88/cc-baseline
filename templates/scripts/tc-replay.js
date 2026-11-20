@@ -54,6 +54,7 @@ const MAX_HOOKS = 5;
 const COMMAND_TIMEOUT = 60000;
 const SCREEN_CHECKS = ['text', 'count', 'visible', 'hidden', 'enabled', 'disabled', 'url_path', 'url', 'value'];
 const DATA_CHECKS = { api: ['api'], db: ['db'], log: ['log_count'] };
+const FORM_ROLES = ['combobox', 'listbox', 'textbox', 'searchbox', 'spinbutton', 'checkbox', 'radio', 'switch', 'slider'];
 const LOCATOR_KEYS = ['role', 'label', 'text', 'selector', 'placeholder', 'test_id'];
 const COMPARE_KEYS = ['equals', 'includes', 'starts', 'excludes', 'in', 'not_in', 'all_equals'];
 const FIELD_RE = /^[A-Za-z_][A-Za-z0-9_]{0,39}$/;
@@ -380,7 +381,13 @@ function locator(page, t, scope) {
   const r = v => resolve(v, scope);
   let l;
   if (t.role) l = page.getByRole(t.role, t.name !== undefined ? { name: r(t.name), exact: t.exact !== false } : {});
-  else if (t.label) l = page.getByLabel(r(t.label), { exact: t.exact !== false });
+  else if (t.label) {
+    const name = String(r(t.label));
+    l = page.getByLabel(name, { exact: t.exact !== false });
+    // a <label> that wraps its control also carries the control's text ("StatusAllFailure"),
+    // so an exact label match misses it; the browser's accessible name leaves that text out
+    if (t.exact !== false) for (const role of FORM_ROLES) l = l.or(page.getByRole(role, { name, exact: true }));
+  }
   else if (t.text) l = page.getByText(r(t.text), { exact: t.exact === true });
   else if (t.placeholder) l = page.getByPlaceholder(r(t.placeholder), { exact: t.exact !== false });
   else if (t.test_id) l = page.getByTestId(r(t.test_id));
@@ -420,6 +427,12 @@ async function screenOnce(page, c, scope) {
     if (!n) return { ok: false, observed: 'not found' };
     const e = await first().isEnabled();
     return { ok: c.op === 'enabled' ? e : !e, observed: e ? 'enabled' : 'disabled' };
+  }
+  // "every matching cell reads X": all_equals compares the text of every match, not just the first
+  if (c.op === 'text' && c.all_equals !== undefined) {
+    const all = (await locator(page, c.target, scope).allInnerTexts()).map(x => x.trim().replace(/\s+/g, ' '));
+    if (!all.length) return { ok: false, observed: 'not found' };
+    return { ok: compare(c, all, scope), observed: JSON.stringify(all).slice(0, 300) };
   }
   const el = first();
   if (!(await el.count())) return { ok: false, observed: 'not found' };
@@ -713,6 +726,31 @@ function observedMatches(tester, replay) {
   return String(replay).length >= 300 || /^[ (;,]/.test(t.slice(r.length));
 }
 
+// For a sweep before any replay round: run a recording's login steps once in a fresh context and
+// keep the browser state (cookies and localStorage) as replay-state/<session>.json (replacing the
+// state saved for that session).
+async function saveLoginState(browser, rc, tcId, env = process.env) {
+  const rec = readRecording(rc, tcId);
+  if (!rec) throw new Refused(`--login-from: no recording for ${tcId}`);
+  if (rec.tc !== tcId) throw new Refused(`--login-from: the recording for ${tcId} names another TC`);
+  // not yet accepted is fine (the first round sweeps before any verify), but it must match the TC text
+  checkRecording(rc, rec, { requireCurrent: true });
+  if (typeof rec.session !== 'string' || !Array.isArray(rec.login) || !rec.login.length) throw new Refused(`--login-from: ${tcId} has no session and login steps`);
+  const scope = { data: ((rc.run.tcs || {})[rec.tc] || {}).data || {}, cap: Object.create(null), responses: Object.create(null), env, allowedEnv: allowedEnv(rc.run), secrets: [] };
+  const { ctx } = await sw.openContext(browser, rc, {});
+  try {
+    scope.ctx = ctx;
+    scope.session = rec.session;
+    const page = await ctx.newPage();
+    for (const [i, a] of rec.login.entries()) {
+      if (!['goto', 'click', 'fill', 'press', 'select', 'check_box', 'wait'].includes(a.op)) throw new Refused(`--login-from: login step ${i} (${a.op}) is not a screen action`);
+      await doAction(page, rc, a, scope, `login${i}`);
+    }
+    await sw.saveState(ctx, rc, rec.session);
+    return rec.session;
+  } finally { await ctx.close().catch(() => {}); }
+}
+
 function pendingFile(rc, runId) {
   return path.join(sw.privateDir(path.join(rc.dir, 'replay-pending')), `${runId}.json`);
 }
@@ -892,4 +930,4 @@ async function main(argv) {
 
 if (require.main === module) main(process.argv).then(c => { process.exitCode = c; });
 
-module.exports = { checkRecording, contentDigest, readAccepted, run, finish, urls, resolve, checkTemplate, ACTION_OPS };
+module.exports = { checkRecording, contentDigest, readAccepted, run, finish, urls, resolve, checkTemplate, saveLoginState, ACTION_OPS };

@@ -4,7 +4,7 @@
 // Dead-control sweep (e2e-tester §0-B, in code) and the browser helpers that
 // tc-replay.js shares.
 //
-//   node tc-sweep.js --run <…/.cc-audits/<slug>/tc-run.json> --run-id <id> --urls </a,/b> [--session <name>]
+//   node tc-sweep.js --run <…/.cc-audits/<slug>/tc-run.json> --run-id <id> --urls </a,/b> [--session <name> | --login-from <TC id>]
 //
 // For every URL: collect the visible, enabled clickable elements, then open the
 // URL fresh for each one, click it and look for one effect — navigation, popup,
@@ -20,7 +20,8 @@
 // so a sweep never changes data (starting the request still counts as an effect).
 // Destructive-looking controls are not clicked (`skipped`). Only base_url's origin
 // is opened. Login: the replay state `.cc-audits/<slug>/replay-state/<session>.json`
-// if present, else the tc-api-run.js cookie jar of that session.
+// if present, else the tc-api-run.js cookie jar of that session; --login-from <TC id> first
+// runs that TC's recorded login steps and saves the state (works for localStorage tokens too).
 // Output: `.cc-audits/<slug>/sweep/<run_id>/<url>.json` (one file per URL, 0600) and one JSON line.
 // Exit 0 = done, 1 = error, 2 = refused / usage.
 
@@ -509,7 +510,8 @@ function mergeSweep(rc, runId, results) {
   return readSweep(rc, runId);
 }
 
-async function sweep({ runFile, runId, urls, session, env = process.env }) {
+async function sweep({ runFile, runId, urls, session, loginFrom, env = process.env }) {
+  if (loginFrom !== undefined && session !== undefined) throw new Refused('give either --session or --login-from, not both');
   const rc = runContext(runFile);
   sweepDir(rc, runId);
   if (!Array.isArray(urls) || !urls.length) throw new Refused('--urls needs at least one path');
@@ -518,6 +520,8 @@ async function sweep({ runFile, runId, urls, session, env = process.env }) {
   if (!loaded) throw new Refused('no Playwright module found — install @playwright/mcp (cc-baseline doctor) or set CC_BASELINE_PLAYWRIGHT');
   const browser = await loaded.pw.chromium.launch({ headless: true });
   try {
+    // signed-in screens before any replay: run the recording's login once (cookies or localStorage)
+    if (loginFrom !== undefined) session = await require('./tc-replay').saveLoginState(browser, rc, loginFrom, env);
     const { ctx, blocked } = await openContext(browser, rc, { session, blockMutations: true });
     const results = {};
     for (const u of urls) results[u] = await sweepUrl(ctx, rc, u);
@@ -530,14 +534,14 @@ async function sweep({ runFile, runId, urls, session, env = process.env }) {
   }
 }
 
-const USAGE = 'usage: tc-sweep.js --run <…/.cc-audits/<slug>/tc-run.json> --run-id <id> --urls </a,/b> [--session <name>]';
+const USAGE = 'usage: tc-sweep.js --run <…/.cc-audits/<slug>/tc-run.json> --run-id <id> --urls </a,/b> [--session <name> | --login-from <TC id>]';
 
 async function main(argv) {
   let opts;
-  try { ({ opts } = parseArgs(argv.slice(2), { values: ['--run', '--run-id', '--urls', '--session'] })); } catch (e) { console.error(`tc-sweep: ${e.message}\n${USAGE}`); return 2; }
+  try { ({ opts } = parseArgs(argv.slice(2), { values: ['--run', '--run-id', '--urls', '--session', '--login-from'] })); } catch (e) { console.error(`tc-sweep: ${e.message}\n${USAGE}`); return 2; }
   if (!opts['--run'] || !opts['--run-id'] || !opts['--urls']) { console.error(USAGE); return 2; }
   try {
-    const out = await sweep({ runFile: opts['--run'], runId: opts['--run-id'], urls: opts['--urls'].split(',').map(s => s.trim()).filter(Boolean), session: opts['--session'] });
+    const out = await sweep({ runFile: opts['--run'], runId: opts['--run-id'], urls: opts['--urls'].split(',').map(s => s.trim()).filter(Boolean), session: opts['--session'], loginFrom: opts['--login-from'] });
     console.log(JSON.stringify(out));
     return 0;
   } catch (e) {

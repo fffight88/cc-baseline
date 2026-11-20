@@ -3228,6 +3228,18 @@ function replayServer() {
       return res.end(page(`<p id="n" hidden>Notice</p><button type="button" onclick="sessionStorage.setItem('seen','1');document.getElementById('n').hidden=true">Dismiss</button>
         <script>if (!sessionStorage.getItem('seen')) document.getElementById('n').hidden = false;</script>`));
     }
+    if (req.url === '/wrap') {   // a label that wraps its select, written without a space (JSX-style)
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(page(`<h1 id="h">Start</h1><label>Status<select onchange="document.getElementById('h').textContent = this.value === 'Failure' ? 'Done' : 'Start'"><option value="">All</option><option>Failure</option></select></label>`));
+    }
+    if (req.url === '/login') {   // signs in by writing a token to localStorage (no cookie)
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(page(`<button type="button" onclick="localStorage.setItem('tok','t1');location.href='/private'">Sign in</button>`));
+    }
+    if (req.url === '/private') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(page(`<div id="app"></div><script>if (!localStorage.getItem('tok')) location.replace('/login'); else document.getElementById('app').innerHTML = '<button type="button">Dead</button>';</script>`));
+    }
     if (req.url === '/picker') {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       return res.end(page(`<input type="file" id="f" style="display:none"><button type="button" onclick="document.getElementById('f').click()">Attach</button>
@@ -3511,6 +3523,43 @@ t('tc-replay: run-file commands in setup / teardown, new_tab and parallel reques
     bad.steps[0].actions[0].requests[1].session = 'a';
     p.write(bad);
     assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.par'])).status, 2);
+  } finally { await srv.close(); p.done(); }
+});
+
+t('tc-replay label target finds a select its label wraps; tc-sweep --login-from signs in with the recording (localStorage) (TC label-wraps-select, sweep-login-from*)', async () => {
+  if (!HAS_BROWSER) { console.log('     (skipped: no Playwright module)'); return; }
+  const srv = await replayServer();
+  const p = replayProject(srv.url);
+  try {
+    // TC label-wraps-select
+    p.write(p.rec({ start_path: '/wrap', steps: [{ step: 0, actions: [{ op: 'select', target: { label: 'Status' }, value: 'Failure' }], done_when: { op: 'visible', target: { selector: '#h' } } }] }), { accept: true });
+    let r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'L1', '--tcs', 'TC.f.go', '--no-sweep']);
+    assert.equal(r.json.tcs[0].outcome, 'recorded', JSON.stringify(r.json));
+    assert.equal(p.lines().pop().expected[0].verdict, 'PASS');
+    // a text check with all_equals reads every match (found on the real project: it compared only the first)
+    p.write(p.rec({ start_path: '/picker', steps: [{ step: 0, actions: [], done_when: { op: 'visible', target: { selector: 'button' } } }],
+      expected: [{ index: 0, check: { op: 'text', target: { selector: 'button[aria-pressed]' }, all_equals: 'Mode A' } }] }), { accept: true });
+    await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'L2', '--tcs', 'TC.f.go', '--no-sweep']);
+    let line = p.lines().pop();
+    assert.equal(line.expected[0].verdict, 'FAIL', 'Mode B differs');
+    assert.match(line.expected[0].observed, /Mode A.*Mode B/);
+    p.write(p.rec({ start_path: '/picker', steps: [{ step: 0, actions: [], done_when: { op: 'visible', target: { selector: 'button' } } }],
+      expected: [{ index: 0, check: { op: 'text', target: { selector: 'button[aria-pressed="true"]' }, all_equals: 'Mode A' } }] }), { accept: true });
+    await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'L3', '--tcs', 'TC.f.go', '--no-sweep']);
+    assert.equal(p.lines().pop().expected[0].verdict, 'PASS');
+    // TC sweep-login-from
+    p.write(p.rec({ session: 'u', login: [{ op: 'goto', path: '/login' }, { op: 'click', target: { role: 'button', name: 'Sign in' } }, { op: 'wait', until: { op: 'url_path', equals: '/private' } }] }));
+    r = await cliAsync(TC_SWEEP, ['--run', p.runFile, '--run-id', 'W1', '--urls', '/private', '--login-from', 'TC.f.go']);
+    assert.equal(r.status, 0, r.stderr);
+    const u = sweepMod.readSweep(sweepMod.runContext(p.runFile), 'W1').urls['/private'];
+    assert.deepEqual(u.fail.map(f => f.control), ['Dead'], JSON.stringify(u));
+    // without it the page sends the sweep to /login, so the private button is never seen
+    r = await cliAsync(TC_SWEEP, ['--run', p.runFile, '--run-id', 'W2', '--urls', '/private']);
+    assert.ok(!sweepMod.readSweep(sweepMod.runContext(p.runFile), 'W2').urls['/private'].fail.some(f => f.control === 'Dead'));
+    assert.equal((await cliAsync(TC_SWEEP, ['--run', p.runFile, '--run-id', 'W3', '--urls', '/private', '--login-from', 'TC.f.go', '--session', 'u'])).status, 2, 'not both');
+    // TC sweep-login-from-refused
+    p.write(p.rec());
+    assert.equal((await cliAsync(TC_SWEEP, ['--run', p.runFile, '--run-id', 'W4', '--urls', '/private', '--login-from', 'TC.f.go'])).status, 2);
   } finally { await srv.close(); p.done(); }
 });
 

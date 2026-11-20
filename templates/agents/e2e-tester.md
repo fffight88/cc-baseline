@@ -156,7 +156,7 @@ node ~/.claude/scripts/tc-sweep.js --run <run_file> --run-id <run_id> --urls </p
 ```
 
 It clicks every visible control on a fresh copy of the page (cookies and localStorage put back as the first open left them, a modal that opens on load dismissed first), ignores what changes on its own (animations, polling), aborts every request that is not GET / HEAD (so it never changes data), skips destructive controls, clicks controls that appear later (toasts, dialogs), and writes `.cc-audits/<slug>/sweep/<run_id>/`. Its line lists the failing paths; report them in `SWEEP` and set `sweep: "fail"` on the TC record (TC Judging 6).
-- Signed-in screens: pass `--session <name>` — it uses `replay-state/<name>.json` or the `tc-api-run.js` login of that session. With neither (no `api.login_path` in the run), sweep those screens by hand as below and say so under `NOTES`.
+- Signed-in screens: after writing the TC's recording, pass `--login-from <TC id>` — the sweep runs that recording's login steps once and reuses the browser state (cookies and localStorage, so token-in-localStorage apps work too). It replaces the state saved for that recording's session, and refuses a recording whose TC text changed. `--session <name>` reuses `replay-state/<name>.json` or the `tc-api-run.js` login of that session. Sweep by hand only when neither works, and say so under `NOTES`.
 - No script (no `run_file`, or it says there is no Playwright module): sweep by hand as below.
 
 **Manual sweep (only when the script cannot be used).** Enumerate (Aside: `send` the snippet's body with `page`; Playwright: `browser_run_code`), then click each and assert an observable effect:
@@ -259,7 +259,7 @@ File: `<project_dir>/.cc-audits/<plan-slug>/replay/<tc id>.json`, then `node ~/.
   - `parallel` with `requests`: 2–4 `request` actions, each with its own `session` and an optional `delay_ms` (0–10000) — for "send B while A is still running".
   - `command` with `name` — runs the run file's `data.<name>_command` for this TC (e.g. `{ "op": "command", "name": "before_command" }`). Write only the name, never the command. The run file and the project's scripts are read-only for you; only scripts committed to git run.
 - **`setup` / `teardown`** (top level, up to 5 `command` actions each): what you ran before step 0 / after the TC from `run.data.*_command`. `teardown` runs even when the TC fails.
-- **`target`:** exactly one of `role` (+ `name`, exact by default), `label`, `text`, `placeholder`, `test_id`, `selector` (CSS, last resort); optional `nth`. Prefer role + name — it survives layout changes.
+- **`target`:** exactly one of `role` (+ `name`, exact by default), `label`, `text`, `placeholder`, `test_id`, `selector` (CSS, last resort); optional `nth`. Prefer role + name — it survives layout changes. For form controls use their role (`combobox` for a select, `textbox`, `checkbox`) + name: a `<label>` that wraps its control also contains the control's text.
 - **Values:**
   - `{{data.<name>}}` = run data, `{{<captured name>}}`, `{{a - b}}` (integers only).
   - A secret is the whole string `"$ENV_NAME"`, and only for names in `secret_env`. Never write a secret value, a cookie or a token.
