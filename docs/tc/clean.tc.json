@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "feature": "clean",
+  "title": "/clean project server step",
+  "plan": "tc-authoring-clean",
+  "sources": [
+    {
+      "id": "REQ.clean-missed",
+      "kind": "requirement",
+      "locator": "cc-baseline .cc-audits/HANDOFF-next.md: /clean missed the grimbang next-server (2026-11-19)"
+    },
+    {
+      "id": "SRC.clean-md",
+      "kind": "source",
+      "locator": "templates/commands/clean.md project server step (commit d6ae49e)"
+    }
+  ],
+  "actions": [
+    {
+      "id": "ACT.clean.project-servers",
+      "title": "Stop the project's dev servers",
+      "actor": "orchestrator",
+      "trigger": "runs the /clean project server step from inside a git project",
+      "preconditions": [
+        "servers listening on TCP"
+      ],
+      "outputs": [
+        "Stopping project server lines",
+        "stopped processes"
+      ],
+      "evidence_refs": [
+        "SRC.clean-md",
+        "REQ.clean-missed"
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "id": "TC.clean.paren-title-server-stopped",
+      "title": "A project server whose process name has parentheses is stopped",
+      "action_refs": [
+        "ACT.clean.project-servers"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a test git project",
+        "a server started in it whose process title is 'srv (v1'"
+      ],
+      "steps": [
+        {
+          "goal": "Run the /clean project server step from the project",
+          "done_when": {
+            "expect": "The step prints that cleanup is complete"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "Nothing listens on that server's port any more",
+          "observe": {
+            "channel": "env",
+            "key": "listening TCP ports"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.clean-missed"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.clean.outside-server-kept",
+      "title": "A server started outside the project keeps running",
+      "action_refs": [
+        "ACT.clean.project-servers"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a test git project",
+        "a server started in another directory whose process title is 'srv (v1'"
+      ],
+      "steps": [
+        {
+          "goal": "Run the /clean project server step from the project",
+          "done_when": {
+            "expect": "The step prints that cleanup is complete"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The outside server still listens on its port",
+          "observe": {
+            "channel": "env",
+            "key": "listening TCP ports"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.clean-missed"
+        ]
+      },
+      "readiness": "ready"
+    }
+  ],
+  "open_questions": []
+}

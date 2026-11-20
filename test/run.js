@@ -696,6 +696,38 @@ t('browser layer: agents and commands are Aside-first with a Playwright fallback
   assert.match(openBrowser, /\^https\?:\/\/\[A-Za-z0-9\._~:\/\?#@!\*\+,;=%&-\]\+\$/, 'URL allowlist excludes $ and backticks');
 });
 
+t('/clean project server step: a project server whose name has parentheses is stopped, one outside the project is kept (TC clean.*)', async () => {
+  const { spawnSync } = require('child_process');
+  if (process.platform !== 'linux' || spawnSync('ss', ['-V']).status !== 0) { console.log('     (skipped: needs Linux with ss)'); return; }
+  const step = fs.readFileSync(path.join(ROOT, 'templates', 'commands', 'clean.md'), 'utf8').split('\n').find(l => l.startsWith('PROJ=$(git rev-parse') && l.includes('Stopping project server'));
+  assert.ok(step, 'project server step found');
+  const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'clean-'));
+  const proj = path.join(tmp, 'proj');
+  const outside = path.join(tmp, 'outside');
+  fs.mkdirSync(proj); fs.mkdirSync(outside);
+  spawnSync('git', ['init', '-q'], { cwd: proj });
+  const serve = (cwd) => new Promise((resolve, reject) => {
+    const c = require('child_process').spawn(process.execPath, ['-e', "process.title='srv (v1'; const s=require('http').createServer(); s.listen(0,'127.0.0.1',()=>console.log(s.address().port))"], { cwd, stdio: ['ignore', 'pipe', 'ignore'], detached: true });
+    c.stdout.once('data', d => resolve({ child: c, port: Number(String(d).trim()) }));
+    c.once('error', reject);
+  });
+  const listening = port => spawnSync('ss', ['-ltnH', `sport = :${port}`], { encoding: 'utf8' }).stdout.trim() !== '';
+  const a = await serve(proj);
+  const b = await serve(outside);
+  try {
+    assert.ok(listening(a.port) && listening(b.port));
+    const r = spawnSync('sh', ['-c', step], { cwd: proj, encoding: 'utf8', timeout: 30000 });
+    assert.match(r.stdout, /Project server cleanup complete/);
+    assert.match(step, /case "\$ANC" in \*" \$pid "\*\) continue/, 'ancestors of the running shell are never stopped');
+    await new Promise(res => setTimeout(res, 500));
+    assert.equal(listening(a.port), false, 'the project server is stopped');
+    assert.equal(listening(b.port), true, 'the server outside the project keeps running');
+  } finally {
+    for (const c of [a.child, b.child]) { try { process.kill(c.pid); } catch { /* gone */ } }
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 t('harnessIdOf: recognizes the user-scoped SessionEnd command without _ccBaselineId', () => {
   const hook = { command: templateHook(harnessTemplate, 'session-end-orphan-cleanup').command };
   assert.equal(harnessIdOf(hook, 'SessionEnd'), 'session-end-orphan-cleanup');
@@ -1364,6 +1396,34 @@ function lintRules(doc) {
 
 t('tc-lint: a well-formed TC file has no warnings', () => {
   assert.deepEqual(lintRules(tcDoc()), []);
+});
+
+t('tc-lint: a last step that reopens the screen and a done_when waiting for a button again are warned (TC tc-lint.*)', () => {
+  // TC last-step-reload-warns
+  const d1 = tcDoc();
+  d1.test_cases[0].steps.push({ goal: 'Reload the page', done_when: { expect: 'The page has loaded' } });
+  assert.ok(lintRules(d1).includes('judged_after_last'));
+  // TC last-step-plain-quiet
+  assert.ok(!lintRules(tcDoc()).includes('judged_after_last'));
+  const one = tcDoc();
+  one.test_cases[0].steps.push({ goal: 'Reload the page', done_when: { expect: 'The page has loaded' } });
+  one.test_cases[0].expected = [one.test_cases[0].expected[0]];
+  assert.ok(!lintRules(one).includes('judged_after_last'), 'one expected result after a reload is what the TC means');
+  const btn = tcDoc();
+  btn.test_cases[0].steps.push({ goal: "Click the 'Refresh' button", done_when: { expect: 'The list shows the newest order first' } });
+  assert.ok(!lintRules(btn).includes('judged_after_last'), 'clicking a button named Refresh is not a page reload');
+  // TC done-when-reenabled-warns
+  const d2 = tcDoc();
+  d2.test_cases[0].steps[1].done_when.expect = "The 'Send' button can be clicked again";
+  assert.ok(lintRules(d2).includes('done_when'));
+  const ko = tcDoc();
+  ko.test_cases[0].steps[1].done_when.expect = '보내기 버튼을 다시 누를 수 있다';
+  assert.ok(lintRules(ko).includes('done_when'));
+  // an error flow keeps its input, so the button is enabled again there
+  const err = tcDoc();
+  err.test_cases[0].steps[1].done_when.expect = "The 'Send' button can be clicked again";
+  err.test_cases[0].expected = [{ text: 'An error message says the email is invalid', observe: { channel: 'dom', key: '[role=alert]' } }];
+  assert.ok(!lintRules(err).includes('done_when'));
 });
 
 t('tc-lint: open_questions — format, known TCs, unanswered question keeps its TCs needs-decision', () => {

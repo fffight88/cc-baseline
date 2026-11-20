@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "feature": "tc-lint",
+  "title": "TC authoring lint",
+  "plan": "tc-authoring-clean",
+  "sources": [
+    {
+      "id": "REQ.tc-authoring",
+      "kind": "requirement",
+      "locator": "cc-baseline .cc-audits/HANDOFF-next.md grimbang C 결과, 다음 할 일 2–3 (2026-11-20)"
+    },
+    {
+      "id": "SRC.tc-lint",
+      "kind": "source",
+      "locator": "templates/scripts/tc-lint.js steps / expected loop (commit d6ae49e)"
+    }
+  ],
+  "actions": [
+    {
+      "id": "ACT.tc-lint.check",
+      "title": "Check a TC file",
+      "actor": "orchestrator",
+      "trigger": "runs tc-lint.js on a TC file or a draft from stdin",
+      "preconditions": [
+        "a TC file or draft"
+      ],
+      "outputs": [
+        "warnings by rule",
+        "exit code 0"
+      ],
+      "evidence_refs": [
+        "SRC.tc-lint",
+        "REQ.tc-authoring"
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "id": "TC.tc-lint.last-step-reload-warns",
+      "title": "A last step that reloads the page with several expected results is warned",
+      "action_refs": [
+        "ACT.tc-lint.check"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a TC whose last step reloads the page",
+        "two expected results"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-lint.js on that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The output has a judged_after_last warning for that TC",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout warnings"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.tc-authoring"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-lint.last-step-plain-quiet",
+      "title": "A last step that does not reopen the page gives no judged_after_last warning",
+      "action_refs": [
+        "ACT.tc-lint.check"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a TC whose last step types a prompt and submits it",
+        "two expected results"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-lint.js on that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The output has no judged_after_last warning",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout warnings"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.tc-authoring"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-lint.done-when-reenabled-warns",
+      "title": "A done_when that waits for a button to be clickable again is warned",
+      "action_refs": [
+        "ACT.tc-lint.check"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a step whose done_when says the Generate button can be clicked again"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-lint.js on that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The output has a done_when warning for that step",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout warnings"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.tc-authoring"
+        ]
+      },
+      "readiness": "ready"
+    }
+  ],
+  "open_questions": []
+}

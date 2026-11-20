@@ -98,7 +98,7 @@ JSON (Node reads it with no dependency). The plan body shows a TC summary table 
 | `level` | `functional` · `contract` · `integration` |
 | `surface` | `ui-web` (e2e-tester runs it) · `api` · `cli` |
 | `steps[].goal` | one user intent per step |
-| `steps[].done_when.expect` | one sentence: what the screen looks like when the step is done. Required. It must be checkable **whether or not the feature works** — "the URL gets `status=shipped`", "a request for the list is sent", not "the table is redrawn" (an unchanged table cannot show it). For `surface: api` / `cli`, the sentence says the response or exit came back ("a response status comes back") — the facts to check go in `expected` |
+| `steps[].done_when.expect` | one sentence: what the screen looks like when the step is done. Required. It must be checkable **whether or not the feature works** — "the URL gets `status=shipped`", "a request for the list is sent", not "the table is redrawn" (an unchanged table cannot show it). For `surface: api` / `cli`, the sentence says the response or exit came back ("a response status comes back") — the facts to check go in `expected`. Avoid "the button can be clicked again" in a success flow — after a success the input is often empty and the button stays disabled; name what appears instead (a result or an error message) |
 | `steps[].input_refs` | names of inputs; the values come from the run add-on file (`tc-run.json`), never from the TC |
 | `expected[].text` | one fact, non-empty |
 | `expected[].observe.channel` | `dom` · `ax-node` · `api` · `db` · `log` · `artifact` · `env` · `unknown` |
@@ -126,6 +126,7 @@ JSON (Node reads it with no dependency). The plan body shows a TC summary table 
 - When the channel truly cannot be named yet, use `channel: unknown` and keep the sentence — never delete or soften it.
 
 ### Cases
+- **Expected results are judged on the screen after the last step.** When you add or change a step (also in a `tc-change`), re-check every expected result against that final screen; a result that only shows at another moment (right after submitting, before a reload) belongs in its own TC. `tc-lint` warns (`judged_after_last`) when the last step reloads, opens a new tab, navigates or signs out and the TC has several expected results.
 - Happy path, rejection, error, boundary, cancel, retry → separate TCs, and only where the contract actually has that behavior.
 - Login or existing data needed → say so in `preconditions` and name a `fixture`.
 - Never invent numbers or expected values to make a TC `ready`; missing facts → `needs-decision` + an `open_questions` entry.

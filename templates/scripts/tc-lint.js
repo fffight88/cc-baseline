@@ -54,6 +54,12 @@ const RE = {
   negated: /없다|없음|않는다|않음|안 보인다|\bno\b|\bnot\b|never|without/i,
   // "the table is redrawn" also holds when nothing changed — a broken feature passes the step.
   redrawOnly: /다시 그려|다시 표시|갱신된다|새로\s?고쳐|\bredrawn\b|\bre-?render|\brefresh(?:es|ed)\b|\bis updated\b/i,
+  // "the button can be clicked again": after a success the input may be empty and the
+  // button stays disabled, so the step never looks done.
+  reenabled: /\b(?:button|it)\b[^.]*\b(?:clicked|pressed) again\b|\b(?:enabled|clickable) again\b|\bre-?enabled\b|버튼[^.]*다시 (?:누를|클릭할) 수|버튼[^.]*다시 활성/i,
+  // a last step that reopens the screen: everything shown before it is gone when judged
+  // (a goal that only clicks a button named "Refresh" is not a reload)
+  reopens: /^(?!.*\b(?:click|press|tap)\b[^.]*['"‘“]\s*(?:refresh|reload)).*(?:\breload(?:s|ed)?\b|\brefresh(?:es)? the (?:page|screen)\b|\bnew tab\b|\bnavigate|\bgo back\b|\bsign(?:s|ed)? out\b|\blog(?:s|ged)? out\b|새로\s?고침|새 탭|뒤로 가|로그아웃)/i,
   standard: [
     ['Q.error_visible', /오류|에러|실패|\berror\b|\bfailed\b/i],
     ['Q.loading', /로딩|불러오는|loading/i],
@@ -147,6 +153,8 @@ function lint(doc) {
 
     const steps = arr(tc.steps);
     if (steps.length === 0) warn('format', id, 'steps must not be empty');
+    // an error flow keeps its input, so "the button is enabled again" does hold there
+    const errorFlow = arr(tc.expected).some(x => x && isStr(x.text) && RE.failure.test(x.text) && !RE.negated.test(x.text));
     const stepText = [];
     for (const [s, step] of steps.entries()) {
       const where = `${id} steps[${s}]`;
@@ -161,6 +169,8 @@ function lint(doc) {
       if (!isStr(step.done_when && step.done_when.expect)) warn('done_when', where, 'add done_when.expect — one sentence for what the screen looks like when the step is done');
       else if (RE.redrawOnly.test(step.done_when.expect)) {
         warn('done_when', where, '"redrawn / updated" also looks done when nothing happened — name what changes (the URL, a request sent, a new value)');
+      } else if (!errorFlow && RE.reenabled.test(step.done_when.expect)) {
+        warn('done_when', where, 'after a success the input may be empty and the button stays disabled — name what holds on success and on failure (a result or an error message appears)');
       }
       if (step.input_refs !== undefined && !(Array.isArray(step.input_refs) && step.input_refs.every(isStr))) {
         warn('format', where, 'input_refs must be a list of input names (values live in tc-run.json)');
@@ -177,6 +187,10 @@ function lint(doc) {
 
     const expected = arr(tc.expected);
     if (expected.length === 0) warn('format', id, 'expected must not be empty');
+    const last = steps.length ? steps[steps.length - 1] : null;
+    if (expected.length >= 2 && last && isStr(last.goal) && RE.reopens.test(last.goal)) {
+      warn('judged_after_last', id, 'expected results are judged after the last step, which reopens the screen — check each one is still visible then, or split the TC');
+    }
     let failureLines = 0;
     let successLines = 0;
     for (const [e, exp] of expected.entries()) {
