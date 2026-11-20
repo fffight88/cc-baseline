@@ -254,7 +254,11 @@ File: `<project_dir>/.cc-audits/<plan-slug>/replay/<tc id>.json`, then `node ~/.
 ```
 
 - **One entry per TC step** (`step` = index) and **one per expected result** (`index`), in the TC's order.
-- **Actions (only these):** `goto` (path only), `click`, `fill`, `select`, `check_box`, `press` (`key`), `wait` (`ms` ≤ 10000 or `until` a screen check), `capture`, `request` (api TCs: `method`, `path`, `session`, `body`, `save_as`, `capture`).
+- **Actions (only these):** `goto` (path only), `click`, `fill`, `select`, `check_box`, `press` (`key`), `wait` (`ms` ≤ 10000 or `until` a screen check), `capture`, `request` (api TCs: `method`, `path`, `session`, `body`, `save_as`, `capture`), and:
+  - `new_tab` (`path` optional) — a new tab in the same browser: cookies and localStorage carry over, sessionStorage starts empty; later actions and checks use it.
+  - `parallel` with `requests`: 2–4 `request` actions, each with its own `session` and an optional `delay_ms` (0–10000) — for "send B while A is still running".
+  - `command` with `name` — runs the run file's `data.<name>_command` for this TC (e.g. `{ "op": "command", "name": "before_command" }`). Write only the name, never the command. The run file and the project's scripts are read-only for you; only scripts committed to git run.
+- **`setup` / `teardown`** (top level, up to 5 `command` actions each): what you ran before step 0 / after the TC from `run.data.*_command`. `teardown` runs even when the TC fails.
 - **`target`:** exactly one of `role` (+ `name`, exact by default), `label`, `text`, `placeholder`, `test_id`, `selector` (CSS, last resort); optional `nth`. Prefer role + name — it survives layout changes.
 - **Values:**
   - `{{data.<name>}}` = run data, `{{<captured name>}}`, `{{a - b}}` (integers only).

@@ -27,7 +27,6 @@
 // Exit 0 = no fail, 1 = a check failed, 2 = refused / usage, 3 = unexpected error.
 
 const fs = require('fs');
-const path = require('path');
 const { parseArgs } = require('./jev-client');
 const api = require('./tc-api-run');
 const sw = require('./tc-sweep');
@@ -36,7 +35,6 @@ const { Refused } = api;
 const LOOPBACK = ['127.0.0.1', 'localhost', '[::1]', '::1'];
 const TIMEOUT_MS = 10000;
 const MAX_REDIRECTS = 5;
-const ARG_RE = /^[A-Za-z0-9._=:,@/+-]+$/;
 const ENV_NAME_RE = /^[A-Z_][A-Z0-9_]*$/;
 
 async function get(url) {
@@ -90,17 +88,10 @@ function cspBlocked(header, origins, base) {
 function resetCheck(run, root) {
   const cmd = run.reset_command;
   if (cmd === undefined) return { status: 'warn', detail: 'no reset_command — replay rounds are not used (manager guide §2-C)' };
-  if (typeof cmd !== 'string') return { status: 'fail', detail: 'reset_command must be a string' };
-  const parts = cmd.trim().split(/\s+/);
-  if (parts[0] !== 'node' || parts.length < 2) return { status: 'fail', detail: 'reset_command must be `node <project script> <plain args>`' };
-  const bad = parts.slice(1).find(a => !ARG_RE.test(a));
-  if (bad !== undefined) return { status: 'fail', detail: `reset_command has shell syntax or quoting: ${JSON.stringify(cut(bad, 40))}` };
-  const script = parts[1];
-  if (path.isAbsolute(script) || script.split('/').includes('..')) return { status: 'fail', detail: 'reset_command script must be a path inside the project' };
-  const full = path.join(root, script);
-  let real;
-  try { real = fs.realpathSync(full); } catch { return { status: 'fail', detail: `reset_command script ${script} does not exist` }; }
-  if (real !== root && !real.startsWith(root + path.sep)) return { status: 'fail', detail: 'reset_command script resolves outside the project' };
+  try { api.checkCommand(cmd, root); } catch (e) {
+    if (e instanceof Refused) return { status: 'fail', detail: `reset_command: ${e.message}` };
+    throw e;
+  }
   return { status: 'ok', detail: cmd.trim() };
 }
 

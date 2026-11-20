@@ -70,7 +70,7 @@ export async function GET(request: Request) {
 `reset_command` puts the data back to the TCs' starting state before every round and every verify replay.
 - First compare the configured backend host with the test project's; on any difference print a refusal and exit 2 **before** any request.
 - Touch only the test account: delete its rows and files, restore its starting values (credits, plan). Running it twice gives the same state.
-- Form: `node scripts/<name>.mjs <plain args>` (no shell syntax, a script inside the project). Record it as `reset_command`.
+- Form: `node scripts/<name>.mjs <plain args>` (no shell syntax, a script committed to git inside the project, not under `.cc-audits/`). Record it as `reset_command`. The same form and rule hold for every `data.<name>_command` (e.g. switching a fake server's mode), which recordings run by name.
 
 ---
 
@@ -106,7 +106,7 @@ The No Mock policy (`reference_e2e_manager_guide.md` §4) still holds. One excep
 node ~/.claude/scripts/test-env-check.js --run .cc-audits/<plan-slug>/tc-run.json
 ```
 
-It requests only `base_url` and the `external_stubs` URLs (GET), writes nothing, and checks: `base_url` answers; redirects stay on one host; the CSP allows `browser_origins`; `browser_origins` is well-formed; `reset_command` has the allowed form and its script exists; `test_login_path` does not answer 404; every fake server is on loopback and answers. Exit 1 = a `fail` — fix it before running testers. Notes: requesting `test_login_path` signs in the test account, so it is requested once and only on a loopback `base_url`. The CSP is read from `/` only — a page with its own CSP is not checked. Exit 3 = the check itself broke.
+It requests only `base_url` and the `external_stubs` URLs (GET), writes nothing, and checks: `base_url` answers; redirects stay on one host; the CSP allows `browser_origins`; `browser_origins` is well-formed; `reset_command` has the allowed form and its script is committed; `test_login_path` does not answer 404; every fake server is on loopback and answers. Exit 1 = a `fail` — fix it before running testers. Notes: requesting `test_login_path` signs in the test account, so it is requested once and only on a loopback `base_url`. The CSP is read from `/` only — a page with its own CSP is not checked. Exit 3 = the check itself broke.
 
 ---
 

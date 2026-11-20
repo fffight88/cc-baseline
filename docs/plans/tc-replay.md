@@ -508,3 +508,25 @@ cc-baseline 자체의 TC(`surface: cli`)다. 승인 직후 `docs/tc/tc-replay.tc
   - QA-004: 렌더링 대기에서 같은 부모에 이어 붙는 자식도 새 노드로 센다.
   - QA-005: 저장한 localStorage는 `base_url` 출처일 때만 복원한다.
   - QA-006: 닫은 방법(`by`)과 폴링 요청 소음을 테스트에 추가했다. `hint`는 테스트가 없다.
+
+## 재생 기록 확장: 새 탭, 동시 요청, 전후 명령 (2026-11-20)
+
+- **새 op:**
+  - `new_tab`: 새 sessionStorage로 열고, 쿠키와 localStorage는 공유한다.
+  - `parallel`: 요청 2~4개를 서로 다른 세션으로 보내며, 각각 `delay_ms`를 둘 수 있다.
+  - `command`와 최상위 `setup`/`teardown`: 이 TC의 run 파일 `data.<name>_command`를 이름으로만 가리킨다.
+- **명령 실행:** `node <스크립트> <평범한 인자>`만 셸 없이 실행한다(`execFile`). 스크립트는 git에 커밋된 프로젝트 안 일반 파일이어야 하고, `.cc-audits/`·`node_modules/` 아래는 안 된다(보안 감사 SEC-001, 사용자 결정). `reset_command`에도 같은 규칙(`api.checkCommand`)이 적용된다.
+- **실패 처리:** 실패한 명령은 `fallback`(`command_failed:<where>`)이다. 실패한 teardown은 결과의 `teardown_failed`에 남는다.
+- **grimbang 실측:**
+  - 그동안 매 라운드 테스터가 돌던 TC 3개(`beta-label-ko`, `fail-reason-shown`, `api-429-concurrent`)를 새 op로 기록했고, verify에서 3개 모두 accepted였다.
+  - 이어서 TC 10개 전체를 재생만으로 돌렸다. 테스터 0명, LLM 토큰 0으로 모두 PASS였고, `/`와 `/dashboard` 스윕은 clean, 스윕 포함 362초가 걸렸다.
+  - teardown이 가짜 서버 모드를 `ok`로 되돌린 것도 확인했다.
+- TC 6개를 추가했다(`command-*`, `teardown-after-fail`, `new-tab-fresh-session`, `parallel-requests`).
+
+## Audit History (replay-ops)
+
+- iter-1: 2026-11-20 / critical=0 high=0 medium=1 low=2 / next_action=done (SEC-001은 커밋된 스크립트만 허용하는 것으로 사용자가 결정, SEC-002와 SEC-003 반영)
+
+## Code Review History (replay-ops)
+
+- code-review-iter-1: 2026-11-20 / critical=0 high=0 medium=1 low=4 / next_action=self_fix → QA-001·002·003·005 반영, QA-004(탭 사이 진행 중 요청 수 공유)는 무해해서 그대로 뒀다.

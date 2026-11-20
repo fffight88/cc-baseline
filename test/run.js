@@ -3080,8 +3080,16 @@ function cliAsync(script, args, env = {}) {
 }
 
 // mode: ok | wrong | nobutton | missing404; offsite: the page also fetches another origin
+// commits everything in a fixture project, so its scripts count as committed (run-file commands)
+function gitCommitAll(dir) {
+  const run = args => require('child_process').execFileSync('git', ['-C', dir, ...args], { stdio: 'ignore' });
+  run(['init', '-q']);
+  run(['add', '-A']);
+  run(['-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '-m', 'fixture']);
+}
+
 function replayServer() {
-  const state = { mode: 'ok', posts: 0, offsite: false };
+  const state = { mode: 'ok', posts: 0, offsite: false, busy: false };
   const page = body => `<!doctype html><html><head><title>t</title></head><body><main>${body}</main></body></html>`;
   return httpServer((req, res) => {
     if (req.method !== 'GET' && req.method !== 'HEAD') { state.posts++; res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end('{}'); }
@@ -3090,6 +3098,16 @@ function replayServer() {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       return res.end(page(`<p id="clock">0</p><button type="button">Dead</button><button type="button" onclick="this.textContent='Done'">Live</button>
         <script>let n = 0; setInterval(() => { document.getElementById('clock').textContent = String(++n); fetch('/poll').catch(() => {}); }, 100);</script>`));
+    }
+    if (req.url === '/slow') {   // one at a time: 429 while another request runs
+      if (state.busy) { res.writeHead(429, { 'Content-Type': 'application/json' }); return res.end('{}'); }
+      state.busy = true;
+      return setTimeout(() => { state.busy = false; res.writeHead(200, { 'Content-Type': 'application/json' }); res.end('{"ok":true}'); }, 1500);
+    }
+    if (req.url === '/once') {   // a notice shown once per tab (sessionStorage)
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(page(`<p id="n" hidden>Notice</p><button type="button" onclick="sessionStorage.setItem('seen','1');document.getElementById('n').hidden=true">Dismiss</button>
+        <script>if (!sessionStorage.getItem('seen')) document.getElementById('n').hidden = false;</script>`));
     }
     if (req.url === '/picker') {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -3140,6 +3158,8 @@ function replayProject(baseUrl) {
       expected: [{ text: "The heading reads 'Done'", observe: { channel: 'dom', key: 'h1' } }] },
     { id: 'TC.f.db', title: 'db', surface: 'ui-web', readiness: 'ready', steps: [{ goal: 'press Go', done_when: { expect: 'x' } }],
       expected: [{ text: 'the row is stored', observe: { channel: 'db', key: 'rows' } }] },
+    { id: 'TC.f.par', title: 'parallel', surface: 'api', readiness: 'ready', steps: [{ goal: 'two requests at once', done_when: { expect: 'both answered' } }],
+      expected: [{ text: 'a answers 200', observe: { channel: 'api', key: 'a status' } }, { text: 'b answers 429', observe: { channel: 'api', key: 'b status' } }] },
   ] };
   const tcFile = path.join(proj, 'docs', 'tc', 'f.tc.json');
   fs.writeFileSync(tcFile, JSON.stringify(doc));
@@ -3313,6 +3333,68 @@ t('tc-replay: a failing replay that blocked an off-site request is rejected in v
   } finally { await srv.close(); p.done(); }
 });
 
+t('tc-replay: run-file commands in setup / teardown, new_tab and parallel requests (TC command-*, teardown-after-fail, new-tab-fresh-session, parallel-requests)', async () => {
+  if (!HAS_BROWSER) { console.log('     (skipped: no Playwright module)'); return; }
+  const srv = await replayServer();
+  const p = replayProject(srv.url);
+  try {
+    fs.mkdirSync(path.join(p.proj, 'scripts'), { recursive: true });
+    fs.writeFileSync(path.join(p.proj, 'scripts', 'marker.mjs'), "import { writeFileSync } from 'node:fs'\nwriteFileSync(process.argv[2], 'x')\n");
+    gitCommitAll(p.proj);
+    fs.writeFileSync(path.join(p.proj, 'scripts', 'new.mjs'), '');   // written during the run, never committed
+    const setRun = data => fs.writeFileSync(p.runFile, JSON.stringify({ base_url: srv.url, readable: {}, tcs: { 'TC.f.go': { data } } }));
+    const marker = n => fs.existsSync(path.join(p.proj, n));
+    // TC command-op-runs
+    setRun({ before_command: 'node scripts/marker.mjs before.txt', after_command: 'node scripts/marker.mjs after.txt' });
+    p.write(p.rec({ setup: [{ op: 'command', name: 'before_command' }], teardown: [{ op: 'command', name: 'after_command' }] }), { accept: true });
+    let r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'C1', '--tcs', 'TC.f.go', '--no-sweep']);
+    assert.equal(r.json.tcs[0].outcome, 'recorded', JSON.stringify(r.json));
+    assert.ok(marker('before.txt'), 'setup ran');
+    assert.ok(marker('after.txt'), 'teardown ran after a passing run');
+    // TC teardown-after-fail
+    fs.rmSync(path.join(p.proj, 'after.txt'), { force: true });
+    srv.state.mode = 'wrong';
+    r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'C2', '--tcs', 'TC.f.go', '--no-sweep']);
+    assert.equal(p.lines().pop().expected[0].verdict, 'FAIL');
+    assert.ok(marker('after.txt'), 'teardown ran after a failing check');
+    srv.state.mode = 'ok';
+    // TC command-not-in-run-refused
+    p.write(p.rec({ setup: [{ op: 'command', name: 'other_command' }] }));
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.go'])).status, 2);
+    // TC command-shell-refused
+    setRun({ before_command: 'node scripts/marker.mjs x;touch' });
+    p.write(p.rec({ setup: [{ op: 'command', name: 'before_command' }] }));
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.go'])).status, 2);
+    setRun({ before_command: 'node ../outside.mjs' });
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.go'])).status, 2);
+    setRun({ before_command: 'node scripts/new.mjs' });
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.go'])).status, 2, 'a script not tracked by git is refused');
+    setRun({});
+    // TC new-tab-fresh-session
+    p.write(p.rec({ start_path: '/once', steps: [{ step: 0, actions: [{ op: 'click', target: { role: 'button', name: 'Dismiss' } }, { op: 'new_tab', path: '/once' }], done_when: { op: 'visible', target: { selector: 'button' } } }],
+      expected: [{ index: 0, check: { op: 'visible', target: { selector: '#n' } } }] }), { accept: true });
+    r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'T1', '--tcs', 'TC.f.go', '--no-sweep']);
+    assert.equal(r.json.tcs[0].outcome, 'recorded', JSON.stringify(r.json));
+    assert.equal(p.lines().pop().expected[0].verdict, 'PASS', 'the new tab shows the notice again');
+    // TC parallel-requests
+    const dig = require('crypto').createHash('sha256').update(require(path.join(ROOT, 'templates', 'scripts', 'tc-jev-judge.js')).canonical(JSON.parse(fs.readFileSync(p.tcFile, 'utf8')).test_cases.find(t => t.id === 'TC.f.par'))).digest('hex');
+    p.write({ schema: 1, tc: 'TC.f.par', tc_file: 'docs/tc/f.tc.json', tc_digest: dig, status: 'candidate',
+      steps: [{ step: 0, actions: [{ op: 'parallel', requests: [
+        { op: 'request', method: 'GET', path: '/slow', session: 'a', save_as: 'ra' },
+        { op: 'request', method: 'GET', path: '/slow', session: 'b', save_as: 'rb', delay_ms: 500 }] }] }],
+      expected: [{ index: 0, check: { op: 'api', response: 'ra', status: 200 } }, { index: 1, check: { op: 'api', response: 'rb', status: 429 } }] }, { accept: true });
+    r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'P1', '--tcs', 'TC.f.par']);
+    assert.equal(r.json.tcs[0].outcome, 'recorded', JSON.stringify(r.json));
+    const pl = p.lines().pop();
+    assert.deepEqual(pl.expected.map(e => e.verdict), ['PASS', 'PASS'], JSON.stringify(pl));
+    // a parallel action with one session twice is refused
+    const bad = JSON.parse(fs.readFileSync(path.join(p.runDir, 'replay', 'TC.f.par.json'), 'utf8'));
+    bad.steps[0].actions[0].requests[1].session = 'a';
+    p.write(bad);
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.par'])).status, 2);
+  } finally { await srv.close(); p.done(); }
+});
+
 t('tc-replay run: a 4xx outside the baseline fails the invariants (TC unknown-4xx-invariant)', async () => {
   if (!HAS_BROWSER) { console.log('     (skipped: no Playwright module)'); return; }
   const srv = await replayServer();
@@ -3388,6 +3470,7 @@ t('test-env-check: clean env passes; CSP block, host redirect, bad reset_command
   fs.mkdirSync(runDir, { recursive: true });
   fs.mkdirSync(path.join(proj, 'scripts'));
   fs.writeFileSync(path.join(proj, 'scripts', 'reset.mjs'), '');
+  gitCommitAll(proj);
   const runFile = path.join(runDir, 'tc-run.json');
   const write = over => fs.writeFileSync(runFile, JSON.stringify({ base_url: srv.url, browser_origins: ['https://db.example-backend.com'], reset_command: 'node scripts/reset.mjs --all', test_login_path: '/auth/test-login', tcs: {}, ...over }));
   const byName = (r, n) => (r.json && r.json.checks || []).find(c => c.name === n);
@@ -3468,7 +3551,7 @@ t('tc-replay: api checks — all_equals / not_in with field, own GET request, db
         { text: 'total equals the db count', observe: { channel: 'db', key: 'orders' } }] });
     fs.writeFileSync(p.tcFile, JSON.stringify(doc));
     const jjm = require(path.join(ROOT, 'templates', 'scripts', 'tc-jev-judge.js'));
-    const dig = require('crypto').createHash('sha256').update(jjm.canonical(doc.test_cases[2])).digest('hex');
+    const dig = require('crypto').createHash('sha256').update(jjm.canonical(doc.test_cases.find(t => t.id === 'TC.f.api'))).digest('hex');
     const rec = { schema: 1, tc: 'TC.f.api', tc_file: 'docs/tc/f.tc.json', tc_digest: dig, status: 'candidate',
       steps: [{ step: 0, actions: [
         { op: 'request', method: 'GET', path: '/api/orders?status=cancelled', session: 's1', save_as: 'r', capture: { total: 'json:total' } },

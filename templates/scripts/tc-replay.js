@@ -11,12 +11,14 @@
 //
 // Recording: <project>/.cc-audits/<slug>/replay/<tc id>.json (see the manager guide §2-C
 // for the format). `run` opens one browser context per TC (only base_url's origin),
-// runs login → steps → expected, sweeps the screens it visited (tc-sweep.js) and
+// runs setup → login → steps → expected → teardown (setup / teardown / `command` run the
+// TC's run-file data.<name>_command — node <project script> <plain args>, no shell;
+// `new_tab` and `parallel` requests are actions too), sweeps the screens it visited (tc-sweep.js) and
 // records one tc-results line (browser_tool "replay"). Per TC it prints:
 //   recorded — a result line was written (code verdicts, failed_at_step when a step's
 //              done_when did not hold — the same as a tester)
 //   fallback — no line; run this TC with e2e-tester (stale, no_recording, not_accepted,
-//              locator_missing:<step>, no_browser, error, blocked_offsite:<origins> — a
+//              locator_missing:<step>, command_failed:<where>, no_browser, error, blocked_offsite:<origins> — a
 //              failing replay that blocked requests outside base_url / browser_origins)
 //   pending  — Jev returned REVIEW or asked for a re-check: judge the observation files
 //              and run `finish`
@@ -28,6 +30,7 @@
 
 const crypto = require('crypto');
 const fs = require('fs');
+const { execFile } = require('child_process');
 const os = require('os');
 const path = require('path');
 const { parseArgs, loadConfig } = require('./jev-client');
@@ -45,7 +48,10 @@ const MAX_ACTIONS = 50;
 const STEP_TIMEOUT = 5000;
 const CHECK_TIMEOUT = 3000;
 
-const ACTION_OPS = ['goto', 'click', 'fill', 'press', 'select', 'check_box', 'wait', 'capture', 'request'];
+const ACTION_OPS = ['goto', 'click', 'fill', 'press', 'select', 'check_box', 'wait', 'capture', 'request', 'command', 'new_tab', 'parallel'];
+const COMMAND_NAME_RE = /^[a-z0-9_]+_command$/;
+const MAX_HOOKS = 5;
+const COMMAND_TIMEOUT = 60000;
 const SCREEN_CHECKS = ['text', 'count', 'visible', 'hidden', 'enabled', 'disabled', 'url_path', 'url', 'value'];
 const DATA_CHECKS = { api: ['api'], db: ['db'], log: ['log_count'] };
 const LOCATOR_KEYS = ['role', 'label', 'text', 'selector', 'placeholder', 'test_id'];
@@ -240,9 +246,30 @@ function checkCondition(c, where, rc, allowed) {
   }
 }
 
-function checkAction(a, where, rc) {
+// The run file's data.<name>_command for this TC, checked (never a command written in the recording).
+function commandOf(rc, tcId, name, where) {
+  if (typeof name !== 'string' || !COMMAND_NAME_RE.test(name)) throw new Refused(`${where}: command needs the name of a run-file data entry ending in _command`);
+  const data = ((rc.run.tcs || {})[tcId] || {}).data || {};
+  if (!Object.prototype.hasOwnProperty.call(data, name)) throw new Refused(`${where}: the run file has no data.${name} for ${tcId}`);
+  try { return api.checkCommand(data[name], rc.root); } catch (e) { throw new Refused(`${where}: data.${name}: ${e.message}`); }
+}
+
+function checkAction(a, where, rc, tcId) {
   if (!a || typeof a !== 'object' || Array.isArray(a)) throw new Refused(`${where}: action must be an object`);
   if (!ACTION_OPS.includes(a.op)) throw new Refused(`${where}: op "${a.op}" is not allowed (${ACTION_OPS.join(', ')})`);
+  if (a.op === 'command') commandOf(rc, tcId, a.name, where);
+  if (a.op === 'new_tab' && a.path !== undefined) checkPath(a.path, where, rc);
+  if (a.op === 'parallel') {
+    if (!Array.isArray(a.requests) || a.requests.length < 2 || a.requests.length > 4) throw new Refused(`${where}: parallel needs 2–4 requests`);
+    const sessions = new Set();
+    a.requests.forEach((r, k) => {
+      if (!r || r.op !== 'request') throw new Refused(`${where}.requests[${k}]: only request actions run in parallel`);
+      if (r.delay_ms !== undefined && !(Number.isInteger(r.delay_ms) && r.delay_ms >= 0 && r.delay_ms <= 10000)) throw new Refused(`${where}.requests[${k}]: delay_ms must be 0..10000`);
+      checkAction(r, `${where}.requests[${k}]`, rc, tcId);
+      if (sessions.has(r.session)) throw new Refused(`${where}: parallel requests need different sessions`);
+      sessions.add(r.session);
+    });
+  }
   if (a.op === 'goto') checkPath(a.path, where, rc);
   if (['click', 'fill', 'select', 'check_box'].includes(a.op)) checkTarget(a.target, where);
   if (a.op === 'press') { if (a.target) checkTarget(a.target, where); if (typeof a.key !== 'string' || !/^[A-Za-z0-9+]{1,30}$/.test(a.key)) throw new Refused(`${where}: press needs a key name`); }
@@ -295,19 +322,24 @@ function checkRecording(rc, rec, { requireCurrent = true } = {}) {
   if (rec.start_path !== undefined) checkPath(rec.start_path, 'start_path', rc);
   const login = rec.login === undefined ? [] : rec.login;
   if (tc.surface === 'api') {
-    const screenOps = ['goto', 'click', 'fill', 'press', 'select', 'check_box', 'wait'];
+    const screenOps = ['goto', 'click', 'fill', 'press', 'select', 'check_box', 'wait', 'new_tab'];
     const acts = [...(Array.isArray(login) ? login : []), ...(Array.isArray(rec.steps) ? rec.steps.flatMap(x => (x && Array.isArray(x.actions) ? x.actions : [])) : [])];
     if (acts.some(a => a && screenOps.includes(a.op))) throw new Refused(`${rec.tc} is an api TC — use request actions, not screen actions`);
     if ((rec.expected || []).some(e => e && (e.judge || (e.check && SCREEN_CHECKS.includes(e.check.op))))) throw new Refused(`${rec.tc} is an api TC — no screen checks or Jev judging`);
   }
   if (!Array.isArray(login) || login.length > MAX_ACTIONS) throw new Refused('login must be a list of actions');
-  login.forEach((a, i) => checkAction(a, `login[${i}]`, rc));
+  login.forEach((a, i) => checkAction(a, `login[${i}]`, rc, rec.tc));
+  for (const k of ['setup', 'teardown']) {
+    if (rec[k] === undefined) continue;
+    if (!Array.isArray(rec[k]) || rec[k].length > MAX_HOOKS) throw new Refused(`${k} must be a list of up to ${MAX_HOOKS} command actions`);
+    rec[k].forEach((a, i) => { if (!a || a.op !== 'command') throw new Refused(`${k}[${i}]: only command actions`); checkAction(a, `${k}[${i}]`, rc, rec.tc); });
+  }
   const steps = Array.isArray(tc.steps) ? tc.steps : [];
   if (!Array.isArray(rec.steps) || rec.steps.length !== steps.length) throw new Refused(`${rec.tc}: steps must have one entry per TC step (${steps.length})`);
   rec.steps.forEach((s, i) => {
     if (!s || s.step !== i) throw new Refused(`steps[${i}].step must be ${i}`);
     if (!Array.isArray(s.actions) || s.actions.length > MAX_ACTIONS) throw new Refused(`steps[${i}].actions must be a list (≤ ${MAX_ACTIONS})`);
-    s.actions.forEach((a, j) => checkAction(a, `steps[${i}].actions[${j}]`, rc));
+    s.actions.forEach((a, j) => checkAction(a, `steps[${i}].actions[${j}]`, rc, rec.tc));
     if (s.done_when !== undefined) checkCondition(s.done_when, `steps[${i}].done_when`, rc, [...SCREEN_CHECKS, 'api']);
   });
   const exp = Array.isArray(tc.expected) ? tc.expected : [];
@@ -431,6 +463,14 @@ async function dataCheck(rc, c, scope) {
   return { ok: n === c.equals, observed: `${n} line(s)` };
 }
 
+// Runs a run-file command without a shell: node <project script> <plain args>, in the project root.
+function runCommand(rc, tcId, name, where) {
+  const { script, args } = commandOf(rc, tcId, name, where);
+  return new Promise((resolve, reject) => {
+    execFile(process.execPath, [script, ...args], { cwd: rc.root, timeout: COMMAND_TIMEOUT, maxBuffer: 1 << 20 }, err => (err ? reject(new Blocked(`command_failed:${where}`)) : resolve()));
+  });
+}
+
 // A request under the recording's own session uses the browser's login (cookies),
 // so a reset server (sessions gone) does not leave the api session signed out.
 async function syncSession(rc, scope, session) {
@@ -519,27 +559,50 @@ async function replayTc(browser, rc, rec, tc, runId, opts) {
   let ctx = null;
   let page = null;
   let blocked = null;
+  seen.inflight = 0;
+  const watchPage = p => {
+    p.on('request', () => { seen.inflight++; });
+    p.on('requestfinished', () => { seen.inflight = Math.max(0, seen.inflight - 1); });
+    p.on('requestfailed', () => { seen.inflight = Math.max(0, seen.inflight - 1); });
+    p.on('response', r => { if (r.status() >= 400) { try { seen.http.add(`${r.request().method()} ${sw.normPath(new URL(r.url()).pathname)} ${r.status()}`); } catch { /* bad url */ } } });
+    p.on('console', m => { if (m.type() === 'error' && !/^Failed to load resource/.test(m.text())) seen.console.add(normConsole(m.text())); });
+    p.on('pageerror', e => seen.pageErrors.push(String(e.message).slice(0, 200)));
+    p.on('framenavigated', f => { if (f === p.mainFrame()) { try { seen.visited.add(new URL(f.url()).pathname); } catch { /* about:blank */ } } });
+  };
   if (surfaceScreen) {
     ({ ctx, blocked } = await sw.openContext(browser, rc, {}));
     scope.ctx = ctx;
     scope.session = rec.session;
     page = await ctx.newPage();
-    seen.inflight = 0;
-    page.on('request', () => { seen.inflight++; });
-    page.on('requestfinished', () => { seen.inflight = Math.max(0, seen.inflight - 1); });
-    page.on('requestfailed', () => { seen.inflight = Math.max(0, seen.inflight - 1); });
-    page.on('response', r => { if (r.status() >= 400) { try { seen.http.add(`${r.request().method()} ${sw.normPath(new URL(r.url()).pathname)} ${r.status()}`); } catch { /* bad url */ } } });
-    page.on('console', m => { if (m.type() === 'error' && !/^Failed to load resource/.test(m.text())) seen.console.add(normConsole(m.text())); });
-    page.on('pageerror', e => seen.pageErrors.push(String(e.message).slice(0, 200)));
-    page.on('framenavigated', f => { if (f === page.mainFrame()) { try { seen.visited.add(new URL(f.url()).pathname); } catch { /* about:blank */ } } });
+    watchPage(page);
   }
+  // command / new_tab / parallel need the TC's run-file entry or the context; the rest is doAction
+  const act = async (a, where) => {
+    if (a.op === 'command') return runCommand(rc, rec.tc, a.name, where);
+    if (a.op === 'new_tab') {
+      page = await ctx.newPage();   // same cookies and localStorage, fresh sessionStorage
+      watchPage(page);
+      if (a.path !== undefined) await doAction(page, rc, { op: 'goto', path: a.path }, scope, where);
+      return undefined;
+    }
+    if (a.op === 'parallel') {
+      await Promise.all(a.requests.map(async r => {
+        if (r.delay_ms) await new Promise(res => setTimeout(res, r.delay_ms));
+        await doAction(page, rc, r, scope, where);
+      }));
+      return undefined;
+    }
+    return doAction(page, rc, a, scope, where);
+  };
   let failedAt;
+  let result = null;
   try {
-    for (const [i, a] of (rec.login || []).entries()) await doAction(page, rc, a, scope, `login${i}`);
+    for (const [i, a] of (rec.setup || []).entries()) await act(a, `setup${i}`);
+    for (const [i, a] of (rec.login || []).entries()) await act(a, `login${i}`);
     if (surfaceScreen && rec.session && (rec.login || []).length) await sw.saveState(ctx, rc, rec.session);
     if (surfaceScreen && rec.start_path) await doAction(page, rc, { op: 'goto', path: rec.start_path }, scope, 'start');
     for (const s of rec.steps) {
-      for (const [j, a] of s.actions.entries()) await doAction(page, rc, a, scope, `${s.step}.${j}`);
+      for (const [j, a] of s.actions.entries()) await act(a, `${s.step}.${j}`);
       if (s.done_when) {
         const ok = s.done_when.op === 'api' ? (await dataCheck(rc, s.done_when, scope)).ok : (await screenCheck(page, s.done_when, scope, STEP_TIMEOUT)).ok;
         if (!ok) { failedAt = s.step; break; }
@@ -603,13 +666,21 @@ async function replayTc(browser, rc, rec, tc, runId, opts) {
       sweep = failed.length ? 'fail' : 'clean';
       if (failed.length) scope.sweepFail = failed;
     }
-    return {
+    result = {
       expected, pending, failedAt, visited: [...seen.visited],
       invariants: surfaceScreen ? (bad.length ? 'fail' : 'clean') : undefined, invariants_detail: bad.slice(0, 10),
       sweep, sweep_fail: scope.sweepFail,
       blocked_offsite: blocked ? [...new Set(blocked.offsite)] : [],
     };
+    return result;
   } finally {
+    // teardown runs whatever happened (it puts shared state back, e.g. a fake server's mode);
+    // a failed one is reported on the result, never hidden
+    const tdFailed = [];
+    for (const [i, a] of (rec.teardown || []).entries()) {
+      try { await runCommand(rc, rec.tc, a.name, `teardown${i}`); } catch { tdFailed.push(a.name); }
+    }
+    if (tdFailed.length && result) result.teardown_failed = tdFailed;
     if (ctx) await ctx.close().catch(() => {});
   }
 }
@@ -620,6 +691,7 @@ function resultEntry(rec, runId, r) {
     ...(Number.isInteger(r.failedAt) ? { failed_at_step: r.failedAt } : {}),
     ...(r.invariants ? { invariants: r.invariants } : {}), ...(r.invariants_detail && r.invariants_detail.length ? { invariants_detail: r.invariants_detail } : {}),
     ...(r.sweep ? { sweep: r.sweep } : {}), ...(r.sweep_fail ? { sweep_fail: r.sweep_fail } : {}),
+    ...(r.teardown_failed ? { teardown_failed: r.teardown_failed } : {}),
   };
 }
 
@@ -714,7 +786,7 @@ async function run({ runFile, runId, tcs, verify = false, retryRejected = false,
         continue;
       }
       jj.record({ results, tcFile: info.tcFile, entry });
-      out.push({ tc: rec.tc, outcome: 'recorded', verdicts: r.expected.map(e => `${e.index}:${e.verdict}`).join(' '), ...(Number.isInteger(r.failedAt) ? { failed_at_step: r.failedAt } : {}), ...(r.invariants === 'fail' ? { invariants: 'fail' } : {}), ...(r.sweep === 'fail' ? { sweep: 'fail' } : {}) });
+      out.push({ tc: rec.tc, outcome: 'recorded', verdicts: r.expected.map(e => `${e.index}:${e.verdict}`).join(' '), ...(Number.isInteger(r.failedAt) ? { failed_at_step: r.failedAt } : {}), ...(r.invariants === 'fail' ? { invariants: 'fail' } : {}), ...(r.sweep === 'fail' ? { sweep: 'fail' } : {}), ...(r.teardown_failed ? { teardown_failed: r.teardown_failed } : {}) });
     }
   } finally {
     if (browser) await browser.close();

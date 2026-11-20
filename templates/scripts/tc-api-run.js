@@ -78,6 +78,31 @@ function allowedEnv(run) {
   return names;
 }
 
+// A run-file command (`reset_command`, `data.<name>_command`): `node <project script>
+// <plain args>` — no shell syntax, no quoting, a script file committed to git inside the
+// project (not under .cc-audits/ or node_modules/). The user saw it when approving the
+// plan. Returns { script (absolute), args }.
+const COMMAND_ARG_RE = /^[A-Za-z0-9._=:,@/+-]+$/;
+function checkCommand(cmd, root) {
+  if (typeof cmd !== 'string') throw new Refused('a command must be a string');
+  const parts = cmd.trim().split(/\s+/);
+  if (parts[0] !== 'node' || parts.length < 2) throw new Refused('a command must be `node <project script> <plain args>`');
+  const bad = parts.slice(1).find(a => !COMMAND_ARG_RE.test(a));
+  if (bad !== undefined) throw new Refused(`a command has shell syntax or quoting: ${JSON.stringify(bad.slice(0, 40))}`);
+  const script = parts[1];
+  if (path.isAbsolute(script) || script.split('/').includes('..')) throw new Refused('a command script must be a path inside the project');
+  let real;
+  try { real = fs.realpathSync(path.join(root, script)); } catch { throw new Refused(`command script ${script} does not exist`); }
+  if (!real.startsWith(root + path.sep) || !fs.statSync(real).isFile()) throw new Refused('a command script must be a file inside the project');
+  const rel = path.relative(root, real);
+  if (/^(?:\.cc-audits|node_modules)(?:\/|$)/.test(rel.split(path.sep).join('/'))) throw new Refused('a command script may not live under .cc-audits/ or node_modules/');
+  // only a script committed to git runs: a file an agent wrote during the run never does
+  try { require('child_process').execFileSync('git', ['-C', root, 'ls-files', '--error-unmatch', '--', rel], { stdio: 'ignore', timeout: 5000 }); } catch {
+    throw new Refused(`command script ${script} is not tracked by git — commit it first`);
+  }
+  return { script: real, args: parts.slice(2) };
+}
+
 function baseOrigin(run) {
   let base;
   try { base = new URL(run.base_url); } catch { throw new Refused('run file needs a valid base_url'); }
@@ -335,4 +360,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { request, readSource, jsonPath, applySetCookie, targetUrl, Refused, loadRun, projectRoot, baseOrigin, sessionFile, readCookies, maskTokens };
+module.exports = { request, readSource, jsonPath, applySetCookie, targetUrl, Refused, loadRun, projectRoot, baseOrigin, sessionFile, readCookies, maskTokens, checkCommand };

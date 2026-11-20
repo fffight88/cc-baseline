@@ -63,6 +63,16 @@
       "id": "DEC.sweep-picker-active",
       "kind": "decision",
       "locator": "user decision 2026-11-19 (grimbang C run): a file picker counts as an effect; an active control (aria-pressed/selected/current) with no effect is skipped"
+    },
+    {
+      "id": "REQ.replay-ops",
+      "kind": "requirement",
+      "locator": ".cc-audits/HANDOFF-next.md grimbang C 결과, 다음 할 일 1 (2026-11-20)"
+    },
+    {
+      "id": "SRC.replay-actions",
+      "kind": "source",
+      "locator": "templates/scripts/tc-replay.js ACTION_OPS / checkAction / doAction (commit a516696)"
     }
   ],
   "actions": [
@@ -78,7 +88,8 @@
         "exit code and one JSON line"
       ],
       "evidence_refs": [
-        "REQ.tc-replay-plan"
+        "REQ.tc-replay-plan",
+        "REQ.replay-ops"
       ]
     },
     {
@@ -97,7 +108,8 @@
       "evidence_refs": [
         "REQ.tc-replay-plan",
         "DEC.replay-design",
-        "REQ.replay-verify-cause"
+        "REQ.replay-verify-cause",
+        "REQ.replay-ops"
       ]
     },
     {
@@ -1102,6 +1114,235 @@
         "kind": "requirement",
         "refs": [
           "DEC.sweep-picker-active"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.command-op-runs",
+      "title": "An approved command in setup runs before the steps",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "an accepted recording whose setup names data.before_command",
+        "the run file gives before_command as node <project script> that writes a marker file"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The marker file written by the script exists",
+          "observe": {
+            "channel": "artifact",
+            "key": "marker file in the project"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.replay-ops"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.command-not-in-run-refused",
+      "title": "A command op naming a key the run file does not have is refused",
+      "action_refs": [
+        "ACT.tc-replay.check"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a recording whose setup names data.other_command",
+        "a run file without other_command for that TC"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js check for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 2",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.replay-ops"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.command-shell-refused",
+      "title": "A run-file command with shell syntax is refused",
+      "action_refs": [
+        "ACT.tc-replay.check"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a recording whose setup names data.before_command",
+        "a run file whose before_command contains a semicolon"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js check for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 2",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.replay-ops"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.teardown-after-fail",
+      "title": "Teardown commands run even when an expected result fails",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "an accepted recording whose check fails on the test server",
+        "its teardown names data.after_command, a script that writes a marker file"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The marker file written by the teardown script exists",
+          "observe": {
+            "channel": "artifact",
+            "key": "marker file in the project"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.replay-ops"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.new-tab-fresh-session",
+      "title": "A new_tab action starts with fresh sessionStorage",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a test page that shows a notice once per sessionStorage",
+        "an accepted recording that dismisses the notice, opens the page in a new tab and checks the notice is visible"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The result line's verdict for expected[0] is PASS",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-results.jsonl .expected[0].verdict"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.replay-ops"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.parallel-requests",
+      "title": "Parallel requests start in their delay order and are judged by status",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a test endpoint that answers 429 while another request is running and 200 otherwise after a delay",
+        "an accepted api recording with a parallel action: session a at 0 ms, session b at 500 ms"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The result line's verdict for the session a status check is PASS (200)",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-results.jsonl .expected[0].verdict"
+          }
+        },
+        {
+          "text": "The result line's verdict for the session b status check is PASS (429)",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-results.jsonl .expected[1].verdict"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.replay-ops"
         ]
       },
       "readiness": "ready"
