@@ -297,7 +297,7 @@ node ~/.claude/scripts/tc-api-run.js read    --run <run_file> --source db  --jso
 
 - `--json-path`: dots separate fields; `[n]` picks an index; `[key=value,key2=value2]` picks the first match of every condition (dots inside a value are fine); `--count` returns how many entries match instead.
 - One `--session` name per persona (e.g. `customer`, `admin`); the cookie from a login is kept for that session. A session with no login is signed out.
-- Log in with `tc.run.api`: `POST <login_path>` with `login_body`. If the run gives no `login_path`, do not guess one — write it under NOTES and report the api / db / log results as `NOT_OBSERVABLE`.
+- Log in with `tc.run.api`: `POST <login_path>` with `login_body`. When the run file has `api_token`, that login also keeps the returned token for the session and later requests send it as `Authorization: Bearer …` — you never handle the token yourself. If the run gives no `login_path`, do not guess one — write it under NOTES and report the api / db / log results as `NOT_OBSERVABLE`.
 - Repeated `--grep` keeps only lines that contain every text — use it to narrow an event to one order or user instead of piping through another grep.
 - Request bodies come from `tc.run.data` — write them to a temp JSON file; never put secret values on the command line (use `$ENV_NAME` values via the file).
 - Exit 2 = refused (other origin, file not listed, path outside the project): report the expected result as `NOT_OBSERVABLE` with the refusal message — never work around it.

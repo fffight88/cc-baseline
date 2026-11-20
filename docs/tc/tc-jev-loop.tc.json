@@ -6,7 +6,8 @@
   "sources": [
     { "id": "REQ.tc-jev-loop-plan", "kind": "requirement", "locator": "docs/plans/tc-jev-loop.md (approved 2026-11-16)" },
     { "id": "REQ.jev-as-judge", "kind": "decision", "locator": "user decision 2026-11-16: Jev decides, LLM re-checks a share, samples kept as a bank" },
-    { "id": "REQ.api-runner", "kind": "decision", "locator": "user decision 2026-11-16: testers get a script with code-enforced limits for API/DB/log checks" }
+    { "id": "REQ.api-runner", "kind": "decision", "locator": "user decision 2026-11-16: testers get a script with code-enforced limits for API/DB/log checks" },
+    {"id": "DEC.api-token", "kind": "decision", "locator": "user decision 2026-11-20 (ontology-demo run): tc-api-run keeps a Bearer token from the login response per session"}
   ],
   "actions": [
     {
@@ -204,7 +205,9 @@
       ],
       "basis": { "kind": "requirement", "refs": ["REQ.tc-jev-loop-plan"] },
       "readiness": "ready"
-    }
+    },
+    {"id": "TC.tc-jev-loop.api-token-sent", "title": "A token from the login response is sent as Bearer on the next request of the session", "action_refs": ["ACT.tc-jev-loop.api-request"], "level": "functional", "surface": "cli", "preconditions": ["a run file with api_token login_path /login and json_path token", "a test server whose /login returns a token and whose /me echoes whether a Bearer header came"], "steps": [{"goal": "Log in with tc-api-run.js request POST /login", "done_when": {"expect": "A response status comes back"}}, {"goal": "Send GET /me in the same session", "done_when": {"expect": "A response status comes back"}}], "expected": [{"text": "The /me response says the Bearer token was received", "observe": {"channel": "api", "key": "GET /me body"}}], "basis": {"kind": "requirement", "refs": ["DEC.api-token"]}, "readiness": "ready"},
+    {"id": "TC.tc-jev-loop.api-token-masked", "title": "The token value never appears in the output", "action_refs": ["ACT.tc-jev-loop.api-request"], "level": "functional", "surface": "cli", "preconditions": ["the same run file and test server"], "steps": [{"goal": "Log in with tc-api-run.js request POST /login", "done_when": {"expect": "A response status comes back"}}], "expected": [{"text": "The command output does not contain the token value", "observe": {"channel": "artifact", "key": "stdout"}}], "basis": {"kind": "requirement", "refs": ["DEC.api-token"]}, "readiness": "ready"}
   ],
   "open_questions": []
 }

@@ -2668,6 +2668,65 @@ t('tc-api-run: session cookies are kept per session, sent back, and never printe
   } finally { await srv.close(); fs.rmSync(p.tmp, { recursive: true, force: true }); }
 });
 
+t('tc-api-run: api_token keeps the login token per session, sends it as Bearer and never prints it (TC api-token-sent, api-token-masked)', async () => {
+  const TOKEN = 'tok_SECRET_1234567890';
+  const srvState = { loginFails: false };
+  const srv = await httpServer((req, res) => {
+    if (req.url === '/auth/login' && srvState.loginFails) { res.writeHead(401); return res.end('{}'); }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    if (req.url === '/auth/login') return res.end(JSON.stringify({ token: TOKEN, user: { id: 1 } }));
+    res.end(JSON.stringify({ bearer: req.headers.authorization === `Bearer ${TOKEN}`, cookie: req.headers.cookie || '' }));
+  });
+  const p = apiProject({ base_url: srv.url, api_token: { login_path: '/auth/login', json_path: 'token' } });
+  try {
+    const body = path.join(p.tmp, 'login.json');
+    fs.writeFileSync(body, '{"email":"a@b.c"}');
+    const login = await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'admin', '--method', 'POST', '--path', '/auth/login', '--body', body], apiEnv());
+    assert.equal(login.status, 0, login.stderr);
+    assert.ok(!login.stdout.includes(TOKEN), 'the token never appears in the output');
+    const me = await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'admin', '--method', 'GET', '--path', '/me'], apiEnv());
+    const out = JSON.parse(me.stdout);
+    assert.equal(out.json.bearer, true, 'the next request of the session carries the Bearer token');
+    assert.equal(out.json.cookie, '', 'the token is not sent as a cookie');
+    assert.ok(!me.stdout.includes(TOKEN));
+    const other = JSON.parse((await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'guest', '--method', 'GET', '--path', '/me'], apiEnv())).stdout);
+    assert.equal(other.json.bearer, false, 'another session has no token');
+    const sdir = path.join(path.dirname(p.runFile), 'api-sessions');
+    assert.equal(fs.statSync(path.join(sdir, 'admin.token')).mode & 0o777, 0o600);
+    assert.ok(!fs.readFileSync(path.join(sdir, 'admin.json'), 'utf8').includes(TOKEN), 'the token is not in the cookie file');
+    // a failed re-login drops the old token
+    srvState.loginFails = true;
+    await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'admin', '--method', 'POST', '--path', '/auth/login', '--body', body], apiEnv());
+    assert.equal(JSON.parse((await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'admin', '--method', 'GET', '--path', '/me'], apiEnv())).stdout).json.bearer, false);
+    fs.writeFileSync(p.runFile, JSON.stringify({ base_url: srv.url, api_token: { login_path: '/auth/login', json_path: 'token', header: 'Cookie' } }));
+    assert.equal((await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'admin', '--method', 'GET', '--path', '/me'], apiEnv())).status, 2, 'the token may not go in a Cookie header');
+    fs.writeFileSync(p.runFile, JSON.stringify({ base_url: srv.url, api_token: { login_path: 'auth', json_path: 'token' } }));
+    assert.equal((await runNode([TC_API_RUN, 'request', '--run', p.runFile, '--session', 'admin', '--method', 'GET', '--path', '/me'], apiEnv())).status, 2, 'a bad api_token is refused');
+  } finally { await srv.close(); fs.rmSync(p.tmp, { recursive: true, force: true }); }
+});
+
+t('tc-replay: request actions use the api_token session too', async () => {
+  const TOKEN = 'tok_REPLAY_1234567890';
+  const srv = await httpServer((req, res) => {
+    res.writeHead(req.url === '/auth/login' || req.headers.authorization === `Bearer ${TOKEN}` ? 200 : 401, { 'Content-Type': 'application/json' });
+    res.end(req.url === '/auth/login' ? JSON.stringify({ token: TOKEN }) : '{}');
+  });
+  const p = replayProject(srv.url);
+  try {
+    fs.writeFileSync(p.runFile, JSON.stringify({ base_url: srv.url, readable: {}, tcs: {}, api_token: { login_path: '/auth/login', json_path: 'token' } }));
+    const dig = require('crypto').createHash('sha256').update(require(path.join(ROOT, 'templates', 'scripts', 'tc-jev-judge.js')).canonical(JSON.parse(fs.readFileSync(p.tcFile, 'utf8')).test_cases.find(t => t.id === 'TC.f.par'))).digest('hex');
+    p.write({ schema: 1, tc: 'TC.f.par', tc_file: 'docs/tc/f.tc.json', tc_digest: dig, status: 'candidate',
+      steps: [{ step: 0, actions: [
+        { op: 'request', method: 'POST', path: '/auth/login', session: 'a', body: {} },
+        { op: 'request', method: 'GET', path: '/me', session: 'a', save_as: 'withToken' },
+        { op: 'request', method: 'GET', path: '/me', session: 'b', save_as: 'noToken' }] }],
+      expected: [{ index: 0, check: { op: 'api', response: 'withToken', status: 200 } }, { index: 1, check: { op: 'api', response: 'noToken', status: 401 } }] }, { accept: true });
+    const r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'K1', '--tcs', 'TC.f.par']);
+    assert.equal(r.status, 0, r.stderr);
+    assert.deepEqual(p.lines().pop().expected.map(e => e.verdict), ['PASS', 'PASS']);
+  } finally { await srv.close(); p.done(); }
+});
+
 t('tc-api-run: large bodies are capped at 64 KB', async () => {
   const srv = await httpServer((req, res) => { res.writeHead(200, { 'Content-Type': 'text/plain' }); res.end('x'.repeat(200000)); });
   const p = apiProject({ base_url: srv.url });

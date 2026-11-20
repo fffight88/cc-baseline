@@ -103,6 +103,24 @@ function checkCommand(cmd, root) {
   return { script: real, args: parts.slice(2) };
 }
 
+// A Bearer-token API (the login response carries the token, later requests send it in a
+// header): "api_token": { "login_path": "/auth/login", "json_path": "token",
+// "header": "Authorization", "scheme": "Bearer" }. The token is kept next to the session's
+// cookie file (<session>.token, 0600), sent only to base_url, and masked in every output.
+function apiToken(run) {
+  const t = run.api_token;
+  if (t === undefined) return null;
+  if (!t || typeof t !== 'object' || Array.isArray(t)) throw new Refused('api_token must be an object');
+  if (typeof t.login_path !== 'string' || !t.login_path.startsWith('/') || t.login_path.startsWith('//')) throw new Refused('api_token.login_path must be a path');
+  if (typeof t.json_path !== 'string' || !t.json_path) throw new Refused('api_token.json_path is required');
+  const header = t.header === undefined ? 'Authorization' : t.header;
+  const scheme = t.scheme === undefined ? 'Bearer' : t.scheme;
+  if (typeof header !== 'string' || !/^[A-Za-z0-9-]{1,60}$/.test(header)) throw new Refused('api_token.header must be a header name');
+  if (/^(?:cookie|host|content-length|content-type|transfer-encoding|connection)$/i.test(header)) throw new Refused(`api_token.header may not be ${header}`);
+  if (typeof scheme !== 'string' || !/^[A-Za-z]{0,20}$/.test(scheme)) throw new Refused('api_token.scheme must be a word (or empty)');
+  return { login_path: new URL(t.login_path, 'http://x').pathname, json_path: t.json_path, header, scheme };
+}
+
 function baseOrigin(run) {
   let base;
   try { base = new URL(run.base_url); } catch { throw new Refused('run file needs a valid base_url'); }
@@ -143,7 +161,7 @@ function readCookies(file) {
 
 function writeCookies(file, cookies) {
   const tmp = `${file}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(cookies), { mode: 0o600 });
+  fs.writeFileSync(tmp, typeof cookies === 'string' ? cookies : JSON.stringify(cookies), { mode: 0o600 });
   fs.renameSync(tmp, file);
 }
 
@@ -214,20 +232,37 @@ async function request({ runFile, session, method, p, bodyFile, env = process.en
     try { parsed = JSON.parse(fs.readFileSync(real, 'utf8')); } catch (e) { throw new Refused(`--body must be a JSON file: ${e.message}`); }
     body = JSON.stringify(fillEnv(parsed, env, secrets, allowedEnv(run)));
   }
+  const tok = apiToken(run);
+  const tokenFile = `${jarFile.replace(/\.json$/, '')}.token`;
+  let token = null;
+  if (tok) { try { if (!fs.lstatSync(tokenFile).isSymbolicLink()) token = fs.readFileSync(tokenFile, 'utf8') || null; } catch { /* none yet */ } }
   const headers = { Accept: 'application/json' };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   const cookieHeader = Object.entries(jar).map(([k, v]) => `${k}=${v}`).join('; ');
   if (cookieHeader) headers.Cookie = cookieHeader;
+  if (token) headers[tok.header] = tok.scheme ? `${tok.scheme} ${token}` : token;
 
   const res = await fetchImpl(url, { method: m, headers, body, redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT_MS) });
   const setCookie = typeof res.headers.getSetCookie === 'function' ? res.headers.getSetCookie() : [];
   const { set, values } = applySetCookie(jar, setCookie);
-  writeCookies(jarFile, jar);
+  const text = m === 'HEAD' ? '' : await res.text();
+  // a login on the token API keeps the returned token for this session; a failed one drops the old token
   const mask = [...secrets, ...values, ...Object.values(jar)];
+  if (token) mask.push(token);
+  if (tok && url.pathname === tok.login_path) {
+    let parsed;
+    try { parsed = res.ok ? JSON.parse(text) : undefined; } catch { parsed = undefined; }
+    const v = parsed === undefined ? { found: false } : jsonPath(parsed, tok.json_path);
+    if (v.found && typeof v.value === 'string' && v.value) {
+      writeCookies(tokenFile, v.value);
+      mask.push(v.value);
+      set.push('(api token)');
+    } else fs.rmSync(tokenFile, { force: true });
+  }
+  writeCookies(jarFile, jar);
 
   const outHeaders = {};
   for (const [k, v] of res.headers) outHeaders[k] = SECRET_HEADER_RE.test(k) ? '[REDACTED]' : maskTokens(v, mask);
-  const text = m === 'HEAD' ? '' : await res.text();
   const c = capped(maskTokens(text, mask));
   let json;
   try { json = c.truncated || c.text === '' ? undefined : JSON.parse(c.text); } catch { json = undefined; }
