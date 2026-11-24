@@ -331,7 +331,7 @@ cc-baseline 자체의 TC(`surface: cli`)다. 승인 직후 `docs/tc/claims.tc.js
 - [ ] `reference_genius_thinking.md`가 원문과 같다
 - [ ] 파이프라인·Meta(`Claim Impact`)·MEMORY·manifest·README·CHANGELOG를 반영했다
 - [ ] 보안 감사와 코드 리뷰를 반영했다
-- [ ] Phase D 시험 결과와 비용을 두 단계별로 기록했다
+- [x] Phase D 시험 결과와 비용을 두 단계별로 기록했다
 - [ ] 서버를 정지했다
 
 ---
@@ -361,3 +361,47 @@ cc-baseline 자체의 TC(`surface: cli`)다. 승인 직후 `docs/tc/claims.tc.js
   - QA-008 `maskSecrets`가 `Bearer`·`Basic`·`Token` 뒤 값과 `sk-`·`rk-`·`pk-` 토큰을 가린다.
   - QA-009 카나리아가 모두 기권이면 채널은 `untested`(`trusted: null`)로 남는다는 점을 지침에 적었다.
   - 반영 뒤 `npm test` 211 + 21 통과.
+
+## Phase D 결과 (2026-11-24)
+
+- **light** (`cc-baseline/.cc-audits/claims/phase-d-light`, seed 1): 주장 10 + 카나리아 2. `fact-auditor`가 웹 1차 자료(GitHub API, HN API, README 원문, 약관 원문)를 직접 다시 읽었다.
+  - 결과: 10개 모두 확인됨(B 등급), 카나리아 2/2 탐지, `check-verifiers` 통과
+  - 보고서에 주장별 판정·등급·증거 한 줄이 나왔다
+- **bulk** (`ontology-demo/.cc-audits/claims/phase-d-bulk`, seed 1): 주장 42(code 13·db 13·log 8·screen 8), 전제 2, 카나리아 12(채널마다 3).
+  - 틀린 전제 P-002("action_log는 마이그레이션 015만 쓴다")는 `action_service.py:43`의 `ActionLog(...)` 삽입으로 반박됐다. 여기에 기댄 C-0015~C-0017 3개는 `stale`이 됐다.
+  - 카나리아 12/12 탐지(code·db·log 각 3은 `fact-auditor`, screen 3은 e2e-tester → `import-results`). `check-verifiers` 통과(13개 파일)
+  - `impact: decision`인 C-0010(localStorage 토큰)은 등급 재확인 뒤 C 등급이라 `not_established`가 됐다
+  - db는 `ontology_e2e`를 `default_transaction_read_only=on`으로 읽었다. 제품 코드와 DB는 바꾸지 않았다
+  - 사람 표본 30개(단순 무작위, 커버리지 0개 — 진짜 주장 판정이 모두 SUPPORTED라 빠진 묶음이 없다): 사용자 확인 대기 → 아래 "사람 표본"
+- **Jev 샘플:** `Q.claim_supported@1` 뱅크에 20개가 쌓였다(calib 8 PASS / 4 FAIL, holdout 4 / 4, 두 실행 각 10). 테스터의 `Q.holds@1` 화면 샘플 11개도 추가됐다. 테스터 메모: s3 카나리아("lists Ontology Demo rows")에 Jev holds 0.76 — code FAIL과 불일치다.
+- **비용:**
+
+| 단계 | 토큰 | 시간 | 도구 호출 |
+|---|---|---|---|
+| light `fact-auditor` | 21.9천 | 23초 | 7 |
+| light 후속(7단계 Jev 샘플) | 24.6천 | 17초 | 3 |
+| light 전체(prepare → report, 후속 제외) | — | 49초 | — |
+| bulk `fact-auditor` | 31.6천 | 55초 | 16 |
+| bulk 후속(7단계 + 등급 재확인) | 36.6천 | 27초 | 4 |
+| bulk e2e-tester(화면 TC 4개, Playwright, 스윕 생략) | 87.0천 | 132초 | 27 |
+| bulk 전체(prepare → report, 사람 표본 제외) | — | 236초 | — |
+
+  오케스트레이터 토큰(장부 작성 포함)은 이 세션에서 따로 잴 수 없어 빠져 있다. `claims.js` 명령은 각각 0.1초 안이다.
+
+### Phase D에서 찾은 cc-baseline 결함
+
+| # | 결함 | 영향 | 수정 범위(안) |
+|---|---|---|---|
+| D1 | `fact-auditor`가 소스 읽기를 A 등급으로 적었다(bulk 1회차 코드 16개 전부). 다시 요청하자 C(설정 파일은 B)로 고쳤다 | `not_established`가 동작하지 않는다 | `fact-auditor.md`에 채널별 등급 표(코드 읽기 C, 설정·기록 B, 로그·DB·화면·재실행 A)를 직접 넣는다 |
+| D2 | `fact-auditor`가 7단계(Jev 보정 샘플)를 두 실행 모두 건너뛰었다 | Jev 뱅크에 샘플이 안 쌓인다 | 반환 형식에 `jev samples: N`을 넣고, 0이면 이유를 적게 한다 |
+| D3 | 값 바꾸기 카나리아가 타입을 가로지른다("password 0.3.0", "1440 algorithm", "lists Ontology Demo rows", HTTP 411·202·210) | 증거 없이도 틀린 것이 보인다. 탐지율이 과대평가된다 | `prepare`에서 같은 타입·같은 모양끼리만 바꾼다(숫자↔숫자, 비슷한 문자열끼리). HTTP 상태처럼 값 범위가 있는 것은 실제로 있는 값으로 바꾼다 |
+| D4 | 카나리아가 원래 주장 옆에 그대로 놓인다(같은 대상에 다른 값 — light A-0002/A-0004, screen s1 "4 cards"와 "8 cards"가 한 TC) | 모순만 보고 카나리아를 알아낼 수 있다 | 한계로 문서에 적고 다음 플랜에서 다룬다(원래 주장이 있는 대상에는 바꾸기 카나리아를 덜 만드는 방안) |
+| D5 | `db.dsn_env`는 하위 에이전트 셸에 전달할 방법이 없다 | db 채널 접근 방법을 자유 문장으로 적어야 했다 | `claims-run.json`의 `db.connect`(명령 형식, 예: `docker exec … psql`)를 공식 필드로 만들고 지침·에이전트에 적는다 |
+| D6 | `screen-tc`가 `start_path`·persona를 넣지 않고, `tc-run.json`은 `.cc-audits/<plan-slug>/`에 따로 손으로 써야 한다 | 화면 단계 준비가 수작업이다 | `claims-run.json`의 `screen`(base_url, 대상별 start_path·persona)에서 `tc-run.json` 초안을 만든다 |
+| D7 | lint 경고 오탐: "and"·";"가 있으면 "사실 하나만" 경고(5건 모두 사실 하나), tc-lint `standard_question`이 열 이름 "Error"에 반응 | 경고에 무뎌진다 | 낮은 우선순위. 경고 문구를 "확인하라"로 바꾸거나 열거형을 예외로 둔다 |
+| D8 | light 후속에서 `fact-auditor`가 verdict 줄을 덧붙여 같은 id가 두 줄 생겼다(마지막 줄이 유효) | `score`는 마지막 줄을 써서 문제없다. 사람이 읽기에 헷갈린다 | 문서에 "다시 쓸 때는 덧붙이고 마지막 줄이 유효"를 명시한다 |
+
+### 사람 표본
+- 2026-11-24: 사용자가 30개 모두 동의했다(불일치 0, 모름 0). `claims.js human` → `report`: "verifier verdicts wrong at most 9.5% (one-sided 95%), from 0 disagreement(s) in 30 randomly sampled". Jev `human:` 라벨 2개가 붙었다.
+- 사용자가 본 확인표에는 각 항목 옆에 원본을 다시 뽑아 붙였다(DB SQL 결과, 코드 줄, 로그 줄, 화면 테스터 기록 + 소스). 원본을 보고 판단만 하면 되니 30개가 몇 분이면 끝났다.
+- 사용자 의견: 대량 검증마다 사람 표본을 하는 것은 부담이 크다. → 다음 플랜에서 사람 표본은 선택으로 바꾸고, 기본은 증거 재실행 + 개선된 카나리아로 한다(`docs/plans/claim-verification-d-fixes.md`).

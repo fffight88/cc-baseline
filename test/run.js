@@ -4257,6 +4257,286 @@ t('claims.js audit fixes: frozen inputs, prepare over verdicts, canary boundarie
   } finally { k.done(); }
 });
 
+// Canary items of a prepared run: [{ id, orig, op, item }] with the audit-input line.
+function claimsCanaries(r) {
+  const key = claimsKey(r);
+  const input = fs.readFileSync(path.join(r.run, 'audit-input.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l));
+  return input.filter(x => key.items[x.id].canary).map(x => ({ id: x.id, orig: key.items[x.id].orig, op: key.items[x.id].op, item: x }));
+}
+
+t('claims.js prepare: swaps stay within a value shape, HTTP canaries use real codes, dates move by 1–3 days (TC claims.canary-same-shape, claims.canary-http-status, claims.canary-date-past)', () => {
+  const { prepare } = require(CLAIMS);
+  // four families built by hand: a canary must take its value from its own family
+  const fam = [
+    ['count', i => 10 + i * 7], ['version', i => `${i + 1}.${i}.0`], ['ident', i => `field_${String.fromCharCode(97 + i)}`], ['phrase', i => `Recent item ${String.fromCharCode(65 + i)}`],
+  ];
+  const familyOf = new Map();
+  const claims = [];
+  fam.forEach(([name, val], f) => {
+    for (let i = 0; i < 10; i++) {
+      const v = val(i);
+      familyOf.set(String(v), name);
+      claims.push({ id: `C-${String(claims.length + 1).padStart(4, '0')}`, text: `The file f${f}_${i} sets its value to ${v}`, target: { kind: 'file', ref: `f${f}_${i}` },
+        channel: 'code', expected: v, impact: 'descriptive' });
+    }
+  });
+  let swaps = 0;
+  for (const seed of [1, 2, 3, 4, 5]) {
+    const r = claimsRun({ claims });
+    try {
+      prepare(r.run, { seed, keyRoot: r.keys });
+      for (const c of claimsCanaries(r)) {
+        if (c.op !== 'swap') continue;
+        swaps++;
+        const orig = claims.find(x => x.id === c.orig);
+        assert.equal(familyOf.get(String(c.item.expected)), familyOf.get(String(orig.expected)), `${c.item.text} — swapped across shapes`);
+      }
+    } finally { r.done(); }
+  }
+  assert.ok(swaps > 0, 'some canaries are swaps');
+  const REAL = [200, 201, 204, 301, 302, 304, 400, 401, 403, 404, 405, 409, 422, 429, 500, 502, 503];
+  const statuses = [200, 401, 404, 422];
+  const logClaims = Array.from({ length: 30 }, (_, i) => ({ id: `C-${String(i + 1).padStart(4, '0')}`, text: `The access log shows GET /p${i} answered with ${statuses[i % 4]}`,
+    target: { kind: 'route', ref: `GET /p${i}` }, channel: 'log', expected: statuses[i % 4], impact: 'descriptive' }));
+  const h = claimsRun({ claims: logClaims });
+  try {
+    prepare(h.run, { seed: 3, keyRoot: h.keys });
+    const can = claimsCanaries(h);
+    assert.ok(can.length >= 3);
+    for (const c of can) assert.ok(REAL.includes(c.item.expected), `${c.item.text} — not a real status code`);
+  } finally { h.done(); }
+  const webClaims = Array.from({ length: 8 }, (_, i) => ({ id: `C-000${i + 1}`, text: `Repository r${i} was created on 2026-02-${10 + i}`,
+    target: { kind: 'web', ref: `repo r${i}` }, channel: 'web', expected: `2026-02-${10 + i}`, impact: 'descriptive', source_url: `https://example.com/r${i}` }));
+  for (const seed of [1, 2, 3]) {
+    const d = claimsRun({ claims: webClaims });
+    try {
+      prepare(d.run, { seed, keyRoot: d.keys });
+      const can = claimsCanaries(d);
+      assert.ok(can.length >= 2);
+      for (const c of can) {
+        const orig = webClaims.find(x => x.id === c.orig).expected;
+        const [y, m, day] = String(c.item.expected).split('-').map(Number);
+        const [oy, om, oday] = orig.split('-').map(Number);
+        assert.equal(y, oy, `${c.item.expected} keeps the year`);
+        assert.equal(m, om, `${c.item.expected} keeps the month`);
+        assert.ok(Math.abs(day - oday) >= 1 && Math.abs(day - oday) <= 3, `${c.item.expected} vs ${orig}`);
+      }
+    } finally { d.done(); }
+  }
+});
+
+t('claims.js recheck: files ±3 lines, logs, read-only SQL; outside paths, secrets and write SQL refused; report and sample sheet use it (TC claims.recheck-*, claims.report-human-not-requested, claims.sample-sheet)', async () => {
+  const { prepare, score, recheck, report, sample } = require(CLAIMS);
+  const r = claimsRun({ claims: dbClaims(32) });
+  try {
+    const lines = Array.from({ length: 30 }, (_, i) => `x${i + 1} = ${i + 1}`);
+    lines[19] = 'return jwt.encode(payload, key, algorithm="HS256")';
+    fs.writeFileSync(path.join(r.proj, 'app.py'), lines.join('\n') + '\n');
+    fs.writeFileSync(path.join(r.proj, '.env'), 'SECRET=1\n');
+    fs.writeFileSync(path.join(r.base, 'outside.txt'), 'algorithm="HS256"\n');
+    fs.mkdirSync(path.join(r.proj, 'logs'));
+    fs.writeFileSync(path.join(r.proj, 'logs', 'app.log'), 'INFO 127.0.0.1 - "GET /graphql HTTP/1.1" 200 OK\n');
+    fs.writeFileSync(path.join(r.proj, 'logs', 'other.log'), 'GET /graphql\n');
+    const stdinLog = path.join(r.base, 'stdin.log');
+    const fakeDb = path.join(r.base, 'fake-db.js');
+    fs.writeFileSync(fakeDb, `const fs = require('fs'); let s = ''; process.stdin.on('data', d => { s += d; }); process.stdin.on('end', () => { fs.appendFileSync(${JSON.stringify(stdinLog)}, s + '\\n---\\n'); process.stdout.write('BEGIN\\n4\\nROLLBACK\\n'); });\n`);
+    fs.writeFileSync(path.join(r.run, 'claims-run.json'), JSON.stringify({ code: { root: r.proj }, log: { paths: [path.join(r.proj, 'logs', 'app.log')] },
+      db: { kind: 'postgres', readonly: true, connect: [process.execPath, fakeDb] } }));
+    prepare(r.run, { seed: 6, keyRoot: r.keys });
+    const recipe = {
+      'C-0001': { file: 'app.py', line: 21, contains: 'algorithm="HS256"' },
+      'C-0002': { log: path.join(r.proj, 'logs', 'app.log'), contains: 'GET /auth/me HTTP/1.1" 200' },
+      'C-0003': { file: '../outside.txt', contains: 'algorithm="HS256"' },
+      'C-0004': { file: '.env', contains: 'SECRET' },
+      'C-0005': { log: path.join(r.proj, 'logs', 'other.log'), contains: 'GET /graphql' },
+      'C-0006': { sql: 'SELECT count(*) FROM t1', contains: '4' },
+      'C-0007': { sql: 'DELETE FROM t1', contains: '4' },
+      'C-0008': { sql: 'SELECT 1; SELECT 2', contains: '1' },
+      'C-0009': { sql: 'SELECT 1 \\! touch x', contains: '1' },
+      'C-0010': { log: path.join(r.proj, 'logs', 'app.log'), contains: 'GET /graphql HTTP/1.1" 200' },
+      'C-0011': { sql: 'SELECT count(*) FROM t1', contains: '14' },
+    };
+    writeVerdicts(r, (id, x, k) => (!k.canary && recipe[k.orig] ? { id, verdict: 'SUPPORTED', grade: 'A', evidence: { source: x.channel, excerpt: 'read again' }, recheck: recipe[k.orig] } : null));
+    assert.equal(score(r.run, { keyRoot: r.keys, jevDir: r.jev }).ok, true);
+    const key = claimsKey(r);
+    const idOf = orig => Object.entries(key.items).find(([, k]) => k.orig === orig && !k.canary)[0];
+    const rc = recheck(r.run, { keyRoot: r.keys });
+    const st = orig => rc.items[idOf(orig)];
+    assert.equal(st('C-0001').status, 'reproduced');
+    assert.equal(st('C-0001').line, 20, 'the line found is recorded');
+    assert.equal(st('C-0002').status, 'differs');
+    for (const c of ['C-0003', 'C-0004', 'C-0005', 'C-0007', 'C-0008', 'C-0009']) assert.equal(st(c).status, 'refused', `${c}: ${JSON.stringify(st(c))}`);
+    assert.equal(st('C-0006').status, 'reproduced');
+    assert.equal(st('C-0010').status, 'reproduced');
+    assert.equal(st('C-0011').status, 'differs', '"14" is not "4"');
+    assert.equal(st('C-0012').status, 'not_rerunnable');
+    const sent = fs.readFileSync(stdinLog, 'utf8');
+    assert.ok(sent.startsWith('BEGIN READ ONLY;'), sent);
+    assert.ok(!/DELETE|touch/.test(sent), 'refused SQL never reaches the database');
+    assert.equal(sent.split('---').length - 1, 1, 'the same SELECT runs once');
+    assert.equal(rc.counts.of, 32, 'canaries are not counted');
+    const rep = report(r.run);
+    const claim = id => rep.claims.find(c => c.id === id);
+    assert.equal(claim('C-0002').status, 'not_reproduced');
+    assert.equal(claim('C-0003').status, 'not_reproduced');
+    assert.equal(claim('C-0001').status, 'supported');
+    assert.equal(rep.counts.not_reproduced, 8);
+    assert.equal(rep.human.status, 'not_requested');
+    assert.equal(rep.human.upper_bound_95, undefined);
+    assert.match(fs.readFileSync(path.join(r.run, 'report.md'), 'utf8'), /Evidence re-run: reproduced 3 · differ 2 · refused 6/);
+    sample(r.run, { n: 30, seed: 2 });
+    const sheet = fs.readFileSync(path.join(r.run, 'sample.md'), 'utf8');
+    const random = sheet.split('## Coverage')[0];
+    const entries = random.split('\n### ').slice(1);
+    assert.equal(entries.length, 30);
+    for (const e of entries) assert.match(e, /- Re-read by claims\.js: (?:reproduced|differs|refused|failed|not_rerunnable)/);
+    const cli = await runNode([CLAIMS, 'recheck', r.run], r.env);
+    assert.equal(cli.status, 1, 'evidence that did not reproduce fails the check');
+    fs.appendFileSync(path.join(r.run, 'verdicts.jsonl'), JSON.stringify({ id: idOf('C-0002'), verdict: 'SUPPORTED', grade: 'A', evidence: { source: 'log', excerpt: 'again' } }) + '\n');
+    assert.match(report(r.run).recheck.status, /^stale/, 'a recheck older than the verdicts is not used');
+  } finally { r.done(); }
+  // a malformed recipe is sent back by score
+  const b = claimsRun({ claims: dbClaims(8) });
+  try {
+    prepare(b.run, { seed: 1, keyRoot: b.keys });
+    let bad = null;
+    writeVerdicts(b, (id, x, k) => (!k.canary && !bad ? (bad = id, { id, verdict: 'SUPPORTED', grade: 'A', evidence: { source: 'db', excerpt: 'x' }, recheck: { file: 'a.py', sql: 'SELECT 1', contains: 'x' } }) : null));
+    const out = await runNode([CLAIMS, 'score', b.run], b.env);
+    assert.equal(out.status, 1);
+    assert.match(out.stderr, new RegExp(`${bad}: recheck needs exactly one of file, log or sql`));
+  } finally { b.done(); }
+});
+
+t('claims.js recheck review fixes: a failing db command is failed, read-only wraps per kind, other kinds need readonly_login, file-reading calls refused, no output on a miss; a skipped sample; the year rule needs a year context', async () => {
+  const { prepare, score, recheck, report, sample, human } = require(CLAIMS);
+  const setup = (db, script) => {
+    const r = claimsRun({ claims: dbClaims(32) });
+    const stdinLog = path.join(r.base, 'stdin.log');
+    const fake = path.join(r.base, 'fake-db.js');
+    fs.writeFileSync(fake, script(stdinLog));
+    fs.writeFileSync(path.join(r.run, 'claims-run.json'), JSON.stringify({ code: { root: r.proj }, db: { readonly: true, connect: [process.execPath, fake], ...db } }));
+    prepare(r.run, { seed: 4, keyRoot: r.keys });
+    return { r, stdinLog };
+  };
+  const echo = log => `const fs = require('fs'); let s = ''; process.stdin.on('data', d => { s += d; }); process.stdin.on('end', () => { fs.appendFileSync(${JSON.stringify(log)}, s); process.stdout.write('alice@example.com\\n9\\n'); });\n`;
+  const recipes = (r, list) => writeVerdicts(r, (id, x, k) => (!k.canary && list[k.orig] ? { id, verdict: 'SUPPORTED', grade: 'A', evidence: { source: 'db', excerpt: 'x' }, recheck: list[k.orig] } : null));
+  const idOf = (r, orig) => Object.entries(claimsKey(r).items).find(([, k]) => k.orig === orig && !k.canary)[0];
+  // a failing command → failed → not_reproduced
+  const f = setup({ kind: 'postgres' }, () => 'process.exit(1);\n');
+  try {
+    recipes(f.r, { 'C-0001': { sql: 'SELECT count(*) FROM t1', contains: '4' } });
+    score(f.r.run, { keyRoot: f.r.keys, jevDir: f.r.jev });
+    const rc = recheck(f.r.run, { keyRoot: f.r.keys });
+    assert.equal(rc.items[idOf(f.r, 'C-0001')].status, 'failed');
+    assert.equal(report(f.r.run).claims.find(c => c.id === 'C-0001').status, 'not_reproduced');
+    // a sample the user skipped entirely
+    sample(f.r.run, { n: 30, seed: 1 });
+    const smp = JSON.parse(fs.readFileSync(path.join(f.r.run, 'sample.json'), 'utf8'));
+    const answers = path.join(f.r.base, 'answers.json');
+    fs.writeFileSync(answers, JSON.stringify({ answers: Object.fromEntries(smp.items.map(i => [i.audit_id, 'skip'])) }));
+    human(f.r.run, { answers, jevDir: f.r.jev });
+    const rep = report(f.r.run);
+    assert.equal(rep.human.status, 'skipped');
+    assert.equal(rep.human.upper_bound_95, undefined);
+  } finally { f.r.done(); }
+  // mysql is wrapped read-only; a miss keeps no query output; file-reading calls are refused
+  const m = setup({ kind: 'mysql' }, echo);
+  try {
+    recipes(m.r, { 'C-0001': { sql: 'SELECT email FROM users', contains: 'bob@example.com' }, 'C-0002': { sql: "SELECT pg_read_file('/etc/passwd')", contains: 'root' },
+      'C-0003': { sql: "SELECT 1 INTO OUTFILE '/tmp/x'", contains: '1' }, 'C-0004': { sql: 'SELECT n FROM t1 FOR UPDATE', contains: '9' } });
+    score(m.r.run, { keyRoot: m.r.keys, jevDir: m.r.jev });
+    const rc = recheck(m.r.run, { keyRoot: m.r.keys });
+    const miss = rc.items[idOf(m.r, 'C-0001')];
+    assert.equal(miss.status, 'differs');
+    assert.equal(miss.found, undefined, 'no query output on a miss');
+    assert.ok(!JSON.stringify(rc).includes('alice@example.com'), 'other rows never reach recheck.json');
+    for (const c of ['C-0002', 'C-0003', 'C-0004']) assert.equal(rc.items[idOf(m.r, c)].status, 'refused', c);
+    assert.ok(fs.readFileSync(m.stdinLog, 'utf8').startsWith('START TRANSACTION READ ONLY;'));
+  } finally { m.r.done(); }
+  // a kind with no read-only transaction runs only with readonly_login
+  for (const [db, want] of [[{ kind: 'mssql' }, 'refused'], [{ kind: 'mssql', readonly_login: true }, 'reproduced']]) {
+    const s = setup(db, echo);
+    try {
+      recipes(s.r, { 'C-0001': { sql: 'SELECT n FROM t1', contains: '9' } });
+      score(s.r.run, { keyRoot: s.r.keys, jevDir: s.r.jev });
+      assert.equal(recheck(s.r.run, { keyRoot: s.r.keys }).items[idOf(s.r, 'C-0001')].status, want, JSON.stringify(db));
+      if (want === 'reproduced') assert.equal(fs.readFileSync(s.stdinLog, 'utf8'), 'SELECT n FROM t1\n');
+    } finally { s.r.done(); }
+  }
+  // the year rule: a year in a year sentence moves back; a count of 2000 may move either way
+  const yr = Array.from({ length: 8 }, (_, i) => ({ id: `C-000${i + 1}`, text: `Project p${i} was founded in ${2010 + i}`, target: { kind: 'other', ref: `p${i}` },
+    channel: 'doc', expected: 2010 + i, impact: 'descriptive' }));
+  const y = claimsRun({ claims: yr });
+  try {
+    prepare(y.run, { seed: 2, keyRoot: y.keys });
+    for (const c of claimsCanaries(y).filter(c => c.op === 'number')) {
+      const orig = yr.find(x => x.id === c.orig).expected;
+      assert.ok([orig - 1, orig - 2].includes(c.item.expected), `${c.item.text} — a year moves back`);
+    }
+  } finally { y.done(); }
+  const counts = Array.from({ length: 8 }, (_, i) => ({ id: `C-000${i + 1}`, text: `Table t${i} has 2000 rows`, target: { kind: 'table', ref: `t${i}` }, channel: 'db', expected: 2000, impact: 'descriptive' }));
+  const seen = new Set();
+  for (const seed of [1, 2, 3, 4, 5, 6]) {
+    const c = claimsRun({ claims: counts });
+    try {
+      prepare(c.run, { seed, keyRoot: c.keys });
+      for (const k of claimsCanaries(c)) if (k.op === 'number') seen.add(k.item.expected > 2000 ? 'up' : 'down');
+    } finally { c.done(); }
+  }
+  assert.ok(seen.has('up'), 'a count of 2000 is not treated as a year');
+});
+
+t('claims.js screen-tc: claims-run.json screen targets become a tc-run.json draft; an existing one is kept (TC claims.screen-tc-run-*)', () => {
+  const { prepare, screenTc } = require(CLAIMS);
+  const sc = (i, ref) => ({ id: `C-000${i}`, text: `The '${ref}' screen shows the button 'Save ${i}'`, target: { kind: 'screen', ref }, channel: 'screen', expected: true, impact: 'descriptive' });
+  const spec = { screen: { base_url: 'http://localhost:3000', reset_command: 'node scripts/reset.js', targets: {
+    '/orders': { start_path: '/login', persona: 'admin', fixture: 'admin', notes: 'then open /orders' }, '/refunds': { start_path: '/refunds', persona: 'support agent' } } } };
+  const r = claimsRun({ claims: [sc(1, '/orders'), sc(2, '/orders'), sc(3, '/refunds'), sc(4, '/refunds'), sc(5, '/refunds')], spec });
+  try {
+    prepare(r.run, { seed: 1, keyRoot: r.keys });
+    const res = screenTc(r.run);
+    const runFile = path.join(r.proj, '.cc-audits', 'r1', 'tc-run.json');
+    assert.equal(fs.realpathSync(res.run_file), fs.realpathSync(runFile));
+    assert.equal(res.run_file_status, 'written');
+    const doc = JSON.parse(fs.readFileSync(path.join(r.run, 'screen.tc.json'), 'utf8'));
+    const draft = JSON.parse(fs.readFileSync(runFile, 'utf8'));
+    assert.deepEqual(Object.keys(draft.tcs).sort(), doc.test_cases.map(tc => tc.id).sort());
+    const byTitle = Object.fromEntries(doc.test_cases.map(tc => [tc.title, draft.tcs[tc.id].start_path]));
+    assert.deepEqual(byTitle, { 'Screen /orders': '/login', 'Screen /refunds': '/refunds' });
+    assert.equal(draft.base_url, 'http://localhost:3000');
+    assert.equal(draft.reset_command, 'node scripts/reset.js');
+    assert.deepEqual(res.missing_targets, []);
+    const before = fs.readFileSync(runFile);
+    fs.writeFileSync(runFile, Buffer.concat([before, Buffer.from(' ')]));
+    const kept = fs.readFileSync(runFile);
+    assert.equal(screenTc(r.run).run_file_status, 'kept');
+    assert.ok(fs.readFileSync(runFile).equals(kept), 'the manager\'s run file is not overwritten');
+  } finally { r.done(); }
+});
+
+t('claims.js lint: a list claim gets no split warning; a db spec needs readonly and a way in (TC claims.lint-list-claim, claims.lint-db-access)', async () => {
+  const list = [{ id: 'C-0001', text: 'The backend CORS settings allow the origins http://localhost:5173 and http://localhost:3000', target: { kind: 'file', ref: 'main.py' },
+    channel: 'code', expected: ['http://localhost:5173', 'http://localhost:3000'], impact: 'descriptive' },
+  { id: 'C-0002', text: 'The proxy strips the prefix and adds a header', target: { kind: 'file', ref: 'vite.config.ts' }, channel: 'code', expected: true, impact: 'descriptive' }];
+  const r = claimsRun({ claims: list });
+  try {
+    const out = await runNode([CLAIMS, 'lint', r.run], r.env);
+    assert.equal(out.status, 0, out.stderr);
+    assert.ok(!/C-0001/.test(out.stdout), out.stdout);
+    assert.match(out.stdout, /C-0002: may state more than one fact/);
+  } finally { r.done(); }
+  for (const db of [{ kind: 'postgres', readonly: true }, { kind: 'postgres', readonly: true, connect: 'docker exec db psql' }, { kind: 'postgres', connect: ['psql'] }]) {
+    const d = claimsRun({ claims: dbClaims(2), spec: { db } });
+    try {
+      const out = await runNode([CLAIMS, 'lint', d.run], d.env);
+      assert.equal(out.status, 1, JSON.stringify(db));
+      assert.match(out.stderr, /claims-run\.json: db/);
+    } finally { d.done(); }
+  }
+  const ok = claimsRun({ claims: dbClaims(2), spec: { db: { kind: 'postgres', readonly: true, connect: ['docker', 'exec', '-i', 'pg', 'psql'] } } });
+  try { assert.equal((await runNode([CLAIMS, 'lint', ok.run], ok.env)).status, 0); } finally { ok.done(); }
+});
+
 async function run() {
   let pass = 0, fail = 0;
   const failures = [];

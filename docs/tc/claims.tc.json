@@ -23,6 +23,16 @@
       "id": "DEC.claims-trigger",
       "kind": "decision",
       "locator": "user decision 2026-11-24: verify any report to the user whose facts need a reliability check (web research, analysis, comparison), not only bulk work; run with or without /plan; a skill may start it"
+    },
+    {
+      "id": "REQ.claims-d-fixes",
+      "kind": "requirement",
+      "locator": "docs/plans/claim-verification-d-fixes.md (Phase D defects D1-D8)"
+    },
+    {
+      "id": "DEC.claims-human-optional",
+      "kind": "decision",
+      "locator": "user decision 2026-11-24: a human sample on every bulk run is too much work; default to evidence re-run and better canaries, ask for a human sample only when needed"
     }
   ],
   "actions": [
@@ -184,6 +194,21 @@
       ],
       "evidence_refs": [
         "DEC.claims-trigger"
+      ]
+    },
+    {
+      "id": "ACT.claims.recheck",
+      "title": "Re-read the evidence the verifier named",
+      "actor": "orchestrator",
+      "trigger": "runs claims.js recheck <run dir>",
+      "preconditions": [
+        "verdicts.jsonl has verdict lines with a recheck recipe"
+      ],
+      "outputs": [
+        "recheck.json with a status per item"
+      ],
+      "evidence_refs": [
+        "DEC.claims-human-optional"
       ]
     }
   ],
@@ -888,6 +913,604 @@
         "kind": "requirement",
         "refs": [
           "DEC.claims-scope"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.canary-same-shape",
+      "title": "A value-swap canary only takes a value of the same shape",
+      "action_refs": [
+        "ACT.claims.prepare"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the run has 40 code claims whose expected values are numbers, versions, identifiers and quoted phrases"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js prepare with --seed 3",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "Every swap canary in the key file has an expected value of the same shape as its source claim",
+          "observe": {
+            "channel": "artifact",
+            "key": "key.json items with op swap vs claims.jsonl"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-d-fixes"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.canary-http-status",
+      "title": "An HTTP status canary uses a real status code",
+      "action_refs": [
+        "ACT.claims.prepare"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the run has 30 log claims of the form 'GET /x answered with 200'"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js prepare with --seed 3",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "Every number canary in the key file has a status code from the real status list",
+          "observe": {
+            "channel": "artifact",
+            "key": "audit-input.jsonl expected of canary ids"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-d-fixes"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.canary-date-past",
+      "title": "A date canary moves the day by a few days",
+      "action_refs": [
+        "ACT.claims.prepare-light"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the run has 8 web claims whose expected values are dates like 2026-02-17"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js prepare with --seed 3",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "Every date canary has the same year as its source date",
+          "observe": {
+            "channel": "artifact",
+            "key": "audit-input.jsonl expected of canary ids"
+          }
+        },
+        {
+          "text": "Every date canary has the same month as its source date",
+          "observe": {
+            "channel": "artifact",
+            "key": "audit-input.jsonl expected of canary ids"
+          }
+        },
+        {
+          "text": "Every date canary is at most 3 days from its source date",
+          "observe": {
+            "channel": "artifact",
+            "key": "audit-input.jsonl expected of canary ids"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-d-fixes"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.recheck-file-reproduced",
+      "title": "A file recipe one line off is still reproduced",
+      "action_refs": [
+        "ACT.claims.recheck"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "code.root holds app.py whose line 20 has algorithm=\"HS256\"",
+        "the verdict of A-0001 has a file recipe for app.py line 21 containing algorithm=\"HS256\""
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js recheck on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "recheck.json gives A-0001 the status reproduced",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json .items[A-0001].status"
+          }
+        },
+        {
+          "text": "recheck.json records line 20 as the line found for A-0001",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json .items[A-0001].line"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-human-optional"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.recheck-differs",
+      "title": "A supported claim whose evidence does not come back is reported as not reproduced",
+      "action_refs": [
+        "ACT.claims.recheck",
+        "ACT.claims.report"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the run was scored",
+        "the verdict of claim C-0002 is SUPPORTED with a log recipe whose text is not in the log"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js recheck on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        },
+        {
+          "goal": "Run claims.js report on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "recheck.json gives the item of C-0002 the status differs",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json item status"
+          }
+        },
+        {
+          "text": "report.json gives C-0002 the status not_reproduced",
+          "observe": {
+            "channel": "artifact",
+            "key": "report.json .claims[C-0002].status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-human-optional"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.recheck-path-refused",
+      "title": "A recipe outside the allowed paths is refused",
+      "action_refs": [
+        "ACT.claims.recheck"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "one verdict has a file recipe for ../outside.txt",
+        "one verdict has a file recipe for .env",
+        "one verdict has a log recipe for a file not listed in log.paths"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js recheck on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "recheck.json gives all three items the status refused",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json item statuses"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-human-optional"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.recheck-sql-readonly",
+      "title": "SQL recipes are sent read-only and write SQL is refused",
+      "action_refs": [
+        "ACT.claims.recheck"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claims-run.json has db kind postgres, readonly true and a connect command that records its standard input",
+        "one verdict has the SQL recipe SELECT count(*) FROM t1",
+        "one verdict has the SQL recipe DELETE FROM t1"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js recheck on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The recorded standard input starts with BEGIN READ ONLY",
+          "observe": {
+            "channel": "artifact",
+            "key": "fake connect stdin log"
+          }
+        },
+        {
+          "text": "recheck.json gives the DELETE item the status refused",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json item status"
+          }
+        },
+        {
+          "text": "The recorded standard input has no DELETE",
+          "observe": {
+            "channel": "artifact",
+            "key": "fake connect stdin log"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-human-optional"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.report-human-not-requested",
+      "title": "A bulk report without a human sample says it was not requested",
+      "action_refs": [
+        "ACT.claims.report"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a bulk run was scored and rechecked",
+        "the run dir has no human.json"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js report on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "report.json has human status not_requested",
+          "observe": {
+            "channel": "artifact",
+            "key": "report.json .human.status"
+          }
+        },
+        {
+          "text": "report.json has no human upper bound",
+          "observe": {
+            "channel": "artifact",
+            "key": "report.json .human.upper_bound_95"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-human-optional"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.sample-sheet",
+      "title": "The human sample comes with a review sheet that shows the re-run evidence",
+      "action_refs": [
+        "ACT.claims.sample"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a bulk run was scored and rechecked"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js sample with --n 30 --seed 3",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "sample.md has one entry per sampled item",
+          "observe": {
+            "channel": "artifact",
+            "key": "sample.md entry count"
+          }
+        },
+        {
+          "text": "Each entry of sample.md shows the re-run status of its item",
+          "observe": {
+            "channel": "artifact",
+            "key": "sample.md entries"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-human-optional"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.score-bad-recheck",
+      "title": "A verdict with a malformed recipe is sent back",
+      "action_refs": [
+        "ACT.claims.score"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the run was prepared",
+        "one verdict has a recheck recipe with both file and sql"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js score on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 1",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        },
+        {
+          "text": "The error output names the item with the malformed recipe",
+          "observe": {
+            "channel": "artifact",
+            "key": "stderr"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-human-optional"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.screen-tc-run-draft",
+      "title": "Screen targets in claims-run.json become a tc-run.json draft",
+      "action_refs": [
+        "ACT.claims.screen-tc"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claims-run.json has screen targets for /orders and /refunds with start_path and persona",
+        "audit-input.jsonl has screen items on /orders and /refunds",
+        "the project has no tc-run.json for this run yet"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js screen-tc on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The project's .cc-audits/<run slug>/tc-run.json has an entry for each screen TC",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-run.json .tcs keys"
+          }
+        },
+        {
+          "text": "Each tc-run.json entry has the start_path given for its screen",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-run.json .tcs[*].start_path"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-d-fixes"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.screen-tc-run-kept",
+      "title": "An existing tc-run.json is not overwritten",
+      "action_refs": [
+        "ACT.claims.screen-tc"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the project's .cc-audits/<run slug>/tc-run.json already exists"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js screen-tc on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The SHA-256 of tc-run.json is the same as before the command",
+          "observe": {
+            "channel": "artifact",
+            "key": "sha256 tc-run.json"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-d-fixes"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.lint-list-claim",
+      "title": "A claim about one list gets no split warning",
+      "action_refs": [
+        "ACT.claims.lint"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claim C-0001 says the origins are http://localhost:5173 and http://localhost:3000 and its expected value is a list of the two"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js lint on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The output has no warning for C-0001",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-d-fixes"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.lint-db-access",
+      "title": "A db spec without a way to connect fails lint",
+      "action_refs": [
+        "ACT.claims.lint"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claims-run.json has a db entry with readonly true and neither dsn_env nor connect"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js lint on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 1",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        },
+        {
+          "text": "The error output names claims-run.json",
+          "observe": {
+            "channel": "artifact",
+            "key": "stderr"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-d-fixes"
         ]
       },
       "readiness": "ready"

@@ -7,6 +7,15 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- **Fact verification after the first real run** (`docs/plans/claim-verification-d-fixes.md`, 14 new TCs in `docs/tc/claims.tc.json`).
+  - `claims.js recheck`: re-reads the evidence every verdict names in a `recheck` recipe — a file line (inside `code.root` or `doc.paths`, ±3 lines), a log line (one of `log.paths`), or one SELECT sent through the orchestrator's `db.connect` command inside a read-only transaction (postgres, mysql/mariadb, sqlite; other kinds only with `db.readonly_login: true`). It runs no agent-written script; forbidden paths, the key root, the run dir, secret-looking files (logs too), write SQL, file / cross-server / sequence / locking calls, a second statement and backslashes are refused; files are opened without following a final symlink; only the matching line is kept, masked. A judged claim whose evidence does not come back is `not_reproduced` in the report.
+  - Human sample is optional: asked only for a costly or hard-to-reverse decision, 20%+ judgment-call claims, the first bulk run in a project, or on request. Otherwise the report says "not requested"; `sample` also writes `sample.md`, a review sheet with the re-read evidence beside each verdict. Session rule 12 updated.
+  - Canaries keep the value's shape: swaps only within a shape (count, status, version, URL, constant, identifier, word, phrase; never dates), HTTP statuses become other real status codes, dates move 1–3 days, years move back.
+  - `fact-auditor`: a grade table (reading source is C even when read directly), `db.connect`, one `== <A-id>` header per item, `recheck` recipes, and `jev samples` / `recheck recipes` lines in the return.
+  - `claims-run.json`: `db.connect` (argv, no shell) and `screen.targets` are official; `lint` checks them. `screen-tc` drafts `.cc-audits/<run>/tc-run.json` from `screen.targets` and never overwrites an existing one.
+  - `lint` no longer warns "more than one fact" on a claim whose expected value is a list.
+
 ### Added
 - **Independent verification of reported facts** (`docs/plans/claim-verification.md`, TCs `docs/tc/claims.tc.json`).
   - Session rule 12: facts in a report the user will act on (web research, analysis conclusions, comparisons, wikis, inventories, bulk edits) are verified before the answer — with or without `/plan`, coding or not. Fewer than 30 claims is a light run (every claim, ≥ 2 canaries, a mark per claim); 30+ is a bulk run (adds a human sample of the verifier's verdicts and a one-sided 95% error bound).

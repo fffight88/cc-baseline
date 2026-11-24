@@ -7,7 +7,8 @@
 // canaries (claims made false on purpose), and — after fact-auditor and, for
 // screen items, e2e-tester have judged every item — scores the verdicts against
 // the canary key, carries refuted premises over to the claims that rest on
-// them, draws the human sample and writes the report. It judges nothing itself.
+// them, re-reads the evidence each verdict names (recheck), draws the human
+// sample when one is asked for and writes the report. It judges nothing itself.
 //
 //   node claims.js lint <run dir>
 //   node claims.js prepare <run dir> [--seed N] [--canary-rate 0.1] [--mode light|bulk]
@@ -15,12 +16,17 @@
 //   node claims.js screen-tc <run dir>
 //   node claims.js import-results <run dir> --results <tc-results.jsonl> [--run-id <id>]
 //   node claims.js score <run dir>
+//   node claims.js recheck <run dir>
 //   node claims.js sample <run dir> [--n 50] [--seed N]
 //   node claims.js human <run dir> --answers <answers.json>
 //   node claims.js report <run dir>
 //
 // Exit 0 ok · 1 the check failed (lint errors, a forbidden verifier, missing
-// verdicts) · 2 usage or I/O error.
+// verdicts, evidence that did not reproduce) · 2 usage or I/O error.
+//
+// recheck never runs a script an agent wrote: it reads the file or log line a
+// verdict names itself, and sends a verdict's SELECT to the database only
+// through the `db.connect` command the orchestrator wrote in claims-run.json.
 //
 // The canary key lives outside the project (~/.claude/claims-keys/<id>/key.json,
 // dir 0700, file 0600; CC_BASELINE_CLAIMS_KEYS moves the root). fact-auditor is
@@ -32,7 +38,9 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { parseArgs } = require('./jev-client');
-const { label: jevLabel, readSamples, jevDirDefault, canonical, CLAIM_QUESTION } = require('./tc-jev-judge');
+const { label: jevLabel, readSamples, jevDirDefault, canonical, maskSecrets, CLAIM_QUESTION } = require('./tc-jev-judge');
+const { DENIED_READ_RE } = require('./tc-api-run');
+const { COMMAND_ENV_DROP } = require('./tc-replay');
 
 const CHANNELS = ['code', 'db', 'log', 'screen', 'doc', 'api', 'web'];
 const TARGET_KINDS = ['screen', 'file', 'table', 'function', 'route', 'menu', 'web', 'other'];
@@ -42,7 +50,9 @@ const GRADES = ['A', 'B', 'C', 'D'];
 const MODES = ['light', 'bulk'];
 const CLAIM_KEYS = ['id', 'text', 'target', 'channel', 'expected', 'premises', 'impact', 'source_refs', 'source_url', 'notes'];
 const PREMISE_KEYS = ['id', 'text', 'target', 'channel', 'expected', 'source_refs', 'source_url', 'notes'];
-const VERDICT_KEYS = ['id', 'verdict', 'grade', 'evidence', 'verifier', 'jev_sample', 'notes'];
+const VERDICT_KEYS = ['id', 'verdict', 'grade', 'evidence', 'verifier', 'jev_sample', 'recheck', 'notes'];
+const RECHECK_KEYS = ['file', 'log', 'sql', 'line', 'contains'];
+const RECHECK_KINDS = ['file', 'log', 'sql'];
 const CLAIM_ID_RE = /^C-\d{4,}$/;
 const PREMISE_ID_RE = /^P-\d{3,}$/;
 const AUDIT_ID_RE = /^A-\d{4,}$/;
@@ -54,6 +64,28 @@ const BULK_CANARIES_PER_CHANNEL = 3;
 const DEFAULT_RATE = 0.1;
 const DEFAULT_SAMPLE = 50;
 const FILE_MAX = 2 * 1024 * 1024;
+const LOG_MAX = 50 * 1024 * 1024;
+const RECHECK_LINE_SLACK = 3;
+const CONTAINS_MAX = 300;
+const FOUND_MAX = 200;
+const SQL_TIMEOUT_MS = 30000;
+const SQL_OUT_MAX = 1024 * 1024;
+// Status codes a canary may use instead of a real one, so a changed status still looks like a status.
+const HTTP_STATUSES = [200, 201, 204, 301, 302, 304, 400, 401, 403, 404, 405, 409, 422, 429, 500, 502, 503];
+const STATUS_CONTEXT_RE = /\bHTTP\b|\bstatus\b|\banswered with\b|\brespond(?:s|ed)? with\b|\breturn(?:s|ed)?\b/i;
+const DATE_RE = /\b(\d{4})-(\d{2})-(\d{2})\b/;
+const YEAR_CONTEXT_RE = /\b(?:year|years|since|until|founded|created|released|published|launched|established|in|from|by)\s+\d{4}\b|\b\d{4}\s+(?:year|edition|release)\b/i;
+// SELECTs recheck refuses on top of WRITE_SQL_RE: calls that read files, reach other
+// servers, move sequences or lock rows.
+const RECHECK_SQL_DENY_RE = /\b(?:pg_read_file|pg_read_binary_file|pg_ls_dir|pg_stat_file|lo_\w+|dblink\w*|nextval|setval|load_extension|load_file|openrowset|opendatasource|openquery|xp_\w+|sp_\w+|pg_sleep\w*|sleep|benchmark)\s*\(|\bINTO\s+(?:OUTFILE|DUMPFILE)\b|\bFOR\s+(?:UPDATE|SHARE|NO\s+KEY\s+UPDATE|KEY\s+SHARE)\b/i;
+// How each database kind is put into read-only mode around one SELECT. Other kinds run
+// only when claims-run.json says the connect command logs in read-only (db.readonly_login).
+const READONLY_WRAP = {
+  postgres: body => `BEGIN READ ONLY;\n${body};\nROLLBACK;\n`,
+  mysql: body => `START TRANSACTION READ ONLY;\n${body};\nROLLBACK;\n`,
+  mariadb: body => `START TRANSACTION READ ONLY;\n${body};\nROLLBACK;\n`,
+  sqlite: body => `PRAGMA query_only = ON;\n${body};\n`,
+};
 
 // Warning heuristics for one claim sentence (they lean toward catching too much).
 const CONJUNCTION_RE = /\b(and|as well as|also)\b|;|그리고|또한|\s및\s/i;
@@ -117,7 +149,8 @@ function runPaths(runDir) {
     claims: p('claims.jsonl'), premises: p('premises.jsonl'), run: p('claims-run.json'),
     input: p('audit-input.jsonl'), freeze: p('freeze.json'), verdicts: p('verdicts.jsonl'),
     verifiers: p('verifiers'), screenTc: p('screen.tc.json'), score: p('score.json'),
-    sample: p('sample.json'), human: p('human.json'), reportJson: p('report.json'), reportMd: p('report.md'),
+    sample: p('sample.json'), sampleMd: p('sample.md'), human: p('human.json'), recheck: p('recheck.json'),
+    reportJson: p('report.json'), reportMd: p('report.md'),
   };
 }
 
@@ -185,8 +218,46 @@ function checkItem(x, kind, seen, problems) {
   if (x.source_refs !== undefined && !(Array.isArray(x.source_refs) && x.source_refs.every(isStr))) err('source_refs must be a list of strings');
   if (x.channel === 'web' && !(isStr(x.source_url) && /^https?:\/\/\S+$/i.test(x.source_url))) err('a web claim needs source_url (http or https)');
   if (x.source_url !== undefined && !(isStr(x.source_url) && /^https?:\/\/\S+$/i.test(x.source_url))) err('source_url must be an http or https URL');
-  if (isStr(x.text) && CONJUNCTION_RE.test(x.text)) warn('one claim should state one fact — split this sentence');
+  // A claim whose expected value is a list (the origins are A and B) is one fact about one list.
+  if (isStr(x.text) && !Array.isArray(x.expected) && CONJUNCTION_RE.test(x.text)) warn('may state more than one fact — split it, or keep it if it is one fact');
   if (isStr(x.text) && SUBJECTIVE_RE.test(x.text)) warn('subjective word — say what can be checked');
+}
+
+// claims-run.json, when there is one: the db spec must give a read-only way in,
+// and the screen spec must name a start path and persona per target.
+function lintSpec(p, problems) {
+  const err = m => problems.errors.push(`claims-run.json: ${m}`);
+  let spec;
+  try { spec = readJson(p.run, { optional: true }); } catch (e) { err(e.message); return; }
+  if (spec === null) return;
+  if (!spec || typeof spec !== 'object' || Array.isArray(spec)) { err('must be a JSON object'); return; }
+  const db = spec.db;
+  if (db !== undefined) {
+    if (!db || typeof db !== 'object' || Array.isArray(db)) err('db must be an object');
+    else {
+      if (db.readonly !== true) err('db.readonly must be true — verifiers only read');
+      if (!isStr(db.dsn_env) && db.connect === undefined) err('db needs dsn_env or connect (the command that opens a read-only session)');
+      if (db.connect !== undefined && !(Array.isArray(db.connect) && db.connect.length > 0 && db.connect.every(isStr))) {
+        err('db.connect must be a list of non-empty strings (the command and its arguments, no shell)');
+      }
+      if (db.readonly_login !== undefined && typeof db.readonly_login !== 'boolean') err('db.readonly_login must be true or false');
+    }
+  }
+  const screen = spec.screen;
+  if (screen !== undefined) {
+    if (!screen || typeof screen !== 'object' || Array.isArray(screen)) { err('screen must be an object'); return; }
+    if (!isStr(screen.base_url)) err('screen.base_url is required');
+    if (screen.targets !== undefined) {
+      if (!screen.targets || typeof screen.targets !== 'object' || Array.isArray(screen.targets)) err('screen.targets must be an object keyed by target.ref');
+      else {
+        for (const [ref, t] of Object.entries(screen.targets)) {
+          if (!t || typeof t !== 'object' || !isStr(t.start_path) || !t.start_path.startsWith('/') || !isStr(t.persona)) {
+            err(`screen.targets[${JSON.stringify(ref)}] needs start_path (starting with /) and persona`);
+          }
+        }
+      }
+    }
+  }
 }
 
 function lintRun(runDir) {
@@ -194,6 +265,7 @@ function lintRun(runDir) {
   const claims = readJsonl(p.claims);
   const premises = readJsonl(p.premises, { optional: true });
   const problems = { errors: [], warnings: [] };
+  lintSpec(p, problems);
   const seen = new Set();
   for (const x of premises) checkItem(x, 'premise', seen, problems);
   for (const x of claims) checkItem(x, 'claim', seen, problems);
@@ -230,9 +302,14 @@ function shuffle(list, rng) {
   return a;
 }
 
-function bump(n, rng) {
+// A changed value must still look like the kind of value the claim is about: an HTTP
+// status stays a real status code, a year moves into the past, a count changes size.
+function bump(n, rng, { status = false, year = false } = {}) {
   if (Number.isInteger(n)) {
-    const options = [n + 1, n - 1, n + 2, n * 2, n + 10].filter(v => v !== n && v >= 0);
+    let options;
+    if (status && n >= 100 && n <= 599) options = HTTP_STATUSES.filter(v => v !== n);
+    else if (year && n >= 1900 && n <= 2100) options = [n - 1, n - 2];
+    else options = [n + 1, n - 1, n + 2, n * 2, n + 10].filter(v => v !== n && v >= 0);
     return options[Math.floor(rng() * options.length)];
   }
   const decimals = (String(n).split('.')[1] || '').length;
@@ -246,32 +323,92 @@ const WHOLE_NUM_RE = /(?<![\p{L}\p{N}_.])-?\d+(?:\.\d+)?(?!\p{N}|\.\p{N})/u;
 
 function escapeRe(x) { return x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
-// Replaces one whole occurrence of `token` — never a piece of a longer number or word.
+// A regex for one whole occurrence of `token` — never a piece of a longer number or word.
+// `edges`: guard only the ends that are letters or digits, so a quoted piece of source
+// (`="HS256"`) still matches where it sits right after a word.
+function wholeRe(token, { edges = false } = {}) {
+  if (/^-?\d+(?:\.\d+)?$/.test(token)) return new RegExp(`(?<![\\p{L}\\p{N}_.])${escapeRe(token)}(?!\\p{N}|\\.\\p{N})`, 'u');
+  const head = !edges || /^[\p{L}\p{N}_]/u.test(token) ? '(?<![\\p{L}\\p{N}_])' : '';
+  const tail = !edges || /[\p{L}\p{N}_]$/u.test(token) ? '(?![\\p{L}\\p{N}_])' : '';
+  return new RegExp(`${head}${escapeRe(token)}${tail}`, 'u');
+}
+
+// Replaces one whole occurrence of `token`.
 function replaceWhole(text, token, next) {
-  const re = /^-?\d+(?:\.\d+)?$/.test(token)
-    ? new RegExp(`(?<![\\p{L}\\p{N}_.])${escapeRe(token)}(?!\\p{N}|\\.\\p{N})`, 'u')
-    : new RegExp(`(?<![\\p{L}\\p{N}_])${escapeRe(token)}(?![\\p{L}\\p{N}_])`, 'u');
+  const re = wholeRe(token);
   if (!re.test(text)) return null;
   return text.replace(re, () => next);
+}
+
+function datesOf(text) { return String(text).match(new RegExp(DATE_RE.source, 'g')) || []; }
+
+// The first whole number of `text` that is not part of a date.
+function numberOutsideDates(text) {
+  const spans = [];
+  for (const m of text.matchAll(new RegExp(DATE_RE.source, 'g'))) spans.push([m.index, m.index + m[0].length]);
+  for (const m of text.matchAll(new RegExp(WHOLE_NUM_RE.source, 'gu'))) {
+    if (!spans.some(([a, b]) => m.index >= a && m.index < b)) return m[0];
+  }
+  return null;
 }
 
 function mutateNumber(c, rng) {
   const text = c.text;
   const exp = c.expected;
+  if (typeof exp === 'string' && DATE_RE.test(exp)) return null;   // a date moves by days (mutateDate)
   let token = null;
   if (typeof exp === 'number') token = String(exp);
   else if (typeof exp === 'string' && NUM_RE.test(exp)) token = exp.match(NUM_RE)[0];
-  else if (exp === true) { const m = text.match(WHOLE_NUM_RE); token = m ? m[0] : null; }
+  else if (exp === true) token = numberOutsideDates(text);
   if (token === null) return null;
-  const next = String(bump(Number(token), rng));
+  const next = String(bump(Number(token), rng, { status: STATUS_CONTEXT_RE.test(text), year: YEAR_CONTEXT_RE.test(text) }));
   if (next === token) return null;
   const newText = replaceWhole(text, token, next);
   if (newText === null) return null;
+  // the number replaced must not have been a piece of a date in the sentence
+  if (datesOf(newText).join() !== datesOf(text).join()) return null;
   let newExp = exp;
   if (typeof exp === 'number') newExp = Number(next);
   else if (typeof exp === 'string') newExp = replaceWhole(exp, token, next);
   if (newExp === null) return null;
   return { text: newText, expected: newExp };
+}
+
+// A date keeps its year and month and moves 1–3 days (back when it can), so it stays
+// a plausible date — never one far in the future.
+function mutateDate(c, rng) {
+  const exp = c.expected;
+  const source = typeof exp === 'string' && DATE_RE.test(exp) ? exp : exp === true ? c.text : null;
+  const m = source && source.match(DATE_RE);
+  if (!m) return null;
+  const day = Number(m[3]);
+  const shift = 1 + Math.floor(rng() * 3);
+  const nd = day >= 4 ? day - shift : day + shift;
+  const next = `${m[1]}-${m[2]}-${String(nd).padStart(2, '0')}`;
+  const text = replaceWhole(c.text, m[0], next);
+  if (text === null) return null;
+  const expected = typeof exp === 'string' ? replaceWhole(exp, m[0], next) : exp;
+  return expected === null ? null : { text, expected };
+}
+
+// The shape of an expected value: a canary that swaps values swaps only within a shape,
+// so the changed sentence does not give itself away ("signs tokens with the 1440 algorithm").
+function valueShape(v, text = '') {
+  if (typeof v === 'number') {
+    if (Number.isInteger(v) && v >= 100 && v <= 599 && STATUS_CONTEXT_RE.test(text)) return 'status';
+    return Number.isInteger(v) ? 'int' : 'dec';
+  }
+  if (typeof v !== 'string') return null;
+  const s = v.trim();
+  if (/^-?\d+$/.test(s)) return valueShape(Number(s), text);
+  if (/^v\d+(?:\.\d+)*$|^\d+(?:\.\d+){2,3}$/.test(s)) return 'version';
+  if (/^-?\d+\.\d+$/.test(s)) return 'dec';
+  if (DATE_RE.test(s) && /^\d{4}-\d{2}-\d{2}/.test(s)) return 'date';
+  if (/^https?:\/\/\S+$/i.test(s)) return 'url';
+  if (/^[A-Z0-9_]+$/.test(s) && /[A-Z]/.test(s)) return 'constant';
+  if (/^[a-z0-9_]+$/.test(s) && /[a-z]/.test(s)) return 'identifier';
+  if (/^\S+$/.test(s)) return 'word';
+  return 'phrase';
 }
 
 function mutateNegation(c) {
@@ -289,11 +426,15 @@ function mutateSwap(c, claims, rng) {
   if (!(typeof c.expected === 'string' || typeof c.expected === 'number')) return null;
   const own = String(c.expected);
   if (!own.trim()) return null;
+  const shape = valueShape(c.expected, c.text);
+  if (shape === 'date') return null;   // a date only moves by a few days (mutateDate)
   // Only from another target: a value of the same target (another column of the same table)
   // may by chance be true, and a correct verifier would then look like it missed a canary.
+  // Only of the same shape: a version in place of a password is false on its face.
   const others = claims.filter(o => o.id !== c.id && o.channel === c.channel && o.target && c.target && o.target.kind === c.target.kind
     && o.target.ref !== c.target.ref
-    && (typeof o.expected === 'string' || typeof o.expected === 'number') && String(o.expected) !== own && String(o.expected).trim());
+    && (typeof o.expected === 'string' || typeof o.expected === 'number') && String(o.expected) !== own && String(o.expected).trim()
+    && valueShape(o.expected, o.text) === shape);
   if (others.length === 0) return null;
   const o = others[Math.floor(rng() * others.length)];
   const text = replaceWhole(c.text, own, String(o.expected));
@@ -313,8 +454,9 @@ function makeCanaries(claims, { mode, rate, rng }) {
   const texts = new Set(claims.map(c => c.text));
   const out = [];
   const tryMake = c => {
-    for (const op of shuffle(['number', 'negate', 'swap'], rng)) {
-      const m = op === 'number' ? mutateNumber(c, rng) : op === 'negate' ? mutateNegation(c) : mutateSwap(c, claims, rng);
+    for (const op of shuffle(['number', 'date', 'negate', 'swap'], rng)) {
+      const m = op === 'number' ? mutateNumber(c, rng) : op === 'date' ? mutateDate(c, rng)
+        : op === 'negate' ? mutateNegation(c) : mutateSwap(c, claims, rng);
       if (!m || m.text === c.text || texts.has(m.text)) continue;
       texts.add(m.text);
       return { of: c.id, op, item: neutral(c, m) };
@@ -487,7 +629,34 @@ function screenTc(runDir) {
     open_questions: [],
   };
   writeJson(p.screenTc, doc, 0o644);
-  return { file: p.screenTc, test_cases: doc.test_cases.length, expected: items.length };
+  const refs = [...byTarget.keys()];
+  return { file: p.screenTc, test_cases: doc.test_cases.length, expected: items.length,
+    ...screenRunDraft(p, doc, refs) };
+}
+
+// The run add-on e2e-tester needs (`.cc-audits/<plan>/tc-run.json`, the only place the
+// tools read it from), drafted from `screen` in claims-run.json. An existing file is
+// the manager's and is never overwritten.
+function screenRunDraft(p, doc, refs) {
+  const spec = readJson(p.run, { optional: true }) || {};
+  const screen = spec.screen && typeof spec.screen === 'object' && !Array.isArray(spec.screen) ? spec.screen : null;
+  if (!screen || !isStr(screen.base_url)) return { run_file: null, run_file_status: 'no screen spec in claims-run.json' };
+  const targets = screen.targets && typeof screen.targets === 'object' && !Array.isArray(screen.targets) ? screen.targets : {};
+  const runFile = path.join(projectRoot(p.dir), '.cc-audits', doc.plan, 'tc-run.json');
+  const tcs = {};
+  const missing = [];
+  doc.test_cases.forEach((tc, i) => {
+    const t = Object.prototype.hasOwnProperty.call(targets, refs[i]) ? targets[refs[i]] : null;
+    if (!(t && isStr(t.start_path) && isStr(t.persona))) { missing.push(refs[i]); return; }
+    tcs[tc.id] = { start_path: t.start_path, persona: t.persona, ...(isStr(t.fixture) ? { fixture: t.fixture } : {}),
+      data: {}, secret_env: [], ...(isStr(t.notes) ? { notes: t.notes } : {}) };
+  });
+  if (fs.existsSync(runFile)) return { run_file: runFile, run_file_status: 'kept', missing_targets: missing };
+  const draft = { base_url: screen.base_url, ...(isStr(screen.reset_command) ? { reset_command: screen.reset_command } : {}),
+    ...(screen.fixtures && typeof screen.fixtures === 'object' && !Array.isArray(screen.fixtures) ? { fixtures: screen.fixtures } : {}), tcs };
+  fs.mkdirSync(path.dirname(runFile), { recursive: true, mode: 0o700 });
+  writeJson(runFile, draft);
+  return { run_file: runFile, run_file_status: 'written', missing_targets: missing };
 }
 
 // Only result lines recorded for this screen.tc.json (same TC digest, the one
@@ -554,6 +723,23 @@ function checkVerdict(v) {
     bad.push('a SUPPORTED or REFUTED verdict needs evidence.source and evidence.excerpt or evidence.how');
   }
   if (v.jev_sample !== undefined && !SHA_RE.test(String(v.jev_sample))) bad.push('jev_sample must be a sample id (64 hex)');
+  if (v.recheck !== undefined) bad.push(...checkRecipe(v.recheck));
+  return bad;
+}
+
+// A recheck recipe: exactly one of file / log / sql, the text that decides the item, and
+// for a file an optional line.
+function checkRecipe(r) {
+  if (!r || typeof r !== 'object' || Array.isArray(r)) return ['recheck must be an object'];
+  const bad = [];
+  for (const k of Object.keys(r)) if (!RECHECK_KEYS.includes(k)) bad.push(`recheck: unknown field ${k}`);
+  const kinds = RECHECK_KINDS.filter(k => r[k] !== undefined);
+  if (kinds.length !== 1) bad.push('recheck needs exactly one of file, log or sql');
+  else if (!isStr(r[kinds[0]])) bad.push(`recheck.${kinds[0]} must be a non-empty string`);
+  if (!isStr(r.contains) || r.contains.length > CONTAINS_MAX) bad.push(`recheck.contains must be a non-empty string of at most ${CONTAINS_MAX} characters`);
+  if (r.line !== undefined && !(kinds.length === 1 && kinds[0] === 'file' && Number.isInteger(r.line) && r.line > 0)) {
+    bad.push('recheck.line must be a positive integer, on a file recipe only');
+  }
   return bad;
 }
 
@@ -658,6 +844,178 @@ function score(runDir, { keyRoot = keyRootDefault(), jevDir = jevDirDefault() } 
   return out;
 }
 
+// ── recheck ───────────────────────────────────────────────────────────────
+
+class Refusal extends Error {}
+
+function norm(s) { return String(s).replace(/\s+/g, ' ').trim(); }
+
+// Whole-token match after folding whitespace: "4" never matches inside "14".
+function hasWhole(hay, needle) {
+  const n = norm(needle);
+  return n !== '' && wholeRe(n, { edges: true }).test(norm(hay));
+}
+
+function clip(s) { return maskSecrets(norm(s)).slice(0, FOUND_MAX); }
+
+function within(real, dir) { return real === dir || real.startsWith(dir + path.sep); }
+
+// The paths a recipe may never read: the forbidden paths, the key root, this run dir.
+function deniedRoots(spec, p, keyRoot) {
+  const root = projectRoot(p.dir);
+  const list = (Array.isArray(spec.forbidden_paths) ? spec.forbidden_paths : []).filter(isStr).map(f => realish(path.resolve(root, f)));
+  return [...list, realish(keyRoot), fs.realpathSync(p.dir)];
+}
+
+// Opened without following a final symlink, and checked on the open file, so a link
+// swapped in after the path checks is not read.
+function readCapped(real, max) {
+  let fd;
+  try { fd = fs.openSync(real, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW || 0)); } catch (e) {
+    throw new Refusal(e.code === 'ELOOP' ? 'a symlink' : `cannot open (${e.code || e.message})`);
+  }
+  try {
+    const st = fs.fstatSync(fd);
+    if (!st.isFile()) throw new Refusal('not a file');
+    if (st.size > max) throw new Refusal(`larger than ${Math.round(max / 1024 / 1024)} MB`);
+    const buf = fs.readFileSync(fd);
+    if (buf.includes(0)) throw new Refusal('binary file');
+    return buf.toString('utf8');
+  } finally { fs.closeSync(fd); }
+}
+
+function recheckFile(r, spec, p, denied) {
+  const codeRoot = spec.code && isStr(spec.code.root) ? realish(path.resolve(projectRoot(p.dir), spec.code.root)) : null;
+  const docs = (spec.doc && Array.isArray(spec.doc.paths) ? spec.doc.paths : []).filter(isStr).map(d => realish(path.resolve(projectRoot(p.dir), d)));
+  if (!path.isAbsolute(r.file) && !codeRoot) throw new Refusal('a relative file needs code.root in claims-run.json');
+  // real path of what exists, the rest appended: an outside path is refused even when it is missing
+  const real = realish(path.isAbsolute(r.file) ? r.file : path.resolve(codeRoot, r.file));
+  if (!((codeRoot && within(real, codeRoot)) || docs.includes(real))) throw new Refusal('outside code.root and doc.paths');
+  if (!fs.existsSync(real)) return { status: 'differs', reason: 'file not found' };
+  if (denied.some(d => within(real, d))) throw new Refusal('a forbidden path');
+  const rel = codeRoot && within(real, codeRoot) ? path.relative(codeRoot, real) : path.basename(real);
+  if (DENIED_READ_RE.test(rel.split(path.sep).join('/'))) throw new Refusal('a secret-looking file');
+  const lines = readCapped(real, FILE_MAX).split('\n');
+  let from = 0;
+  let to = lines.length - 1;
+  if (r.line) { from = Math.max(0, r.line - 1 - RECHECK_LINE_SLACK); to = Math.min(lines.length - 1, r.line - 1 + RECHECK_LINE_SLACK); }
+  // nearest to the line the verifier named
+  const order = [];
+  for (let i = from; i <= to; i++) order.push(i);
+  if (r.line) order.sort((a, b) => Math.abs(a - (r.line - 1)) - Math.abs(b - (r.line - 1)));
+  for (const i of order) if (hasWhole(lines[i], r.contains)) return { status: 'reproduced', line: i + 1, found: clip(lines[i]) };
+  return { status: 'differs', reason: r.line ? `not within ${RECHECK_LINE_SLACK} lines of line ${r.line}` : 'not in the file' };
+}
+
+function recheckLog(r, spec, p, denied) {
+  const root = projectRoot(p.dir);
+  const logs = (spec.log && Array.isArray(spec.log.paths) ? spec.log.paths : []).filter(isStr).map(l => realish(path.resolve(root, l)));
+  const asked = realish(path.resolve(root, r.log));
+  if (!logs.includes(asked)) throw new Refusal('not one of log.paths');
+  if (denied.some(d => within(asked, d))) throw new Refusal('a forbidden path');
+  if (DENIED_READ_RE.test(asked.split(path.sep).join('/'))) throw new Refusal('a secret-looking file');
+  if (!fs.existsSync(asked)) return { status: 'differs', reason: 'log not found' };
+  const hits = readCapped(asked, LOG_MAX).split('\n').filter(l => hasWhole(l, r.contains));
+  return hits.length ? { status: 'reproduced', hits: hits.length, found: clip(hits[0]) } : { status: 'differs', reason: 'no matching line' };
+}
+
+// One read-only SELECT. The command is the orchestrator's (`db.connect`, argv, no shell);
+// the SQL comes from an agent, so it is filtered here and, for postgres, wrapped in a
+// read-only transaction.
+function checkSql(sql) {
+  if (sql.includes('\\')) throw new Refusal('a backslash (client command) in SQL');
+  const body = sql.replace(/--[^\n]*/g, ' ').replace(/\/\*[\s\S]*?\*\//g, ' ').trim().replace(/;\s*$/, '').trim();
+  if (!/^(?:SELECT|WITH)\b/i.test(body)) throw new Refusal('SQL must start with SELECT or WITH');
+  if (body.includes(';')) throw new Refusal('one statement only');
+  WRITE_SQL_RE.lastIndex = 0;
+  if (WRITE_SQL_RE.test(body.replace(/\s/g, ' '))) throw new Refusal('write SQL');
+  if (RECHECK_SQL_DENY_RE.test(body.replace(/\s/g, ' '))) throw new Refusal('a call that reads files, reaches other servers, moves sequences or locks rows');
+  return body;
+}
+
+function runSql(body, db) {
+  const { spawnSync } = require('child_process');
+  const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !COMMAND_ENV_DROP.test(k)));
+  const wrap = READONLY_WRAP[String(db.kind || '').toLowerCase()];
+  const input = wrap ? wrap(body) : `${body}\n`;
+  const r = spawnSync(db.connect[0], db.connect.slice(1), { input, encoding: 'utf8', timeout: SQL_TIMEOUT_MS, maxBuffer: SQL_OUT_MAX, env, shell: false });
+  if (r.error) return { ok: false, reason: r.error.code === 'ETIMEDOUT' ? 'timed out' : `could not run db.connect (${r.error.code || r.error.message})` };
+  if (r.status !== 0) return { ok: false, reason: `db.connect exited ${r.status}: ${clip(r.stderr || '')}` };
+  return { ok: true, out: r.stdout || '' };
+}
+
+function recheckSql(r, spec, cache) {
+  const db = spec.db;
+  if (!(db && db.readonly === true && Array.isArray(db.connect) && db.connect.length && db.connect.every(isStr))) {
+    throw new Refusal('needs db.connect and db.readonly: true in claims-run.json');
+  }
+  if (!READONLY_WRAP[String(db.kind || '').toLowerCase()] && db.readonly_login !== true) {
+    throw new Refusal(`no read-only transaction for db.kind ${JSON.stringify(db.kind || '')} — set db.readonly_login: true only when db.connect logs in with a read-only account`);
+  }
+  const body = checkSql(r.sql);
+  if (!cache.has(body)) cache.set(body, runSql(body, db));
+  const res = cache.get(body);
+  if (!res.ok) return { status: 'failed', reason: res.reason };
+  const line = res.out.split('\n').find(l => hasWhole(l, r.contains));
+  // only the matching row is kept; on a miss the output (other rows, maybe personal data) is not
+  return line !== undefined ? { status: 'reproduced', found: clip(line) }
+    : { status: 'differs', reason: `not in the query output (${res.out.split('\n').filter(l => l.trim()).length} line(s))` };
+}
+
+// Re-reads the evidence each verdict names. Never runs a verifier script.
+function recheck(runDir, { keyRoot = keyRootDefault() } = {}) {
+  const p = runPaths(runDir);
+  const freeze = readJson(p.freeze);
+  checkFreeze(p, freeze);
+  const key = readKey(p, freeze, keyRoot);
+  const spec = readJson(p.run, { optional: true }) || {};
+  const input = readJsonl(p.input);
+  const verdicts = latestVerdicts(p);
+  const denied = deniedRoots(spec, p, keyRoot);
+  const cache = new Map();
+  const items = {};
+  for (const x of input) {
+    const v = verdicts.get(x.id);
+    let row;
+    if (!v || v.verdict === 'UNVERIFIABLE') row = { status: 'not_rerunnable', reason: v ? 'unverifiable' : 'no verdict' };
+    else if (v.recheck === undefined) row = { status: 'not_rerunnable', reason: ['screen', 'web', 'api'].includes(x.channel) ? `${x.channel} item` : 'no recheck recipe' };
+    else if (checkRecipe(v.recheck).length) row = { status: 'refused', reason: checkRecipe(v.recheck)[0] };
+    else {
+      const r = v.recheck;
+      const kind = RECHECK_KINDS.find(k => r[k] !== undefined);
+      try {
+        row = kind === 'file' ? recheckFile(r, spec, p, denied) : kind === 'log' ? recheckLog(r, spec, p, denied) : recheckSql(r, spec, cache);
+      } catch (e) {
+        if (!(e instanceof Refusal)) throw e;
+        row = { status: 'refused', reason: e.message };
+      }
+      row = { kind, ...row };
+    }
+    items[x.id] = row;
+  }
+  // Counted on real claims and premises only; canaries stay hidden.
+  const counts = { reproduced: 0, differs: 0, refused: 0, failed: 0, not_rerunnable: 0, of: 0 };
+  const problems = [];
+  for (const x of input) {
+    if (!key.items[x.id]) throw new ClaimsError(`the canary key does not know ${x.id} — run prepare again`);
+    if (key.items[x.id].canary) continue;
+    counts.of++;
+    counts[items[x.id].status]++;
+    if (['differs', 'refused', 'failed'].includes(items[x.id].status)) problems.push(x.id);
+  }
+  const out = { run: p.name, verdicts_sha256: sha256(fs.existsSync(p.verdicts) ? fs.readFileSync(p.verdicts) : ''), counts, problems, items };
+  writeJson(p.recheck, out);
+  return out;
+}
+
+// recheck.json, if it was made from the verdicts as they are now.
+function currentRecheck(p) {
+  const rc = readJson(p.recheck, { optional: true });
+  if (!rc) return { state: 'not_run' };
+  const now = sha256(fs.existsSync(p.verdicts) ? fs.readFileSync(p.verdicts) : '');
+  return rc.verdicts_sha256 === now ? { state: 'current', rc } : { state: 'stale' };
+}
+
 // ── sample / human ────────────────────────────────────────────────────────
 
 // A simple random sample of n real verdicts (canaries never) — the error bound is
@@ -690,7 +1048,37 @@ function sample(runDir, { n = DEFAULT_SAMPLE, seed = 1, coverageMax = 10 } = {})
   };
   const out = { run: p.name, n: picked.length, seed, items: picked.map(view), coverage: coverage.map(view) };
   writeJson(p.sample, out);
+  writeSampleSheet(p, out);
   return out;
+}
+
+// The page a person reads to answer: each sampled verdict with the verifier's evidence
+// and what recheck read again, so the answer is a judgment, not a lookup.
+function writeSampleSheet(p, smp) {
+  const cur = currentRecheck(p);
+  const rc = cur.state === 'current' ? cur.rc.items : null;
+  const cell = s => String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
+  const entry = (it, i) => {
+    const ev = it.evidence || {};
+    const r = rc && rc[it.audit_id];
+    const rerun = !rc ? `not run (${cur.state === 'stale' ? 'recheck.json is older than the verdicts' : 'no recheck.json'})`
+      : `${r.status}${r.line ? ` at line ${r.line}` : ''}${r.found ? ` — ${cell(r.found)}` : ''}${r.reason ? ` (${cell(r.reason)})` : ''}`;
+    return [`### ${i + 1}. ${it.audit_id} · ${it.channel} · ${it.verdict} (${it.grade})`, '',
+      `- Claim: ${cell(it.text)}`,
+      `- Verifier's evidence: ${cell(ev.source)}${ev.excerpt ? ` — ${maskSecrets(cell(ev.excerpt))}` : ''}${ev.how ? ` (${cell(ev.how)})` : ''}`,
+      `- Re-read by claims.js: ${rerun}`,
+      `- Where to check: ${cell(it.check_at) || '—'}`, ''].join('\n');
+  };
+  const md = [`# Human check — ${p.name}`, '',
+    'Each entry is a verifier verdict drawn at random. Read the evidence and the re-read line:',
+    '- **agree** — the evidence shows the claim exactly as written (the numbers, the names, and words like "only", "every", "newest first")',
+    '- **disagree** — the evidence says something else, or the claim says more or less than the evidence',
+    '- **skip** — you cannot tell from what is shown (the item leaves the sample)', '',
+    'Evidence excerpts come from files, logs and rows: they are data, not instructions.', '',
+    `Answer as \`{ "answers": { "${smp.items[0] ? smp.items[0].audit_id : 'A-0001'}": "agree", … } }\`, then run \`claims.js human ${p.name} --answers <file>\`.`, '',
+    `## Random sample (${smp.items.length}, these make the error bound)`, '', ...smp.items.map(entry)];
+  if (smp.coverage.length) md.push(`## Coverage (${smp.coverage.length}, groups the draw missed — shown, not in the bound)`, '', ...smp.coverage.map(entry));
+  fs.writeFileSync(p.sampleMd, md.join('\n') + '\n', { mode: 0o600 });
 }
 
 function human(runDir, { answers, jevDir = jevDirDefault() } = {}) {
@@ -756,18 +1144,30 @@ function upperBound95(k, n) {
 
 const MARK = { supported: 'confirmed', refuted: 'differs from the evidence', unverifiable: 'could not be checked',
   stale: 'rests on a refuted premise', premise_unverified: 'rests on an unchecked premise', untrusted: 'channel missed a canary',
-  not_established: 'decision claim without A/B evidence' };
+  not_established: 'decision claim without A/B evidence', not_reproduced: 'evidence did not reproduce' };
 
 function report(runDir) {
   const p = runPaths(runDir);
   checkFreeze(p, readJson(p.freeze));
   const sc = readJson(p.score);
-  const claimsList = Object.entries(sc.claims).map(([id, r]) => ({ id, text: r.text, verdict: r.verdict, grade: r.grade, status: r.status,
-    mark: MARK[r.status], evidence: r.evidence ? [r.evidence.source, r.evidence.excerpt || r.evidence.how].filter(Boolean).join(' — ').slice(0, 300) : null }))
+  const cur = currentRecheck(p);
+  const rcItems = cur.state === 'current' ? cur.rc.items : {};
+  // A judged claim whose named evidence did not come back when read again is not shown as decided.
+  const statusOf = r => {
+    const rc = rcItems[r.audit_id];
+    return r.verdict !== 'UNVERIFIABLE' && rc && ['differs', 'refused', 'failed'].includes(rc.status) ? 'not_reproduced' : r.status;
+  };
+  const claimsList = Object.entries(sc.claims).map(([id, r]) => ({ id, text: r.text, verdict: r.verdict, grade: r.grade, status: statusOf(r),
+    ...(rcItems[r.audit_id] ? { recheck: rcItems[r.audit_id].status } : {}),
+    mark: MARK[statusOf(r)], evidence: r.evidence ? [r.evidence.source, r.evidence.excerpt || r.evidence.how].filter(Boolean).join(' — ').slice(0, 300) : null }))
     .sort((a, b) => a.id.localeCompare(b.id));
-  const premises = Object.entries(sc.premises).map(([id, r]) => ({ id, verdict: r.verdict, grade: r.grade }));
+  const premises = Object.entries(sc.premises).map(([id, r]) => ({ id, verdict: r.verdict, grade: r.grade,
+    ...(rcItems[r.audit_id] ? { recheck: rcItems[r.audit_id].status } : {}) }));
   const channels = Object.fromEntries(Object.entries(sc.channels).map(([k, c]) => [k, { trusted: c.trusted, canaries: c.canaries, caught: c.caught, missed: c.missed.length }]));
-  const out = { run: p.name, mode: sc.mode, counts: sc.counts, channels, premises, claims: claimsList };
+  const counts = { ...sc.counts, not_reproduced: 0 };
+  for (const c of claimsList) if (c.status !== sc.claims[c.id].status) { counts[sc.claims[c.id].status]--; counts.not_reproduced++; }
+  const out = { run: p.name, mode: sc.mode, counts, channels, premises, claims: claimsList };
+  out.recheck = cur.state === 'current' ? cur.rc.counts : { status: cur.state === 'stale' ? 'stale — the verdicts changed after recheck; run it again' : 'not run' };
   if (sc.mode === 'bulk') {
     out.canaries = sc.canaries;
     out.premises_refuted = premises.filter(x => x.verdict === 'REFUTED').map(x => x.id);
@@ -777,14 +1177,18 @@ function report(runDir) {
       out.human = { n: h.answered, disagree: h.disagree, upper_bound_95: Number(ub.toFixed(3)),
         statement: `verifier verdicts wrong at most ${(ub * 100).toFixed(1)}% (one-sided 95%), from ${h.disagree} disagreement(s) in ${h.answered} randomly sampled`,
         ...(h.coverage && h.coverage.answered ? { coverage: h.coverage } : {}) };
+    } else if (h) {
+      out.human = { n: 0, status: 'skipped', statement: 'skipped by the user — no error bound on the verifier\'s reading of the evidence' };
     } else {
-      out.human = { n: 0, status: 'not done — no error bound can be given' };
+      out.human = { n: 0, status: 'not_requested', statement: 'not requested — no error bound on the verifier\'s reading of the evidence; evidence re-run and canaries only' };
     }
   }
   writeJson(p.reportJson, out);
   const md = [`# Claim verification — ${p.name} (${sc.mode})`, ''];
-  md.push(`- Claims: ${claimsList.length} · supported ${sc.counts.supported} · refuted ${sc.counts.refuted} · could not be checked ${sc.counts.unverifiable} · stale ${sc.counts.stale} · premise unchecked ${sc.counts.premise_unverified} · not established ${sc.counts.not_established} · untrusted ${sc.counts.untrusted}`);
+  md.push(`- Claims: ${claimsList.length} · supported ${counts.supported} · refuted ${counts.refuted} · could not be checked ${counts.unverifiable} · stale ${counts.stale} · premise unchecked ${counts.premise_unverified} · not established ${counts.not_established} · untrusted ${counts.untrusted} · evidence did not reproduce ${counts.not_reproduced}`);
   md.push(`- Channels: ${Object.entries(channels).map(([k, c]) => `${k} ${c.trusted === null ? 'untested' : c.trusted ? 'trusted' : 'NOT trusted'} (${c.caught}/${c.canaries} canaries)`).join(' · ')}`);
+  const rcn = out.recheck;
+  md.push(`- Evidence re-run: ${rcn.status || `reproduced ${rcn.reproduced} · differ ${rcn.differs} · refused ${rcn.refused} · failed ${rcn.failed} · not re-runnable ${rcn.not_rerunnable} (of ${rcn.of} claims and premises)`}`);
   if (out.human) md.push(`- Human check: ${out.human.statement || out.human.status}${out.human.coverage ? ` · coverage items: ${out.human.coverage.disagree} disagreement(s) in ${out.human.coverage.answered} (not in the bound)` : ''}`);
   md.push('', '| Claim | Status | Grade | Evidence |', '|---|---|---|---|');
   for (const c of claimsList) md.push(`| ${c.id} ${String(c.text || '').replace(/\|/g, '\\|')} | ${c.mark} | ${c.grade} | ${String(c.evidence || '').replace(/\|/g, '\\|')} |`);
@@ -800,6 +1204,7 @@ const USAGE = 'usage: claims.js lint <run dir>\n' +
   '       claims.js screen-tc <run dir>\n' +
   '       claims.js import-results <run dir> --results <tc-results.jsonl> [--run-id <id>]\n' +
   '       claims.js score <run dir>\n' +
+  '       claims.js recheck <run dir>\n' +
   '       claims.js sample <run dir> [--n 50] [--seed N]\n' +
   '       claims.js human <run dir> --answers <answers.json>\n' +
   '       claims.js report <run dir>';
@@ -814,7 +1219,7 @@ function intOpt(v, name, def) {
 function main(argv) {
   const [cmd, ...rest] = argv.slice(2);
   const spec = {
-    lint: {}, 'check-verifiers': {}, 'screen-tc': {}, score: {}, report: {},
+    lint: {}, 'check-verifiers': {}, 'screen-tc': {}, score: {}, recheck: {}, report: {},
     prepare: { values: ['--seed', '--canary-rate', '--mode'] },
     'import-results': { values: ['--results', '--run-id'] },
     sample: { values: ['--n', '--seed'] },
@@ -861,9 +1266,15 @@ function main(argv) {
         untrusted_channels: Object.entries(r.channels).filter(([, c]) => c.trusted === false).map(([k]) => k), jev_labeled: r.jev_labeled }));
       return 0;
     }
+    if (cmd === 'recheck') {
+      const r = recheck(run);
+      for (const id of r.problems) console.error(`claims: ${id} ${r.items[id].status} — ${r.items[id].reason || ''}`.trim());
+      console.log(JSON.stringify({ counts: r.counts, file: runPaths(run).recheck }));
+      return r.problems.length ? 1 : 0;
+    }
     if (cmd === 'sample') {
       const r = sample(run, { n: intOpt(opts['--n'], '--n', DEFAULT_SAMPLE), seed: intOpt(opts['--seed'], '--seed', 1) });
-      console.log(JSON.stringify({ n: r.n, file: runPaths(run).sample }));
+      console.log(JSON.stringify({ n: r.n, file: runPaths(run).sample, sheet: runPaths(run).sampleMd }));
       return 0;
     }
     if (cmd === 'human') {
@@ -884,6 +1295,6 @@ function main(argv) {
 if (require.main === module) process.exitCode = main(process.argv);
 
 module.exports = {
-  lintRun, prepare, checkVerifiers, screenTc, importResults, score, sample, human, report, upperBound95,
-  keyFileFor, projectRoot, mulberry32, main, ClaimsError, CHANNELS, VERDICTS, GRADES,
+  lintRun, prepare, checkVerifiers, screenTc, importResults, score, recheck, sample, human, report, upperBound95,
+  keyFileFor, projectRoot, mulberry32, main, ClaimsError, CHANNELS, VERDICTS, GRADES, HTTP_STATUSES,
 };

@@ -65,7 +65,7 @@ done
 
 ### 1.1 fact-auditor outside a plan
 
-fact-auditor is not tied to `/plan`. Whenever a report to the user carries facts that would change the user's decision if wrong — web research, an analysis, a comparison, a wiki, an inventory — run `/verify-claims` before the answer (session rule 12, `reference_claim_verification.md`). Fewer than 30 claims is a light run; 30+ adds the human sample and the error bound.
+fact-auditor is not tied to `/plan`. Whenever a report to the user carries facts that would change the user's decision if wrong — web research, an analysis, a comparison, a wiki, an inventory — run `/verify-claims` before the answer (session rule 12, `reference_claim_verification.md`). Fewer than 30 claims is a light run; 30+ adds more canaries and an evidence re-run, and a human sample with an error bound only when the stakes call for it (guide §1).
 
 **Non-UI plan**: design-director and publisher are both skipped; the flow is the original `implementation → (security-auditor ∥ code-reviewer) → e2e-tester`.
 

@@ -397,4 +397,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { request, readSource, jsonPath, applySetCookie, targetUrl, Refused, loadRun, projectRoot, baseOrigin, sessionFile, readCookies, maskTokens, checkCommand };
+module.exports = { request, readSource, jsonPath, applySetCookie, targetUrl, Refused, loadRun, projectRoot, baseOrigin, sessionFile, readCookies, maskTokens, checkCommand, DENIED_READ_RE };

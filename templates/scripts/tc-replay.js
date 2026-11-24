@@ -935,4 +935,4 @@ async function main(argv) {
 
 if (require.main === module) main(process.argv).then(c => { process.exitCode = c; });
 
-module.exports = { checkRecording, contentDigest, readAccepted, run, finish, urls, resolve, checkTemplate, saveLoginState, ACTION_OPS };
+module.exports = { checkRecording, contentDigest, readAccepted, run, finish, urls, resolve, checkTemplate, saveLoginState, ACTION_OPS, COMMAND_ENV_DROP };
