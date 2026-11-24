@@ -15,6 +15,7 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
   - `fact-auditor`: a grade table (reading source is C even when read directly), `db.connect`, one `== <A-id>` header per item, `recheck` recipes, and `jev samples` / `recheck recipes` lines in the return.
   - `claims-run.json`: `db.connect` (argv, no shell) and `screen.targets` are official; `lint` checks them. `screen-tc` drafts `.cc-audits/<run>/tc-run.json` from `screen.targets` and never overwrites an existing one.
   - `lint` no longer warns "more than one fact" on a claim whose expected value is a list.
+  - After the Phase D2 run: fact-auditor stores its Jev calibration samples before writing verdicts (0 only without a Jev key or without A/B items), never runs `recheck` / `score` / `sample` / `report`, and counts its return from `verdicts.jsonl`; `score` warns when a run with A/B verdicts stored no Jev claim sample. Grade table: configuration files (`*.config.*`, YAML/TOML/INI, `.env.example`, compose) are B, setting defaults in code are C.
 
 ### Added
 - **Independent verification of reported facts** (`docs/plans/claim-verification.md`, TCs `docs/tc/claims.tc.json`).

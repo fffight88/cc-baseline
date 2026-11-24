@@ -823,6 +823,16 @@ function score(runDir, { keyRoot = keyRootDefault(), jevDir = jevDirDefault() } 
     known.add(v.jev_sample);
   }
 
+  // fact-auditor must store calibration samples for items it decided at A or B (its step 5);
+  // a run without any is flagged, so the bank does not silently stop growing.
+  const question = `${CLAIM_QUESTION.id}@${CLAIM_QUESTION.version}`;
+  const jevSamples = bank.filter(s => s.question === question && s.tc === `claims:${p.name}`).length;
+  const decidedAB = input.filter(x => { const v = verdicts.get(x.id); return v.verdict !== 'UNVERIFIABLE' && ['A', 'B'].includes(v.grade) && v.verifier !== 'e2e'; }).length;
+  const warnings = [];
+  if (decidedAB > 0 && jevSamples === 0) {
+    warnings.push(`no Jev claim sample was stored for this run although ${decidedAB} item(s) were decided at A or B — ask fact-auditor for its calibration samples (step 5), unless Jev has no key`);
+  }
+
   const count = s => Object.values(items).filter(r => r.status === s).length;
   const out = {
     ok: true, run: p.name, mode: freeze.mode, items: input.length, channels,
@@ -838,7 +848,9 @@ function score(runDir, { keyRoot = keyRootDefault(), jevDir = jevDirDefault() } 
       abstained: Object.values(channels).reduce((a, c) => a + c.abstained, 0),
     },
     jev_labeled: jevLabeled,
+    jev_samples: jevSamples,
     ...(refused.length ? { jev_label_refused: refused } : {}),
+    warnings,
   };
   writeJson(p.score, out);
   return out;
@@ -1262,8 +1274,9 @@ function main(argv) {
         for (const i of r.invalid) console.error(`ERROR ${i}`);
         return 1;
       }
+      for (const w of r.warnings) console.error(`WARN  ${w}`);
       console.log(JSON.stringify({ mode: r.mode, counts: r.counts, canaries: r.canaries,
-        untrusted_channels: Object.entries(r.channels).filter(([, c]) => c.trusted === false).map(([k]) => k), jev_labeled: r.jev_labeled }));
+        untrusted_channels: Object.entries(r.channels).filter(([, c]) => c.trusted === false).map(([k]) => k), jev_labeled: r.jev_labeled, jev_samples: r.jev_samples }));
       return 0;
     }
     if (cmd === 'recheck') {

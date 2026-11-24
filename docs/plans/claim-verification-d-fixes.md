@@ -305,3 +305,50 @@ cc-baseline 자체의 TC(`surface: cli`)다. 기존 `docs/tc/claims.tc.json`(17 
   - QA-005 (사용자 결정: 한계로 문서에) 문자열 리터럴 안의 `;`·`--` 처리는 지침 §8과 fact-auditor 지침에 적었다.
   - QA-006 (사용자 결정: 둘 다 추가) DB 명령 실패 → `failed`, 표본 전부 skip → `skipped` 테스트를 넣었다. DB 종류별 감싸기, `readonly_login`, 새 거부 목록, 연도 규칙 테스트도 함께 넣었다.
 - 반영 뒤 `npm test` 216 + 21 통과.
+
+## Phase D2 결과 (2026-11-24)
+
+- **실행:** `ontology-demo/.cc-audits/claims/phase-d2-bulk`, seed 2, bulk. Phase D 장부(주장 42, 전제 2)를 복사했고, 카나리아는 12개(채널마다 3개)다. `claims-run.json`에는 `db.connect`(목록)와 `screen.targets`(4개)를 공식 필드로 썼다. 제품 코드와 DB는 바꾸지 않았다.
+- **결과:** supported 38, stale 3(C-0015~17. 틀린 전제 P-002가 `action_service.py`의 삽입으로 반박됐다), not_established 1(C-0010, decision·C 등급), refuted 0. 결과가 Phase D와 같다.
+
+### 확인 항목
+
+| 항목 | 결과 | 근거 |
+|---|---|---|
+| 코드 읽기가 C 등급인가(D1) | ✅ | 코드 주장 18개(카나리아 포함)가 모두 C이고, A는 db 16·log 11이다. 처음부터 맞아서 다시 요청하지 않았다. 다만 설정 파일(`config.py`, `vite.config.ts`)도 B가 아니라 C로 적었다(아래 N3) |
+| 반환에 `jev samples`·`recheck recipes` 줄이 있는가(D2) | ✅ / ⚠️ | 두 줄 모두 있다. 레시피는 45/45(file 18, sql 16, log 11)다. 하지만 `jev samples: 0 (Jev not run)`이었다. 지침 7단계는 이 샘플이 필수인데, 사유가 유효하지 않다(N1) |
+| `recheck`가 code·db·log를 `reproduced`로 확인하는가 | ✅ | reproduced 36, differ·refused·failed 0, not re-runnable 8(화면) / 44. 실제 주장 36개가 전부 재현됐다 |
+| 카나리아가 같은 모양이고, 모두 잡히는가(D3) | ✅ | 바꾸기 5개는 수↔수 2개, 문구↔문구 3개이고, 모두 다른 대상끼리 바꿨다. 수 바꾸기 7개 중 HTTP 값은 502·500·201로 실제 상태 코드다. 12/12 잡혔다(code·db·log는 fact-auditor, screen은 e2e-tester) |
+| `tc-run.json` 초안으로 e2e가 도는가(D6) | ✅ | `screen-tc`가 `written`을 냈고 `missing_targets`는 없다. 초안을 그대로 써서 테스터가 TC 4개, 기대 결과 11개를 code로 판정했다. 불변 조건은 깨끗했고, 스윕은 `skipped`로 기록됐다. `import-results`가 11개를 가져왔다 |
+| 사람 표본이 "not requested"인가 | ✅ | 보고서에는 "Human check: not requested — …"가 적혔고, `report.json`의 `human.status`는 `not_requested`다 |
+
+- `check-verifiers` 통과(파일 3개). 결과 정리 단계(`report`)는 불일치 0으로 끝났다.
+
+### 비용 (Phase D와 비교)
+
+| 단계 | Phase D | Phase D2 |
+|---|---|---|
+| bulk `fact-auditor` | 31.6천 토큰 · 55초 · 도구 16 | 34.6천 · 51초 · 14 |
+| `fact-auditor` 후속(등급 재확인 + Jev 샘플) | 36.6천 · 27초 · 4 | 없음(등급이 처음부터 맞음. Jev 샘플은 빠짐, N1) |
+| e2e-tester(화면 TC 4개, Playwright, 스윕 생략) | 87.0천 · 132초 · 27 | 86.3천 · 112초 · 28 |
+| 검증 에이전트 합계 | 155.2천 · 214초 | 120.9천 · 163초(−22% 토큰) |
+| 전체 경과(Phase D: prepare→report, 사람 표본 제외 / D2: lint→report) | 236초 | 299초 |
+
+- D2의 전체 경과에는 오케스트레이터가 직접 한 확인이 들어 있다. 키로 카나리아 모양을 확인했고, verdicts를 점검했고, TC 블록을 만들었다. Phase D와 재는 범위가 같지 않다.
+- 사람 표본은 0개다(Phase D에서는 30개를 확인하는 데 사용자 시간이 몇 분 들었다).
+- 오케스트레이터 토큰은 따로 잴 수 없다.
+
+### Phase D2에서 찾은 결함
+
+| # | 결함 | 영향 | 수정 범위(안) |
+|---|---|---|---|
+| N1 | `fact-auditor`가 필수인 7단계(A/B 항목 최대 10개의 `--label code:` Jev 샘플)를 건너뛰었다. 사유는 "Jev not run; no excerpt files written"이다. Jev 키가 있고 A 등급 항목도 27개 있어서 유효한 사유가 아니다. Phase D에서도 후속 요청을 한 번 더 해야 했다 | `Q.claim_supported@1` 뱅크가 늘지 않아 보정이 늦어진다 | `fact-auditor.md` 7단계를 6단계 앞(판정 쓰기 전)으로 옮기고 "0이면 안 되는 사유"를 예시로 적는다. 그리고/또는 `score`가 A/B 판정이 있는데 이 실행의 `run`으로 저장된 샘플이 0이면 경고한다 |
+| N2 | `fact-auditor`가 `claims.js recheck`를 직접 돌렸다(`recheck.json`을 auditor가 썼다). 지침에는 금지가 없다. 오케스트레이터가 다시 돌린 결과도 같았다 | auditor가 재실행이 통과할 때까지 레시피를 다듬을 수 있다. 그래도 재실행은 레시피가 가리키는 원본을 다시 읽으므로 해는 작다. 반환에 형식 밖 `note` 줄도 붙었다. 또 `Counts`의 등급 수(A=26, C=19)가 verdicts.jsonl의 실제 수(A=27, C=18)와 하나씩 다르다 | `fact-auditor.md`에 "`recheck`는 오케스트레이터가 돌린다. 직접 돌리지 않는다"를 넣는다(또는 허용하고 지침에 그렇게 적는다) |
+| N3 | 설정 파일(`backend/app/config.py`의 기본값, `frontend/vite.config.ts`)을 C로 적었다. 등급 표는 설정 파일을 B로 둔다 | 보수적인 쪽이라 해는 작다. 다만 decision 주장이라면 `not_established`가 과하게 나올 수 있다 | 등급 표에 "설정 파일 = 배포에 쓰이는 값 파일(.env 예시, yaml, toml, `*.config.*`). 소스 안의 기본값 상수는 C"라고 예를 넣는다. 아니면 그대로 둔다 |
+
+### Phase D2 결함 수정 (2026-11-24, 사용자 지시: 결함 보고 수정)
+
+- **N1:** `fact-auditor.md`의 보정 샘플 단계를 판정 쓰기 전(5단계)으로 옮겼다. 0개를 허용하는 사유는 둘뿐이다(Jev가 `unconfigured`로 답함, A·B 판정이 없음). "Jev not run"은 사유가 아니라고 적었다. `score`는 A·B 판정이 있는데 이 실행의 `Q.claim_supported@1` 샘플이 0이면 `warnings`에 넣고 `WARN`을 출력한다(exit 0). `score.json`에 `jev_samples`를 넣었다.
+- **N2:** `fact-auditor.md`에 "`recheck`·`score`·`sample`·`report`는 돌리지 않는다(오케스트레이터 몫)"와 "반환의 수는 `verdicts.jsonl`에서 스크립트로 센다"를 넣었다.
+- **N3:** 등급 표에 설정 파일의 예를 넣었다. 설정만 담는 파일(`*.config.*`, YAML·TOML·INI, `.env.example`, compose)은 B이고, 코드 안의 설정 기본값(`config.py`의 `Settings` 클래스, 상수)은 C다.
+- 테스트 1개를 추가했다. `npm test` 217 + 21 통과.

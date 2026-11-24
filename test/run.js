@@ -4486,6 +4486,39 @@ t('claims.js recheck review fixes: a failing db command is failed, read-only wra
   assert.ok(seen.has('up'), 'a count of 2000 is not treated as a year');
 });
 
+t('claims.js score: a run with A/B verdicts and no Jev claim sample is warned; a stored calibration sample clears it (Phase D2 N1)', async () => {
+  const { prepare, score } = require(CLAIMS);
+  const r = claimsRun({ claims: dbClaims(8) });
+  const srv = await mockJev(body => ({ status: 200, json: nouls(body, { holds: 0.95, observable: 0.95 }) }));
+  try {
+    prepare(r.run, { seed: 1, keyRoot: r.keys });
+    writeVerdicts(r);
+    let sc = score(r.run, { keyRoot: r.keys, jevDir: r.jev });
+    assert.equal(sc.jev_samples, 0);
+    assert.equal(sc.warnings.length, 1);
+    assert.match(sc.warnings[0], /no Jev claim sample/);
+    const out = await runNode([CLAIMS, 'score', r.run], r.env);
+    assert.equal(out.status, 0, 'a warning does not fail score');
+    assert.match(out.stderr, /WARN {2}no Jev claim sample/);
+    const { judgeClaim } = require(TC_JEV_JUDGE);
+    const { loadConfig } = require(path.join(ROOT, 'templates', 'scripts', 'jev-client.js'));
+    const config = loadConfig({ env: { CC_BASELINE_JEV_KEY: FAKE_KEY, CC_BASELINE_JEV_BASE_URL: srv.url }, home: '/nonexistent' });
+    const res = await judgeClaim({ id: 'A-0001', claim: 'Table t1 has 4 rows', evidence: { source: 'db', text: 't1=4' }, run: 'r1' },
+      { config, jevDir: r.jev, label: { source: 'code', value: 'PASS' } });
+    assert.equal(res.status, 'ok', JSON.stringify(res));
+    sc = score(r.run, { keyRoot: r.keys, jevDir: r.jev });
+    assert.equal(sc.jev_samples, 1);
+    assert.deepEqual(sc.warnings, []);
+  } finally { await srv.close(); r.done(); }
+  // only C-grade verdicts (nothing decided at A/B) → no warning
+  const c = claimsRun({ claims: dbClaims(8) });
+  try {
+    prepare(c.run, { seed: 1, keyRoot: c.keys });
+    writeVerdicts(c, (id, x, k) => ({ id, verdict: k.canary ? 'REFUTED' : 'SUPPORTED', grade: 'C', evidence: { source: 'code', excerpt: 'read' } }));
+    assert.deepEqual(score(c.run, { keyRoot: c.keys, jevDir: c.jev }).warnings, []);
+  } finally { c.done(); }
+});
+
 t('claims.js screen-tc: claims-run.json screen targets become a tc-run.json draft; an existing one is kept (TC claims.screen-tc-run-*)', () => {
   const { prepare, screenTc } = require(CLAIMS);
   const sc = (i, ref) => ({ id: `C-000${i}`, text: `The '${ref}' screen shows the button 'Save ${i}'`, target: { kind: 'screen', ref }, channel: 'screen', expected: true, impact: 'descriptive' });
