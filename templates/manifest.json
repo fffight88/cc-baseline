@@ -23,6 +23,8 @@
     "memory/reference_tc_authoring.md",
     "memory/reference_wiki.md",
     "memory/reference_test_env.md",
+    "memory/reference_claim_verification.md",
+    "memory/reference_genius_thinking.md",
     "scripts/audit-report.js",
     "scripts/aside-session.sh",
     "scripts/design-preview.js",
@@ -36,16 +38,19 @@
     "scripts/tc-sweep.js",
     "scripts/wiki.js",
     "scripts/test-env-check.js",
+    "scripts/claims.js",
     "agents/e2e-tester.md",
     "agents/security-auditor.md",
     "agents/code-reviewer.md",
     "agents/design-director.md",
     "agents/publisher.md",
+    "agents/fact-auditor.md",
     "commands/plan.md",
     "commands/clean.md",
     "commands/check-log.md",
     "commands/open-browser.md",
-    "commands/wiki.md"
+    "commands/wiki.md",
+    "commands/verify-claims.md"
   ],
   "overwriteDirs": [
     "design-previews"

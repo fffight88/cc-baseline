@@ -20,6 +20,7 @@ When writing a Plan that includes implementation changes, always include a meta 
 - Code Quality Impact: Yes | No | Unknown
 - UI Impact: Yes | No | Unknown
 - Behavior Impact: Yes | No | Unknown
+- Claim Impact: Yes | No | Unknown
 - Reason: <1 line — which areas are affected if Yes/Unknown>
 ```
 
@@ -30,6 +31,7 @@ When writing a Plan that includes implementation changes, always include a meta 
 - ✅ DO: Follow the five-agent order in `reference_agent_pipeline.md` — design-director (direct, greenfield only) → publisher (build) → security-auditor + code-reviewer (review) → e2e-tester (verify)
 - ✅ DO: If `Behavior Impact: Yes` or `Unknown`, draft actions + TCs in the plan's `## Test Cases (draft)` section, check the draft from stdin, ask its open questions before approval, and write `docs/tc/<feature>.tc.json` right after approval (see `reference_tc_authoring.md`)
 - ✅ DO: If both audit fields are Yes/Unknown, call both agents in parallel in a single message
+- ✅ DO: If `Claim Impact: Yes` or `Unknown`, verify the reported facts with `/verify-claims` before the completion report (see `reference_claim_verification.md`); a plan without the field follows session rule 12
 - ✅ DO: If `Security Impact: No` / `Code Quality Impact: No` / `UI Impact: No`, skip the corresponding agent
 - ❌ DON'T: Never submit an implementation plan without the `Security Impact`, `Code Quality Impact`, `UI Impact`, or `Behavior Impact` fields
 - ❌ DON'T: Never submit a plan with `Behavior Impact: Yes/Unknown` that has no `## Test Cases (draft)` section

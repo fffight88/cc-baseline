@@ -1,0 +1,897 @@
+{
+  "schema_version": 1,
+  "feature": "claims",
+  "title": "Independent verification of large claim sets (claims.js, fact-auditor, Q.claim_supported)",
+  "plan": "claim-verification",
+  "sources": [
+    {
+      "id": "REQ.claims-plan",
+      "kind": "requirement",
+      "locator": "docs/plans/claim-verification.md (approved 2026-11-24)"
+    },
+    {
+      "id": "REQ.claims-purpose",
+      "kind": "requirement",
+      "locator": "user request 2026-11-24: work across hundreds to thousands of screens cannot be checked by hand; a separate agent or script must verify it, not the producer"
+    },
+    {
+      "id": "DEC.claims-scope",
+      "kind": "decision",
+      "locator": "user decision 2026-11-24: claims ledger, premise ledger, clean-room verifier, evidence grade, canaries, human audit of the auditor; Jev is used; pilot on the 11 accounting draft flows"
+    },
+    {
+      "id": "DEC.claims-trigger",
+      "kind": "decision",
+      "locator": "user decision 2026-11-24: verify any report to the user whose facts need a reliability check (web research, analysis, comparison), not only bulk work; run with or without /plan; a skill may start it"
+    }
+  ],
+  "actions": [
+    {
+      "id": "ACT.claims.lint",
+      "title": "Check a claims run",
+      "actor": "orchestrator",
+      "trigger": "runs claims.js lint <run dir>",
+      "preconditions": [
+        "the run dir has claims.jsonl and premises.jsonl"
+      ],
+      "outputs": [
+        "errors and warnings per claim id",
+        "exit code"
+      ],
+      "evidence_refs": [
+        "REQ.claims-plan"
+      ]
+    },
+    {
+      "id": "ACT.claims.prepare",
+      "title": "Freeze the ledgers and mix in canaries",
+      "actor": "orchestrator",
+      "trigger": "runs claims.js prepare <run dir> --seed <n>",
+      "preconditions": [
+        "lint reports no error"
+      ],
+      "outputs": [
+        "audit-input.jsonl",
+        "freeze.json",
+        "canary key outside the project"
+      ],
+      "evidence_refs": [
+        "REQ.claims-plan",
+        "DEC.claims-scope"
+      ]
+    },
+    {
+      "id": "ACT.claims.check-verifiers",
+      "title": "Check that verifier scripts stay clean-room",
+      "actor": "fact-auditor",
+      "trigger": "runs claims.js check-verifiers <run dir>",
+      "preconditions": [
+        "verifier scripts exist under verifiers/"
+      ],
+      "outputs": [
+        "forbidden references per file",
+        "exit code"
+      ],
+      "evidence_refs": [
+        "DEC.claims-scope"
+      ]
+    },
+    {
+      "id": "ACT.claims.screen-tc",
+      "title": "Turn screen claims into a view-only TC file",
+      "actor": "orchestrator",
+      "trigger": "runs claims.js screen-tc <run dir>",
+      "preconditions": [
+        "audit-input.jsonl has screen items"
+      ],
+      "outputs": [
+        "screen.tc.json"
+      ],
+      "evidence_refs": [
+        "REQ.claims-plan"
+      ]
+    },
+    {
+      "id": "ACT.claims.import-results",
+      "title": "Bring e2e results back as verdicts",
+      "actor": "orchestrator",
+      "trigger": "runs claims.js import-results <run dir> --results <tc-results.jsonl>",
+      "preconditions": [
+        "e2e-tester ran screen.tc.json"
+      ],
+      "outputs": [
+        "verdict lines in verdicts.jsonl"
+      ],
+      "evidence_refs": [
+        "REQ.claims-plan"
+      ]
+    },
+    {
+      "id": "ACT.claims.score",
+      "title": "Score verdicts against the canary key and premises",
+      "actor": "orchestrator",
+      "trigger": "runs claims.js score <run dir>",
+      "preconditions": [
+        "every audit-input item has a verdict"
+      ],
+      "outputs": [
+        "score.json",
+        "code labels for Jev-judged canaries"
+      ],
+      "evidence_refs": [
+        "DEC.claims-scope"
+      ]
+    },
+    {
+      "id": "ACT.claims.sample",
+      "title": "Draw the human audit sample",
+      "actor": "orchestrator",
+      "trigger": "runs claims.js sample <run dir> --n <n> --seed <n>",
+      "preconditions": [
+        "score.json exists"
+      ],
+      "outputs": [
+        "sample.json"
+      ],
+      "evidence_refs": [
+        "DEC.claims-scope"
+      ]
+    },
+    {
+      "id": "ACT.claims.report",
+      "title": "Write the verification report",
+      "actor": "orchestrator",
+      "trigger": "runs claims.js report <run dir>",
+      "preconditions": [
+        "score.json exists",
+        "human.json exists or the sample was skipped"
+      ],
+      "outputs": [
+        "report.md",
+        "report.json"
+      ],
+      "evidence_refs": [
+        "REQ.claims-purpose"
+      ]
+    },
+    {
+      "id": "ACT.claims.jev-claim",
+      "title": "Ask Jev whether evidence supports a claim",
+      "actor": "fact-auditor",
+      "trigger": "runs tc-jev-judge.js claim <input.json>",
+      "preconditions": [
+        "a Jev key is configured"
+      ],
+      "outputs": [
+        "Jev verdict line",
+        "a sample in the Jev bank"
+      ],
+      "evidence_refs": [
+        "DEC.claims-scope"
+      ]
+    },
+    {
+      "id": "ACT.claims.prepare-light",
+      "title": "Prepare a small report in light mode",
+      "actor": "orchestrator",
+      "trigger": "runs claims.js prepare <run dir> on fewer than 30 claims",
+      "preconditions": [
+        "lint reports no error"
+      ],
+      "outputs": [
+        "audit-input.jsonl with at least 2 canaries",
+        "freeze.json with mode light"
+      ],
+      "evidence_refs": [
+        "DEC.claims-trigger"
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "id": "TC.claims.lint-missing-channel",
+      "title": "A claim without a channel fails lint",
+      "action_refs": [
+        "ACT.claims.lint"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claims.jsonl has claim C-0002 with no channel field"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js lint on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 1",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        },
+        {
+          "text": "The error output names C-0002",
+          "observe": {
+            "channel": "artifact",
+            "key": "stderr"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.lint-unknown-premise",
+      "title": "A claim that cites a missing premise fails lint",
+      "action_refs": [
+        "ACT.claims.lint"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claim C-0001 lists premise P-999",
+        "premises.jsonl has no P-999"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js lint on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 1",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.lint-web-needs-url",
+      "title": "A web claim without a source URL fails lint",
+      "action_refs": [
+        "ACT.claims.lint"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claim C-0001 has channel web and no source URL"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js lint on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 1",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-trigger"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.prepare-canaries-hidden",
+      "title": "Prepare mixes in canaries the auditor cannot tell apart",
+      "action_refs": [
+        "ACT.claims.prepare"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the run has 40 claims and 2 premises that pass lint"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js prepare with --seed 7",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The line count of audit-input.jsonl is greater than 42",
+          "observe": {
+            "channel": "artifact",
+            "key": "wc -l audit-input.jsonl"
+          }
+        },
+        {
+          "text": "No line of audit-input.jsonl has a field that names it a canary",
+          "observe": {
+            "channel": "artifact",
+            "key": "audit-input.jsonl keys"
+          }
+        },
+        {
+          "text": "The canary key file path is outside the project directory",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .key_file"
+          }
+        },
+        {
+          "text": "The canary key file has mode 600",
+          "observe": {
+            "channel": "artifact",
+            "key": "stat of .key_file"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-scope"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.prepare-deterministic",
+      "title": "The same seed gives the same audit input",
+      "action_refs": [
+        "ACT.claims.prepare"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the run passes lint"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js prepare with --seed 7 and keep the audit input hash",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        },
+        {
+          "goal": "Run claims.js prepare with --seed 7 again",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The SHA-256 of audit-input.jsonl is the same after both runs",
+          "observe": {
+            "channel": "artifact",
+            "key": "sha256 audit-input.jsonl"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.prepare-light-mode",
+      "title": "A small report is prepared in light mode",
+      "action_refs": [
+        "ACT.claims.prepare-light"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the run has 8 claims that pass lint"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js prepare with --seed 5",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "freeze.json has mode light",
+          "observe": {
+            "channel": "artifact",
+            "key": "freeze.json .mode"
+          }
+        },
+        {
+          "text": "freeze.json counts at least 2 canaries",
+          "observe": {
+            "channel": "artifact",
+            "key": "freeze.json .canaries"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-trigger"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.check-verifiers-forbidden",
+      "title": "A verifier that reads a forbidden path is refused",
+      "action_refs": [
+        "ACT.claims.check-verifiers"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claims-run.json lists tools/wiki-audit as a forbidden path",
+        "verifiers/verify-code.py opens tools/wiki-audit/audit.py"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js check-verifiers on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 1",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        },
+        {
+          "text": "The output names verifiers/verify-code.py",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-scope"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.score-missed-canary",
+      "title": "A channel that passes a canary is not trusted",
+      "action_refs": [
+        "ACT.claims.score"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the run was prepared",
+        "verdicts.jsonl marks one db canary SUPPORTED and every other item with its true verdict"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js score on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "score.json shows the db channel with trusted false",
+          "observe": {
+            "channel": "artifact",
+            "key": "score.json .channels.db.trusted"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-scope"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.score-premise-stale",
+      "title": "Claims that rest on a refuted premise become stale",
+      "action_refs": [
+        "ACT.claims.score"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the run was prepared",
+        "claims C-0003 and C-0004 list premise P-001",
+        "verdicts.jsonl marks P-001 REFUTED and C-0003 SUPPORTED"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js score on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "score.json gives C-0003 the status stale",
+          "observe": {
+            "channel": "artifact",
+            "key": "score.json .claims[C-0003].status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-scope"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.score-decision-grade",
+      "title": "A decision claim backed only by source reading is not established",
+      "action_refs": [
+        "ACT.claims.score"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the run was prepared",
+        "claim C-0005 has impact decision",
+        "verdicts.jsonl marks C-0005 SUPPORTED with grade C"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js score on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "score.json gives C-0005 the status not_established",
+          "observe": {
+            "channel": "artifact",
+            "key": "score.json .claims[C-0005].status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-scope"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.screen-tc-per-target",
+      "title": "Screen claims become one view-only TC per screen",
+      "action_refs": [
+        "ACT.claims.screen-tc"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "audit-input.jsonl has 5 screen items on 2 screens"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js screen-tc on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "screen.tc.json has 2 test cases",
+          "observe": {
+            "channel": "artifact",
+            "key": "screen.tc.json .test_cases.length"
+          }
+        },
+        {
+          "text": "tc-lint.js reports 0 errors for screen.tc.json",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-lint.js --json output"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.import-results-grade-a",
+      "title": "A passed screen check comes back as grade A support",
+      "action_refs": [
+        "ACT.claims.import-results"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "screen.tc.json was written",
+        "tc-results.jsonl has PASS for the expected result of item A-0003"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js import-results with that results file",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "verdicts.jsonl has A-0003 as SUPPORTED with grade A",
+          "observe": {
+            "channel": "artifact",
+            "key": "verdicts.jsonl line for A-0003"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.sample-no-canary",
+      "title": "The human sample never contains a canary",
+      "action_refs": [
+        "ACT.claims.sample"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "score.json exists for a run with canaries"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js sample with --n 30 --seed 3",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "sample.json has 30 items",
+          "observe": {
+            "channel": "artifact",
+            "key": "sample.json .items.length"
+          }
+        },
+        {
+          "text": "No item in sample.json is a canary in the key file",
+          "observe": {
+            "channel": "artifact",
+            "key": "sample.json ids vs key file"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-scope"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.report-bound",
+      "title": "Zero disagreements in 30 sampled verdicts gives a 9.5 percent bound",
+      "action_refs": [
+        "ACT.claims.report"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "human.json agrees with all 30 sampled verdicts"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js report on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "report.json gives an error upper bound of 0.095 rounded to three places",
+          "observe": {
+            "channel": "artifact",
+            "key": "report.json .human.upper_bound_95"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-purpose"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.report-light-per-claim",
+      "title": "A light report lists a verdict for every claim",
+      "action_refs": [
+        "ACT.claims.report"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a light run with 8 claims was scored"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js report on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "report.json has 8 entries in claims",
+          "observe": {
+            "channel": "artifact",
+            "key": "report.json .claims.length"
+          }
+        },
+        {
+          "text": "report.json has no human upper bound",
+          "observe": {
+            "channel": "artifact",
+            "key": "report.json .human"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-trigger"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.jev-claim-uncalibrated",
+      "title": "An uncalibrated claim question comes back as REVIEW",
+      "action_refs": [
+        "ACT.claims.jev-claim"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a fake Jev server on 127.0.0.1 answers holds 0.97",
+        "calibration.json has no entry for Q.claim_supported@1"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-jev-judge.js claim with a claim and an evidence excerpt",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The verdict line says REVIEW",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .verdict"
+          }
+        },
+        {
+          "text": "samples.jsonl has a new line with question Q.claim_supported@1",
+          "observe": {
+            "channel": "artifact",
+            "key": "samples.jsonl last line .question"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-scope"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.canary-label",
+      "title": "A canary that Jev judged gets a code FAIL label",
+      "action_refs": [
+        "ACT.claims.score"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "verdicts.jsonl records a Jev sample id for a canary item"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js score on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "samples.jsonl has that sample with label FAIL",
+          "observe": {
+            "channel": "artifact",
+            "key": "samples.jsonl line for the sample id .label"
+          }
+        },
+        {
+          "text": "samples.jsonl has that sample with label_source code",
+          "observe": {
+            "channel": "artifact",
+            "key": "samples.jsonl line for the sample id .label_source"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "DEC.claims-scope"
+        ]
+      },
+      "readiness": "ready"
+    }
+  ],
+  "open_questions": []
+}

@@ -118,3 +118,28 @@ fi
 - ❌ DON'T: Never bypass the PreToolUse hook via Bash `cat >>`, `sed -i`, or direct edit after `chmod 755`
 - Why: changes made by bypassing the hook will be overwritten the next time cc-baseline is installed from templates
 - Exception: direct edits to cc-baseline's own directory (`templates/`, `src/`, etc.) are normal (not hook targets)
+
+---
+
+## 12. Facts You Report Are Verified Independently
+
+Facts in a report to the user that would change the user's decision if wrong — web or document research (numbers, dates, names, quotes, "X exists"), conclusions of a code or data analysis, comparisons, bulk outputs (wikis, inventories, one change applied to many places) — are checked by the `fact-auditor` agent and `claims.js` **before** you report them. This holds with or without `/plan`, for coding and non-coding work, for 3 facts or 3,000. Guide: `reference_claim_verification.md`; skill: `/verify-claims`.
+
+- ✅ DO: Fewer than 30 claims → light run (every claim checked, canaries, a mark per claim); 30 or more, or one rule applied to 10+ places → bulk run (adds a human sample of the verifier's verdicts and an error bound)
+- ✅ DO: In the final answer, correct or drop refuted facts, mark unverifiable ones, and quote the bulk error bound
+- ❌ DON'T: Verify your own output with your own scripts, results or golden set and call it verified
+- ❌ DON'T: Report "all correct" — report what was checked, how strongly, and what could not be checked
+- Out of scope: opinions, recommendations, plans, and facts read in this turn straight from a deterministic local tool output (a command result, a file's content). Web search / fetch results and summaries of them are in scope.
+
+---
+
+## 13. Set Direction With Genius Thinking, Then Choose Yourself
+
+When the user asks for ideas, planning, design, or a fix for an inefficiency **and has not fixed the direction**, apply `reference_genius_thinking.md`: pick the two best-fitting thinking methods and mix them in an analysis (1,500+ characters), then give 10+ ideas (3,000+ characters).
+
+- ✅ DO: Choose the most timely idea yourself, say why in one or two lines, and carry it forward as the direction — in the answer, or as the plan's approach
+- ✅ DO: Keep every gate: plan approval (ExitPlanMode), confirmation before irreversible or outward-facing actions, the design/business interviews of the audit agents, TC open questions — and the scope of the request (rule 4)
+- ✅ DO: Changing files still goes through the normal flow — an implementation goes through `/plan` and its approval; a request for ideas or a design is not a request to edit code
+- ❌ DON'T: End the analysis with "which one should we do?" — the user asked you to decide
+- ❌ DON'T: Use it when the user gave a concrete spec, for a bug fix with a clear cause, or for a trivial change
+- Facts used in the analysis (research, numbers, competitors) fall under rule 12.

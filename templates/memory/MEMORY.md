@@ -1,6 +1,6 @@
 # Global Memory Index
 
-- [all_session_basic_rules.md](all_session_basic_rules.md) — **Read every session** — 11 core behavior rules: response language, uncertainty, parallel reads, minimal edits, pattern compliance, git rules, server cleanup, and more
+- [all_session_basic_rules.md](all_session_basic_rules.md) — **Read every session** — 13 core behavior rules: response language, uncertainty, parallel reads, minimal edits, pattern compliance, git rules, server cleanup, independent fact verification, genius thinking for direction, and more
 - [doc_structure_rules.md](doc_structure_rules.md) — **When writing any document** — top summary, bottom checklist, DO/DON'T format structure principles
 - [reference_e2e_manager_guide.md](reference_e2e_manager_guide.md) — E2E test manager guide: Aside session / MCP server assignment, scenario writing, parallel execution, result aggregation, file cleanup
 - [reference_doc_writing_style.md](reference_doc_writing_style.md) — Reference document writing style: cost tiers, parallel reads, 7-technique application guide
@@ -14,8 +14,10 @@
 - [reference_design_md_index.md](reference_design_md_index.md) — 68-brand DESIGN.md catalog design-director shortlists from, with lane fit and trademark caution
 - [reference_web_interface_guidelines.md](reference_web_interface_guidelines.md) — Vercel Web Interface Guidelines, pinned + vendored: the static UI rule set publisher runs in its Step 5 self-check
 - [reference_publisher_protocol.md](reference_publisher_protocol.md) — publisher auto-trigger, call protocol, self-fix loop, decision_type follow-up, and post-publish handoff to e2e-tester
-- [reference_agent_pipeline.md](reference_agent_pipeline.md) — canonical five-agent order (design-director direct → publisher build → security-auditor + code-reviewer review → e2e-tester verify) and the de-duplication matrix
+- [reference_agent_pipeline.md](reference_agent_pipeline.md) — canonical agent order (design-director direct → publisher build → security-auditor + code-reviewer review → e2e-tester verify → fact-auditor for reported facts) and the de-duplication matrix
 - [reference_tc_authoring.md](reference_tc_authoring.md) — **When a plan has `Behavior Impact: Yes/Unknown`**: write actions + TCs in `docs/tc/<feature>.tc.json`, one-fact expected results, observe channels, authoring checks, what e2e may not change
 - [reference_wiki.md](reference_wiki.md) — **Before `/plan`, publisher briefing, phase end** when `docs/wiki/` exists: find built screens with `wiki.js find`, refresh pages that are not `ok`, update + stamp pages of changed screens
 - [reference_test_env.md](reference_test_env.md) — **Before the first e2e run on a project with a real backend**: schema-only test backend, guarded test login, reset that refuses non-test targets, CSP/host rules, fake servers for paid APIs, `test-env-check.js`
 - [reference_browser_tools.md](reference_browser_tools.md) — **Before any browser work**: Aside first (`aside repl` / `scripts/aside-session.sh`, test account only), Playwright MCP fallback, switch conditions, `__e2e` recorder, report fields
+- [reference_claim_verification.md](reference_claim_verification.md) — **Before reporting facts the user will act on** (research, analysis, comparisons, wikis, bulk edits — in or outside `/plan`): ledgers, `claims.js`, clean-room fact-auditor, evidence grades, canaries, light vs bulk, error bounds
+- [reference_genius_thinking.md](reference_genius_thinking.md) — **When ideating, planning, designing or removing an inefficiency without a fixed direction**: the genius thinking formulas (mix two methods, 10+ ideas), then choose and apply the most timely idea yourself (rule 13)

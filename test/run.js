@@ -3878,6 +3878,385 @@ t('tc-replay check / tc-sweep: hardening from the audits (regex, TC name, api sc
   } finally { await srv.close(); q.done(); }
 });
 
+// ──────────────────────────────────────────────────────────────────────────
+// claims.js — independent verification of reported facts (TC claims.*)
+// ──────────────────────────────────────────────────────────────────────────
+
+const CLAIMS = path.join(ROOT, 'templates', 'scripts', 'claims.js');
+
+// A project with .git and one run dir; canary keys and the Jev bank live in their own temp dirs.
+function claimsRun({ claims = [], premises = [], spec = null } = {}) {
+  const os = require('os');
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'claims-'));
+  const proj = path.join(base, 'proj');
+  const run = path.join(proj, '.cc-audits', 'claims', 'r1');
+  fs.mkdirSync(path.join(proj, '.git'), { recursive: true });
+  fs.mkdirSync(run, { recursive: true });
+  const jsonl = rows => rows.map(r => JSON.stringify(r)).join('\n') + (rows.length ? '\n' : '');
+  fs.writeFileSync(path.join(run, 'claims.jsonl'), jsonl(claims));
+  if (premises.length) fs.writeFileSync(path.join(run, 'premises.jsonl'), jsonl(premises));
+  if (spec) fs.writeFileSync(path.join(run, 'claims-run.json'), JSON.stringify(spec));
+  const keys = path.join(base, 'keys');
+  const jev = path.join(base, 'jev');
+  return { base, proj, run, keys, jev, env: { ...process.env, CC_BASELINE_CLAIMS_KEYS: keys, CC_BASELINE_JEV_DIR: jev }, done: () => fs.rmSync(base, { recursive: true, force: true }) };
+}
+
+function dbClaims(n, extra = {}) {
+  return Array.from({ length: n }, (_, i) => ({ id: `C-${String(i + 1).padStart(4, '0')}`, text: `Table t${i + 1} has ${i * 3 + 4} rows`,
+    target: { kind: 'table', ref: `t${i + 1}` }, channel: 'db', expected: i * 3 + 4, impact: 'descriptive', ...(extra[i + 1] || {}) }));
+}
+
+function claimsKey(r) {
+  const { keyFileFor } = require(CLAIMS);
+  return JSON.parse(fs.readFileSync(keyFileFor(r.run, r.keys), 'utf8'));
+}
+
+// Every item gets its true verdict (canary → REFUTED); `override(id, item, key)` may return a different line.
+function writeVerdicts(r, override = () => null) {
+  const key = claimsKey(r);
+  const input = fs.readFileSync(path.join(r.run, 'audit-input.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l));
+  const rows = input.map(x => override(x.id, x, key.items[x.id]) || { id: x.id, verdict: key.items[x.id].canary ? 'REFUTED' : 'SUPPORTED', grade: 'A',
+    evidence: { source: x.channel, excerpt: 'read again' }, verifier: `verify-${x.channel}` });
+  fs.writeFileSync(path.join(r.run, 'verdicts.jsonl'), rows.map(v => JSON.stringify(v)).join('\n') + '\n');
+  return { input, key };
+}
+
+t('claims.js lint: no channel, a missing premise, a web claim without URL → exit 1 naming the claim (TC claims.lint-*)', async () => {
+  const c = dbClaims(3);
+  delete c[1].channel;
+  c[0].premises = ['P-999'];
+  const r = claimsRun({ claims: c });
+  try {
+    const out = await runNode([CLAIMS, 'lint', r.run], r.env);
+    assert.equal(out.status, 1);
+    assert.match(out.stderr, /C-0002: channel must be one of/);
+    assert.match(out.stderr, /C-0001: premise P-999 is not in premises\.jsonl/);
+  } finally { r.done(); }
+  const w = claimsRun({ claims: [{ id: 'C-0001', text: 'The repo has 13 stars', target: { kind: 'web', ref: 'github repo' }, channel: 'web', expected: 13, impact: 'descriptive' }] });
+  try {
+    const out = await runNode([CLAIMS, 'lint', w.run], w.env);
+    assert.equal(out.status, 1);
+    assert.match(out.stderr, /C-0001: a web claim needs source_url/);
+  } finally { w.done(); }
+});
+
+t('claims.js prepare: canaries carry no marker, the key is outside the project at 0600, same seed → same input (TC claims.prepare-*)', async () => {
+  const premises = [{ id: 'P-001', text: 'A duplicate function is not executed', channel: 'log', expected: true }, { id: 'P-002', text: 'Rows are never deleted', channel: 'db', expected: true }];
+  const r = claimsRun({ claims: dbClaims(40), premises });
+  try {
+    const out = await runNode([CLAIMS, 'prepare', r.run, '--seed', '7'], r.env);
+    assert.equal(out.status, 0, out.stderr);
+    const res = JSON.parse(out.stdout);
+    const lines = fs.readFileSync(path.join(r.run, 'audit-input.jsonl'), 'utf8').trim().split('\n');
+    assert.ok(lines.length > 42, `${lines.length} lines`);
+    for (const l of lines) for (const k of Object.keys(JSON.parse(l))) assert.ok(['id', 'kind', 'text', 'target', 'channel', 'expected', 'source_hint'].includes(k), `field ${k}`);
+    assert.ok(!res.key_file.startsWith(r.proj + path.sep), 'key outside the project');
+    assert.equal(fs.statSync(res.key_file).mode & 0o777, 0o600);
+    assert.equal(fs.statSync(path.dirname(res.key_file)).mode & 0o777, 0o700);
+    const first = require('crypto').createHash('sha256').update(fs.readFileSync(path.join(r.run, 'audit-input.jsonl'))).digest('hex');
+    assert.equal((await runNode([CLAIMS, 'prepare', r.run, '--seed', '7'], r.env)).status, 0);
+    const second = require('crypto').createHash('sha256').update(fs.readFileSync(path.join(r.run, 'audit-input.jsonl'))).digest('hex');
+    assert.equal(first, second);
+    const freeze = JSON.parse(fs.readFileSync(path.join(r.run, 'freeze.json'), 'utf8'));
+    assert.equal(freeze.mode, 'bulk');
+    assert.ok(freeze.canaries >= 3, 'bulk: at least 3 canaries in the db channel');
+    const key = claimsKey(r);
+    for (const [id, k] of Object.entries(key.items)) {
+      if (!k.canary) continue;
+      const item = JSON.parse(lines.find(l => JSON.parse(l).id === id));
+      const orig = dbClaims(40).find(c => c.id === k.orig);
+      assert.notEqual(item.text, orig.text, 'a canary changes the claim text');
+    }
+  } finally { r.done(); }
+  const s = claimsRun({ claims: dbClaims(8) });
+  try {
+    assert.equal((await runNode([CLAIMS, 'prepare', s.run, '--seed', '5'], s.env)).status, 0);
+    const freeze = JSON.parse(fs.readFileSync(path.join(s.run, 'freeze.json'), 'utf8'));
+    assert.equal(freeze.mode, 'light');
+    assert.ok(freeze.canaries >= 2, `${freeze.canaries} canaries`);
+  } finally { s.done(); }
+  const bad = claimsRun({ claims: [{ id: 'C-1' }] });
+  try { assert.equal((await runNode([CLAIMS, 'prepare', bad.run], bad.env)).status, 2, 'lint errors block prepare'); } finally { bad.done(); }
+});
+
+t('claims.js check-verifiers: a forbidden path, the key root or write SQL is refused; a clean verifier passes (TC claims.check-verifiers-forbidden)', async () => {
+  const r = claimsRun({ claims: dbClaims(3), spec: { forbidden_paths: ['tools/wiki-audit'] } });
+  try {
+    fs.mkdirSync(path.join(r.run, 'verifiers'));
+    fs.writeFileSync(path.join(r.run, 'verifiers', 'verify-db.py'), 'cur.execute("SELECT count(*) FROM t1")\n');
+    let out = await runNode([CLAIMS, 'check-verifiers', r.run], r.env);
+    assert.equal(out.status, 0, out.stdout);
+    fs.writeFileSync(path.join(r.run, 'verifiers', 'verify-code.py'), "src = open('tools/wiki-audit/audit.py').read()\n");
+    fs.writeFileSync(path.join(r.run, 'verifiers', 'fix.sql'), 'UPDATE t1 SET n = 0;\n');
+    out = await runNode([CLAIMS, 'check-verifiers', r.run], r.env);
+    assert.equal(out.status, 1);
+    assert.match(out.stdout, /verifiers\/verify-code\.py:1 — refers to a forbidden path/);
+    assert.match(out.stdout, /verifiers\/fix\.sql:1 — write SQL/);
+  } finally { r.done(); }
+});
+
+t('claims.js score: a missed canary untrusts its channel, a refuted premise makes claims stale, a C-grade decision claim is not established (TC claims.score-*)', () => {
+  const { prepare, score } = require(CLAIMS);
+  const premises = [{ id: 'P-001', text: 'A duplicate function is not executed', channel: 'log', expected: true }];
+  const r = claimsRun({ claims: dbClaims(8, { 3: { premises: ['P-001'] }, 4: { premises: ['P-001'] }, 5: { impact: 'decision' } }), premises });
+  try {
+    prepare(r.run, { seed: 2, keyRoot: r.keys });
+    writeVerdicts(r, (id, x, k) => {
+      if (x.kind === 'premise') return { id, verdict: 'REFUTED', grade: 'A', evidence: { source: 'log', excerpt: 'IIS log shows calls' } };
+      if (k.orig === 'C-0005' && !k.canary) return { id, verdict: 'SUPPORTED', grade: 'C', evidence: { source: 'code', excerpt: 'read the source' } };
+      return null;
+    });
+    const sc = score(r.run, { keyRoot: r.keys, jevDir: r.jev });
+    assert.equal(sc.ok, true);
+    assert.equal(sc.claims['C-0003'].status, 'stale');
+    assert.equal(sc.claims['C-0004'].status, 'stale');
+    assert.equal(sc.claims['C-0005'].status, 'not_established');
+    assert.equal(sc.claims['C-0001'].status, 'supported');
+    assert.equal(sc.channels.db.trusted, true);
+  } finally { r.done(); }
+  const b = claimsRun({ claims: dbClaims(40) });
+  try {
+    prepare(b.run, { seed: 4, keyRoot: b.keys });
+    let missed = false;
+    writeVerdicts(b, (id, x, k) => {
+      if (k.canary && !missed) { missed = true; return { id, verdict: 'SUPPORTED', grade: 'A', evidence: { source: 'db', excerpt: 'looked fine' } }; }
+      return null;
+    });
+    const sc = score(b.run, { keyRoot: b.keys, jevDir: b.jev });
+    assert.equal(sc.channels.db.trusted, false);
+    assert.equal(sc.channels.db.missed.length, 1);
+    assert.ok(Object.values(sc.claims).every(c => c.status === 'untrusted'), 'every supported claim of the channel is untrusted');
+    fs.writeFileSync(path.join(b.run, 'verdicts.jsonl'), '');
+    const none = score(b.run, { keyRoot: b.keys, jevDir: b.jev });
+    assert.equal(none.ok, false);
+    assert.ok(none.missing.length > 40, 'every item without a verdict is listed');
+  } finally { b.done(); }
+});
+
+t('claims.js screen-tc / import-results: one view-only TC per screen that passes tc-lint; a PASS comes back as grade A (TC claims.screen-tc-per-target, claims.import-results-grade-a)', () => {
+  const { prepare, screenTc, importResults } = require(CLAIMS);
+  const { lint, countByRule } = require(TC_LINT);
+  const sc = (i, ref) => ({ id: `C-000${i}`, text: `The '${ref}' screen shows the button 'Save ${i}'`, target: { kind: 'screen', ref }, channel: 'screen', expected: true, impact: 'descriptive' });
+  const r = claimsRun({ claims: [sc(1, '/orders'), sc(2, '/orders'), sc(3, '/orders'), sc(4, '/refunds'), sc(5, '/refunds')] });
+  try {
+    prepare(r.run, { seed: 1, keyRoot: r.keys });
+    const res = screenTc(r.run);
+    const doc = JSON.parse(fs.readFileSync(path.join(r.run, 'screen.tc.json'), 'utf8'));
+    assert.equal(doc.test_cases.length, 2);
+    assert.equal(res.expected, doc.test_cases.reduce((a, tc) => a + tc.expected.length, 0));
+    assert.equal(countByRule(lint(doc)).format || 0, 0, 'no format warnings');
+    const tc = doc.test_cases[0];
+    const target = tc.expected[0].notes;
+    const results = path.join(r.base, 'tc-results.jsonl');
+    const { canonical } = require(TC_JEV_JUDGE);
+    const digest = require('crypto').createHash('sha256').update(canonical(tc)).digest('hex');
+    const resultLine = (extra) => JSON.stringify({ tc: tc.id, run_id: 'R1', tc_digest: digest, expected: tc.expected.map((e, i) => ({ index: i, verdict: i === 0 ? 'PASS' : 'NOT_OBSERVABLE', judged_by: 'code', observed: 'Save' })), ...extra });
+    fs.writeFileSync(results, [resultLine({ tc_digest: 'f'.repeat(64), expected: [{ index: 0, verdict: 'FAIL' }] }), resultLine({})].join('\n') + '\n');
+    const imp = importResults(r.run, { results, runId: 'R1' });
+    assert.equal(imp.imported, tc.expected.length);
+    assert.equal(imp.skipped_lines, 1, 'a line from another TC version is not imported');
+    assert.equal(importResults(r.run, { results, runId: 'R9' }).imported, 0, '--run-id narrows to one run');
+    const v = fs.readFileSync(path.join(r.run, 'verdicts.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l));
+    const line = v.find(x => x.id === target);
+    assert.equal(line.verdict, 'SUPPORTED');
+    assert.equal(line.grade, 'A');
+    assert.equal(v.find(x => x.id === tc.expected[1].notes).verdict, 'UNVERIFIABLE');
+  } finally { r.done(); }
+});
+
+t('claims.js sample / human / report: the sample has no canary, 0 of 30 gives 0.095, a light report lists every claim without a bound (TC claims.sample-no-canary, claims.report-*)', async () => {
+  const { prepare, score, sample, human, report, upperBound95 } = require(CLAIMS);
+  const r = claimsRun({ claims: dbClaims(60) });
+  try {
+    prepare(r.run, { seed: 9, keyRoot: r.keys });
+    writeVerdicts(r);
+    score(r.run, { keyRoot: r.keys, jevDir: r.jev });
+    const out = await runNode([CLAIMS, 'sample', r.run, '--n', '30', '--seed', '3'], r.env);
+    assert.equal(out.status, 0, out.stderr);
+    const smp = JSON.parse(fs.readFileSync(path.join(r.run, 'sample.json'), 'utf8'));
+    assert.equal(smp.items.length, 30);
+    const key = claimsKey(r);
+    assert.ok(smp.items.every(it => !key.items[it.audit_id].canary), 'no canary in the human sample');
+    const answers = path.join(r.base, 'answers.json');
+    fs.writeFileSync(answers, JSON.stringify(Object.fromEntries(smp.items.map(it => [it.audit_id, 'agree']))));
+    human(r.run, { answers, jevDir: r.jev });
+    const rep = report(r.run);
+    assert.equal(rep.human.upper_bound_95, 0.095);
+    assert.ok(fs.readFileSync(path.join(r.run, 'report.md'), 'utf8').includes('9.5%'));
+  } finally { r.done(); }
+  assert.equal(Number(upperBound95(0, 50).toFixed(3)), 0.058);
+  assert.ok(upperBound95(2, 50) > 0.1 && upperBound95(2, 50) < 0.16, 'exact bound for 2 of 50');
+  const l = claimsRun({ claims: dbClaims(8) });
+  try {
+    prepare(l.run, { seed: 5, keyRoot: l.keys });
+    writeVerdicts(l);
+    score(l.run, { keyRoot: l.keys, jevDir: l.jev });
+    const rep = report(l.run);
+    assert.equal(rep.claims.length, 8);
+    assert.equal(rep.human, undefined);
+    assert.throws(() => sample(l.run, { n: 5 }), /light run has no human sample/);
+  } finally { l.done(); }
+});
+
+t('tc-jev-judge claim: Q.claim_supported@1 is REVIEW before calibration; a canary Jev judged gets a code FAIL label from score (TC claims.jev-claim-uncalibrated, claims.canary-label)', async () => {
+  const { prepare, score } = require(CLAIMS);
+  const { judgeClaim } = require(TC_JEV_JUDGE);
+  const { loadConfig } = require(path.join(ROOT, 'templates', 'scripts', 'jev-client.js'));
+  const srv = await mockJev(body => ({ status: 200, json: nouls(body, { holds: 0.97, observable: 0.95 }) }));
+  const r = claimsRun({ claims: dbClaims(8) });
+  try {
+    const input = path.join(r.base, 'claim.json');
+    fs.writeFileSync(input, JSON.stringify({ id: 'A-0001', claim: 'The repo has 13 stars', evidence: { source: 'GitHub API', text: 'stargazers_count: 13' }, run: 'r1' }));
+    const env = { ...r.env, CC_BASELINE_JEV_KEY: FAKE_KEY, CC_BASELINE_JEV_BASE_URL: srv.url };
+    const out = await runNode([TC_JEV_JUDGE, 'claim', input], env);
+    assert.equal(out.status, 0, out.stderr);
+    const res = JSON.parse(out.stdout);
+    assert.equal(res.verdict, 'REVIEW');
+    assert.equal(res.shadow, 'PASS');
+    const samples = fs.readFileSync(path.join(r.jev, 'samples.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l));
+    assert.equal(samples[samples.length - 1].question, 'Q.claim_supported@1');
+    assert.match(srv.seen[0].body.questions.holds.instructions, /state\.evidence show that state\.claim is true/);
+    assert.ok(!out.stdout.includes(FAKE_KEY), 'key never printed');
+
+    prepare(r.run, { seed: 5, keyRoot: r.keys });
+    const config = loadConfig({ env, home: '/nonexistent' });
+    let canarySample = null;
+    const pending = [];
+    writeVerdicts(r, (id, x, k) => { if (k.canary && !canarySample) { canarySample = id; pending.push({ id, x }); } return null; });
+    const asked = await judgeClaim({ id: pending[0].id, claim: pending[0].x.text, evidence: { source: 'db', text: 'count = 7' }, run: 'r1' }, { config, jevDir: r.jev });
+    const lines = fs.readFileSync(path.join(r.run, 'verdicts.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l));
+    const v = lines.find(l => l.id === pending[0].id);
+    v.jev_sample = asked.sample;
+    fs.writeFileSync(path.join(r.run, 'verdicts.jsonl'), lines.map(l => JSON.stringify(l)).join('\n') + '\n');
+    const sc = score(r.run, { keyRoot: r.keys, jevDir: r.jev });
+    assert.equal(sc.jev_labeled, 1);
+    const after = fs.readFileSync(path.join(r.jev, 'samples.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l)).filter(s => s.request_sha256 === asked.sample);
+    const last = after[after.length - 1];
+    assert.equal(last.label, 'FAIL');
+    assert.equal(last.label_source, 'code');
+    assert.equal(score(r.run, { keyRoot: r.keys, jevDir: r.jev }).jev_labeled, 0, 'a second score does not label again');
+    const none = await judgeClaim({ id: 'x', claim: 'c', evidence: { source: 's', text: '' } }, { config, jevDir: r.jev });
+    assert.equal(none.status, 'error', 'no evidence, no question');
+  } finally { await srv.close(); r.done(); }
+});
+
+t('claims.js audit fixes: frozen inputs, prepare over verdicts, canary boundaries, abstention, strict premises, forged Jev ids, SQL over lines, secrets, key root', async () => {
+  const { prepare, score, sample, human, report, checkVerifiers } = require(CLAIMS);
+  const { maskSecrets } = require(TC_JEV_JUDGE);
+  // QA-001: a ledger edited after prepare is refused
+  const r = claimsRun({ claims: dbClaims(8) });
+  try {
+    prepare(r.run, { seed: 5, keyRoot: r.keys });
+    writeVerdicts(r);
+    fs.appendFileSync(path.join(r.run, 'claims.jsonl'), JSON.stringify({ id: 'C-0099', text: 'Table z has 1 row', target: { kind: 'table', ref: 'z' }, channel: 'db', expected: 1, impact: 'descriptive' }) + '\n');
+    assert.throws(() => score(r.run, { keyRoot: r.keys, jevDir: r.jev }), /claims\.jsonl changed after prepare/);
+    // QA-005: prepare does not renumber over existing verdicts
+    assert.throws(() => prepare(r.run, { seed: 6, keyRoot: r.keys }), /verdicts\.jsonl exists/);
+  } finally { r.done(); }
+  // QA-002 / QA-003: swap only across targets; a number inside another number or an identifier is never replaced
+  const q = claimsRun({ claims: [
+    { id: 'C-0001', text: 'Table t1 has 15 files and 5 tables', target: { kind: 'table', ref: 't1' }, channel: 'db', expected: 5, impact: 'descriptive' },
+    { id: 'C-0002', text: 'Table t1 has 7 columns', target: { kind: 'table', ref: 't1' }, channel: 'db', expected: 7, impact: 'descriptive' },
+    { id: 'C-0003', text: 'Table t2 has 9 columns', target: { kind: 'table', ref: 't2' }, channel: 'db', expected: 9, impact: 'descriptive' },
+  ] });
+  try {
+    for (const seed of [1, 2, 3, 4, 5, 6]) {
+      prepare(q.run, { seed, keyRoot: q.keys });
+      const key = claimsKey(q);
+      const lines = fs.readFileSync(path.join(q.run, 'audit-input.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l));
+      for (const x of lines) {
+        const k = key.items[x.id];
+        if (!k.canary) continue;
+        if (k.orig === 'C-0001') assert.match(x.text, /^Table t1 has 15 files and \d+ tables$/, `seed ${seed}: 15 and t1 stay, the whole 5 changes`);
+        if (k.op === 'swap' && k.orig === 'C-0002') assert.equal(x.expected, 9, 'a swap takes a value from another target only');
+        if (k.op === 'swap' && k.orig === 'C-0003') assert.notEqual(x.expected, 9);
+      }
+    }
+  } finally { q.done(); }
+  // QA-007: an UNVERIFIABLE canary is an abstention; a premise on an untrusted channel counts as unchecked
+  const premises = [{ id: 'P-001', text: 'Rows are never deleted', channel: 'log', expected: true }];
+  const logClaims = Array.from({ length: 4 }, (_, i) => ({ id: `C-000${i + 1}`, text: `The access log has ${i * 2 + 3} hits for /p${i}`, target: { kind: 'route', ref: `/p${i}` }, channel: 'log', expected: i * 2 + 3, impact: 'descriptive' }));
+  const dbWithPremise = dbClaims(4).map(c => ({ ...c, id: c.id.replace('C-000', 'C-010'), premises: ['P-001'] }));
+  const a = claimsRun({ claims: [...dbWithPremise, ...logClaims], premises });
+  try {
+    prepare(a.run, { seed: 3, keyRoot: a.keys });
+    writeVerdicts(a, (id, x, k) => {
+      if (k.canary && x.channel === 'db') return { id, verdict: 'UNVERIFIABLE', grade: 'D' };
+      if (k.canary && x.channel === 'log') return { id, verdict: 'SUPPORTED', grade: 'A', evidence: { source: 'log', excerpt: 'x' } };
+      return null;
+    });
+    const sc = score(a.run, { keyRoot: a.keys, jevDir: a.jev });
+    assert.equal(sc.canaries.total, sc.canaries.caught + sc.canaries.missed + sc.canaries.abstained);
+    if (sc.channels.db.canaries) {
+      assert.notEqual(sc.channels.db.trusted, false, 'abstaining on a canary costs no trust');
+      assert.ok(sc.channels.db.abstained >= 1);
+    }
+    assert.equal(sc.channels.log.trusted, false);
+    assert.equal(sc.premises['P-001'].status, 'untrusted');
+    assert.equal(sc.claims['C-0101'].status, 'premise_unverified', 'a premise judged on an untrusted channel is unchecked');
+  } finally { a.done(); }
+  // QA-004: the bound is computed on the random items only; groups the draw missed come as coverage
+  const b = claimsRun({ claims: [...dbClaims(50), ...logClaims.map(c => ({ ...c, id: c.id.replace('C-000', 'C-090') }))] });
+  try {
+    prepare(b.run, { seed: 8, keyRoot: b.keys });
+    writeVerdicts(b, (id, x, k) => (!k.canary && x.channel === 'log' ? { id, verdict: 'REFUTED', grade: 'A', evidence: { source: 'log', excerpt: '0 hits' } } : null));
+    score(b.run, { keyRoot: b.keys, jevDir: b.jev });
+    const smp = sample(b.run, { n: 5, seed: 2 });
+    assert.equal(smp.items.length, 5);
+    const groups = new Set(smp.items.map(i => `${i.verdict}|${i.channel}`));
+    assert.ok(smp.coverage.every(c => !groups.has(`${c.verdict}|${c.channel}`)), 'coverage only for groups the draw missed');
+    const answers = path.join(b.base, 'answers.json');
+    fs.writeFileSync(answers, JSON.stringify(Object.fromEntries([...smp.items.map(i => [i.audit_id, 'agree']), ...smp.coverage.map(i => [i.audit_id, 'disagree'])])));
+    const h = human(b.run, { answers, jevDir: b.jev });
+    assert.equal(h.answered, 5);
+    assert.equal(h.disagree, 0, 'coverage answers stay out of the bound');
+    assert.equal(report(b.run).human.n, 5);
+  } finally { b.done(); }
+  // SEC-001: a jev_sample that is not the claim question for this item is not labeled
+  const srv = await mockJev(body => ({ status: 200, json: nouls(body, { holds: 0.2, observable: 0.9 }) }));
+  const f = claimsRun({ claims: dbClaims(8) });
+  try {
+    const { judgeClaim } = require(TC_JEV_JUDGE);
+    const { loadConfig } = require(path.join(ROOT, 'templates', 'scripts', 'jev-client.js'));
+    const config = loadConfig({ env: { CC_BASELINE_JEV_KEY: FAKE_KEY, CC_BASELINE_JEV_BASE_URL: srv.url }, home: '/nonexistent' });
+    prepare(f.run, { seed: 5, keyRoot: f.keys });
+    const other = await judgeClaim({ id: 'A-9999', claim: 'something else', evidence: { source: 's', text: 't' }, run: 'r1' }, { config, jevDir: f.jev });
+    writeVerdicts(f, (id, x, k) => (k.canary ? { id, verdict: 'REFUTED', grade: 'D', evidence: { source: 'db', excerpt: 'x' }, jev_sample: other.sample } : null));
+    const sc = score(f.run, { keyRoot: f.keys, jevDir: f.jev });
+    assert.equal(sc.jev_labeled, 0);
+    assert.ok(sc.jev_label_refused.length >= 1);
+  } finally { await srv.close(); f.done(); }
+  // SEC-002: SQL split over lines, a glob at the key root, a forbidden path built from parts, the verifiers dir as a symlink
+  const v = claimsRun({ claims: dbClaims(2), spec: { forbidden_paths: ['tools/wiki-audit/'] } });
+  try {
+    fs.mkdirSync(path.join(v.run, 'verifiers'));
+    fs.writeFileSync(path.join(v.run, 'verifiers', 'a.py'), 'q = "DELETE\n   FROM t1"\nos.system("cat ~/.claude/claims-k*/key.json")\nopen(os.path.join("tools", "wiki-audit"))\n');
+    const res = checkVerifiers(v.run, { keyRoot: v.keys });
+    assert.ok(res.hits.some(h => h.line === 1 && /write SQL/.test(h.reason)), 'DELETE / FROM over two lines');
+    assert.ok(res.hits.some(h => h.line === 3 && /claims-k/.test(h.reason)));
+    assert.ok(res.hits.some(h => h.line === 4 && /wiki-audit/.test(h.reason)), 'the last segment of a forbidden path');
+    fs.rmSync(path.join(v.run, 'verifiers'), { recursive: true });
+    fs.mkdirSync(path.join(v.base, 'elsewhere'));
+    fs.symlinkSync(path.join(v.base, 'elsewhere'), path.join(v.run, 'verifiers'));
+    assert.match(checkVerifiers(v.run, { keyRoot: v.keys }).hits[0].reason, /symlink/);
+  } finally { v.done(); }
+  // SEC-003: credentials in log / DB / code excerpts are masked before Jev sees them
+  const masked = maskSecrets('postgres://admin:hunter2@db.internal/app password=abc123 AKIAABCDEFGHIJKLMNOP token: zz9 Authorization: Bearer abcdef123456 key sk-live1234567');
+  assert.ok(!/hunter2|abc123|AKIAABCDEFGHIJKLMNOP|zz9|abcdef123456|sk-live1234567/.test(masked), masked);
+  // SEC-005: a relative key root is refused; a symlinked key file is not written through
+  const k = claimsRun({ claims: dbClaims(2) });
+  try {
+    const out = await runNode([CLAIMS, 'prepare', k.run], { ...k.env, CC_BASELINE_CLAIMS_KEYS: 'relative/keys' });
+    assert.equal(out.status, 2);
+    assert.match(out.stderr, /must be an absolute path/);
+    const { keyFileFor } = require(CLAIMS);
+    const kf = keyFileFor(k.run, k.keys);
+    fs.mkdirSync(path.dirname(kf), { recursive: true });
+    fs.symlinkSync(path.join(k.base, 'planted.json'), kf);
+    assert.throws(() => prepare(k.run, { keyRoot: k.keys }), /symlink/);
+  } finally { k.done(); }
+});
+
 async function run() {
   let pass = 0, fail = 0;
   const failures = [];

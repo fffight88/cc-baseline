@@ -11,13 +11,14 @@ Usage: `/wiki init` · `/wiki update [slug…]` · `/wiki check`. No argument �
 5. Write each page in the format of `reference_wiki.md` §2. Read the files you list — never guess `apis`, `states` or `components`. Use component names from `.cc-audits/design-profile.md` when it exists.
 6. `node ~/.claude/scripts/wiki.js stamp --all`, then `node ~/.claude/scripts/wiki.js index`.
 7. `node ~/.claude/scripts/wiki.js check --strict` must exit 0. Fix every page it reports, stamp again, re-run.
-8. Report: pages written, anything left out and why. Do not commit unless the user asks.
+8. Report: pages written, anything left out and why. Do not commit unless the user asks. The pages are a report of facts — verify them with `/verify-claims` first (session rule 12; usually a bulk run).
 
 ## `/wiki update [slug…]`
 
 1. Targets: the given slugs, or with none, every page `wiki.js check` reports as not `ok`.
 2. For each target, re-read its `files` (and the code around them if a file moved or was split), then fix the frontmatter and the body. A `broken` page usually means a renamed file or a missing link target — fix the entry, never delete the line to silence it.
 3. `wiki.js stamp <slugs>`, `wiki.js index`, `wiki.js check --strict`.
+4. Verify the changed pages' facts with `/verify-claims` before reporting (session rule 12).
 
 ## `/wiki check`
 

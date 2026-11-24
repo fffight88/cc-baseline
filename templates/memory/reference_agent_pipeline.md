@@ -1,6 +1,6 @@
 ---
 name: Agent Pipeline / Orchestration Order
-description: canonical end-to-end order of the five cc-baseline agents (design-director direct → publisher build → security-auditor + code-reviewer review → e2e-tester verify) and de-duplication rules
+description: canonical end-to-end order of the six cc-baseline agents (design-director direct → publisher build → security-auditor + code-reviewer review → e2e-tester verify; fact-auditor checks reported facts) and de-duplication rules
 type: reference
 ---
 
@@ -18,12 +18,14 @@ type: reference
 - ✅ DO: For `Behavior Impact: Yes/Unknown`, write the TCs **in the plan stage** (`reference_tc_authoring.md`) — e2e-tester later runs those TCs verbatim and judges each expected result
 - ❌ DON'T: Let e2e-tester or the manager rewrite TC steps/expected text to make a run pass — TC text changes only in the TC file, with the user's OK
 - ✅ DO: Run every browser stage (publisher Step 6, e2e-tester, `/open-browser`) on **Aside first, Playwright MCP as fallback** — see `reference_browser_tools.md`; each report states `browser_tool` / `fallback_reason`
+- ✅ DO: Before reporting facts the user will act on (analysis, research, wiki, inventories, bulk edits) run **fact-auditor** via `/verify-claims` — in a plan (`Claim Impact: Yes/Unknown`) or outside one (session rule 12); its screen items go to e2e-tester
+- ❌ DON'T: Treat a passing code review or e2e run as proof that a report's facts are true — that is fact-auditor's question
 
 ---
 
 ## 1. Canonical Order
 
-The five agents form a **sequence**, not a flat fan-out, whenever a plan involves UI work:
+The five build/review agents form a **sequence**, not a flat fan-out, whenever a plan involves UI work; fact-auditor (§1.1) checks reported facts at the end, and also outside any plan:
 
 ```
 /plan  (## Meta: Security Impact / Code Quality Impact / UI Impact / Behavior Impact)
@@ -53,8 +55,17 @@ e2e-tester   (functional interaction only — visual & a11y already covered by p
               with TCs: runs them verbatim, judges each expected result code → Jev → LLM)
    │
    ▼
+VERIFY CLAIMS  (Claim Impact: Yes/Unknown — the plan's output is a report of facts)
+   └─ fact-auditor  (ledgers → claims.js prepare → clean-room verifiers → screen items via e2e-tester
+                     → claims.js score / sample / report → final answer fixes or drops refuted facts)
+   │
+   ▼
 done
 ```
+
+### 1.1 fact-auditor outside a plan
+
+fact-auditor is not tied to `/plan`. Whenever a report to the user carries facts that would change the user's decision if wrong — web research, an analysis, a comparison, a wiki, an inventory — run `/verify-claims` before the answer (session rule 12, `reference_claim_verification.md`). Fewer than 30 claims is a light run; 30+ adds the human sample and the error bound.
 
 **Non-UI plan**: design-director and publisher are both skipped; the flow is the original `implementation → (security-auditor ∥ code-reviewer) → e2e-tester`.
 
@@ -72,6 +83,7 @@ done
 | Review | security-auditor | `Security Impact: Yes/Unknown` | after implementation (incl. publisher output) |
 | Review | code-reviewer | `Code Quality Impact: Yes/Unknown` | after implementation, parallel with security-auditor |
 | Verify | e2e-tester | E2E scenario section in the plan | after audit gates settle (tests the post-fix code) |
+| Verify facts | fact-auditor | `Claim Impact: Yes/Unknown`, or session rule 12 outside a plan | before the completion report / the answer; screen items run through e2e-tester |
 
 See each agent's protocol: `reference_design_director_protocol.md`, `reference_publisher_protocol.md`, `reference_security_auditor_protocol.md`, `reference_code_reviewer_protocol.md`, `reference_e2e_manager_guide.md`.
 
@@ -96,6 +108,7 @@ See each agent's protocol: `reference_design_director_protocol.md`, `reference_p
 | Verdict per expected result | e2e-tester, one judge each: code → Jev → LLM (`judged_by`) | no second judge on the same expected result |
 | **Runtime invariants** (no whitelabel/500 on click, no console error/ReferenceError) + **dead-control sweep** | e2e-tester (§0) | **sec/code-review can't — source-based, out of scope** |
 | **Visual baseline drift / render thoroughness** (thead+tbody, all states, computed values) | publisher (§9) | **sec/code-review can't — source-based, out of scope** |
+| **Are the facts in a report true** (analysis conclusions, research, wiki pages, inventories, bulk edits) | fact-auditor (`reference_claim_verification.md`), with evidence it gathers itself | the producer never verifies its own report with its own tools; code-reviewer / e2e-tester passing is not evidence for it |
 
 > publisher-authored markup/CSS **is** reviewed by the audit gates (it is still code — CLAUDE.md conventions, XSS surface, inline secrets, dead CSS apply). The gates simply do not duplicate publisher's a11y / design-token / UI-state checks.
 
@@ -127,6 +140,7 @@ publish-<screen-slug>-iter-<n>.{md,json}  # publisher build record, one series p
 iter-<n>.{md,json}              # security-auditor
 code-review-iter-<n>.{md,json}  # code-reviewer
 report.html                     # merged audit HTML (security + code-review)
+.cc-audits/claims/<run>/         # fact-auditor run: ledgers, audit-input, verifiers/, verdicts, score, report (key kept outside the project)
 .cc-audits/design-profile.md    # shared design-system profile (seeded by design-director / scanned by publisher, cross-plan)
 .cc-audits/project-patterns.md  # shared code-convention profile (code-reviewer, cross-plan)
 ```
@@ -144,3 +158,4 @@ report.html                     # merged audit HTML (security + code-review)
 - [ ] e2e-tester run last, functional scenarios only, after gates settle
 - [ ] HTML report generated once after both gates complete
 - [ ] (§3.1) Runtime/visual defect class confirmed covered by publisher (§9) + e2e-tester (§0) — **not** assumed handled by source-based sec/code-review
+- [ ] `Claim Impact: Yes/Unknown` (or rule 12): the reported facts went through `/verify-claims`, and the answer reflects its report

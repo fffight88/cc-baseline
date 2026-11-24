@@ -34,7 +34,7 @@
 
 **기본 제공 항목:**
 
-- **11가지 행동 규칙** — 세션 시작 시 로드: 응답 언어, 불확실성 공개, 병렬 읽기, 최소 수정 등
+- **13가지 행동 규칙** — 세션 시작 시 로드: 응답 언어, 불확실성 공개, 병렬 읽기, 최소 수정, 보고하는 사실의 독립 검증, 천재적 사고로 방향 정하기 등
 - **Security Auditor 에이전트** — semgrep/gitleaks/trivy로 실제 SAST·SCA·시크릿 스캔 수행. 이슈별 `decision_type`(auto / design / business)이 포함된 구조화된 JSON+Markdown 리포트 생성; `claude-config` 타입에서 에이전트/커맨드 정의 파일의 **프롬프트 인젝션 패턴** 탐지; 스캐너 미설치 시 silent skip 대신 **HIGH/MEDIUM `scanner-gap` 이슈**로 명시적 보고
 - **Code Reviewer 에이전트** — 보안 패스와 독립적으로 로직 오류, 엣지 케이스, 컨벤션 위반, CLAUDE.md 준수 여부 검사; **크로스파일 영향 분석**으로 export 변경이 의존 파일에 미치는 breaking change 탐지 (JS/TS/Python/Go); **async/Promise 패턴 오류** 탐지 (`await` 누락, unhandled rejection, `Promise.all` 오용); **테스트 커버리지 갭** 확인 (테스트 없는 새 export, 시그니처 변경 후 미업데이트 테스트); 매 로드 시 body hash로 **`project-patterns.md` 무결성 검증** — 변조 감지 시 `QA-PROFILE-TAMPER` 이슈 생성
 - **Design Director 에이전트** — **그린필드** 프로젝트 전용. 기존 디자인 시스템이나 만들어진 화면이 없을 때 제품 레인(`product-ui` / `marketing-web`)을 분류하고, 68개 브랜드 `DESIGN.md` 카탈로그에서 방향 후보 3개를 로컬에서 띄운 미리보기 페이지 링크와 함께 제시. 인터뷰로 하나를 고르면 `.cc-audits/design-profile.md`를 시드해 publisher가 첫 화면부터 그 방향을 지키게 함. 화면은 직접 만들지 않으며, 기존 프로젝트(브라운필드)에서는 건너뜀
@@ -44,6 +44,8 @@
 - **E2E 테스터 에이전트** — **Aside** 우선(테스터마다 `aside repl` 세션 1개, 테스트 계정 전용), 실패 시 5개 병렬 Playwright MCP 서버로 대체. 토스트 같은 일시적 컨트롤도 검사하고 `BROWSER_TOOL` / `FALLBACK_REASON` 기록. FAIL 시 브라우저 콘솔·네트워크 헤더/페이로드·서버 로그 자동 수집 → `e2e-results/fail-{N}-{timestamp}.md` 저장. PASS 시 로그 수집 없음
 - **플랜 작성 때 TC 함께 생성** — `Behavior Impact: Yes/Unknown`인 플랜은 사용자 행위와 TC를 `docs/tc/<feature>.tc.json`에 씁니다(기대 결과 한 줄에 확인 하나, 줄마다 관측 채널, 근거 `requirement` / `source-observation` / `proposal`). 작성 직후 `tc-lint.js`(코드 규칙)와, TypeSafe **Jev** 키가 있으면 `tc-jev-check.js`(`single` / `hidden` / `screen` 점수)로 검사합니다. e2e는 TC를 원문 그대로 실행하고 기대 결과마다 한 번만 판정합니다 — 코드 → Jev → LLM 순, `judged_by`를 `.cc-audits/<plan>/tc-results.jsonl`에 기록. TC는 플랜 본문에 초안으로 쓰고, 승인 직후 파일로 저장합니다. `api` / `db` / `log` 사실은 `tc-api-run.js`로 확인하며, 이 스크립트는 실행 설정의 `base_url`과 지정된 데이터 파일에만 접근합니다. 코드·사람 정답 표본으로 만들고 검증용 표본으로 확인한 보정을 사용자가 승인하면 그 질문은 Jev가 직접 판정합니다. LLM은 약 10%만 재검사하고, 최근 20건 중 2건이 엇갈리면 보정이 자동 해제됩니다. 실패한 TC는 **수정 루프**(`tc-fix-loop.js`)를 거칩니다. 실패마다 분류하고 제품 결함만 고칩니다. 같은 실패 지문이 반복되거나 라운드 상한에 닿으면 그 TC를 사용자에게 넘기고, 마지막에 전체 회귀 라운드를 한 번 돌고 끝냅니다. 테스터는 TC를 처음 돌릴 때 조작을 데이터로 기록합니다. 검증 재생에서 판정이 일치하면 이후 라운드는 LLM 없이 **재생**합니다(`tc-replay.js`). 죽은 버튼 점검은 데이터를 바꾸지 않는 스크립트로 합니다(`tc-sweep.js`)
 - **화면·기능 위키** (`docs/wiki/`, `/wiki` + `wiki.js`) — 구현된 화면 하나, 여러 화면에 걸친 기능 하나마다 문서 한 장을 두고 route, 파일, 쓰는 컴포넌트, API, 상태, 연결된 화면을 적습니다. `/plan`과 publisher는 코드를 찾기 전에 여기서 기존 화면을 찾습니다(`wiki.js find`). 문서마다 나열한 파일의 해시를 기록해서, 코드가 바뀐 문서는 `stale`로 나오고 누가 참고하기 전에 갱신됩니다. 문서는 오케스트레이터가 씁니다(기존 프로젝트는 `/wiki init`, 이후 phase가 끝날 때마다). `wiki.js`는 상태, stamp, index, 검색을 맡습니다
+- **사실 검증 에이전트** (`fact-auditor` + `claims.js`, `/verify-claims`) — 사용자가 판단에 쓸 보고(웹 조사, 분석 결론, 비교, 위키, 대량 수정)의 사실을 답하기 전에 검증합니다. `/plan` 안팎 모두 적용됩니다. 생산자는 주장 장부(주장 하나에 사실 하나)와 전제 장부(판단에 쓴 규칙)를 쓰고, `claims.js`가 이를 고정하고 **카나리아**(일부러 틀린 주장, 표시 없음)를 섞습니다. fact-auditor는 주장과 접근 명세만 받고 생산자의 도구·결과·추론은 보지 않은 채, 증거(로그, 읽기 전용 DB, 코드, 문서, 웹; 화면 항목은 e2e-tester)를 직접 모아 A~D 등급을 매깁니다. 카나리아를 통과시킨 채널은 믿지 않고, 반박된 전제에 기댄 주장은 `stale`, A·B 증거 없는 결정 주장은 `not_established`가 됩니다. 주장 30개 미만은 주장별 표시, 30개 이상은 사용자가 **검증기 판정**의 표본을 확인하고 보고서가 "다 맞음" 대신 단측 95% 오류율 상한을 냅니다. 모델 판단 항목은 먼저 Jev(`Q.claim_supported@1`)가 판정합니다
+- **천재적 사고 기본 적용** (`memory/reference_genius_thinking.md`) — 방향이 정해지지 않은 아이디어·기획·설계·비효율 개선에서 두 사고법을 섞어 분석하고 아이디어 10개 이상을 낸 뒤, 가장 시의적절한 안을 Claude가 골라 적용합니다(플랜 승인과 확인 관문은 유지)
 - **`/open-browser` 스킬** — 직접 조작할 탭을 엶: Aside 테스트 계정 창, 대체로 창이 뜨는 `playwright-test-1`. 세션 상태를 저장해 `/check-log`가 같은 브라우저를 읽게 함
 - **`/check-log` 스킬** — 열린 브라우저에서 버그를 재현한 후 실행하면, 콘솔 에러·네트워크 요청/응답 상세·서버 로그를 e2e-tester 아티팩트와 동일한 수준으로 `e2e-results/fail-manual-{timestamp}.md`에 수집
 - **안전한 병합 전략** — CLAUDE.md와 MEMORY.md는 마커 블록 병합. 훅은 statusMessage 중복 제거. 개인 설정은 절대 건드리지 않음
@@ -172,8 +174,8 @@ npx github:fffight88/cc-baseline --project --uninstall --yes
 
 | 컴포넌트 | 설명 |
 |---|---|
-| 행동 규칙 (`CLAUDE.md`, `memory/*.md`) | 11가지 세션 규칙: 응답 언어, 불확실성, 병렬 읽기, 최소 수정, git 안전성 등 |
-| 커스텀 스킬 (`/plan`, `/clean`, `/open-browser`, `/check-log`, `/wiki`) | 플랜 모드 진입; 고아 프로세스 + 프로젝트 개발 서버 + e2e 아티팩트 정리; 수동 테스트용 브라우저 탭(Aside, 대체 Playwright); Fail 진단 수집기; 화면·기능 위키 생성·갱신·점검 |
+| 행동 규칙 (`CLAUDE.md`, `memory/*.md`) | 13가지 세션 규칙: 응답 언어, 불확실성, 병렬 읽기, 최소 수정, git 안전성, 사실 독립 검증, 천재적 사고 등 |
+| 커스텀 스킬 (`/plan`, `/clean`, `/open-browser`, `/check-log`, `/wiki`, `/verify-claims`) | 플랜 모드 진입; 고아 프로세스 + 프로젝트 개발 서버 + e2e 아티팩트 정리; 수동 테스트용 브라우저 탭(Aside, 대체 Playwright); Fail 진단 수집기; 화면·기능 위키 생성·갱신·점검; 보고 사실의 독립 검증 |
 | E2E 테스터 에이전트 (`e2e-tester`) | 브라우저 기반 E2E 테스트 러너 — 매니저 시나리오에 더해 모든 화면에서 런타임 불변식 + 데드컨트롤 스윕을 내장 실행(화이트라벨/콘솔에러 없음; 모든 클릭요소가 효과를 내야 함, 파괴적 컨트롤은 스킵); PASS: 로그 수집 없음; FAIL: 콘솔 + 네트워크 + 서버 로그 → `e2e-results/fail-{N}-{timestamp}.md` |
 | Security Auditor 에이전트 (`security-auditor`) | SAST · SCA · 시크릿 스캔 · 프롬프트 인젝션 탐지; 이슈별 구조화된 리포트; 스캐너 미설치 gap 이슈 (HIGH/MEDIUM) |
 | Code Reviewer 에이전트 (`code-reviewer`) | 로직 오류 · 엣지 케이스 · CLAUDE.md 위반 · 컨벤션 검사 · 크로스파일 영향 분석 · async/Promise 오류 · 테스트 커버리지 갭; 프로필 무결성 검증; 보안은 security-auditor에 위임 |
@@ -186,6 +188,7 @@ npx github:fffight88/cc-baseline --project --uninstall --yes
 | 훅 설정 (`settings.json hooks`) | SessionStart 메모리 로드, PreToolUse E2E 가이드 주입 · 경로 가드, SessionEnd 프로세스 정리 |
 | 테스트 환경 점검 (`scripts/test-env-check.js`, 지침 `memory/reference_test_env.md`) | 첫 e2e 라운드 전에 `base_url` 응답, 리다이렉트가 한 호스트에 머무는지(쿠키), 앱 CSP가 `browser_origins`를 허용하는지, `reset_command` 형식, `test_login_path`가 404가 아닌지, 가짜 외부 API 서버(`external_stubs`)가 loopback인지 점검. `base_url`과 가짜 서버에만 GET, 아무것도 쓰지 않음. 지침은 스키마만 옮긴 테스트 백엔드, 3중 가드 테스트 로그인, 테스트 대상이 아니면 거부하는 reset, 유료 API를 가짜로 바꿔도 되는 조건을 다룸 |
 | 위키 도구 (`scripts/wiki.js`) | `docs/wiki/` 문서 상태(`ok` / `stale` / `unstamped` / `broken` / `invalid`, `--strict`면 실패), `stamp`(나열한 파일의 해시 기록, 프로젝트 밖 경로 거부), `index`, route·컴포넌트·API로 `find`. `docs/wiki/` 안의 `.md` 파일만 씀 |
+| 사실 검증 에이전트 (`fact-auditor`) + 주장 도구 (`scripts/claims.js`, 가이드 `memory/reference_claim_verification.md`) | 보고 사실의 깨끗한 방 검증: `lint` / `prepare`(고정, 카나리아, 프로젝트 밖 키) / `check-verifiers` / `screen-tc` + `import-results`(화면 항목은 e2e-tester) / `score`(카나리아 탐지, 전제 stale, 증거 등급) / `sample` + `human`(대량) / `report`(주장별 표시, 대량은 오류율 상한). fact-auditor가 읽기 전용 검증기를 직접 작성·실행하고, 판단 항목은 Jev `Q.claim_supported@1`(`tc-jev-judge.js claim`)에 묻습니다 |
 | MCP 서버 (`~/.claude.json`) | `playwright-test-1~5` 전역 MCP 서버 엔트리 — Playwright 대체 경로 (`playwright-test-1`은 창이 뜨는 `/open-browser` 전용, 2–5는 headless) |
 
 ### 파일 설치 상세
@@ -467,10 +470,10 @@ cc-baseline/
 │       └── mcp-servers.js     # mcpServers 키 병합
 └── templates/              # 번들 파일 ({{HOME}} 플레이스홀더)
     ├── CLAUDE.md
-    ├── memory/             # MEMORY.md + 12개 규칙 파일
-    ├── agents/             # e2e-tester.md, security-auditor.md, code-reviewer.md, publisher.md
-    ├── commands/           # plan.md, clean.md, open-browser.md, check-log.md, wiki.md
-    ├── scripts/            # audit-report.js, aside-session.sh, design-preview.js, tc-lint.js, jev-client.js, tc-jev-check.js, tc-jev-judge.js, tc-api-run.js, tc-fix-loop.js, tc-replay.js, tc-sweep.js, test-env-check.js, wiki.js
+    ├── memory/             # MEMORY.md + 21개 규칙·참조 파일
+    ├── agents/             # e2e-tester.md, security-auditor.md, code-reviewer.md, design-director.md, publisher.md, fact-auditor.md
+    ├── commands/           # plan.md, clean.md, open-browser.md, check-log.md, wiki.md, verify-claims.md
+    ├── scripts/            # audit-report.js, aside-session.sh, design-preview.js, tc-lint.js, jev-client.js, tc-jev-check.js, tc-jev-judge.js, tc-api-run.js, tc-fix-loop.js, tc-replay.js, tc-sweep.js, test-env-check.js, wiki.js, claims.js
     ├── design-previews/    # DESIGN.md 카탈로그 브랜드별 미리보기 페이지 + 목록
     ├── settings-hooks.json # hooks 섹션만
     └── mcp-servers.json    # playwright-test-1~5만
