@@ -16,7 +16,7 @@ Then stop the Aside browser sessions started from this project (the `/open-brows
 
 PROJ=$(git rev-parse --show-toplevel 2>/dev/null); if [ -n "$PROJ" ] && [ -x "$HOME/.claude/scripts/aside-session.sh" ]; then "$HOME/.claude/scripts/aside-session.sh" stop-under "$PROJ"; fi; echo "Aside session cleanup complete"
 
-Then stop the DESIGN.md preview server if a design-director interview left it running:
+Then stop the DESIGN.md preview server if a design-director run left it running:
 
 for d in "$HOME/.claude" ".claude"; do [ -f "$d/scripts/design-preview.js" ] && node "$d/scripts/design-preview.js" stop; done 2>/dev/null; echo "Design preview cleanup complete"
 

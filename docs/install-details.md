@@ -29,6 +29,7 @@
 | `memory/reference_test_env.md` | 〃 | Overwrite |
 | `memory/reference_claim_verification.md` | 〃 | Overwrite |
 | `memory/reference_genius_thinking.md` | 〃 | Overwrite |
+| `memory/reference_work_judgment.md` | 〃 | Overwrite |
 | `agents/e2e-tester.md` | `~/.claude/agents/e2e-tester.md` | Overwrite |
 | `agents/security-auditor.md` | `~/.claude/agents/security-auditor.md` | Overwrite |
 | `agents/code-reviewer.md` | `~/.claude/agents/code-reviewer.md` | Overwrite |

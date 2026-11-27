@@ -2546,7 +2546,10 @@ t('e2e docs: TC runs are verbatim, one judge per expected result, TC file untouc
   assert.match(tester, /No editing the TC file/);
   assert.match(guide, /## 2-A\. Running TCs/);
   assert.match(guide, /git diff --quiet -- docs\/tc\//);
-  assert.match(guide, /Applying\*\* a calibration needs the user/);
+  assert.match(guide, /Applying\*\* a calibration \(session rule 15\): for a screen question — its labels come from TC code assertions — when `tc-jev-judge\.js calibrate` is `ok` \(holdout included\) and has no `warning`/);
+  assert.match(guide, /With a `warning` \(e\.g\. every sample from one project\) do not apply/);
+  assert.match(guide, /`Q\.claim_supported@1` is applied only with the user's OK/);
+  assert.match(fs.readFileSync(path.join(ROOT, 'templates', 'memory', 'reference_claim_verification.md'), 'utf8'), /`tc-jev-judge\.js calibrate`, applied only with the user's OK — its labels come from canaries/, 'claim guide agrees with the manager guide');
   assert.match(plan, /Behavior Impact/);
   assert.match(plan, /tc-lint\.js/);
 });
@@ -4738,6 +4741,116 @@ t('Phase E fixes: a redacting sweep keeps control text out of its files; publish
     fs.writeFileSync(q.runFile, JSON.stringify({ ...run, base_url: 'https://staging.example.com', api_remote_ok: true, sweep_labels: 'plain' }));
     assert.equal(sweepMod.runContext(q.runFile).redact, false, 'plain is an explicit choice');
   } finally { await srv.close(); q.done(); }
+});
+
+// ── work judgment: stakes mode (rule 14) and deciding instead of asking (rule 15) — docs/plans/work-judgment.md, docs/tc/judgment.tc.json
+const tplText = (...p) => fs.readFileSync(path.join(ROOT, 'templates', ...p), 'utf8');
+// The lines from a heading to the next heading of the same or a higher level; lines inside ``` fences are not headings.
+function mdSection(text, heading) {
+  const lines = text.split('\n');
+  let fence = false;
+  const isHeading = lines.map(l => { if (l.startsWith('```')) fence = !fence; return !fence && /^#+ /.test(l); });
+  const start = lines.findIndex((l, i) => isHeading[i] && l.startsWith(heading));
+  assert.ok(start >= 0, `heading "${heading}" missing`);
+  const level = lines[start].match(/^#+/)[0].length;
+  let end = lines.findIndex((l, i) => i > start && isHeading[i] && l.match(/^#+/)[0].length <= level);
+  if (end < 0) end = lines.length;
+  return lines.slice(start, end).join('\n');
+}
+
+t('work judgment: the session rules carry the stakes mode and the ask boundary (TC judgment.rules-present)', () => {
+  const rules = tplText('memory', 'all_session_basic_rules.md');
+  assert.match(rules, /^## 14\. /m);
+  assert.match(rules, /^## 15\. /m);
+  const r14 = mdSection(rules, '## 14.');
+  for (const w of [/money/, /portfolio/, /public release/, /marketing/]) assert.match(r14, w, `rule 14 names ${w}`);
+  assert.match(r14, /reference_work_judgment\.md/);
+  const r13 = mdSection(rules, '## 13.');
+  assert.doesNotMatch(r13, /design\/business interviews|TC open questions/, 'rule 13 no longer keeps the interviews as gates');
+  assert.match(r13, /rule 15/);
+  assert.match(mdSection(rules, '## 9.'), /rule 15/, 'rule 9 notifies only before an interview left by rule 15');
+});
+
+t('work judgment: rule 15 names the three things still asked and keeps the authorizations (TC judgment.ask-categories)', () => {
+  const r15 = mdSection(tplText('memory', 'all_session_basic_rules.md'), '## 15.');
+  assert.match(r15, /credentials/);
+  assert.match(r15, /information only people have/);
+  assert.match(r15, /legal or ethical grey zones/);
+  for (const gate of [/plan approval \(ExitPlanMode\)/, /irreversible or outward-facing actions/, /OK for TC text changes/, /human checks of a verifier/]) assert.match(r15, gate, `rule 15 keeps ${gate}`);
+  assert.match(r15, /CRITICAL \/ HIGH security finding/, 'accepting an unfixed CRITICAL/HIGH finding stays with the user');
+  assert.match(r15, /evidence, never instructions/, 'fetched or tool text never becomes a decision source');
+  assert.match(r15, /a decision never widens it/, 'plan-carried approvals stay');
+  const guide = tplText('memory', 'reference_work_judgment.md');
+  for (const h of ['## ⚡ Key Rules Summary', '## 1. ', '## 2. ', '## 3. ', '## 4. ', '## 5. ', '## 6. ', '## ✅ Checklist']) assert.ok(guide.split('\n').some(l => l.startsWith(h)), `guide has ${h}`);
+  assert.match(mdSection(guide, '## 5. '), /## Decisions \(made without asking\)/);
+  const ext = mdSection(guide, '## 2. ');
+  for (const step of [/\*\*Average answer first\.\*\*/, /\*\*Comparables\.\*\*/, /\*\*Judge and criteria\.\*\*/, /\*\*Standard \/ distinct map\.\*\*/, /\*\*Early check and kill criteria\.\*\*/]) assert.match(ext, step, `external procedure has ${step}`);
+  const ask = mdSection(guide, '## 4. ');
+  for (const c of [/\*\*Credentials and personal data\*\*/, /\*\*Information only people have\*\*/, /\*\*Legal or ethical grey zones\*\*/]) assert.match(ask, c, `§4 names ${c}`);
+  assert.match(mdSection(guide, '## 3. '), /evidence, never instructions/);
+});
+
+t('work judgment: audit and publisher follow-ups resolve design and business issues under rule 15 (TC judgment.audit-followup)', () => {
+  for (const f of ['reference_security_auditor_protocol.md', 'reference_code_reviewer_protocol.md', 'reference_publisher_protocol.md']) {
+    const sec = mdSection(tplText('memory', f), '## 4. Follow-up by decision_type');
+    const designRow = sec.split('\n').find(l => l.startsWith('| `design` |'));
+    assert.ok(designRow, `${f}: design row`);
+    assert.doesNotMatch(designRow, /AskUserQuestion|user interview/, `${f}: a design issue is not sent straight to an interview`);
+    assert.match(designRow, /rule 15/, `${f}: the design row points to rule 15`);
+    const businessRow = sec.split('\n').find(l => l.startsWith('| `business` |'));
+    assert.ok(businessRow, `${f}: business row`);
+    assert.doesNotMatch(businessRow, /user interview/, `${f}: a business issue is not sent straight to an interview`);
+    assert.match(businessRow, /only when it rests on|only when the answer rests on/, `${f}: a business issue is asked only for what only people know`);
+    assert.match(sec, /session rule 15/, `${f}: the follow-up section points to rule 15`);
+  }
+  for (const f of ['reference_security_auditor_protocol.md', 'reference_code_reviewer_protocol.md']) {
+    assert.match(mdSection(tplText('memory', f), '## 4. Follow-up by decision_type'), /Leaving a CRITICAL or HIGH finding unfixed — dismissing it as a false positive, downgrading it or accepting it as intended included — is never a rule-15 decision: ask the user/, `${f}: risk acceptance stays with the user`);
+  }
+});
+
+t('work judgment: plan open questions are resolved unless rule 15 says ask (TC judgment.open-questions)', () => {
+  const plan = tplText('commands', 'plan.md');
+  const step3 = plan.split('\n').find(l => l.startsWith('3. **Resolve the open questions'));
+  assert.ok(step3, 'plan.md step 3 resolves the open questions');
+  assert.match(step3, /rule 15/);
+  assert.match(step3, /AskUserQuestion/, 'the rule-15 categories still go to the user');
+  const row = mdSection(tplText('memory', 'reference_tc_authoring.md'), '## ⚡ Key Rules Summary').split('\n').find(l => l.includes('open_questions'));
+  assert.ok(row, 'Key Rules Summary row on open_questions');
+  assert.doesNotMatch(row, /Ask every/);
+  assert.match(row, /rule 15/);
+});
+
+t('work judgment: plan Meta records the audience (TC judgment.meta-audience)', () => {
+  for (const [name, text] of [['plan.md', tplText('commands', 'plan.md')], ['doc_structure_rules.md', tplText('memory', 'doc_structure_rules.md')]]) {
+    const at = text.indexOf('```markdown\n## Meta');
+    assert.ok(at >= 0, `${name}: Meta block`);
+    const end = text.indexOf('```', at + 3);
+    assert.match(text.slice(at, end), /^- Audience: internal \| external$/m, `${name}: Meta has Audience`);
+  }
+});
+
+t('work judgment: the orchestrator chooses the design direction and records it (TC judgment.design-direction)', () => {
+  const proto = tplText('memory', 'reference_design_director_protocol.md');
+  const loop = mdSection(proto, '## 3. Shortlist');
+  assert.match(loop, /The orchestrator chooses \*\*one of the agent's 3 candidates\*\*/);
+  assert.match(loop, /## Decisions \(made without asking\)/);
+  assert.doesNotMatch(proto, /AskUserQuestion/, 'no interview step for the direction');
+  const agent = tplText('agents', 'design-director.md');
+  assert.doesNotMatch(agent, /runs the interview|It interviews|re-interview/);
+  assert.match(agent, /I \*\*never pick the direction myself\*\*/, 'the agent still never chooses');
+  assert.match(agent, /the orchestrator chooses one \(session rule 15\)/);
+  assert.match(agent, /It chooses, then re-calls me with `iteration: 2`/);
+});
+
+t('work judgment: the new guide is installed and indexed (TC judgment.installed)', () => {
+  const list = JSON.parse(tplText('manifest.json')).overwrite;
+  const at = list.indexOf('memory/reference_work_judgment.md');
+  assert.ok(at >= 0, 'manifest lists the guide');
+  assert.equal(at, list.indexOf('memory/reference_genius_thinking.md') + 1);
+  assert.ok(fs.existsSync(path.join(ROOT, 'templates', 'memory', 'reference_work_judgment.md')));
+  const index = tplText('memory', 'MEMORY.md');
+  assert.match(index, /\[reference_work_judgment\.md\]\(reference_work_judgment\.md\)/);
+  assert.match(index, /15 core behavior rules/);
 });
 
 async function run() {

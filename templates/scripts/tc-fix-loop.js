@@ -332,7 +332,7 @@ function fix(loc, st, { tc, files, test, summary, affected }) {
   const s = latestFail(st, tc);
   if (!s.cls || s.cls.class !== 'product') throw new Refused(`${tc}: only a failure classified product gets a fix (now: ${s.cls ? s.cls.class : 'unclassified'})`);
   if (s.fixedAfter) throw new Refused(`${tc}: a fix is already recorded for this failure — run the TC again first`);
-  if (s.fixes.length >= st.limits.max_fixes_per_tc) throw new Refused(`${tc}: fix limit reached (${st.limits.max_fixes_per_tc}) — ask the user`);
+  if (s.fixes.length >= st.limits.max_fixes_per_tc) throw new Refused(`${tc}: fix limit reached (${st.limits.max_fixes_per_tc}) — stop; report it with your analysis, or ask the user only for a TC text change or information only people have (session rule 15)`);
   const fileList = String(files || '').split(',').map(f => f.trim()).filter(Boolean);
   if (!fileList.length) throw new Refused('--files is required (the changed product files)');
   if (!test) throw new Refused('--test is required: the repro test that failed before the fix, or none:<reason> when the project has no test suite');

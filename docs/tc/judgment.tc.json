@@ -1,0 +1,361 @@
+{
+  "schema_version": 1,
+  "feature": "judgment",
+  "title": "Stakes mode (internal vs external) and deciding instead of asking",
+  "plan": "work-judgment",
+  "sources": [
+    {
+      "id": "REQ.judgment-plan",
+      "kind": "requirement",
+      "locator": "docs/plans/work-judgment.md (approved 2026-11-27)"
+    },
+    {
+      "id": "REQ.stakes-mode",
+      "kind": "requirement",
+      "locator": "user request 2026-11-27: average work is fine for internal use, useless for money, portfolio, proof in front of others or marketing — split the two and act by situation"
+    },
+    {
+      "id": "REQ.decide-not-ask",
+      "kind": "requirement",
+      "locator": "user request 2026-11-27: instead of asking the user to pick, resolve the reason for the question (research, analysis, genius thinking) and act; ask only for credentials and personal data, information only people have, and legal or ethical grey zones"
+    }
+  ],
+  "actions": [
+    {
+      "id": "ACT.judgment.install",
+      "title": "Install the rules and guides",
+      "actor": "user",
+      "trigger": "runs node bin/cli.js --yes",
+      "preconditions": [
+        "cc-baseline templates"
+      ],
+      "outputs": [
+        "session rules 14 and 15",
+        "reference_work_judgment.md",
+        "updated protocols"
+      ],
+      "evidence_refs": [
+        "REQ.judgment-plan"
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "id": "TC.judgment.rules-present",
+      "title": "The session rules carry the stakes mode and the ask boundary",
+      "action_refs": [
+        "ACT.judgment.install"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "templates/memory/all_session_basic_rules.md"
+      ],
+      "steps": [
+        {
+          "goal": "Read the session rules file",
+          "done_when": {
+            "expect": "The file is read"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The file has a heading that starts with '## 14.'",
+          "observe": {
+            "channel": "artifact",
+            "key": "heading '## 14.'"
+          }
+        },
+        {
+          "text": "The file has a heading that starts with '## 15.'",
+          "observe": {
+            "channel": "artifact",
+            "key": "heading '## 15.'"
+          }
+        },
+        {
+          "text": "Rule 14 names money, portfolio, public release or marketing as signs of external work",
+          "observe": {
+            "channel": "artifact",
+            "key": "rule 14 text"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.stakes-mode",
+          "REQ.decide-not-ask"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.judgment.ask-categories",
+      "title": "Rule 15 names the three things that still go to the user",
+      "action_refs": [
+        "ACT.judgment.install"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "templates/memory/all_session_basic_rules.md"
+      ],
+      "steps": [
+        {
+          "goal": "Read rule 15",
+          "done_when": {
+            "expect": "The rule is read"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "Rule 15 names credentials as something to ask for",
+          "observe": {
+            "channel": "artifact",
+            "key": "rule 15 text"
+          }
+        },
+        {
+          "text": "Rule 15 names information only people have",
+          "observe": {
+            "channel": "artifact",
+            "key": "rule 15 text"
+          }
+        },
+        {
+          "text": "Rule 15 names legal or ethical grey zones",
+          "observe": {
+            "channel": "artifact",
+            "key": "rule 15 text"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.decide-not-ask"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.judgment.audit-followup",
+      "title": "Audit follow-ups resolve design and business issues under rule 15",
+      "action_refs": [
+        "ACT.judgment.install"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the security-auditor, code-reviewer and publisher protocols"
+      ],
+      "steps": [
+        {
+          "goal": "Read the decision_type follow-up table of each protocol",
+          "done_when": {
+            "expect": "The three tables are read"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "No protocol row sends a design issue straight to a user interview",
+          "observe": {
+            "channel": "artifact",
+            "key": "follow-up table rows for design"
+          }
+        },
+        {
+          "text": "Each protocol's follow-up section points to rule 15",
+          "observe": {
+            "channel": "artifact",
+            "key": "follow-up section text"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.decide-not-ask"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.judgment.open-questions",
+      "title": "Plan open questions are resolved unless rule 15 says ask",
+      "action_refs": [
+        "ACT.judgment.install"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "templates/commands/plan.md and templates/memory/reference_tc_authoring.md"
+      ],
+      "steps": [
+        {
+          "goal": "Read the open-question steps",
+          "done_when": {
+            "expect": "Both files are read"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "plan.md step 3 refers to rule 15 for open questions",
+          "observe": {
+            "channel": "artifact",
+            "key": "plan.md step 3"
+          }
+        },
+        {
+          "text": "reference_tc_authoring.md no longer asks every open question with AskUserQuestion",
+          "observe": {
+            "channel": "artifact",
+            "key": "Key Rules Summary row on open_questions"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.decide-not-ask"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.judgment.meta-audience",
+      "title": "Plans record the audience",
+      "action_refs": [
+        "ACT.judgment.install"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "templates/commands/plan.md and templates/memory/doc_structure_rules.md"
+      ],
+      "steps": [
+        {
+          "goal": "Read both Meta blocks",
+          "done_when": {
+            "expect": "Both blocks are read"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "plan.md's Meta block has an Audience line",
+          "observe": {
+            "channel": "artifact",
+            "key": "plan.md Meta block"
+          }
+        },
+        {
+          "text": "doc_structure_rules.md's Meta block has an Audience line",
+          "observe": {
+            "channel": "artifact",
+            "key": "doc_structure_rules.md Meta block"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.stakes-mode"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.judgment.design-direction",
+      "title": "The orchestrator chooses the design direction and records it",
+      "action_refs": [
+        "ACT.judgment.install"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "templates/memory/reference_design_director_protocol.md"
+      ],
+      "steps": [
+        {
+          "goal": "Read the shortlist step of the protocol",
+          "done_when": {
+            "expect": "The step is read"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The protocol has the orchestrator choose one of the 3 candidates",
+          "observe": {
+            "channel": "artifact",
+            "key": "shortlist step text"
+          }
+        },
+        {
+          "text": "The protocol has no AskUserQuestion step for the direction",
+          "observe": {
+            "channel": "artifact",
+            "key": "protocol text"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.decide-not-ask"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.judgment.installed",
+      "title": "The new guide is installed and indexed",
+      "action_refs": [
+        "ACT.judgment.install"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "templates/manifest.json and templates/memory/MEMORY.md"
+      ],
+      "steps": [
+        {
+          "goal": "Read the manifest and the memory index",
+          "done_when": {
+            "expect": "Both files are read"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The manifest lists memory/reference_work_judgment.md",
+          "observe": {
+            "channel": "artifact",
+            "key": "manifest.json overwrite"
+          }
+        },
+        {
+          "text": "MEMORY.md links reference_work_judgment.md",
+          "observe": {
+            "channel": "artifact",
+            "key": "MEMORY.md lines"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.judgment-plan"
+        ]
+      },
+      "readiness": "ready"
+    }
+  ],
+  "open_questions": []
+}

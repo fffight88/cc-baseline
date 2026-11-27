@@ -2,9 +2,9 @@
 'use strict';
 
 // Local preview server for the DESIGN.md catalog pages installed next to this
-// script (../design-previews). The orchestrator starts it before the
-// design-director interview so the user can open each candidate, and stops it
-// once a direction is chosen.
+// script (../design-previews). The orchestrator starts it before choosing a
+// design-director candidate so the user can open each one next to the choice,
+// and stops it at the end of that phase.
 //
 //   node design-preview.js start    start (or reuse) the server, print its base URL
 //   node design-preview.js status   print the base URL if running, exit 1 otherwise

@@ -9,7 +9,8 @@ type: reference
 - ✅ DO: `Code Quality Impact: Yes/Unknown` → auto-call code-reviewer after plan completion
 - ✅ DO: If `Security Impact: Yes/Unknown` is also met, **call in parallel with security-auditor in a single message**
 - ✅ DO: Use `regenerate_profile: true` only after large-scale changes to key_files
-- ❌ DON'T: Never trigger notifications at audit start or completion (only immediately before design/business issue interview)
+- ✅ DO: Resolve `design` / `business` issues under session rule 15 — decide, fix, record; ask only what rule 15 leaves for the user
+- ❌ DON'T: Never trigger notifications at audit start or completion (only immediately before an interview that remains after rule 15)
 - ❌ DON'T: Never ask code-reviewer to check security vulnerabilities or secrets (security-auditor territory)
 
 ---
@@ -81,20 +82,25 @@ When both `Security Impact: Yes/Unknown` and `Code Quality Impact: Yes/Unknown` 
 
 ## 4. Follow-up by decision_type
 
+`design` and `business` issues are resolved under session rule 15 (`reference_work_judgment.md` §3): the orchestrator decides, fixes and records the decision. The agent's `next_action: user_interview` means such issues exist — not that the user must be asked.
+
 | decision_type | Follow-up |
 |---------------|-----------|
 | `auto` | orchestrator fixes code and requests re-review |
-| `design` | user interview (AskUserQuestion) then design change |
-| `business` | user interview (AskUserQuestion) then policy decision |
+| `design` | orchestrator decides the change from the codebase's own patterns and `project-patterns.md`, standard practice and research (rule 15), applies it, records the decision, then requests re-review |
+| `business` | same as `design`; ask the user (AskUserQuestion) only when the answer rests on what only people know (pricing, contracts, legal policy) or on a legal or ethical grey zone |
+
+- A decision chooses **how** to fix. Leaving a CRITICAL or HIGH finding unfixed — dismissing it as a false positive, downgrading it or accepting it as intended included — is never a rule-15 decision: ask the user. Only a re-audit that no longer reports it closes it.
+- Record each decision in `## Code Review History` (issue id → decision) and in the plan's `## Decisions (made without asking)`.
 
 ---
 
-## 5. Notification Before Interview
+## 5. Notification Before an Interview That Remains
 
-When 1 or more `design` or `business` issues exist, always run this before AskUserQuestion:
+When 1 or more questions are still left for the user after rule 15, always run this immediately before AskUserQuestion:
 
 ```bash
-MSG="Code review: user decision required (N issues)"  # replace N with actual design+business count
+MSG="Code review: user decision required (N issues)"  # replace N with the questions left after rule 15
 if command -v terminal-notifier >/dev/null 2>&1; then
   terminal-notifier -title "Claude Code" -message "$MSG" -sound Glass
 elif [ "$(uname)" = "Darwin" ]; then

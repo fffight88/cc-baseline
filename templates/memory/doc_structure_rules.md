@@ -21,6 +21,7 @@ When writing a Plan that includes implementation changes, always include a meta 
 - UI Impact: Yes | No | Unknown
 - Behavior Impact: Yes | No | Unknown
 - Claim Impact: Yes | No | Unknown
+- Audience: internal | external
 - Reason: <1 line — which areas are affected if Yes/Unknown>
 ```
 
@@ -29,9 +30,11 @@ When writing a Plan that includes implementation changes, always include a meta 
 - ✅ DO: If `UI Impact: Yes` or `Unknown`, delegate the markup/CSS/component work to the publisher agent **during execution — before the audit gates** (see `reference_publisher_protocol.md`)
 - ✅ DO: If `UI Impact: Yes/Unknown` **and** the project is greenfield (no `design-profile.md`, no existing design system or screens), run the design-director agent **before publisher** to decide and seed the design direction (see `reference_design_director_protocol.md`)
 - ✅ DO: Follow the five-agent order in `reference_agent_pipeline.md` — design-director (direct, greenfield only) → publisher (build) → security-auditor + code-reviewer (review) → e2e-tester (verify)
-- ✅ DO: If `Behavior Impact: Yes` or `Unknown`, draft actions + TCs in the plan's `## Test Cases (draft)` section, check the draft from stdin, ask its open questions before approval, and write `docs/tc/<feature>.tc.json` right after approval (see `reference_tc_authoring.md`)
+- ✅ DO: If `Behavior Impact: Yes` or `Unknown`, draft actions + TCs in the plan's `## Test Cases (draft)` section, check the draft from stdin, resolve its open questions before approval (session rule 15 — ask only its categories), and write `docs/tc/<feature>.tc.json` right after approval (see `reference_tc_authoring.md`)
 - ✅ DO: If both audit fields are Yes/Unknown, call both agents in parallel in a single message
 - ✅ DO: If `Claim Impact: Yes` or `Unknown`, verify the reported facts with `/verify-claims` before the completion report (see `reference_claim_verification.md`); a plan without the field follows session rule 12
+- ✅ DO: Set `Audience: external` when others judge the result (money, portfolio, public release, marketing, customers, evaluation, proof to others — session rule 14) and put the external procedure of `reference_work_judgment.md` §2 in the plan; `internal` otherwise. Decide it, do not ask
+- ✅ DO: Record decisions made instead of asking in a `## Decisions (made without asking)` section (session rule 15)
 - ✅ DO: If `Security Impact: No` / `Code Quality Impact: No` / `UI Impact: No`, skip the corresponding agent
 - ❌ DON'T: Never submit an implementation plan without the `Security Impact`, `Code Quality Impact`, `UI Impact`, or `Behavior Impact` fields
 - ❌ DON'T: Never submit a plan with `Behavior Impact: Yes/Unknown` that has no `## Test Cases (draft)` section

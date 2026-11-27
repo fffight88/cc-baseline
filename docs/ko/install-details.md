@@ -27,16 +27,21 @@
 | `memory/reference_tc_authoring.md` | 〃 | 덮어쓰기 |
 | `memory/reference_wiki.md` | 〃 | 덮어쓰기 |
 | `memory/reference_test_env.md` | 〃 | 덮어쓰기 |
+| `memory/reference_claim_verification.md` | 〃 | 덮어쓰기 |
+| `memory/reference_genius_thinking.md` | 〃 | 덮어쓰기 |
+| `memory/reference_work_judgment.md` | 〃 | 덮어쓰기 |
 | `agents/e2e-tester.md` | `~/.claude/agents/e2e-tester.md` | 덮어쓰기 |
 | `agents/security-auditor.md` | `~/.claude/agents/security-auditor.md` | 덮어쓰기 |
 | `agents/code-reviewer.md` | `~/.claude/agents/code-reviewer.md` | 덮어쓰기 |
 | `agents/design-director.md` | `~/.claude/agents/design-director.md` | 덮어쓰기 |
 | `agents/publisher.md` | `~/.claude/agents/publisher.md` | 덮어쓰기 |
+| `agents/fact-auditor.md` | `~/.claude/agents/fact-auditor.md` | 덮어쓰기 |
 | `commands/plan.md` | `~/.claude/commands/plan.md` | 덮어쓰기 |
 | `commands/clean.md` | `~/.claude/commands/clean.md` | 덮어쓰기 |
 | `commands/open-browser.md` | `~/.claude/commands/open-browser.md` | 덮어쓰기 |
 | `commands/check-log.md` | `~/.claude/commands/check-log.md` | 덮어쓰기 |
 | `commands/wiki.md` | `~/.claude/commands/wiki.md` | 덮어쓰기 |
+| `commands/verify-claims.md` | `~/.claude/commands/verify-claims.md` | 덮어쓰기 |
 | `scripts/audit-report.js` | `~/.claude/scripts/audit-report.js` | 덮어쓰기 |
 | `scripts/aside-session.sh` | `~/.claude/scripts/aside-session.sh` | 덮어쓰기 (실행 권한 0755) |
 | `scripts/design-preview.js` | `~/.claude/scripts/design-preview.js` | 덮어쓰기 |
@@ -50,6 +55,7 @@
 | `scripts/tc-sweep.js` | `~/.claude/scripts/tc-sweep.js` | 덮어쓰기 |
 | `scripts/wiki.js` | `~/.claude/scripts/wiki.js` | 덮어쓰기 |
 | `scripts/test-env-check.js` | `~/.claude/scripts/test-env-check.js` | 덮어쓰기 |
+| `scripts/claims.js` | `~/.claude/scripts/claims.js` | 덮어쓰기 |
 | `design-previews/` (파일 69개) | `~/.claude/design-previews/` | 파일마다 덮어쓰기. 제거할 때 파일과 비게 된 폴더를 지움 |
 
 ## JSON 병합 상세

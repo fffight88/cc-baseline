@@ -257,7 +257,7 @@ function lint(doc) {
     if (arr(q.affects).length === 0) warn('format', where, 'affects must name at least one TC');
     for (const t of arr(q.affects)) {
       if (!readiness.has(t)) warn('format', where, `affects points to unknown TC ${t}`);
-      else if (!isStr(q.answer) && readiness.get(t) === 'ready') warn('open_question', where, `${t} is ready but this question has no answer — ask it before approval or keep the TC needs-decision`);
+      else if (!isStr(q.answer) && readiness.get(t) === 'ready') warn('open_question', where, `${t} is ready but this question has no answer — resolve it before approval (session rule 15) or keep the TC needs-decision`);
     }
     if (q.answer !== undefined && !isStr(q.answer)) warn('format', where, 'answer must be a non-empty string when present');
     if (isStr(q.answer) && !isStr(q.decided_at)) warn('format', where, 'an answered question needs decided_at');

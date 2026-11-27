@@ -111,7 +111,7 @@ When the plan has a TC file (`docs/tc/<feature>.tc.json`, see `reference_tc_auth
 5. **Results** — `tc-results.jsonl` gets one line per TC run (`tc_digest` marks which TC text was run, `run_id` which run). The TC file must be unchanged after the run (`git diff --quiet -- docs/tc/`).
 6. **A failing TC** — go through the fix loop (§2-B): fix the product and re-run the same TC. If the TC sentence itself looks wrong, stop and ask the user; change the TC file only with their OK and a recorded reason (`tc-fix-loop.js tc-change`). Never reword a TC so it passes.
 7. **Jev as the judge** — a question × model with a calibration entry is decided by Jev (PASS / FAIL); the LLM re-checks only the verdicts marked `audit: true` (about 10%).
-   - **Applying** a calibration needs the user: show `tc-jev-judge.js calibrate` (it must be `ok`, holdout included; show its `warning` too — e.g. every sample from one project), then on their OK run `calibrate --apply --question <Q.id@v> --model <jev-X.Y.Z>`.
+   - **Applying** a calibration (session rule 15): for a screen question — its labels come from TC code assertions — when `tc-jev-judge.js calibrate` is `ok` (holdout included) and has no `warning`, run `calibrate --apply --question <Q.id@v> --model <jev-X.Y.Z>`, tell the user what was applied (question, model, sample counts, thresholds) and record it in `## Decisions (made without asking)` with the thresholds before (the previous entry, or none) and after, and the undo (move the entry from `entries` to `revoked` in `~/.claude/jev/calibration.json`). With a `warning` (e.g. every sample from one project) do not apply — tell the user why and what samples are still missing. `Q.claim_supported@1` is applied only with the user's OK: its labels come from canaries and fact-auditor's own verifiers, not from code assertions.
    - **Revoking is automatic**: 2 disagreements in the last 20 re-checks remove the entry (`calibration.json` → `revoked`), and the question goes back to the LLM. Tell the user when a run revoked one.
    - Only the manager stores human labels (`label`), and only with the user's answer. Testers may run `audit` only for a verdict marked `audit: true`, once per sample — the script refuses the rest.
    - **Review queue** — after the run, list the disputed samples (`tc-jev-judge.js bank` → `review`) with the expected result, a short screen summary and both verdicts, and ask the user for the right answer (AskUserQuestion; skipping is fine). Store answers with `tc-jev-judge.js label --sample <id> --label human:PASS|human:FAIL`.
@@ -142,7 +142,7 @@ node $L report --run $RUN                                       # at the end: ro
    | `fix` | fix the product for each TC (rules below), then record it with `fix` |
    | `tc_changed` | the TC file changed after `start` — stop and ask the user (item 4) |
    | `cap_reached` | stop; report to the user with `report`. To go on, the user raises `loop` limits in `tc-run.json` |
-   | `ask_user` | only TCs waiting on the user are left — ask them (item 4) |
+   | `ask_user` | only TCs waiting on the user are left — resolve, ask or report each one per item 4 |
    | `done` | every TC in the loop passed in a full round — run `report`, then the audit gates |
 
    `ask_user` can come with any action: those TCs wait for the user while the rest of the loop goes on.
@@ -154,14 +154,16 @@ node $L report --run $RUN                                       # at the end: ro
    | `env` | server down, port, missing service, network | manager fixes the environment, then `resume` |
    | `fixture` | seed data / account / run-file value missing or wrong | manager fixes `tc-run.json` or the seed (never the TC), then `resume` |
    | `runner` | the tester / driver did it wrong (wrong element, timing, observation gap) | fix the runner input, then `resume` |
-   | `case` | the TC sentence itself looks wrong or untestable | **user** — propose the text fix |
-   | `decision` | the behaviour is a product decision nobody made | **user** |
+   | `case` | the TC sentence itself looks wrong or untestable | **user** — propose the text fix (a TC text change needs their OK) |
+   | `decision` | the behaviour is a product decision nobody made | manager resolves it under session rule 15 (item 4); **user** only for a TC text change or information only people have |
 3. **Fix rules**
    - When the project has a test suite, first write a test that reproduces the failure and see it fail, then fix (`--test <path>`). No suite → `--test none:<reason>`.
    - Fix the cause. Never branch on TC data, test accounts, run ids or "test mode"; never weaken a check the TC relies on.
    - Never touch `docs/tc/` — `git diff --quiet -- docs/tc/` must hold through the whole loop.
    - Name every TC the change can affect with `--affected`, so it runs again too.
-4. **Asking the user** (AskUserQuestion) — for each `ask_user` entry show the TC, the class or `stuck` / `fix_cap`, the failing expected results and what was tried.
+4. **`ask_user` entries** — first find the cause (result line, fail log, the fixes tried). Ask the user (AskUserQuestion) only when the way forward is a TC text change or needs information only people have (session rule 15); then show the TC, the class or `stuck` / `fix_cap`, the failing expected results, what was tried and what you propose.
+   - `decision` that the requirement, code or conventions answer: the decision changes the product, never the TC text or its expected results (that stays a `case` for the user). Record it (what, why, evidence, how to undo, `self-resume 1/1`) in the plan's `## Decisions (made without asking)`, then `resume`, `classify --class product` and `fix` as usual — at most once per TC; if it comes back, treat it as `stuck`.
+   - `stuck` / `fix_cap` with no TC text change or human-only information needed: do not `resume` it yourself — the limits stop endless loops. Leave it out and report it as not passed with your analysis (cause, what was tried, what would fix it).
    - `case`: on their OK, edit the TC file, then `tc-change --tc <id> --reason "<user OK + why>"`. It re-freezes that TC, which runs again.
    - The user drops a TC: on their OK remove it from the TC file, then `tc-change` the same way — the TC leaves the loop and `report` lists it under `removed`.
    - The user splits a TC (e.g. an expected result that can only be seen before a later step): on their OK edit the old TC and add the new one (`ready`, with its run-file entry), then `tc-change` each — the new TC joins the loop and runs in the next round. Check every expected result against the screen after the **last** step.

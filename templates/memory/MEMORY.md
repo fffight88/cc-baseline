@@ -1,6 +1,6 @@
 # Global Memory Index
 
-- [all_session_basic_rules.md](all_session_basic_rules.md) — **Read every session** — 13 core behavior rules: response language, uncertainty, parallel reads, minimal edits, pattern compliance, git rules, server cleanup, independent fact verification, genius thinking for direction, and more
+- [all_session_basic_rules.md](all_session_basic_rules.md) — **Read every session** — 15 core behavior rules: response language, uncertainty, parallel reads, minimal edits, pattern compliance, git rules, server cleanup, independent fact verification, genius thinking for direction, internal vs external mode, deciding instead of asking, and more
 - [doc_structure_rules.md](doc_structure_rules.md) — **When writing any document** — top summary, bottom checklist, DO/DON'T format structure principles
 - [reference_e2e_manager_guide.md](reference_e2e_manager_guide.md) — E2E test manager guide: Aside session / MCP server assignment, scenario writing, parallel execution, result aggregation, file cleanup
 - [reference_doc_writing_style.md](reference_doc_writing_style.md) — Reference document writing style: cost tiers, parallel reads, 7-technique application guide
@@ -10,7 +10,7 @@
 - [phase_end.md](phase_end.md) — Phase end checklist: repeat incomplete tasks until all tasks are done
 - [reference_security_auditor_protocol.md](reference_security_auditor_protocol.md) — security-auditor auto-trigger, call protocol, loop management, decision_type follow-up, notification rules
 - [reference_code_reviewer_protocol.md](reference_code_reviewer_protocol.md) — code-reviewer auto-trigger, call protocol, loop management, decision_type follow-up, profile cache management
-- [reference_design_director_protocol.md](reference_design_director_protocol.md) — design-director auto-trigger (greenfield only), shortlist→interview→commit loop, and the seeded-profile contract with publisher
+- [reference_design_director_protocol.md](reference_design_director_protocol.md) — design-director auto-trigger (greenfield only), shortlist→choose→commit loop (the orchestrator chooses), and the seeded-profile contract with publisher
 - [reference_design_md_index.md](reference_design_md_index.md) — 68-brand DESIGN.md catalog design-director shortlists from, with lane fit and trademark caution
 - [reference_web_interface_guidelines.md](reference_web_interface_guidelines.md) — Vercel Web Interface Guidelines, pinned + vendored: the static UI rule set publisher runs in its Step 5 self-check
 - [reference_publisher_protocol.md](reference_publisher_protocol.md) — publisher auto-trigger, call protocol, self-fix loop, decision_type follow-up, and post-publish handoff to e2e-tester
@@ -21,3 +21,4 @@
 - [reference_browser_tools.md](reference_browser_tools.md) — **Before any browser work**: Aside first (`aside repl` / `scripts/aside-session.sh`, test account only), Playwright MCP fallback, switch conditions, `__e2e` recorder, report fields
 - [reference_claim_verification.md](reference_claim_verification.md) — **Before reporting facts the user will act on** (research, analysis, comparisons, wikis, bulk edits — in or outside `/plan`): ledgers, `claims.js`, clean-room fact-auditor, evidence grades, canaries, evidence re-run, light vs bulk, optional human sample and error bounds
 - [reference_genius_thinking.md](reference_genius_thinking.md) — **When ideating, planning, designing or removing an inefficiency without a fixed direction**: the genius thinking formulas (mix two methods, 10+ ideas), then choose and apply the most timely idea yourself (rule 13)
+- [reference_work_judgment.md](reference_work_judgment.md) — **At the start of a task and whenever you want to ask the user to choose**: internal vs external mode and the external procedure (rule 14); resolve and decide instead of asking, the three things still asked, the decision record, the authorizations that stay (rule 15)

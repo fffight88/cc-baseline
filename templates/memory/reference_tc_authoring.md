@@ -9,7 +9,7 @@ type: reference
 | ✅ DO | ❌ DON'T |
 |---|---|
 | Write actions (ACT) first, then TCs per action — **once**, as a draft in the plan; the user's plan approval freezes them and the file is written right after | Re-split steps or invent input values at e2e time, or write files in plan mode |
-| Ask every `open_questions` entry with AskUserQuestion before approval | Hand a `needs-decision` TC to e2e |
+| Resolve every `open_questions` entry before approval (session rule 15): answer it from the requirement, code and conventions; ask the user only its categories | Hand a `needs-decision` TC to e2e, or ask the user to pick what the code can answer |
 | One expected result = **one fact** a machine can decide (URL, text, element state, API value, log line) | Bundle several checks into one sentence, or write visual/subjective judgments ("looks good") — those belong to publisher |
 | Give every expected result an `observe.channel`; off-screen data (API/DB/log) gets `api` / `db` / `log` | Let a screen judgment stand in for server state |
 | Mark the basis: `requirement` / `source-observation` / `proposal`; every `proposal` is `needs-decision` | Promote the current implementation's behavior to an approved answer |
@@ -25,7 +25,7 @@ type: reference
 - A plan whose `## Meta` has `Behavior Impact: Yes` or `Unknown` must contain actions + TCs.
 - `Behavior Impact: No` (pure refactor, docs, build config with no user-visible change) → no TC file; say so in the plan.
 - TCs live in the **project**: `docs/tc/<feature>.tc.json`, committed. One file per feature; a later plan updates the same file instead of creating a parallel one.
-- Order (`/plan`): draft the JSON in the plan's `## Test Cases (draft)` → check it from stdin (§5) → ask the open questions (§3) → user approves → write the file and `tc-run.json` as the first execution step → check the file again. Plan mode writes no files.
+- Order (`/plan`): draft the JSON in the plan's `## Test Cases (draft)` → check it from stdin (§5) → resolve the open questions (§3) → user approves → write the file and `tc-run.json` as the first execution step → check the file again. Plan mode writes no files.
 - Run artifacts live under `.cc-audits/<plan-slug>/` (not committed): `tc-check.json`, `tc-run.json`, `tc-results.jsonl`, `obs/<tc-id>/<run_id>/`, `api-sessions/`.
 
 ---
@@ -93,7 +93,7 @@ JSON (Node reads it with no dependency). The plan body shows a TC summary table 
 |---|---|
 | `feature` | kebab-case; used as the ID prefix |
 | IDs | `ACT.<feature>.<name>`, `TC.<feature>.<name>`, `SRC.<name>` / `REQ.<name>` — **meaning names**, never renumbered when order changes |
-| `sources[].kind` | `source` (code you read: repo path + line/symbol + commit) · `requirement` (user request, spec) · `decision` (a user decision in this conversation) |
+| `sources[].kind` | `source` (code you read: repo path + line/symbol + commit) · `requirement` (user request, spec) · `decision` (a decision in this conversation — the user's, or Claude's under session rule 15 with `decided by Claude under rule 15: <reason>` in `locator`) |
 | `actions[]` | `id, title, actor, trigger, preconditions, outputs, evidence_refs` — who / under what condition / does what / what state or result follows |
 | `level` | `functional` · `contract` · `integration` |
 | `surface` | `ui-web` (e2e-tester runs it) · `api` · `cli` |
@@ -130,7 +130,8 @@ JSON (Node reads it with no dependency). The plan body shows a TC summary table 
 - Happy path, rejection, error, boundary, cancel, retry → separate TCs, and only where the contract actually has that behavior.
 - Login or existing data needed → say so in `preconditions` and name a `fixture`.
 - Never invent numbers or expected values to make a TC `ready`; missing facts → `needs-decision` + an `open_questions` entry.
-- Before ExitPlanMode, ask each open question with AskUserQuestion (`default` first, marked recommended). An answer goes into the draft (`answer`, `decided_at`, a `kind: decision` source) and makes the affected TCs `ready`; a skipped question leaves them `needs-decision`, and e2e reports them `skip: needs-decision`.
+- Before ExitPlanMode, resolve each open question under session rule 15: answer it from the requirement, the current behavior, the code and conventions, and record it in the draft (`answer`, `decided_at`, a `kind: decision` source with `decided by Claude under rule 15: <reason>`) and in the plan's `## Decisions (made without asking)`; the affected TCs become `ready`.
+- Deciding is not inventing: a value no requirement, code or convention gives (a limit, a price, a wording someone agreed on) is information only people have — ask it with AskUserQuestion (`default` first, marked recommended; all such questions in one go). A skipped question leaves its TCs `needs-decision`, and e2e reports them `skip: needs-decision`.
 
 ---
 
@@ -193,6 +194,6 @@ The same holds inside the fix loop (`reference_e2e_manager_guide.md` §2-B): a f
 - [ ] Success and failure flows are separate TCs; no subjective/visual sentences
 - [ ] No URLs, results, thresholds or secrets in the TC file
 - [ ] Authoring checks ran on the draft (stdin); warnings fixed or kept with a reason in the plan
-- [ ] Every open question was asked before approval; answers recorded, skipped ones left `needs-decision`
+- [ ] Every open question was resolved before approval (rule 15) or, in its categories, asked; answers recorded, skipped ones left `needs-decision`
 - [ ] The plan shows the TC summary table; the user's approval freezes the TCs
 - [ ] Right after approval the file and `tc-run.json` were written and checked again

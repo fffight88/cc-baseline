@@ -14,7 +14,8 @@ type: reference
 - ✅ DO: render-compare exhaustively (thead **and** tbody, all key states) + assert runtime invariants (no whitelabel / no console error) on every rendered screen — see §9
 - ❌ DON'T: Expect publisher to write data binding, API, state, or event logic (out of its role)
 - ❌ DON'T: Duplicate publisher's visual/a11y verification inside e2e-tester — e2e-tester does **functional** checks only
-- ❌ DON'T: Trigger notifications at start/completion (only immediately before a design/business interview)
+- ✅ DO: Resolve `design` / `business` items under session rule 15 — decide from the design profile, reference screens and existing copy; ask only what rule 15 leaves for the user
+- ❌ DON'T: Trigger notifications at start/completion (only immediately before an interview that remains after rule 15)
 
 ---
 
@@ -130,20 +131,24 @@ publisher self-fixes token/naming/UI-state/a11y-static violations internally (no
 
 ## 4. Follow-up by decision_type
 
+`design` and `business` items are resolved under session rule 15 (`reference_work_judgment.md` §3): the orchestrator decides, re-calls publisher with the decision and records it. publisher's `next_action: user_interview` means such items exist — not that the user must be asked.
+
 | decision_type | Follow-up |
 |---------------|-----------|
 | `auto` | publisher (re-call) fixes markup/CSS and re-verifies |
-| `design` | user interview (AskUserQuestion) — layout/tone/component-structure decision |
-| `business` | user interview (AskUserQuestion) — copy/UX/policy (e.g., i18n wording, empty-state message) |
+| `design` | orchestrator decides layout/tone/component structure from `design-profile.md`, the reference screens and the project's conventions (rule 15), then re-calls publisher with it |
+| `business` | orchestrator decides copy/UX (e.g., i18n wording, empty-state message) from the product's existing wording, i18n files and conventions (rule 15); ask the user (AskUserQuestion) only when it rests on what only people know (policy, legal wording, a brand voice nobody wrote down) or on a legal or ethical grey zone |
+
+- Record each decision in `## Publish History` (item → decision) and in the plan's `## Decisions (made without asking)`.
 
 ---
 
-## 5. Notification Before Interview
+## 5. Notification Before an Interview That Remains
 
-When 1 or more `design`/`business` items require a user decision, run this **immediately before** AskUserQuestion:
+When 1 or more `design`/`business` items still need the user after rule 15, run this **immediately before** AskUserQuestion:
 
 ```bash
-MSG="Publishing: user decision required (N items)"  # replace N with actual design+business count
+MSG="Publishing: user decision required (N items)"  # replace N with the items left after rule 15
 if command -v terminal-notifier >/dev/null 2>&1; then
   terminal-notifier -title "Claude Code" -message "$MSG" -sound Glass
 elif [ "$(uname)" = "Darwin" ]; then
@@ -225,7 +230,7 @@ Static visual PASS has been giving false negatives: it renders only some screens
 - [ ] Pre-call briefing done (§2.1): `screen_brief` scoped, `data_shape`, `reuse_anchors`, `reference_notes`, `auth_note`, `quality_flags` resolved
 - [ ] `base_url` provided when visual verification is wanted; `quality_flags` set per requirement
 - [ ] Self-fix loop terminated on clean or 3-iteration limit; `## Publish History` updated
-- [ ] design/business items → notify then interview
+- [ ] design/business items resolved under rule 15 and recorded; notify + interview only for what rule 15 leaves
 - [ ] After `done`, handed off to e2e-tester for **functional** verification (no visual/a11y overlap)
 - [ ] No publishing-specific change to e2e-tester.md needed; publishing knowledge kept in orchestrator-authored functional scenarios (the §0 sweep is e2e-tester's built-in general capability)
 - [ ] (§9) render-compare covered thead **and** tbody, and all key states (empty form + populated edit form + popups) — not the default state alone

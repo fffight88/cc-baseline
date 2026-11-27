@@ -30,11 +30,11 @@ The five build/review agents form a **sequence**, not a flat fan-out, whenever a
 ```
 /plan  (## Meta: Security Impact / Code Quality Impact / UI Impact / Behavior Impact)
    └─ [Behavior Impact: Yes/Unknown] actions + TCs as ## Test Cases (draft) → tc-lint.js - (+ tc-jev-check.js -)
-                                     → open questions asked → approval freezes TCs → docs/tc/<feature>.tc.json + tc-run.json
+                                     → open questions resolved (rule 15) → approval freezes TCs → docs/tc/<feature>.tc.json + tc-run.json
    │
    ▼
 DIRECTION  (greenfield only — skipped whenever a design profile or design system exists)
-   └─ design-director   (greenfield gate → lane → 3 candidates → [orchestrator serves previews + interviews]
+   └─ design-director   (greenfield gate → lane → 3 candidates → [orchestrator serves previews + chooses (rule 15)]
                          → seeds .cc-audits/design-profile.md with ## Design Direction)
    │
    ▼
@@ -48,7 +48,7 @@ EXECUTION
 AUDIT GATES  (parallel, single message — review the produced code, publisher output included)
    ├─ security-auditor   (Security Impact: Yes/Unknown)
    └─ code-reviewer      (Code Quality Impact: Yes/Unknown)
-       └─ each loops (auto→self_fix, design/business→interview), max 3 → HTML report once both done
+       └─ each loops (auto→self_fix, design/business→decide under rule 15), max 3 → HTML report once both done
    │
    ▼
 e2e-tester   (functional interaction only — visual & a11y already covered by publisher;
