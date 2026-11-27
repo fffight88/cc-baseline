@@ -45,7 +45,7 @@ The result is **external** when someone other than the user and their team judge
 Write these six items in the answer or the plan's Context, short:
 
 1. **Average answer first.** Write the answer most people — or a model — would give, then one or two lines on why it fails for this judge (already taken, forgettable, no edge, the judge has seen it a hundred times).
-2. **Comparables.** What already exists and what gets attention (stars, sales, reviews, discussion). Two searches: the channel where it will be judged — the store, marketplace, GitHub, HN, the job board — **before** choosing the direction, and the chosen idea itself (does it already exist, who does it, what makes this one different) before building it. This step is not optional: "not researched" listed as a risk does not replace it. Only when no search tool is available, say so and mark the direction unchecked against comparables. These facts fall under rule 12.
+2. **Comparables.** What already exists and what gets attention (stars, sales, reviews, discussion). Two searches: the channel where it will be judged — the store, marketplace, GitHub, HN, the job board — **before** choosing the direction, and the chosen idea itself (does it already exist, who does it, what makes this one different) before building it. This step is not optional: "not researched" listed as a risk does not replace it. Only when no search tool is available, say so and mark the direction unchecked against comparables. The comparables you keep in the answer are rule 12 facts: verify them with a light run (`/verify-claims`) **before** the answer — fix or drop refuted ones, mark unverifiable ones. A "not verified" note does not replace the run; only a session without the Agent tool or fact-auditor skips it, and says so.
 3. **Judge and criteria.** Who decides (buyer, recruiter, reviewer, investor, audience) and what they look at first.
 4. **Standard / distinct map.**
 
@@ -131,6 +131,7 @@ These are permissions, not choices — deciding things yourself does not replace
 
 - [ ] The mode was decided at the start, without asking; external work says so at the top (and `Audience: external` in a plan)
 - [ ] External: average answer and why it fails, comparables (rule 12), judge and criteria, standard / distinct map, direction by rule 13, early check and kill criteria
+- [ ] The comparables in the answer were verified with a rule 12 light run before the answer (or the answer says the Agent tool or fact-auditor was missing)
 - [ ] Every wish to ask was written down with its reason and resolved, unless it was one of §4
 - [ ] Human-only questions were asked early, in one go
 - [ ] Every decision has what / why / evidence / how to undo, and the completion report lists them

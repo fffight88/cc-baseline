@@ -4853,6 +4853,41 @@ t('work judgment: the new guide is installed and indexed (TC judgment.installed)
   assert.match(index, /15 core behavior rules/);
 });
 
+// ── verify before reporting: no hand-back of the fact check, states only from command results — docs/plans/verify-before-report.md
+t('verify before report: rule 12 does not let the check be handed back (TC verify-before-report.no-handback)', () => {
+  const r12 = mdSection(tplText('memory', 'all_session_basic_rules.md'), '## 12.');
+  const donts = r12.split('\n').filter(l => l.startsWith('- ❌'));
+  assert.ok(donts.some(l => /Write "not verified — run `\/verify-claims`" instead of running the check/.test(l) && /hands the check back to the user/.test(l)), 'a DON\'T forbids the hand-back note');
+  assert.match(r12, /The only reason to skip is a missing Agent tool or fact-auditor; then say so/);
+  assert.match(r12, /read `reference_claim_verification\.md` and run `\/verify-claims` before answering/);
+});
+
+t('verify before report: the claim guide says not checked is not unverifiable (TC verify-before-report.claim-guide)', () => {
+  const guide = tplText('memory', 'reference_claim_verification.md');
+  const rows = mdSection(guide, '## ⚡ Key Rules Summary').split('\n').filter(l => l.startsWith('|'));
+  const handback = rows.find(l => /Replace the check with a "not verified — run `\/verify-claims`" note/.test(l.split('|')[2] || ''));
+  assert.ok(handback, 'the DON\'T column has the hand-back row');
+  assert.match(handback.split('|')[1], /Only a session without the Agent tool or fact-auditor skips it, and says so/, 'the row states the one exception');
+  assert.match(mdSection(guide, '## 1. '), /\*\*Not checked is not unverifiable\.\*\* UNVERIFIABLE is a verdict of a check that ran\./);
+});
+
+t('verify before report: external work verifies its comparables before the answer (TC verify-before-report.external-verify)', () => {
+  const guide = tplText('memory', 'reference_work_judgment.md');
+  const step2 = mdSection(guide, '## 2. ').split('\n').find(l => l.startsWith('2. **Comparables.**'));
+  assert.ok(step2, '§2 step 2');
+  assert.match(step2, /verify them with a light run \(`\/verify-claims`\) \*\*before\*\* the answer/);
+  assert.match(step2, /only a session without the Agent tool or fact-auditor skips it, and says so/);
+  assert.ok(mdSection(guide, '## ✅ Checklist').split('\n').some(l => /^- \[ \] The comparables in the answer were verified with a rule 12 light run/.test(l)), 'checklist item');
+  assert.match(mdSection(tplText('memory', 'all_session_basic_rules.md'), '## 14.'), /verify the comparables you report with a rule 12 light run before the answer/);
+});
+
+t('verify before report: rule 2 reports states only from a command result (TC verify-before-report.state-from-output)', () => {
+  const r2 = mdSection(tplText('memory', 'all_session_basic_rules.md'), '## 2.');
+  const lines = r2.split('\n');
+  assert.ok(lines.some(l => l.startsWith('- ✅') && /confirm it from a command result in this turn/.test(l)), 'a DO asks for a command result');
+  assert.ok(lines.some(l => l.startsWith('- ❌') && /a command refused for approval ran none of its parts, not even the one before `&&`/.test(l)), 'a DON\'T says a refused command ran nothing');
+});
+
 async function run() {
   let pass = 0, fail = 0;
   const failures = [];

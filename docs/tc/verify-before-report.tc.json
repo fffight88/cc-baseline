@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "feature": "verify-before-report",
+  "title": "Run the fact check instead of handing it back, and report only states a command showed",
+  "plan": "verify-before-report",
+  "sources": [
+    {
+      "id": "REQ.vbr-plan",
+      "kind": "requirement",
+      "locator": "docs/plans/verify-before-report.md"
+    },
+    {
+      "id": "SRC.ext3-run",
+      "kind": "source",
+      "locator": "work-judgment behavior check 2026-11-27, external run 3: WebSearch x4, no Agent call, final answer says the comparables were not checked by fact-auditor and asks the user to run /verify-claims"
+    },
+    {
+      "id": "SRC.int-run",
+      "kind": "source",
+      "locator": "work-judgment behavior check 2026-11-27, internal run: 'chmod +x … && ./extract_errors.sh' refused for approval, chmod never ran, the answer reported the script as made executable"
+    }
+  ],
+  "actions": [
+    {
+      "id": "ACT.verify-before-report.install",
+      "title": "Install the rules and guides",
+      "actor": "user",
+      "trigger": "runs node bin/cli.js --yes",
+      "preconditions": [
+        "cc-baseline templates"
+      ],
+      "outputs": [
+        "session rules 2, 12 and 14",
+        "reference_claim_verification.md",
+        "reference_work_judgment.md"
+      ],
+      "evidence_refs": [
+        "REQ.vbr-plan"
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "id": "TC.verify-before-report.no-handback",
+      "title": "Rule 12 does not let the check be handed back to the user",
+      "action_refs": [
+        "ACT.verify-before-report.install"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "templates/memory/all_session_basic_rules.md"
+      ],
+      "steps": [
+        {
+          "goal": "Read rule 12",
+          "done_when": {
+            "expect": "The rule is read"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "Rule 12 forbids writing a note that asks the user to run /verify-claims instead of running the check",
+          "observe": {
+            "channel": "artifact",
+            "key": "rule 12 DON'T lines"
+          }
+        },
+        {
+          "text": "Rule 12 names a missing Agent tool or fact-auditor as the only reason to skip the check",
+          "observe": {
+            "channel": "artifact",
+            "key": "rule 12 text"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.vbr-plan",
+          "SRC.ext3-run"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.verify-before-report.claim-guide",
+      "title": "The claim guide says not checked is not unverifiable",
+      "action_refs": [
+        "ACT.verify-before-report.install"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "templates/memory/reference_claim_verification.md"
+      ],
+      "steps": [
+        {
+          "goal": "Read the Key Rules Summary and section 1",
+          "done_when": {
+            "expect": "Both are read"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The Key Rules Summary has a DON'T against replacing the check with a 'not verified' note",
+          "observe": {
+            "channel": "artifact",
+            "key": "Key Rules Summary rows"
+          }
+        },
+        {
+          "text": "Section 1 says UNVERIFIABLE is a verdict of a check that ran",
+          "observe": {
+            "channel": "artifact",
+            "key": "section 1 text"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.vbr-plan",
+          "SRC.ext3-run"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.verify-before-report.external-verify",
+      "title": "External work verifies its comparables before the answer",
+      "action_refs": [
+        "ACT.verify-before-report.install"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "templates/memory/reference_work_judgment.md and rule 14"
+      ],
+      "steps": [
+        {
+          "goal": "Read section 2 and the checklist of the guide",
+          "done_when": {
+            "expect": "Both are read"
+          }
+        },
+        {
+          "goal": "Read rule 14",
+          "done_when": {
+            "expect": "The rule is read"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "Section 2 step 2 asks for a light run on the reported comparables before the answer",
+          "observe": {
+            "channel": "artifact",
+            "key": "section 2 step 2"
+          }
+        },
+        {
+          "text": "The guide's checklist has an item for the comparables light run",
+          "observe": {
+            "channel": "artifact",
+            "key": "checklist lines"
+          }
+        },
+        {
+          "text": "Rule 14 asks for the comparables to be verified with a light run before the answer",
+          "observe": {
+            "channel": "artifact",
+            "key": "rule 14 text"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.vbr-plan",
+          "SRC.ext3-run"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.verify-before-report.state-from-output",
+      "title": "Rule 2 reports file and process states only from a command result",
+      "action_refs": [
+        "ACT.verify-before-report.install"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "templates/memory/all_session_basic_rules.md"
+      ],
+      "steps": [
+        {
+          "goal": "Read rule 2",
+          "done_when": {
+            "expect": "The rule is read"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "Rule 2 asks to confirm a reported file or process state from a command result in the same turn",
+          "observe": {
+            "channel": "artifact",
+            "key": "rule 2 DO lines"
+          }
+        },
+        {
+          "text": "Rule 2 says a refused command ran none of its parts",
+          "observe": {
+            "channel": "artifact",
+            "key": "rule 2 DON'T lines"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.vbr-plan",
+          "SRC.int-run"
+        ]
+      },
+      "readiness": "ready"
+    }
+  ],
+  "open_questions": []
+}

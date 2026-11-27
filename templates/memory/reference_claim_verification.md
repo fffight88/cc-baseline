@@ -20,6 +20,7 @@ What Claude reports as fact cannot be vouched for by Claude. A producer that che
 | Give fact-auditor only `claims-run.json` + `audit-input.jsonl`; list your own tools, results and golden sets in `forbidden_paths` | Show it your scripts, your verdicts, your quotes or your summary |
 | Keep the canary key where `claims.js` puts it (outside the project, 0600) | Copy the key into the run dir or a prompt |
 | Fix or drop refuted facts, mark unverifiable ones, and report the bulk error bound | Send the draft unchanged, or write "everything checked out" |
+| Run the check before the answer; "could not be checked" is a verdict of a check that ran. Only a session without the Agent tool or fact-auditor skips it, and says so | Replace the check with a "not verified — run `/verify-claims`" note, which hands it back to the user |
 | When a human sample is taken, the human checks the **verifier's verdicts**, with the re-read evidence beside each (`sample.md`) | Treat 30 human-checked claims as proof that thousands are right |
 | Model judgment (grade D) goes to Jev `Q.claim_supported@1` first; uncalibrated → REVIEW → the auditor's own call, still grade D | Count a same-model judgment as independent evidence for a decision |
 
@@ -34,6 +35,7 @@ What Claude reports as fact cannot be vouched for by Claude. A producer that che
 - **Out of scope:**
   - Opinions, recommendations, plans
   - Facts read in this turn straight from deterministic local tool output (a command result, a file's content). Web search and fetch results, and summaries of them, **are** in scope — misreading and over-summarizing happen there.
+- **Not checked is not unverifiable.** UNVERIFIABLE is a verdict of a check that ran. A note saying the facts were not verified does not replace the run; the only exception is a session without the Agent tool or the `fact-auditor` agent — then say so in the answer.
 - **Two levels** (`claims.js prepare` picks by claim count; `--mode` overrides):
 
 | Level | When | Canaries | Human | Result |
