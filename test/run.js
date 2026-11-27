@@ -3938,6 +3938,14 @@ t('claims.js lint: no channel, a missing premise, a web claim without URL → ex
     assert.equal(out.status, 1);
     assert.match(out.stderr, /C-0001: a web claim needs source_url/);
   } finally { w.done(); }
+  const np = claimsRun({ claims: dbClaims(2), spec: { web: true } });
+  try {
+    const out = await runNode([CLAIMS, 'lint', np.run], np.env);
+    assert.equal(out.status, 0);
+    assert.match(out.stdout, /no project — Jev samples/);
+    fs.writeFileSync(path.join(np.run, 'claims-run.json'), JSON.stringify({ project: 'demo', web: true }));
+    assert.doesNotMatch((await runNode([CLAIMS, 'lint', np.run], np.env)).stdout, /no project/);
+  } finally { np.done(); }
 });
 
 t('claims.js prepare: canaries carry no marker, the key is outside the project at 0600, same seed → same input (TC claims.prepare-*)', async () => {

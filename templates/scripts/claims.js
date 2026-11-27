@@ -231,6 +231,8 @@ function lintSpec(p, problems) {
   try { spec = readJson(p.run, { optional: true }); } catch (e) { err(e.message); return; }
   if (spec === null) return;
   if (!spec || typeof spec !== 'object' || Array.isArray(spec)) { err('must be a JSON object'); return; }
+  if (spec.project !== undefined && !isStr(spec.project)) err('project must be a non-empty string');
+  if (spec.project === undefined) problems.warnings.push('claims-run.json: no project — Jev samples of this run cannot be told apart by project at calibration');
   const db = spec.db;
   if (db !== undefined) {
     if (!db || typeof db !== 'object' || Array.isArray(db)) err('db must be an object');

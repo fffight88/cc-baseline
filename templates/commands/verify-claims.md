@@ -7,7 +7,7 @@ Usage: `/verify-claims [run-name]` — no name → a timestamp (`YYYYMMDDTHHMMSS
 3. Write the ledgers from the draft, one fact per claim:
    - `claims.jsonl` — `id`, `text`, `target`, `channel`, `expected`, `impact`, optional `premises`, `source_refs`; web claims need `source_url`.
    - `premises.jsonl` — every rule your conclusions relied on.
-   - `claims-run.json` — access per channel (`code.root`, `db` with `readonly: true` and `connect` — the read-only command as a list — or `dsn_env`, `log.paths`, `doc.paths`, `web`, `screen` with `base_url` and `targets` per screen) and `forbidden_paths` (your own scripts, outputs, golden sets).
+   - `claims-run.json` — `project` (the project's name, e.g. its root folder name — calibration counts samples per project), access per channel (`code.root`, `db` with `readonly: true` and `connect` — the read-only command as a list — or `dsn_env`, `log.paths`, `doc.paths`, `web`, `screen` with `base_url` and `targets` per screen) and `forbidden_paths` (your own scripts, outputs, golden sets).
 4. `node ~/.claude/scripts/claims.js lint <run>` → exit 0. Then `claims.js prepare <run> --seed <n>` and note the `mode`.
 5. Call the `fact-auditor` agent with the prompt in the guide §6 — run files only, never your reasoning, sources or expected verdicts.
 6. If it reports `pending_screen` > 0: `claims.js screen-tc <run>` (it drafts `.cc-audits/<run>/tc-run.json` from `screen.targets`; fill any `missing_targets`), run `screen.tc.json` with e2e-tester (`reference_e2e_manager_guide.md`), then `claims.js import-results <run> --results <tc-results.jsonl> --run-id <that run>` (only lines recorded for this `screen.tc.json` are taken).
