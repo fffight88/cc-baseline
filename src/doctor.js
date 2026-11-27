@@ -15,6 +15,7 @@ const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
 
 const EXPECTED_HOOK_IDS = [
   'session-start-load-rules',
+  'user-prompt-submit-language',
   'pre-tool-use-path-policy',
   'pre-tool-use-e2e-guide',
   'session-end-orphan-cleanup',
@@ -22,6 +23,7 @@ const EXPECTED_HOOK_IDS = [
 
 const PROJECT_EXPECTED_HOOK_IDS = [
   'project-session-start-load-rules',
+  'project-user-prompt-submit-language',
   'project-pre-tool-use-path-policy',
 ];
 

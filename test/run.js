@@ -761,7 +761,7 @@ t('isHarnessHook: returns boolean', () => {
 
 t('mergeHooks: empty existing → harness installed verbatim', () => {
   const result = mergeHooks({}, harnessTemplate);
-  assert.deepEqual(Object.keys(result).sort(), ['PreToolUse', 'SessionEnd', 'SessionStart']);
+  assert.deepEqual(Object.keys(result).sort(), ['PreToolUse', 'SessionEnd', 'SessionStart', 'UserPromptSubmit']);
   const ids = result.SessionStart[0].hooks.map(h => h._ccBaselineId);
   assert.deepEqual(ids, ['session-start-load-rules']);
 });
@@ -837,7 +837,7 @@ t('mergeHooks: same-matcher PreToolUse hooks share an entry', () => {
 t('removeHarnessHooks: removes by ID', () => {
   const installed = mergeHooks({}, harnessTemplate);
   const { hooks, removedCount } = removeHarnessHooks(installed);
-  assert.equal(removedCount, 4); // session-start + 2 pre-tool + session-end
+  assert.equal(removedCount, 5); // session-start + prompt language + 2 pre-tool + session-end
   assert.deepEqual(hooks, {});
 });
 
@@ -4576,6 +4576,83 @@ t('claims.js lint: a list claim gets no split warning; a db spec needs readonly 
   }
   const ok = claimsRun({ claims: dbClaims(2), spec: { db: { kind: 'postgres', readonly: true, connect: ['docker', 'exec', '-i', 'pg', 'psql'] } } });
   try { assert.equal((await runNode([CLAIMS, 'lint', ok.run], ok.env)).status, 0); } finally { ok.done(); }
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// UserPromptSubmit language reminder (TC prompt-language.*)
+// ──────────────────────────────────────────────────────────────────────────
+
+function languageHook(template) {
+  const doc = JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', template), 'utf8'));
+  return doc.UserPromptSubmit[0].hooks[0];
+}
+
+function runHook(command, stdin) {
+  const r = require('child_process').spawnSync('sh', ['-c', command], { input: stdin, encoding: 'utf8' });
+  return { status: r.status, context: JSON.parse(r.stdout).hookSpecificOutput.additionalContext, event: JSON.parse(r.stdout).hookSpecificOutput.hookEventName };
+}
+
+t('UserPromptSubmit hook: the reply language follows the prompt — Korean, English, pasted English with a Korean ask, unreadable input (TC prompt-language.korean/english/mixed/bad-input/project)', () => {
+  const hook = languageHook('settings-hooks.json');
+  assert.equal(hook._ccBaselineId, 'user-prompt-submit-language');
+  const ko = runHook(hook.command, JSON.stringify({ prompt: '진행해' }));
+  assert.equal(ko.status, 0);
+  assert.equal(ko.event, 'UserPromptSubmit');
+  assert.match(ko.context, /reply in Korean/);
+  assert.match(runHook(hook.command, JSON.stringify({ prompt: 'Run the tests again' })).context, /reply in English/);
+  const pasted = 'Traceback (most recent call last):\n  File "app.py", line 3\nValueError: bad value\n'.repeat(20) + '이거 왜 실패했어?';
+  assert.match(runHook(hook.command, JSON.stringify({ prompt: pasted })).context, /reply in Korean/);
+  assert.match(runHook(hook.command, JSON.stringify({ prompt: 'これは何ですか' })).context, /reply in Japanese/);
+  for (const bad of ['not json', '[]', JSON.stringify({ prompt: 12345 }), '']) {
+    const r = runHook(hook.command, bad);
+    assert.equal(r.status, 0, `exit 0 for ${JSON.stringify(bad)}`);
+    assert.equal(r.context, 'cc-baseline rule 1: reply in the language the user writes in.');
+  }
+  const project = languageHook('settings-hooks.project.json');
+  assert.equal(project._ccBaselineId, 'project-user-prompt-submit-language');
+  assert.match(runHook(project.command, JSON.stringify({ prompt: '테스트 돌려 줘' })).context, /reply in Korean/);
+  assert.equal(project.command, hook.command, 'global and project hooks behave the same');
+});
+
+t('UserPromptSubmit hook: installing twice registers it once and doctor finds every managed hook (TC prompt-language.install)', () => {
+  const os = require('os');
+  const { spawnSync } = require('child_process');
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-baseline-home-'));
+  try {
+    fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
+    fs.writeFileSync(path.join(home, '.claude', 'settings.json'), '{}\n');
+    const env = { ...process.env, HOME: home, USERPROFILE: home };
+    for (let i = 0; i < 2; i++) {
+      const r = spawnSync(process.execPath, [path.join(ROOT, 'bin', 'cli.js'), '--yes', '--skip-scanners'], { env, encoding: 'utf8' });
+      assert.equal(r.status, 0, r.stderr || r.stdout);
+    }
+    const settings = JSON.parse(fs.readFileSync(path.join(home, '.claude', 'settings.json'), 'utf8'));
+    const ids = (settings.hooks.UserPromptSubmit || []).flatMap(e => e.hooks).map(h => h._ccBaselineId);
+    assert.deepEqual(ids, ['user-prompt-submit-language']);
+    const doctor = spawnSync(process.execPath, [path.join(ROOT, 'bin', 'cli.js'), '--doctor'], { env, encoding: 'utf8' });
+    const expected = Object.values(JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', 'settings-hooks.json'), 'utf8'))).flatMap(l => l.flatMap(e => e.hooks)).length;
+    assert.match(doctor.stdout, new RegExp(`${expected}/${expected} managed hooks registered`));
+  } finally { fs.rmSync(home, { recursive: true, force: true }); }
+});
+
+t('UserPromptSubmit hook: a project install registers the project hook once, doctor passes, uninstall removes it (TC prompt-language.project, review QA-002)', async () => {
+  await withTempProject(async (tmp) => {
+    const origLog = console.log;
+    console.log = () => {};
+    try {
+      await install({ project: true, yes: true, skipScanners: true });
+      await install({ project: true, yes: true, skipScanners: true });
+    } finally { console.log = origLog; }
+    const settings = JSON.parse(fs.readFileSync(path.join(tmp, '.claude', 'settings.json'), 'utf8'));
+    const ids = (settings.hooks.UserPromptSubmit || []).flatMap(e => e.hooks).map(h => h._ccBaselineId);
+    assert.deepEqual(ids, ['project-user-prompt-submit-language']);
+    const hooksCheck = runChecks({ project: true }).find(r => /Hooks/.test(r.name));
+    assert.equal(hooksCheck.status, 'ok', hooksCheck.detail);
+    console.log = () => {};
+    try { await uninstall({ project: true, yes: true }); } finally { console.log = origLog; }
+    const after = fs.existsSync(path.join(tmp, '.claude', 'settings.json')) ? JSON.parse(fs.readFileSync(path.join(tmp, '.claude', 'settings.json'), 'utf8')) : {};
+    assert.ok(!((after.hooks || {}).UserPromptSubmit), 'uninstall removes the project hook');
+  });
 });
 
 async function run() {

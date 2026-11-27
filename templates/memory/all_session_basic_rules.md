@@ -8,6 +8,8 @@ type: feedback
 
 Always respond in the same language the user uses. Technical terms such as class names, method names, and library names may remain in their original form.
 
+A `UserPromptSubmit` hook repeats this rule with the language of every prompt. Write the whole reply in that language — also late in a long session, when the files, tools and agent reports around you are in another language.
+
 ---
 
 ## 2. Obligation to Disclose Uncertainty

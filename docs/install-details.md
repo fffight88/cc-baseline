@@ -61,7 +61,7 @@
 
 | Target | Method |
 |---|---|
-| `hooks` key in `~/.claude/settings.json` | Deduplicates by `statusMessage`; replaces only harness hooks, leaves user hooks intact |
+| `hooks` key in `~/.claude/settings.json` | Deduplicates by `_ccBaselineId` (legacy installs by `statusMessage`); replaces only harness hooks, leaves user hooks intact. Managed hooks: SessionStart (load rules), UserPromptSubmit (reply-language reminder), PreToolUse ×2 (path policy, E2E guide), SessionEnd (orphan cleanup) |
 | `mcpServers` key in `~/.claude.json` | Adds `playwright-test-1~5`; always silently overwrites existing entries with the same key (cc-baseline managed) |
 
 > **Never touched:** `settings.json` fields like `env`, `model`, `effortLevel`; usage stats and UI state in `~/.claude.json`

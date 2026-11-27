@@ -1,0 +1,285 @@
+{
+  "schema_version": 1,
+  "feature": "prompt-language",
+  "title": "Reply-language reminder on every prompt (UserPromptSubmit hook)",
+  "plan": "prompt-language-hook",
+  "sources": [
+    {
+      "id": "REQ.prompt-language-plan",
+      "kind": "requirement",
+      "locator": "docs/plans/prompt-language-hook.md (approved 2026-11-27)"
+    },
+    {
+      "id": "REQ.reply-in-korean",
+      "kind": "requirement",
+      "locator": "user report 2026-11-27: replies drifted to English twice in a long session although CLAUDE.md and the session-start hook say to answer in the user's language"
+    }
+  ],
+  "actions": [
+    {
+      "id": "ACT.prompt-language.hook",
+      "title": "The hook runs on a submitted prompt",
+      "actor": "Claude Code",
+      "trigger": "the user submits a prompt",
+      "preconditions": [
+        "cc-baseline is installed"
+      ],
+      "outputs": [
+        "one additionalContext line naming the reply language"
+      ],
+      "evidence_refs": [
+        "REQ.prompt-language-plan",
+        "REQ.reply-in-korean"
+      ]
+    },
+    {
+      "id": "ACT.prompt-language.install",
+      "title": "Install registers the hook",
+      "actor": "user",
+      "trigger": "runs node bin/cli.js --yes",
+      "preconditions": [
+        "a settings.json with or without hooks"
+      ],
+      "outputs": [
+        "UserPromptSubmit entry in settings.json",
+        "doctor result"
+      ],
+      "evidence_refs": [
+        "REQ.prompt-language-plan"
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "id": "TC.prompt-language.korean",
+      "title": "A Korean prompt asks for a Korean reply",
+      "action_refs": [
+        "ACT.prompt-language.hook"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "stdin is {\"prompt\": \"진행해\"}"
+      ],
+      "steps": [
+        {
+          "goal": "Run the hook command of templates/settings-hooks.json with that stdin",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The additionalContext names Korean as the reply language",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .hookSpecificOutput.additionalContext"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.reply-in-korean"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.prompt-language.english",
+      "title": "An English prompt asks for an English reply",
+      "action_refs": [
+        "ACT.prompt-language.hook"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "stdin is {\"prompt\": \"Run the tests again\"}"
+      ],
+      "steps": [
+        {
+          "goal": "Run the hook command with that stdin",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The additionalContext names English as the reply language",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .hookSpecificOutput.additionalContext"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.prompt-language-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.prompt-language.mixed",
+      "title": "Pasted English with a Korean request asks for Korean",
+      "action_refs": [
+        "ACT.prompt-language.hook"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "stdin prompt is a long English log followed by the line '이거 왜 실패했어?'"
+      ],
+      "steps": [
+        {
+          "goal": "Run the hook command with that stdin",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The additionalContext names Korean as the reply language",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .hookSpecificOutput.additionalContext"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.reply-in-korean"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.prompt-language.bad-input",
+      "title": "Unreadable input never blocks the prompt",
+      "action_refs": [
+        "ACT.prompt-language.hook"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "stdin is the text 'not json'"
+      ],
+      "steps": [
+        {
+          "goal": "Run the hook command with that stdin",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 0",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        },
+        {
+          "text": "The additionalContext says to reply in the language the user writes in",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .hookSpecificOutput.additionalContext"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.prompt-language-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.prompt-language.install",
+      "title": "Install registers the hook once",
+      "action_refs": [
+        "ACT.prompt-language.install"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a temporary HOME with an empty settings.json"
+      ],
+      "steps": [
+        {
+          "goal": "Run the installer twice into that HOME",
+          "done_when": {
+            "expect": "Both runs exit"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "settings.json has exactly one hook with _ccBaselineId user-prompt-submit-language",
+          "observe": {
+            "channel": "artifact",
+            "key": "settings.json .hooks.UserPromptSubmit"
+          }
+        },
+        {
+          "text": "doctor reports every managed hook as registered",
+          "observe": {
+            "channel": "artifact",
+            "key": "runChecks result for hooks"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.prompt-language-plan"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.prompt-language.project",
+      "title": "The project template carries the same hook",
+      "action_refs": [
+        "ACT.prompt-language.install"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "templates/settings-hooks.project.json"
+      ],
+      "steps": [
+        {
+          "goal": "Run the project template's UserPromptSubmit command with a Korean prompt",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The additionalContext names Korean as the reply language",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout JSON .hookSpecificOutput.additionalContext"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.prompt-language-plan"
+        ]
+      },
+      "readiness": "ready"
+    }
+  ],
+  "open_questions": []
+}
