@@ -33,6 +33,16 @@
       "id": "DEC.claims-human-optional",
       "kind": "decision",
       "locator": "user decision 2026-11-24: a human sample on every bulk run is too much work; default to evidence re-run and better canaries, ask for a human sample only when needed"
+    },
+    {
+      "id": "REQ.claims-recheck-web",
+      "kind": "requirement",
+      "locator": "docs/plans/claims-recheck-web.md"
+    },
+    {
+      "id": "SRC.claims-ext3-run",
+      "kind": "source",
+      "locator": "verify-before-report behavior check 2026-11-27, external run 3: recheck gave not_rerunnable for all 10 web items; fact-auditor returned check-verifiers fail (one compound Bash call refused) and next_action rerun, and the orchestrator scored and reported anyway"
     }
   ],
   "actions": [
@@ -209,6 +219,56 @@
       ],
       "evidence_refs": [
         "DEC.claims-human-optional"
+      ]
+    },
+    {
+      "id": "ACT.claims.recheck-url",
+      "title": "Re-read a web page the verifier named",
+      "actor": "orchestrator",
+      "trigger": "runs claims.js recheck <run dir> on a run whose verdicts carry url recipes",
+      "preconditions": [
+        "claims-run.json has web: true",
+        "verdicts.jsonl has verdict lines with a url recipe"
+      ],
+      "outputs": [
+        "recheck.json with a status per item"
+      ],
+      "evidence_refs": [
+        "REQ.claims-recheck-web"
+      ]
+    },
+    {
+      "id": "ACT.claims.score-verifiers",
+      "title": "Score checks the verifier files itself",
+      "actor": "orchestrator",
+      "trigger": "runs claims.js score <run dir>",
+      "preconditions": [
+        "the run was prepared",
+        "verdicts.jsonl has a verdict for every item"
+      ],
+      "outputs": [
+        "score.json with the verifier check result",
+        "exit code 1 when a verifier file is refused"
+      ],
+      "evidence_refs": [
+        "REQ.claims-recheck-web"
+      ]
+    },
+    {
+      "id": "ACT.claims.install-guides",
+      "title": "Install the agent and the command",
+      "actor": "user",
+      "trigger": "runs node bin/cli.js --yes",
+      "preconditions": [
+        "cc-baseline templates"
+      ],
+      "outputs": [
+        "agents/fact-auditor.md",
+        "commands/verify-claims.md",
+        "reference_claim_verification.md"
+      ],
+      "evidence_refs": [
+        "REQ.claims-recheck-web"
       ]
     }
   ],
@@ -1511,6 +1571,541 @@
         "kind": "requirement",
         "refs": [
           "REQ.claims-d-fixes"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.recheck-url-reproduced",
+      "title": "A url recipe whose page holds the text is reproduced",
+      "action_refs": [
+        "ACT.claims.recheck-url"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claims-run.json has web: true",
+        "the verdict of A-0001 has a url recipe for https://api.example.org/license containing MIT",
+        "the page answers 200 with a body that has \"spdx_id\": \"MIT\""
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js recheck on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "recheck.json gives A-0001 the status reproduced",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json .items[A-0001].status"
+          }
+        },
+        {
+          "text": "recheck.json records the kind url for A-0001",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json .items[A-0001].kind"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-recheck-web",
+          "SRC.claims-ext3-run"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.recheck-url-html-text",
+      "title": "A url recipe matches the visible text of an HTML page",
+      "action_refs": [
+        "ACT.claims.recheck-url"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claims-run.json has web: true",
+        "the verdict of A-0001 has a url recipe containing Apache License 2.0",
+        "the page answers 200 with HTML whose paragraph reads Apache <b>License</b> 2.0",
+        "the verdict of A-0002 has a url recipe containing hidden-token",
+        "the same page has hidden-token only inside a script element"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js recheck on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "recheck.json gives A-0001 the status reproduced",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json .items[A-0001].status"
+          }
+        },
+        {
+          "text": "recheck.json gives A-0002 the status differs",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json .items[A-0002].status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-recheck-web"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.recheck-url-differs",
+      "title": "A url recipe whose page lacks the text differs",
+      "action_refs": [
+        "ACT.claims.recheck-url"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claims-run.json has web: true",
+        "the verdict of A-0001 has a url recipe containing MIT",
+        "the page answers 200 with a body that has \"spdx_id\": \"Apache-2.0\""
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js recheck on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "recheck.json gives A-0001 the status differs",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json .items[A-0001].status"
+          }
+        },
+        {
+          "text": "The report counts the claim of A-0001 under evidence did not reproduce",
+          "observe": {
+            "channel": "artifact",
+            "key": "report.json .counts.not_reproduced"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-recheck-web"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.recheck-url-failed",
+      "title": "A page that does not come back is failed",
+      "action_refs": [
+        "ACT.claims.recheck-url"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claims-run.json has web: true",
+        "the verdict of A-0001 has a url recipe whose page answers 403",
+        "the verdict of A-0002 has a url recipe whose page body is larger than 2 MB"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js recheck on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "recheck.json gives A-0001 the status failed",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json .items[A-0001].status"
+          }
+        },
+        {
+          "text": "recheck.json gives A-0002 the status failed",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json .items[A-0002].status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-recheck-web"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.recheck-url-refused-form",
+      "title": "A url recipe outside the allowed form is refused without a request",
+      "action_refs": [
+        "ACT.claims.recheck-url"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claims-run.json has web: true",
+        "one verdict has a url recipe for http://example.org/a",
+        "one verdict has a url recipe for https://example.org:8443/a",
+        "one verdict has a url recipe for https://user:pw@example.org/a",
+        "one verdict has a url recipe for https://10.0.0.5/a"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js recheck on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "recheck.json gives all four items the status refused",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json item statuses"
+          }
+        },
+        {
+          "text": "No request was sent for any of the four items",
+          "observe": {
+            "channel": "artifact",
+            "key": "requests seen by the test fetcher"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-recheck-web"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.recheck-url-private-host",
+      "title": "A host that resolves to a private address is refused",
+      "action_refs": [
+        "ACT.claims.recheck-url"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claims-run.json has web: true",
+        "one verdict has a url recipe for https://localhost/a",
+        "one verdict has a url recipe whose host resolves to 169.254.169.254"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js recheck on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "recheck.json gives both items the status refused",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json item statuses"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-recheck-web"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.recheck-url-redirect",
+      "title": "Every redirect hop is checked like the first URL",
+      "action_refs": [
+        "ACT.claims.recheck-url"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claims-run.json has web: true",
+        "the verdict of A-0001 has a url recipe whose page redirects to http://internal.example/a",
+        "the verdict of A-0002 has a url recipe whose page redirects to another public https page that holds the text"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js recheck on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "recheck.json gives A-0001 the status refused",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json .items[A-0001].status"
+          }
+        },
+        {
+          "text": "recheck.json gives A-0002 the status reproduced",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json .items[A-0002].status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-recheck-web"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.recheck-url-web-off",
+      "title": "A url recipe needs web access in the run file",
+      "action_refs": [
+        "ACT.claims.recheck-url"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claims-run.json has no web field",
+        "the verdict of A-0001 has a url recipe for a public https page"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js recheck on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "recheck.json gives A-0001 the status refused",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json .items[A-0001].status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-recheck-web"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.score-verifier-refused",
+      "title": "Score fails when a verifier file is refused",
+      "action_refs": [
+        "ACT.claims.score-verifiers"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the run was prepared and every item has a verdict",
+        "claims-run.json lists tools/wiki-audit as a forbidden path",
+        "verifiers/verify-code.py opens tools/wiki-audit/audit.py"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js score on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 1",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        },
+        {
+          "text": "The error output names verifiers/verify-code.py",
+          "observe": {
+            "channel": "artifact",
+            "key": "stderr"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-recheck-web",
+          "SRC.claims-ext3-run"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.score-verifier-count",
+      "title": "Score records the verifier check",
+      "action_refs": [
+        "ACT.claims.score-verifiers"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the run was prepared and every item has a verdict",
+        "verifiers/ holds one clean script"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js score on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "score.json records 1 verifier file checked",
+          "observe": {
+            "channel": "artifact",
+            "key": "score.json .verifiers.files"
+          }
+        },
+        {
+          "text": "score.json records 0 verifier problems",
+          "observe": {
+            "channel": "artifact",
+            "key": "score.json .verifiers.problems"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-recheck-web"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.auditor-plain-commands",
+      "title": "fact-auditor runs one plain command per shell call",
+      "action_refs": [
+        "ACT.claims.install-guides"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "templates/agents/fact-auditor.md"
+      ],
+      "steps": [
+        {
+          "goal": "Read the agent's rules",
+          "done_when": {
+            "expect": "The file is read"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The agent file says to write files with the Write tool",
+          "observe": {
+            "channel": "artifact",
+            "key": "fact-auditor.md rules"
+          }
+        },
+        {
+          "text": "The agent file says to run one plain command per Bash call",
+          "observe": {
+            "channel": "artifact",
+            "key": "fact-auditor.md rules"
+          }
+        },
+        {
+          "text": "The agent file describes the url recipe for web items",
+          "observe": {
+            "channel": "artifact",
+            "key": "fact-auditor.md recheck recipes"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-recheck-web",
+          "SRC.claims-ext3-run"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.verify-claims-rerun",
+      "title": "/verify-claims does not report past a failed auditor return",
+      "action_refs": [
+        "ACT.claims.install-guides"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "templates/commands/verify-claims.md"
+      ],
+      "steps": [
+        {
+          "goal": "Read the steps after the fact-auditor call",
+          "done_when": {
+            "expect": "The steps are read"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The command says what to do when fact-auditor returns next_action rerun",
+          "observe": {
+            "channel": "artifact",
+            "key": "verify-claims.md steps"
+          }
+        },
+        {
+          "text": "The command says the final answer names what the auditor could not run",
+          "observe": {
+            "channel": "artifact",
+            "key": "verify-claims.md steps"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-recheck-web",
+          "SRC.claims-ext3-run"
         ]
       },
       "readiness": "ready"

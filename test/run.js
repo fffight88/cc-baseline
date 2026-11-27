@@ -4371,7 +4371,7 @@ t('claims.js recheck: files ±3 lines, logs, read-only SQL; outside paths, secre
     assert.equal(score(r.run, { keyRoot: r.keys, jevDir: r.jev }).ok, true);
     const key = claimsKey(r);
     const idOf = orig => Object.entries(key.items).find(([, k]) => k.orig === orig && !k.canary)[0];
-    const rc = recheck(r.run, { keyRoot: r.keys });
+    const rc = await recheck(r.run, { keyRoot: r.keys });
     const st = orig => rc.items[idOf(orig)];
     assert.equal(st('C-0001').status, 'reproduced');
     assert.equal(st('C-0001').line, 20, 'the line found is recorded');
@@ -4414,7 +4414,7 @@ t('claims.js recheck: files ±3 lines, logs, read-only SQL; outside paths, secre
     writeVerdicts(b, (id, x, k) => (!k.canary && !bad ? (bad = id, { id, verdict: 'SUPPORTED', grade: 'A', evidence: { source: 'db', excerpt: 'x' }, recheck: { file: 'a.py', sql: 'SELECT 1', contains: 'x' } }) : null));
     const out = await runNode([CLAIMS, 'score', b.run], b.env);
     assert.equal(out.status, 1);
-    assert.match(out.stderr, new RegExp(`${bad}: recheck needs exactly one of file, log or sql`));
+    assert.match(out.stderr, new RegExp(`${bad}: recheck needs exactly one of file, log, sql or url`));
   } finally { b.done(); }
 });
 
@@ -4437,7 +4437,7 @@ t('claims.js recheck review fixes: a failing db command is failed, read-only wra
   try {
     recipes(f.r, { 'C-0001': { sql: 'SELECT count(*) FROM t1', contains: '4' } });
     score(f.r.run, { keyRoot: f.r.keys, jevDir: f.r.jev });
-    const rc = recheck(f.r.run, { keyRoot: f.r.keys });
+    const rc = await recheck(f.r.run, { keyRoot: f.r.keys });
     assert.equal(rc.items[idOf(f.r, 'C-0001')].status, 'failed');
     assert.equal(report(f.r.run).claims.find(c => c.id === 'C-0001').status, 'not_reproduced');
     // a sample the user skipped entirely
@@ -4456,7 +4456,7 @@ t('claims.js recheck review fixes: a failing db command is failed, read-only wra
     recipes(m.r, { 'C-0001': { sql: 'SELECT email FROM users', contains: 'bob@example.com' }, 'C-0002': { sql: "SELECT pg_read_file('/etc/passwd')", contains: 'root' },
       'C-0003': { sql: "SELECT 1 INTO OUTFILE '/tmp/x'", contains: '1' }, 'C-0004': { sql: 'SELECT n FROM t1 FOR UPDATE', contains: '9' } });
     score(m.r.run, { keyRoot: m.r.keys, jevDir: m.r.jev });
-    const rc = recheck(m.r.run, { keyRoot: m.r.keys });
+    const rc = await recheck(m.r.run, { keyRoot: m.r.keys });
     const miss = rc.items[idOf(m.r, 'C-0001')];
     assert.equal(miss.status, 'differs');
     assert.equal(miss.found, undefined, 'no query output on a miss');
@@ -4470,7 +4470,7 @@ t('claims.js recheck review fixes: a failing db command is failed, read-only wra
     try {
       recipes(s.r, { 'C-0001': { sql: 'SELECT n FROM t1', contains: '9' } });
       score(s.r.run, { keyRoot: s.r.keys, jevDir: s.r.jev });
-      assert.equal(recheck(s.r.run, { keyRoot: s.r.keys }).items[idOf(s.r, 'C-0001')].status, want, JSON.stringify(db));
+      assert.equal((await recheck(s.r.run, { keyRoot: s.r.keys })).items[idOf(s.r, 'C-0001')].status, want, JSON.stringify(db));
       if (want === 'reproduced') assert.equal(fs.readFileSync(s.stdinLog, 'utf8'), 'SELECT n FROM t1\n');
     } finally { s.r.done(); }
   }
@@ -4741,6 +4741,263 @@ t('Phase E fixes: a redacting sweep keeps control text out of its files; publish
     fs.writeFileSync(q.runFile, JSON.stringify({ ...run, base_url: 'https://staging.example.com', api_remote_ok: true, sweep_labels: 'plain' }));
     assert.equal(sweepMod.runContext(q.runFile).redact, false, 'plain is an explicit choice');
   } finally { await srv.close(); q.done(); }
+});
+
+// ── claims.js: verifier check inside score, url recheck recipes, narrow-permission runs — docs/plans/claims-recheck-web.md
+function webClaims(n) {
+  return Array.from({ length: n }, (_, i) => ({ id: `C-${String(i + 1).padStart(4, '0')}`, text: `Project p${i + 1} is licensed under MIT`,
+    target: { kind: 'web', ref: `p${i + 1}` }, channel: 'web', expected: 'MIT', impact: 'descriptive', source_url: `https://example.org/p${i + 1}` }));
+}
+
+// A prepared web run whose real claims carry the given recipes; `pages` is the fake web: href → response.
+async function webRecheck(recipes, pages, { spec = { project: 'demo', web: true }, fetchUrl = null } = {}) {
+  const { prepare, score, recheck, report } = require(CLAIMS);
+  const r = claimsRun({ claims: webClaims(Object.keys(recipes).length), spec });
+  try {
+    prepare(r.run, { seed: 3, keyRoot: r.keys });
+    writeVerdicts(r, (id, x, k) => (!k.canary && recipes[k.orig] ? { id, verdict: 'SUPPORTED', grade: 'B', evidence: { source: 'web', excerpt: 'read' }, recheck: recipes[k.orig] } : null));
+    const sc = score(r.run, { keyRoot: r.keys, jevDir: r.jev });
+    assert.equal(sc.ok, true, JSON.stringify(sc.invalid));
+    const seen = [];
+    const fake = async u => { seen.push(u.href); return pages[u.href] || { status: 404, headers: { 'content-type': 'text/plain' }, body: 'not found' }; };
+    const rc = await recheck(r.run, { keyRoot: r.keys, fetchUrl: fetchUrl || fake });
+    const key = claimsKey(r);
+    const item = orig => rc.items[Object.entries(key.items).find(([, k]) => k.orig === orig && !k.canary)[0]];
+    return { rc, item, seen, report: report(r.run, { keyRoot: r.keys }) };
+  } finally { r.done(); }
+}
+const page = (body, type = 'application/json; charset=utf-8', status = 200) => ({ status, headers: { 'content-type': type }, body });
+
+t('claims.js recheck url: a page that holds the text is reproduced; HTML is matched on its visible text; a miss differs and is not reproduced in the report (TC claims.recheck-url-reproduced, claims.recheck-url-html-text, claims.recheck-url-differs)', async () => {
+  const html = '<html><head><script>var t = "hidden-token";</script><style>.x{}</style></head><body><!-- hidden-token --><p>Licensed under the Apache <b>License</b>&nbsp;2.0 &amp; more</p></body></html>';
+  const w = await webRecheck({
+    'C-0001': { url: 'https://api.example.org/license', contains: 'MIT' },
+    'C-0002': { url: 'https://example.org/page', contains: 'Apache License 2.0' },
+    'C-0003': { url: 'https://example.org/page', contains: 'hidden-token' },
+    'C-0004': { url: 'https://api.example.org/other', contains: 'MIT' },
+    'C-0005': { url: 'https://api.example.org/license', contains: 'MI' },
+  }, {
+    'https://api.example.org/license': page('{"license": {"spdx_id": "MIT", "name": "MIT License"}}'),
+    'https://example.org/page': page(html, 'text/html; charset=utf-8'),
+    'https://api.example.org/other': page('{"license": {"spdx_id": "Apache-2.0"}}'),
+  });
+  assert.equal(w.item('C-0001').status, 'reproduced');
+  assert.equal(w.item('C-0001').kind, 'url');
+  assert.match(w.item('C-0001').found, /"spdx_id": "MIT"/);
+  assert.equal(w.item('C-0002').status, 'reproduced', 'tags and entities are folded away');
+  assert.equal(w.item('C-0003').status, 'differs', 'script and comment text is not page text');
+  assert.equal(w.item('C-0004').status, 'differs');
+  assert.equal(w.item('C-0004').found, undefined, 'nothing of the page is kept on a miss');
+  assert.equal(w.item('C-0005').status, 'differs', 'whole-token match: MI is not MIT');
+  const j = await webRecheck({
+    'C-0001': { url: 'https://api.example.org/compact', contains: '"spdx_id": "MIT"' },
+    'C-0002': { url: 'https://api.example.org/spaced', contains: '"spdx_id":"MIT"' },
+    'C-0003': { url: 'https://api.example.org/broken', contains: 'MIT' },
+  }, {
+    'https://api.example.org/compact': page('{"license":{"spdx_id":"MIT"}}'),
+    'https://api.example.org/spaced': page('{ "license": { "spdx_id": "MIT" } }'),
+    'https://api.example.org/broken': page('{"license": MIT'),
+  });
+  for (const c of ['C-0001', 'C-0002', 'C-0003']) assert.equal(j.item(c).status, 'reproduced', `${c}: JSON is matched as sent, compact and spaced`);
+  assert.equal(w.item('C-0001').host, 'api.example.org', 'the host asked is recorded, never the path');
+  const { htmlText } = require(CLAIMS);
+  assert.equal(htmlText('<p>Lic<b>ense</b> &#169; &#x27;q&#39; a < b &amp;&nbsp;c &bogus; <br>x<!-- h -->y<script>z</script>w</p>').replace(/\s+/g, ' ').trim(), "License © 'q' a < b & c &bogus; x y w");
+  assert.equal(htmlText('shown <script>never closed'), 'shown ', 'an unclosed script ends the text');
+  assert.equal(htmlText('İİİİİİİİ<SCRIPT>SECRET</SCRIPT> ok').trim(), 'İİİİİİİİ  ok', 'a letter whose lowercase is longer does not shift the scan');
+  assert.equal(htmlText('a<script>x</scripts>SECRET</script>b').replace(/\s+/g, ' '), 'a b', '</scripts does not end a script');
+  // hostile pages: the scan is linear (the regex chain it replaced took over a minute on 200 KB of "<")
+  for (const [name, unit] of [['<', '<'], ['<!--', '<!--'], ['<script ', '<script '], ['<a ', '<a '], ['<p>x', '<p>x'], ['&#0', '&#0']]) {
+    const started = Date.now();
+    htmlText(unit.repeat(Math.floor(2 * 1024 * 1024 / unit.length)));
+    assert.ok(Date.now() - started < 5000, `2 MB of ${name} took ${Date.now() - started} ms`);
+  }
+  assert.equal(w.seen.filter(h => h === 'https://example.org/page').length, 1, 'one request per URL');
+  assert.equal(w.report.counts.not_reproduced, 3);
+  assert.deepEqual(w.rc.counts, { reproduced: 2, differs: 3, refused: 0, failed: 0, not_rerunnable: 0, of: 5 });
+});
+
+t('claims.js recheck url: a page that does not come back is failed (TC claims.recheck-url-failed)', async () => {
+  const w = await webRecheck({
+    'C-0001': { url: 'https://example.org/forbidden', contains: 'MIT' },
+    'C-0002': { url: 'https://example.org/huge', contains: 'MIT' },
+    'C-0003': { url: 'https://example.org/image', contains: 'MIT' },
+    'C-0004': { url: 'https://example.org/down', contains: 'MIT' },
+    'C-0005': { url: 'https://example.org/gzip', contains: 'MIT' },
+  }, {
+    'https://example.org/forbidden': page('MIT', 'text/plain', 403),
+    'https://example.org/huge': page(Buffer.alloc(2 * 1024 * 1024 + 1, 0x61), 'text/plain'),
+    'https://example.org/image': page('MIT', 'image/png'),
+    'https://example.org/down': { error: 'ECONNREFUSED' },
+    'https://example.org/gzip': { status: 200, headers: { 'content-type': 'text/plain', 'content-encoding': 'gzip' }, body: 'MIT' },
+  });
+  for (const [c, why] of [['C-0001', /HTTP 403/], ['C-0002', /larger than 2 MB/], ['C-0003', /not a text response \(image\/png\)/], ['C-0004', /ECONNREFUSED/], ['C-0005', /compressed/]]) {
+    assert.equal(w.item(c).status, 'failed', c);
+    assert.match(w.item(c).reason, why, c);
+  }
+});
+
+t('claims.js recheck url: http, a port, user info, an IP address or a private name is refused before any request; web must be on (TC claims.recheck-url-refused-form, claims.recheck-url-web-off)', async () => {
+  const bad = {
+    'C-0001': { url: 'http://example.org/a', contains: 'MIT' },
+    'C-0002': { url: 'https://example.org:8443/a', contains: 'MIT' },
+    'C-0003': { url: 'https://user:pw@example.org/a', contains: 'MIT' },
+    'C-0004': { url: 'https://10.0.0.5/a', contains: 'MIT' },
+    'C-0005': { url: 'https://localhost/a', contains: 'MIT' },
+    'C-0006': { url: 'https://[::1]/a', contains: 'MIT' },
+    'C-0007': { url: 'https://2130706433/a', contains: 'MIT' },
+    'C-0008': { url: 'https://db.internal/a', contains: 'MIT' },
+    'C-0009': { url: `https://example.org/${'a'.repeat(500)}`, contains: 'MIT' },
+  };
+  const w = await webRecheck(bad, {});
+  for (const c of Object.keys(bad)) assert.equal(w.item(c).status, 'refused', `${c}: ${JSON.stringify(w.item(c))}`);
+  assert.deepEqual(w.seen, [], 'no request was sent');
+  const off = await webRecheck({ 'C-0001': { url: 'https://example.org/a', contains: 'MIT' } }, { 'https://example.org/a': page('MIT', 'text/plain') }, { spec: { project: 'demo' } });
+  assert.equal(off.item('C-0001').status, 'refused');
+  assert.match(off.item('C-0001').reason, /needs web: true/);
+  assert.deepEqual(off.seen, []);
+  const { lintRun } = require(CLAIMS);
+  const l = claimsRun({ claims: webClaims(1), spec: { project: 'demo', web: 'yes' } });
+  try { assert.ok(lintRun(l.run).errors.some(e => /web must be true or false/.test(e))); } finally { l.done(); }
+});
+
+t('claims.js recheck url: a host that resolves to a non-public address is refused at connect time; the address check covers the reserved ranges (TC claims.recheck-url-private-host)', async () => {
+  const { publicAddress, fetchUrlOnce } = require(CLAIMS);
+  for (const a of ['8.8.8.8', '1.1.1.1', '172.32.0.1', '100.128.0.1', '2606:4700:4700::1111', '2001:4860:4860::8888']) assert.equal(publicAddress(a), true, a);
+  for (const a of ['127.0.0.1', '10.0.0.5', '172.16.0.1', '172.31.255.255', '192.168.1.1', '169.254.169.254', '100.64.0.1', '0.0.0.0', '224.0.0.1',
+    '255.255.255.255', '::1', '::', 'fc00::1', 'fd12::1', 'fe80::1', '::ffff:127.0.0.1', '::ffff:7f00:1', '::ffff:8.8.8.8', '64:ff9b::a00:1', 'ff02::1', '2002:7f00:1::', '::127.0.0.1', '::7f00:1', 'fec0::1', '2001::1',
+    '2001:0:4136:e378:8000:63bf:3fff:fdd2', '64:ff9b:1::1', '2001:db8::1', 'not-an-ip', '']) {
+    assert.equal(publicAddress(a), false, a);
+  }
+  // the real transport with a fake resolver: the name is public-looking, its addresses are not
+  let lookups = 0;
+  const dnsTo = list => (host, opts, cb) => { lookups++; cb(null, list); };
+  for (const list of [[{ address: '169.254.169.254', family: 4 }], [{ address: '93.184.216.34', family: 4 }, { address: '10.0.0.7', family: 4 }], [{ address: 'fd00::1', family: 6 }], []]) {
+    const res = await fetchUrlOnce(new URL('https://metadata.example.org/latest'), { dnsLookup: dnsTo(list) });
+    assert.deepEqual(res, { refused: 'the host resolves to a non-public address' }, JSON.stringify(list));
+  }
+  assert.equal(lookups, 4);
+  const w = await webRecheck({ 'C-0001': { url: 'https://metadata.example.org/latest', contains: 'MIT' } }, {},
+    { fetchUrl: u => fetchUrlOnce(u, { dnsLookup: dnsTo([{ address: '169.254.169.254', family: 4 }]) }) });
+  assert.equal(w.item('C-0001').status, 'refused');
+  // the real transport over a fake socket: size abort, deadline, a redirect answered without reading the body
+  const { EventEmitter } = require('events');
+  const fakeRequest = respond => (opts, onRes) => {
+    const req = new EventEmitter();
+    req.destroyed = false;
+    req.destroy = () => { req.destroyed = true; };
+    req.end = () => setImmediate(() => { const res = new EventEmitter(); res.resume = () => { res.resumed = true; }; respond(res, onRes, opts, req); });
+    fakeRequest.last = req;
+    return req;
+  };
+  const u = new URL('https://example.org/a?b=1');
+  let seenOpts;
+  const big = await fetchUrlOnce(u, { request: fakeRequest((res, onRes, opts) => { seenOpts = opts; res.statusCode = 200; res.headers = { 'content-type': 'text/plain' }; onRes(res);
+    for (let i = 0; i < 3; i++) res.emit('data', Buffer.alloc(1024 * 1024)); res.emit('end'); }) });
+  assert.deepEqual(big, { error: 'larger than 2 MB' });
+  assert.equal(fakeRequest.last.destroyed, true, 'the request is dropped at the cap');
+  assert.equal(seenOpts.method, 'GET');
+  assert.equal(seenOpts.path, '/a?b=1');
+  assert.equal(seenOpts.port, 443);
+  assert.equal(seenOpts.rejectUnauthorized, true, 'certificate checks stay on whatever the environment says');
+  assert.equal(seenOpts.agent, false);
+  assert.deepEqual(Object.keys(seenOpts.headers).sort(), ['Accept', 'Accept-Encoding', 'User-Agent'], 'no cookie or credential header');
+  const slow = await fetchUrlOnce(u, { timeoutMs: 30, request: fakeRequest((res, onRes) => { res.statusCode = 200; res.headers = {}; onRes(res); res.emit('data', Buffer.from('never ends')); }) });
+  assert.deepEqual(slow, { error: 'timed out' });
+  assert.equal(fakeRequest.last.destroyed, true);
+  const moved = await fetchUrlOnce(u, { request: fakeRequest((res, onRes) => { res.statusCode = 302; res.headers = { location: '/b' }; onRes(res); }) });
+  assert.equal(moved.status, 302);
+  assert.equal(moved.headers.location, '/b');
+  assert.equal(moved.body.length, 0);
+  const ok = await fetchUrlOnce(u, { request: fakeRequest((res, onRes) => { res.statusCode = 200; res.headers = { 'content-type': 'text/plain' }; onRes(res); res.emit('data', Buffer.from('MIT')); res.emit('end'); }) });
+  assert.equal(String(ok.body), 'MIT');
+  const broken = await fetchUrlOnce(u, { request: fakeRequest((res, onRes, opts, req) => { req.emit('error', Object.assign(new Error('reset'), { code: 'ECONNRESET' })); }) });
+  assert.deepEqual(broken, { error: 'ECONNRESET' });
+  // an environment proxy would resolve the name itself: url recipes are refused
+  process.env.NODE_USE_ENV_PROXY = '1';
+  try {
+    const px = await webRecheck({ 'C-0001': { url: 'https://example.org/a', contains: 'MIT' } }, { 'https://example.org/a': page('MIT', 'text/plain') });
+    assert.equal(px.item('C-0001').status, 'refused');
+    assert.deepEqual(px.seen, []);
+  } finally { delete process.env.NODE_USE_ENV_PROXY; }
+  // the default resolver on a loopback name: refused before a connection (no outside request)
+  assert.deepEqual(await fetchUrlOnce(new URL('https://localhost/a')), { refused: 'the host resolves to a non-public address' });
+});
+
+t('claims.js recheck url: every redirect hop is checked like the first URL; at most 3 hops; at most 40 URLs (TC claims.recheck-url-redirect)', async () => {
+  const to = loc => ({ status: 302, headers: { location: loc }, body: '' });
+  const w = await webRecheck({
+    'C-0001': { url: 'https://example.org/to-internal', contains: 'MIT' },
+    'C-0002': { url: 'https://example.org/moved', contains: 'MIT' },
+    'C-0003': { url: 'https://example.org/loop', contains: 'MIT' },
+    'C-0004': { url: 'https://example.org/to-ip', contains: 'MIT' },
+    'C-0005': { url: 'https://example.org/relative', contains: 'MIT' },
+  }, {
+    'https://example.org/to-internal': to('http://internal.example/a'),
+    'https://example.org/moved': to('https://other.example.net/new'),
+    'https://other.example.net/new': page('license: MIT', 'text/plain'),
+    'https://example.org/loop': to('https://example.org/loop'),
+    'https://example.org/to-ip': to('https://169.254.169.254/latest/meta-data'),
+    'https://example.org/relative': to('/final'),
+    'https://example.org/final': page('license: MIT', 'text/plain'),
+  });
+  assert.equal(w.item('C-0001').status, 'refused');
+  assert.match(w.item('C-0001').reason, /a redirect to a refused URL \(https only\)/);
+  assert.equal(w.item('C-0001').host, 'example.org', 'a refused redirect still records the host that was asked');
+  assert.equal(w.item('C-0001').final_host, undefined, 'the refused hop was never asked');
+  assert.equal(w.item('C-0002').status, 'reproduced');
+  assert.equal(w.item('C-0002').host, 'example.org');
+  assert.equal(w.item('C-0002').final_host, 'other.example.net', 'a redirect to another host is on record');
+  assert.equal(w.item('C-0003').status, 'failed');
+  assert.match(w.item('C-0003').reason, /more than 3 redirects/);
+  assert.equal(w.seen.filter(h => h === 'https://example.org/loop').length, 4, 'the first request and 3 hops');
+  assert.equal(w.item('C-0004').status, 'refused');
+  assert.ok(!w.seen.some(h => h.includes('169.254')), 'the refused hop is never requested');
+  assert.equal(w.item('C-0005').status, 'reproduced');
+  const many = {};
+  const pages = {};
+  for (let i = 1; i <= 42; i++) { const id = `C-${String(i).padStart(4, '0')}`; many[id] = { url: `https://example.org/u${i}`, contains: 'MIT' }; pages[`https://example.org/u${i}`] = page('MIT', 'text/plain'); }
+  const cap = await webRecheck(many, pages);
+  assert.equal(cap.seen.length, 40);
+  assert.equal(cap.rc.counts.reproduced, 40);
+  assert.equal(cap.rc.counts.refused, 2);
+});
+
+t('claims.js score: a refused verifier file fails the score; a clean run records the verifier check (TC claims.score-verifier-refused, claims.score-verifier-count)', async () => {
+  const { prepare } = require(CLAIMS);
+  const r = claimsRun({ claims: dbClaims(3), spec: { project: 'demo', forbidden_paths: ['tools/wiki-audit'] } });
+  try {
+    prepare(r.run, { seed: 2, keyRoot: r.keys });
+    writeVerdicts(r);
+    fs.mkdirSync(path.join(r.run, 'verifiers'));
+    fs.writeFileSync(path.join(r.run, 'verifiers', 'verify-db.py'), 'cur.execute("SELECT count(*) FROM t1")\n');
+    let out = await runNode([CLAIMS, 'score', r.run], r.env);
+    assert.equal(out.status, 0, out.stderr);
+    const sc = JSON.parse(fs.readFileSync(path.join(r.run, 'score.json'), 'utf8'));
+    assert.deepEqual(sc.verifiers, { files: 1, problems: 0 });
+    fs.writeFileSync(path.join(r.run, 'verifiers', 'verify-code.py'), "src = open('tools/wiki-audit/audit.py').read()\n");
+    out = await runNode([CLAIMS, 'score', r.run], r.env);
+    assert.equal(out.status, 1);
+    assert.match(out.stderr, /ERROR verifier verifiers\/verify-code\.py:1: refers to a forbidden path/);
+  } finally { r.done(); }
+});
+
+t('claims guides: fact-auditor writes with Write and runs one plain command per call, knows the url recipe; /verify-claims does not report past a failed return (TC claims.auditor-plain-commands, claims.verify-claims-rerun)', () => {
+  const auditor = tplText('agents', 'fact-auditor.md');
+  const rules = mdSection(auditor, '## ⚡ Key Rules Summary').split('\n');
+  assert.ok(rules.some(l => l.startsWith('- ✅') && /Write files with the Write tool, and run one plain command per Bash call/.test(l)));
+  assert.ok(rules.some(l => l.startsWith('- ❌') && /Chain shell commands/.test(l) && /treat one refused Bash call as "Bash is denied"/.test(l)));
+  assert.match(auditor, /`recheck`: \{ "url": "<https URL>", "contains": "<text on the page>" \}/);
+  assert.match(auditor, /no recipe for a page drawn by scripts/);
+  const cmd = tplText('commands', 'verify-claims.md');
+  const step7 = cmd.split('\n').find(l => l.startsWith('7. '));
+  assert.match(step7, /`next_action: rerun`, `check-verifiers: fail` or names a command it could not run is not a clean run/);
+  assert.match(step7, /call fact-auditor once more \(`iteration` \+ 1\)/);
+  assert.match(cmd.split('\n').find(l => l.startsWith('11. ')), /Name what fact-auditor could not run/);
+  const guide = tplText('memory', 'reference_claim_verification.md');
+  assert.match(mdSection(guide, '## 8. '), /`Bash\(node:\*\)`/);
+  assert.match(mdSection(guide, '## 8. '), /A url recipe shows that the text is on the page now/);
+  for (const doc of [guide, tplText('agents', 'fact-auditor.md')]) assert.doesNotMatch(doc, /15 s and 2 MB per page/, 'the limits are per request');
+  assert.match(guide, /15 s and 2 MB per request, 40 start URLs per run and no new URL after 120 s/);
 });
 
 // ── work judgment: stakes mode (rule 14) and deciding instead of asking (rule 15) — docs/plans/work-judgment.md, docs/tc/judgment.tc.json

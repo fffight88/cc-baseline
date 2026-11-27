@@ -27,6 +27,9 @@
 // recheck never runs a script an agent wrote: it reads the file or log line a
 // verdict names itself, and sends a verdict's SELECT to the database only
 // through the `db.connect` command the orchestrator wrote in claims-run.json.
+// A url recipe is one GET to a public https host (default port, no credentials,
+// every address and redirect hop checked, 2 MB and 15 s per request, 40 start
+// URLs per run and none new after 120 s), only when claims-run.json has `web: true`.
 //
 // The canary key lives outside the project (~/.claude/claims-keys/<id>/key.json,
 // dir 0700, file 0600; CC_BASELINE_CLAIMS_KEYS moves the root). fact-auditor is
@@ -34,7 +37,10 @@
 // written down in the guide.
 
 const crypto = require('crypto');
+const dns = require('dns');
 const fs = require('fs');
+const https = require('https');
+const net = require('net');
 const os = require('os');
 const path = require('path');
 const { parseArgs } = require('./jev-client');
@@ -51,8 +57,8 @@ const MODES = ['light', 'bulk'];
 const CLAIM_KEYS = ['id', 'text', 'target', 'channel', 'expected', 'premises', 'impact', 'source_refs', 'source_url', 'notes'];
 const PREMISE_KEYS = ['id', 'text', 'target', 'channel', 'expected', 'source_refs', 'source_url', 'notes'];
 const VERDICT_KEYS = ['id', 'verdict', 'grade', 'evidence', 'verifier', 'jev_sample', 'recheck', 'notes'];
-const RECHECK_KEYS = ['file', 'log', 'sql', 'line', 'contains'];
-const RECHECK_KINDS = ['file', 'log', 'sql'];
+const RECHECK_KEYS = ['file', 'log', 'sql', 'url', 'line', 'contains'];
+const RECHECK_KINDS = ['file', 'log', 'sql', 'url'];
 const CLAIM_ID_RE = /^C-\d{4,}$/;
 const PREMISE_ID_RE = /^P-\d{3,}$/;
 const AUDIT_ID_RE = /^A-\d{4,}$/;
@@ -73,6 +79,13 @@ const RECHECK_LINE_SLACK = 3;
 const CONTAINS_MAX = 300;
 const FOUND_MAX = 200;
 const SQL_TIMEOUT_MS = 30000;
+// A url recipe: one GET per URL, to a public https host only.
+const WEB_URL_MAX = 500;
+const WEB_TIMEOUT_MS = 15000;
+const WEB_MAX_URLS = 40;
+const WEB_MAX_REDIRECTS = 3;
+const WEB_RUN_BUDGET_MS = 120000;
+const WEB_UA = 'cc-baseline-claims-recheck';
 const SQL_OUT_MAX = 1024 * 1024;
 // Status codes a canary may use instead of a real one, so a changed status still looks like a status.
 const HTTP_STATUSES = [200, 201, 204, 301, 302, 304, 400, 401, 403, 404, 405, 409, 422, 429, 500, 502, 503];
@@ -241,6 +254,7 @@ function lintSpec(p, problems) {
   if (spec === null) return;
   if (!spec || typeof spec !== 'object' || Array.isArray(spec)) { err('must be a JSON object'); return; }
   if (spec.project !== undefined && !isStr(spec.project)) err('project must be a non-empty string');
+  if (spec.web !== undefined && typeof spec.web !== 'boolean') err('web must be true or false');
   if (spec.project === undefined) problems.warnings.push('claims-run.json: no project — Jev samples of this run cannot be told apart by project at calibration');
   const db = spec.db;
   if (db !== undefined) {
@@ -738,14 +752,14 @@ function checkVerdict(v) {
   return bad;
 }
 
-// A recheck recipe: exactly one of file / log / sql, the text that decides the item, and
+// A recheck recipe: exactly one of file / log / sql / url, the text that decides the item, and
 // for a file an optional line.
 function checkRecipe(r) {
   if (!r || typeof r !== 'object' || Array.isArray(r)) return ['recheck must be an object'];
   const bad = [];
   for (const k of Object.keys(r)) if (!RECHECK_KEYS.includes(k)) bad.push(`recheck: unknown field ${k}`);
   const kinds = RECHECK_KINDS.filter(k => r[k] !== undefined);
-  if (kinds.length !== 1) bad.push('recheck needs exactly one of file, log or sql');
+  if (kinds.length !== 1) bad.push('recheck needs exactly one of file, log, sql or url');
   else if (!isStr(r[kinds[0]])) bad.push(`recheck.${kinds[0]} must be a non-empty string`);
   if (!isStr(r.contains) || r.contains.length > CONTAINS_MAX) bad.push(`recheck.contains must be a non-empty string of at most ${CONTAINS_MAX} characters`);
   if (r.line !== undefined && !(kinds.length === 1 && kinds[0] === 'file' && Number.isInteger(r.line) && r.line > 0)) {
@@ -777,6 +791,9 @@ function score(runDir, { keyRoot = keyRootDefault(), jevDir = jevDirDefault() } 
   const missing = input.filter(x => !verdicts.has(x.id)).map(x => x.id);
   const invalid = [];
   for (const x of input) { const v = verdicts.get(x.id); if (v) for (const b of checkVerdict(v)) invalid.push(`${x.id}: ${b}`); }
+  // The verifier check runs here too: the auditor's own "check-verifiers: pass" is a pointer, not the gate.
+  const vcheck = checkVerifiers(runDir, { keyRoot });
+  for (const h of vcheck.hits) invalid.push(`verifier ${h.file}${h.line ? `:${h.line}` : ''}: ${h.reason}`);
   if (missing.length || invalid.length) return { ok: false, missing, invalid };
 
   // A canary called SUPPORTED is a miss: the channel's SUPPORTED verdicts are not trusted.
@@ -858,6 +875,7 @@ function score(runDir, { keyRoot = keyRootDefault(), jevDir = jevDirDefault() } 
   const count = s => Object.values(items).filter(r => r.status === s).length;
   const out = {
     ok: true, run: p.name, mode: freeze.mode, items: input.length, channels,
+    verifiers: { files: vcheck.files, problems: 0 },
     premises: premisesOut, claims: items,
     counts: {
       supported: count('supported'), refuted: count('refuted'), unverifiable: count('unverifiable'), stale: count('stale'),
@@ -996,8 +1014,206 @@ function recheckSql(r, spec, cache) {
     : { status: 'differs', reason: `not in the query output (${res.out.split('\n').filter(l => l.trim()).length} line(s))` };
 }
 
+// ── recheck: a web page ────────────────────────────────────────────────────
+// The URL comes from an agent that read web pages, so it is treated as hostile:
+// https on the default port, a public host name, a public address at connect time,
+// GET with no credentials, every redirect hop checked again, size / time / count caps.
+
+const NON_PUBLIC = new net.BlockList();
+for (const [a, n] of [['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16], ['172.16.0.0', 12],
+  ['192.0.0.0', 24], ['192.0.2.0', 24], ['192.88.99.0', 24], ['192.168.0.0', 16], ['198.18.0.0', 15], ['198.51.100.0', 24],
+  ['203.0.113.0', 24], ['224.0.0.0', 3]]) NON_PUBLIC.addSubnet(a, n, 'ipv4');
+// IPv4-mapped addresses are refused in publicAddress — as a BlockList subnet they would
+// match every IPv4 address too.
+// ::/96 (with :: and ::1), 6to4, Teredo and both NAT64 prefixes can embed an IPv4 address.
+for (const [a, n] of [['::', 96], ['64:ff9b::', 96], ['64:ff9b:1::', 48], ['100::', 64], ['2001::', 32], ['2001:db8::', 32],
+  ['2002::', 16], ['fc00::', 7], ['fe80::', 10], ['fec0::', 10], ['ff00::', 8]]) NON_PUBLIC.addSubnet(a, n, 'ipv6');
+
+function ipv4Mapped(address) {
+  try { return /^\[::ffff:/i.test(new URL(`http://[${address}]/`).hostname); } catch { return true; }
+}
+
+function publicAddress(address) {
+  if (net.isIPv4(address)) return !NON_PUBLIC.check(address, 'ipv4');
+  if (net.isIPv6(address)) return !ipv4Mapped(address) && !NON_PUBLIC.check(address, 'ipv6');
+  return false;
+}
+
+function checkWebUrl(raw) {
+  if (!isStr(raw) || raw.length > WEB_URL_MAX) throw new Refusal(`a URL longer than ${WEB_URL_MAX} characters`);
+  let u;
+  try { u = new URL(raw); } catch { throw new Refusal('not a URL'); }
+  if (u.protocol !== 'https:') throw new Refusal('https only');
+  if (u.username || u.password) throw new Refusal('user info in the URL');
+  if (u.port) throw new Refusal('a port in the URL');
+  const host = u.hostname.replace(/\.$/, '').toLowerCase();
+  if (host.startsWith('[') || net.isIP(host)) throw new Refusal('an IP address as host');
+  if (!host.includes('.') || /(?:^|\.)(?:localhost|local|localdomain|internal|intranet|lan|home|corp)$/.test(host)) throw new Refusal('not a public host name');
+  return u;
+}
+
+// dns.lookup that fails unless every address of the name is public; the socket then
+// connects to an address this function returned, so the name is not resolved twice.
+function guardedLookup(dnsLookup) {
+  return (hostname, options, cb) => {
+    if (typeof options === 'function') { cb = options; options = {}; }
+    dnsLookup(hostname, { all: true }, (err, list) => {
+      if (err) return cb(err);
+      const found = Array.isArray(list) ? list : [];
+      if (!found.length || found.some(a => !publicAddress(a.address))) {
+        return cb(Object.assign(new Error('the host resolves to a non-public address'), { code: 'ENOTPUBLIC' }));
+      }
+      if (options && options.all) return cb(null, found.map(a => ({ address: a.address, family: a.family })));
+      return cb(null, found[0].address, found[0].family);
+    });
+  };
+}
+
+// One GET, no redirect followed. → { status, headers, body } | { error } | { refused }
+function fetchUrlOnce(u, { dnsLookup = dns.lookup, request = https.request, timeoutMs = WEB_TIMEOUT_MS } = {}) {
+  return new Promise(resolve => {
+    let done = false;
+    const finish = v => { if (!done) { done = true; clearTimeout(timer); resolve(v); } };
+    const req = request({
+      method: 'GET', hostname: u.hostname, port: 443, path: `${u.pathname}${u.search}`, agent: false, lookup: guardedLookup(dnsLookup),
+      rejectUnauthorized: true,
+      headers: { 'User-Agent': WEB_UA, Accept: 'text/html,application/json,text/plain;q=0.9,*/*;q=0.1', 'Accept-Encoding': 'identity' },
+    }, res => {
+      if (res.statusCode >= 300 && res.statusCode < 400) { res.resume(); return finish({ status: res.statusCode, headers: res.headers, body: Buffer.alloc(0) }); }
+      const chunks = [];
+      let size = 0;
+      res.on('data', c => {
+        size += c.length;
+        if (size > FILE_MAX) { req.destroy(); finish({ error: 'larger than 2 MB' }); } else chunks.push(c);
+      });
+      res.on('end', () => finish({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks) }));
+      res.on('error', e => finish({ error: e.code || e.message }));
+    });
+    const timer = setTimeout(() => { req.destroy(); finish({ error: 'timed out' }); }, timeoutMs);
+    req.on('error', e => finish(e.code === 'ENOTPUBLIC' ? { refused: e.message } : { error: e.code || e.message }));
+    req.end();
+  });
+}
+
+// The words a reader sees: no script, style or comment text; inline tags vanish, other
+// tags become a space. One forward scan with indexOf — a hostile page (2 MB of "<" or
+// of "<!--") must not cost more than its length. An unclosed tag, comment or script
+// ends the text there.
+const RAW_TEXT_TAGS = ['script', 'style', 'noscript', 'template'];
+const INLINE_TAGS = new Set(['a', 'abbr', 'b', 'cite', 'code', 'em', 'font', 'i', 'kbd', 'mark', 'q', 's', 'samp', 'small', 'span', 'strong',
+  'sub', 'sup', 'tt', 'u', 'var', 'wbr']);
+const ENTITIES = { nbsp: ' ', lt: '<', gt: '>', quot: '"', apos: "'", amp: '&' };
+
+function htmlText(html) {
+  // ASCII only: toLowerCase() changes the length of some letters ("İ"), and `lower` shares its offsets with `html`.
+  const lower = html.replace(/[A-Z]/g, c => String.fromCharCode(c.charCodeAt(0) + 32));
+  const out = [];
+  let i = 0;
+  while (i < html.length) {
+    const lt = html.indexOf('<', i);
+    if (lt < 0) { out.push(html.slice(i)); break; }
+    out.push(html.slice(i, lt));
+    const next = html.charCodeAt(lt + 1);
+    const letter = (next >= 65 && next <= 90) || (next >= 97 && next <= 122);
+    if (!letter && next !== 47 && next !== 33 && next !== 63) { out.push('<'); i = lt + 1; continue; }   // "a < b"
+    if (html.startsWith('<!--', lt)) {
+      const end = html.indexOf('-->', lt + 4);
+      if (end < 0) break;
+      out.push(' ');
+      i = end + 3;
+      continue;
+    }
+    const name = (/^<\/?([a-z][a-z0-9]*)/.exec(lower.slice(lt, lt + 24)) || [])[1] || '';
+    let from = lt;
+    if (RAW_TEXT_TAGS.includes(name) && lower[lt + 1] !== '/') {
+      // the closing tag of this very name: `</scripts` does not end a script
+      const close = `</${name}`;
+      from = lower.indexOf(close, lt);
+      while (from >= 0 && /[a-z0-9]/.test(lower[from + close.length] || '')) from = lower.indexOf(close, from + close.length);
+      if (from < 0) break;
+    }
+    const gt = html.indexOf('>', from);
+    if (gt < 0) break;
+    out.push(INLINE_TAGS.has(name) ? '' : ' ');
+    i = gt + 1;
+  }
+  return out.join('').replace(/&(?:#(\d{1,7})|#x([0-9a-f]{1,6})|([a-z]{2,6}));/gi, (m, dec, hex, word) => {
+    if (word) return ENTITIES[word.toLowerCase()] === undefined ? m : ENTITIES[word.toLowerCase()];
+    const cp = dec ? Number(dec) : parseInt(hex, 16);
+    return cp > 0 && cp <= 0x10ffff && !(cp >= 0xd800 && cp <= 0xdfff) ? String.fromCodePoint(cp) : m;
+  });
+}
+
+// JSON as sent, compact and spaced: a recipe copied from a pretty-printed view
+// (`"spdx_id": "MIT"`) matches a compact response (`"spdx_id":"MIT"`) and the reverse.
+function jsonText(raw) {
+  try {
+    const v = JSON.parse(raw);
+    return `${raw}\n${JSON.stringify(v)}\n${JSON.stringify(v, null, 1)}`;
+  } catch { return raw; }
+}
+
+// Follows up to WEB_MAX_REDIRECTS hops, each one checked like the first URL.
+// → { text } | { failed } | { refused }
+async function fetchPage(first, fetchUrl) {
+  let u = first;
+  const out = await (async () => {
+  for (let hop = 0; ; hop++) {
+    const res = await fetchUrl(u);
+    if (!res || res.refused) return { refused: (res && res.refused) || 'no response' };
+    if (res.error) return { failed: String(res.error) };
+    const headers = res.headers || {};
+    if (res.status >= 300 && res.status < 400) {
+      if (hop >= WEB_MAX_REDIRECTS) return { failed: `more than ${WEB_MAX_REDIRECTS} redirects` };
+      let next;
+      try { next = new URL(String(headers.location || ''), u).href; } catch { return { failed: `HTTP ${res.status} without a usable location` }; }
+      try { u = checkWebUrl(next); } catch (e) {
+        if (!(e instanceof Refusal)) throw e;
+        return { refused: `a redirect to a refused URL (${e.message})` };
+      }
+      continue;
+    }
+    if (!(res.status >= 200 && res.status < 300)) return { failed: `HTTP ${res.status}` };
+    const type = String(headers['content-type'] || '').toLowerCase();
+    if (!/^(?:text\/|application\/(?:json|xml|[\w.+-]*\+(?:json|xml))\b)/.test(type)) return { failed: `not a text response (${type.split(';')[0] || 'no content type'})` };
+    if (headers['content-encoding'] && !/^identity$/i.test(String(headers['content-encoding']))) return { failed: 'a compressed response' };
+    const buf = Buffer.isBuffer(res.body) ? res.body : Buffer.from(String(res.body === undefined ? '' : res.body));
+    if (buf.length > FILE_MAX) return { failed: 'larger than 2 MB' };
+    const raw = buf.toString('utf8');
+    return { text: /html/.test(type) ? htmlText(raw) : /json/.test(type) ? jsonText(raw) : raw };
+  }
+  })();
+  // the last host asked, whatever the outcome (a refused hop was never asked)
+  return { ...out, host: u.hostname };
+}
+
+async function recheckUrl(r, spec, web) {
+  if (spec.web !== true) throw new Refusal('needs web: true in claims-run.json');
+  // With an environment proxy the proxy resolves the name, so the address check would not see the connection.
+  if (process.env.NODE_USE_ENV_PROXY) throw new Refusal('NODE_USE_ENV_PROXY is set — a url recipe needs a direct connection');
+  const u = checkWebUrl(r.url);
+  // One request per start URL per run, a failure included; redirect hops are not counted.
+  if (!web.pages.has(u.href)) {
+    if (web.pages.size >= WEB_MAX_URLS) throw new Refusal(`more than ${WEB_MAX_URLS} URLs in one run`);
+    if (web.started === undefined) web.started = Date.now();
+    // no new URL is asked once the budget is spent; a request already out may still take its own time
+    if (Date.now() - web.started > WEB_RUN_BUDGET_MS) return { status: 'failed', host: u.hostname, reason: `the run's web time (${WEB_RUN_BUDGET_MS / 1000} s) is used up` };
+    web.pages.set(u.href, await fetchPage(u, web.fetchUrl));
+  }
+  const page = web.pages.get(u.href);
+  // the hosts asked, so an unexpected one can be seen in recheck.json (never the path or query)
+  const hosts = { host: u.hostname, ...(page.host && page.host !== u.hostname ? { final_host: page.host } : {}) };
+  if (page.refused) return { status: 'refused', ...hosts, reason: page.refused };
+  if (page.failed) return { status: 'failed', ...hosts, reason: page.failed };
+  const text = norm(page.text);
+  const m = wholeRe(norm(r.contains), { edges: true }).exec(text);
+  // only the passage around the match is kept; on a miss nothing of the page is
+  return m ? { status: 'reproduced', ...hosts, found: clip(text.slice(Math.max(0, m.index - 60), m.index + m[0].length + 60)) }
+    : { status: 'differs', ...hosts, reason: 'not on the page' };
+}
+
 // Re-reads the evidence each verdict names. Never runs a verifier script.
-function recheck(runDir, { keyRoot = keyRootDefault() } = {}) {
+async function recheck(runDir, { keyRoot = keyRootDefault(), fetchUrl = fetchUrlOnce } = {}) {
   const p = runPaths(runDir);
   const freeze = readJson(p.freeze);
   checkFreeze(p, freeze);
@@ -1007,6 +1223,7 @@ function recheck(runDir, { keyRoot = keyRootDefault() } = {}) {
   const verdicts = latestVerdicts(p);
   const denied = deniedRoots(spec, p, keyRoot);
   const cache = new Map();
+  const web = { pages: new Map(), fetchUrl };
   const items = {};
   for (const x of input) {
     const v = verdicts.get(x.id);
@@ -1018,7 +1235,8 @@ function recheck(runDir, { keyRoot = keyRootDefault() } = {}) {
       const r = v.recheck;
       const kind = RECHECK_KINDS.find(k => r[k] !== undefined);
       try {
-        row = kind === 'file' ? recheckFile(r, spec, p, denied) : kind === 'log' ? recheckLog(r, spec, p, denied) : recheckSql(r, spec, cache);
+        row = kind === 'file' ? recheckFile(r, spec, p, denied) : kind === 'log' ? recheckLog(r, spec, p, denied)
+          : kind === 'url' ? await recheckUrl(r, spec, web) : recheckSql(r, spec, cache);
       } catch (e) {
         if (!(e instanceof Refusal)) throw e;
         row = { status: 'refused', reason: e.message };
@@ -1250,7 +1468,7 @@ function intOpt(v, name, def) {
   return n;
 }
 
-function main(argv) {
+async function main(argv) {
   const [cmd, ...rest] = argv.slice(2);
   const spec = {
     lint: {}, 'check-verifiers': {}, 'screen-tc': {}, score: {}, recheck: {}, report: {},
@@ -1302,7 +1520,7 @@ function main(argv) {
       return 0;
     }
     if (cmd === 'recheck') {
-      const r = recheck(run);
+      const r = await recheck(run);
       for (const id of r.problems) console.error(`claims: ${id} ${r.items[id].status} — ${r.items[id].reason || ''}`.trim());
       console.log(JSON.stringify({ counts: r.counts, file: runPaths(run).recheck }));
       return r.problems.length ? 1 : 0;
@@ -1327,9 +1545,10 @@ function main(argv) {
   }
 }
 
-if (require.main === module) process.exitCode = main(process.argv);
+if (require.main === module) main(process.argv).then(code => { process.exitCode = code; });
 
 module.exports = {
   lintRun, prepare, checkVerifiers, screenTc, importResults, score, recheck, sample, human, report, upperBound95,
+  publicAddress, checkWebUrl, fetchUrlOnce, htmlText,
   keyFileFor, projectRoot, mulberry32, main, ClaimsError, CHANNELS, VERDICTS, GRADES, HTTP_STATUSES,
 };
