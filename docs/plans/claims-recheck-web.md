@@ -227,14 +227,14 @@ cc-baseline 자체의 TC(`surface: cli`)다. 승인 직후 `docs/tc/claims.tc.js
 
 ## ✅ Checklist
 
-- [ ] TC를 `claims.tc.json`에 덧붙이고 다시 검사했다. 임시 파일을 지웠다
-- [ ] `score`가 검증 스크립트 점검을 돌리고 걸리면 exit 1, `score.json`에 결과가 남는다
-- [ ] `/verify-claims` 7·11단계와 fact-auditor의 셸 규칙을 고쳤다
-- [ ] url recipe: 형식 검사, 연결 주소 검사, 리다이렉트 검사, 상한, HTML 텍스트, 네 가지 상태
-- [ ] `recheck`·`main` async, 기존 호출부 4곳 수정, 테스트는 외부 요청 없음
-- [ ] 지침(Key Rules, §2, §4, §8)·README·CHANGELOG
-- [ ] 보안 감사와 코드 리뷰 반영, 커밋·푸시·설치
-- [ ] 행동 확인 결과 기록, 메모리·HANDOFF 갱신
+- [x] TC를 `claims.tc.json`에 덧붙이고 다시 검사했다. 임시 파일을 지웠다
+- [x] `score`가 검증 스크립트 점검을 돌리고 걸리면 exit 1, `score.json`에 결과가 남는다
+- [x] `/verify-claims` 7·11단계와 fact-auditor의 셸 규칙을 고쳤다
+- [x] url recipe: 형식 검사, 연결 주소 검사, 리다이렉트 검사, 상한, HTML 텍스트, 네 가지 상태
+- [x] `recheck`·`main` async, 기존 호출부 4곳 수정, 테스트는 외부 요청 없음
+- [x] 지침(Key Rules, §2, §4, §8)·README·CHANGELOG
+- [x] 보안 감사와 코드 리뷰 반영, 커밋·푸시·설치
+- [x] 행동 확인 결과 기록, 메모리·HANDOFF 갱신
 
 ## Decisions (made without asking) — 실행 중 추가
 
@@ -257,3 +257,19 @@ cc-baseline 자체의 TC(`surface: cli`)다. 승인 직후 `docs/tc/claims.tc.js
 ## Code Review History
 - code-review-iter-1: 2026-11-27 / critical=0 high=0 medium=1 low=4 / profile_status=cached / next_action=self_fix → 모두 반영. QA-001 → D9, QA-002 문서의 한도를 "요청당 15초·2 MB, 실행당 시작 URL 40개·120초"로 고침, QA-003 = SEC-002, QA-004 → D10, QA-005 → D11. `npm test` 240 + 21 통과.
 - code-review-iter-2: 2026-11-27 / critical=0 high=0 medium=1 low=2 / profile_status=cached / next_action=self_fix → 모두 반영. QA-006(MEDIUM): `toLowerCase()`가 "İ"의 길이를 바꿔 위치가 밀리고 script 본문이 보이는 글자로 새던 것을 ASCII만 소문자로 바꿔 고침(테스트 추가). QA-007: 거절된 페이지에도 요청한 호스트를 남기고 예산 문구를 고침. QA-008: `</scripts`가 script를 닫지 않게 함. CRITICAL·HIGH 0이라 종료. `npm test` 240 + 21 통과.
+
+## Phase C 4단계 — 행동 확인 결과 (2026-11-27, `claude -p` 1회, 신호이지 증명은 아님)
+
+플랜의 문장과 좁은 허용 목록(`… Skill Bash(node:*)`)으로 한 번 돌렸고, 첫 실행에서 기대 세 가지가 모두 맞아 다시 돌리지 않았다.
+
+| 기대 | 결과 |
+|---|---|
+| fact-auditor가 셸 거부로 멈추지 않는다, `score.json`에 `verifiers`가 있다 | 에이전트의 `curl` 두 번이 거부되자 검증 스크립트를 Write로 쓰고 `node <파일>` 단독 명령으로 돌렸다. `tc-jev-judge.js claim` 3회(Jev 샘플 3개)와 `check-verifiers`(파일 4개, 문제 0)도 단독 명령으로 통과했다. `score.json`: `verifiers: { files: 4, problems: 0 }` |
+| `recheck.json`에서 웹 항목 1개 이상이 `reproduced` | 주장 4개와 전제 1개 모두 `reproduced`(5/5), `not_rerunnable` 0. 요청한 호스트는 `api.github.com`과 `raw.githubusercontent.com`뿐이다 |
+| 답이 재실행 결과 줄을 인용한다 | "증거 재실행: 5건 중 재현 5 · 불일치 0 · 거부 0 · 실패 0" |
+
+- 카나리아 2개를 모두 잡았다(web 채널 trusted). 주장 4개는 모두 supported(B 등급)다.
+- **관찰:**
+  - "Svix는 주로 Rust"의 recipe는 `server/Cargo.toml`의 워크스페이스 줄이었다. 판정 근거였던 언어 API의 바이트 수가 아니다. 재확인은 "그 문구가 페이지에 있다"만 본다는 한계가 그대로 드러났고, 답이 이 점을 스스로 밝혔다.
+  - 본 세션의 묶음 명령 두 번(`ls …; date`, `node … lint; echo`)이 거부됐고, 단독 명령으로 다시 실행했다.
+  - 비용은 약 $1.31(API 요금 환산), 105초다. 사실 4개 검증만으로 지난 전체 외부용 시나리오($1.41)와 비슷했다. D6의 "$0.5~1" 예상은 틀렸다.
