@@ -5,7 +5,7 @@ Usage: `/verify-claims [run-name]` — no name → choose a short one yourself (
 Every turn re-reads the whole conversation, so keep the turns few: write the files of a step in one message, and run one plain command per Bash call (no `;`, `&&`, pipes or `echo $?` — a narrow allowlist refuses them and the turn is lost).
 
 1. Read `~/.claude/memory/reference_claim_verification.md`.
-2. Run dir: `.cc-audits/claims/<run>/` in the project root (or the working directory when there is no project).
+2. Run dir: `.cc-audits/claims/<run>/` in the project root (or the working directory when there is no project). In the commands below `<run>` is that path — a bare run name also works when the command runs from the project root.
 3. Write the ledgers from the draft, one fact per claim — all files in one message (parallel Write calls):
    - `claims.jsonl` — `id`, `text`, `target`, `channel`, `expected`, `impact`, optional `premises`, `source_refs`; web claims need `source_url`.
    - `premises.jsonl` — every rule your conclusions relied on.

@@ -168,7 +168,12 @@ function writeJsonl(file, rows) {
 }
 
 function runPaths(runDir) {
-  const dir = path.resolve(runDir);
+  let dir = path.resolve(runDir);
+  // a bare run name, given from the project root, is that run of .cc-audits/claims
+  if (!fs.existsSync(dir) && isStr(runDir) && !/[\\/]/.test(runDir) && !runDir.startsWith('.')) {
+    const named = path.resolve('.cc-audits', 'claims', runDir);
+    if (fs.existsSync(named)) dir = named;
+  }
   if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) throw new ClaimsError(`no run dir ${runDir}`);
   const p = f => path.join(dir, f);
   return {

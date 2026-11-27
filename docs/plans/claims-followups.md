@@ -235,13 +235,13 @@ cc-baseline 자체의 TC(`surface: cli`)다. 승인 직후 `docs/tc/claims.tc.js
 
 ## ✅ Checklist
 
-- [ ] TC를 `claims.tc.json`에 덧붙이고 다시 검사했다
-- [ ] `open`·`close`가 기존 함수를 부르고, 기존 명령은 그대로 동작한다
-- [ ] 약한 recipe 표시, `coverage`, 확인 불가 비율과 경고
-- [ ] `sample`의 `risk` 항목(상한 밖), `diff`와 `receipts.md`
-- [ ] `/verify-claims`·fact-auditor·지침·README·CHANGELOG
-- [ ] 보안 감사와 코드 리뷰 반영, 커밋·푸시·설치
-- [ ] 행동 확인 결과(턴·금액 비교) 기록, 메모리·HANDOFF 갱신
+- [x] TC를 `claims.tc.json`에 덧붙이고 다시 검사했다
+- [x] `open`·`close`가 기존 함수를 부르고, 기존 명령은 그대로 동작한다
+- [x] 약한 recipe 표시, `coverage`, 확인 불가 비율과 경고
+- [x] `sample`의 `risk` 항목(상한 밖), `diff`와 `receipts.md`
+- [x] `/verify-claims`·fact-auditor·지침·README·CHANGELOG
+- [x] 보안 감사와 코드 리뷰 반영, 커밋·푸시·설치
+- [x] 행동 확인 결과(턴·금액 비교) 기록, 메모리·HANDOFF 갱신
 - [ ] grimbang B·D 플랜을 올렸다
 
 ## Decisions (made without asking) — 실행 중 추가
@@ -260,3 +260,26 @@ cc-baseline 자체의 TC(`surface: cli`)다. 승인 직후 `docs/tc/claims.tc.js
 
 ## Code Review History
 - code-review-iter-1: 2026-11-27 / critical=0 high=0 medium=1 low=7 / profile_status=cached / next_action=self_fix → 모두 반영. QA-001(MEDIUM): 숫자 정규식이 뒤의 쉼표를 삼켜 `100, 200`의 100을 "없음"으로 냈다. 천 단위 묶음만 허용하게 고쳤다. QA-002 → D10, QA-003 → D11, QA-004 → D12, QA-005 → D13, QA-006: `open`이 초안을 prepare 전에 검사한다. QA-007 → D14, QA-008: 빠진 테스트(쉼표, 50개 상한, 이전 형식 파일, 집계 없는 새 실행, 객체 기대 값)를 넣었다. CRITICAL·HIGH 0이라 종료. `npm test` 248 + 21 통과.
+
+## Phase C 4단계 — 행동 확인 결과 (2026-11-27, `claude -p` 1회, 신호이지 증명은 아님)
+
+지난 실행(claims-recheck-web)과 같은 문장, 같은 허용 목록, 같은 모델로 돌렸다.
+
+| | 지난 실행 | 이번 실행 |
+|---|---|---|
+| 본 세션 턴 | 14 | 9 |
+| 본 세션 캐시 읽기 | 711,540 토큰 | 429,565 토큰 |
+| 본 세션 캐시 쓰기 | 47,884 토큰 | 46,108 토큰 |
+| 본 세션 환산 금액 | $1.114 | $0.988 |
+| fact-auditor 턴 / 환산 금액 | 13 / $0.183 | 7 / $0.132 |
+| 전체 환산 금액 | $1.306 | $1.121 |
+| 걸린 시간 | 105초 | 68초 |
+
+- **기대와 비교:**
+  - 턴 9 이하: 맞음. `open`과 `close`를 썼고, 장부 3개와 `draft.md`를 한 메시지에서 썼다.
+  - 금액이 $1.31보다 낮음: 맞음(14% 감소).
+  - 약한 recipe: 이번에는 나오지 않았다. "주로 Rust" 주장의 recipe가 `"language":"Rust"`로, 기대 값을 담았다. 표시 자체는 `npm test`로만 확인됐다.
+- **결과:** 주장 4개 모두 supported(B), 카나리아 2/2, 증거 재실행 4/4 재현, 스크립트 점검 파일 2개 문제 0, Jev 샘플 1개. 누락 검사는 초안의 토큰 2개가 모두 장부에 있다고 냈다.
+- **관찰:**
+  - 9턴 중 3턴은 낭비였다. `claims.js open oss-license-1`처럼 실행 이름만 넘겨 "no run dir"가 났고, `--help`와 `pwd`를 거쳐 전체 경로로 다시 돌렸다. 실행 이름만 넘겨도 프로젝트 루트에서는 찾게 `runPaths`를 고치고 명령 문서에 적었다(테스트 추가, 다시 돌려 확인하지는 않았다).
+  - 턴은 36% 줄었는데 금액은 14%만 줄었다. 캐시 읽기는 40% 줄었지만 캐시 쓰기(약 4.6만 토큰)는 그대로다. 새 세션이 처음 맥락을 올리는 비용이 금액의 큰 몫으로 보인다(단가를 확인하지 못해 추정이다). `claude -p`는 매번 새 세션이라 이 비용을 매번 낸다. 이미 열려 있는 작업 세션에서는 이 몫이 없고 턴 수에 비례하는 몫만 든다.

@@ -5017,6 +5017,13 @@ t('claims.js open: lint and prepare in one call; a lint error prepares nothing; 
     assert.ok(fs.existsSync(path.join(r.run, 'audit-input.jsonl')));
     assert.deepEqual(res.coverage.uncovered.map(u => u.token), ['99']);
     assert.equal(res.key_file, undefined, 'the key path is not printed');
+    // a bare run name works from the project root, and only there
+    const { spawnSync } = require('child_process');
+    const named = spawnSync(process.execPath, [CLAIMS, 'lint', 'r1'], { cwd: r.proj, env: r.env, encoding: 'utf8' });
+    assert.equal(named.status, 0, named.stderr);
+    const lost = spawnSync(process.execPath, [CLAIMS, 'lint', 'r1'], { cwd: r.base, env: r.env, encoding: 'utf8' });
+    assert.equal(lost.status, 2);
+    assert.match(lost.stderr, /no run dir r1/);
   } finally { r.done(); }
   const bad = dbClaims(3);
   delete bad[1].channel;
