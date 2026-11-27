@@ -4603,6 +4603,11 @@ t('UserPromptSubmit hook: the reply language follows the prompt — Korean, Engl
   const pasted = 'Traceback (most recent call last):\n  File "app.py", line 3\nValueError: bad value\n'.repeat(20) + '이거 왜 실패했어?';
   assert.match(runHook(hook.command, JSON.stringify({ prompt: pasted })).context, /reply in Korean/);
   assert.match(runHook(hook.command, JSON.stringify({ prompt: 'これは何ですか' })).context, /reply in Japanese/);
+  // An agent report or a task notification arrives as a prompt too; its language is not the person's.
+  const relayed = runHook(hook.command, JSON.stringify({ prompt: 'Another Claude session sent a message:\n<agent-message from="a1">Report: all tests pass</agent-message>' })).context;
+  assert.match(relayed, /came from an agent, another session or the system/);
+  assert.doesNotMatch(relayed, /reply in English/);
+  assert.match(runHook(hook.command, JSON.stringify({ prompt: '<task-notification><status>completed</status></task-notification>' })).context, /not from the person/);
   for (const bad of ['not json', '[]', JSON.stringify({ prompt: 12345 }), '']) {
     const r = runHook(hook.command, bad);
     assert.equal(r.status, 0, `exit 0 for ${JSON.stringify(bad)}`);
