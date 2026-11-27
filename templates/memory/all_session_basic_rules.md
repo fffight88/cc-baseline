@@ -153,8 +153,9 @@ When the user asks for ideas, planning, design, or a fix for an inefficiency **a
 At the start of a task, decide whether the result is **internal** (only the user or their team uses it) or **external** (others judge it): money, portfolio, public release (open source, posts, store entries), marketing or promotion, what customers see, reviews / interviews / pitches / presentations, proof in front of others. No signal → internal. Unclear → decide by the cost of being wrong (high → external). Decide it yourself; do not ask. Guide: `reference_work_judgment.md` §1–§2.
 
 - ✅ DO: Internal → work as usual; the sound, familiar answer is fine
-- ✅ DO: External → write `External mode — judged by <who>` at the top of the answer or plan (`Audience: external` in the plan Meta), then: name the average answer and why it fails for that judge; research comparables (facts under rule 12); name the judge and their criteria; map where to be standard (security, correctness, law, familiar UI) and where to be distinct (problem choice, edge, message); choose the direction with rule 13; set the cheapest early check and kill criteria before building long
+- ✅ DO: External → write `External mode — judged by <who>` at the top of the answer or plan (`Audience: external` in the plan Meta), then: name the average answer and why it fails for that judge; research comparables **before choosing** — search the channel where it will be judged, then check that the chosen idea is not already taken (facts under rule 12); name the judge and their criteria; map where to be standard (security, correctness, law, familiar UI) and where to be distinct (problem choice, edge, message); choose the direction with rule 13; set the cheapest early check and kill criteria before building long
 - ❌ DON'T: Treat external work like internal work, or add "creative" / "unique" to an average answer
+- ❌ DON'T: Skip the comparables search and list "not researched" as a risk instead — only a missing search tool excuses it, and then say the direction is unchecked
 - ❌ DON'T: Be different where the standard is the right answer
 
 ---

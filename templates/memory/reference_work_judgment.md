@@ -9,7 +9,7 @@ type: feedback
 | ✅ DO | ❌ DON'T |
 |---|---|
 | Decide at the start whether the work is internal or external (§1) — yourself, without asking | Treat every request as internal and hand back the average answer |
-| External: name the average answer and reject it, research comparables, name the judge, map standard vs distinct, set an early check and kill criteria (§2) | Add "creative" or "unique" to an average answer and call it done |
+| External: name the average answer and reject it, research comparables before choosing, name the judge, map standard vs distinct, set an early check and kill criteria (§2) | Add "creative" or "unique" to an average answer and call it done, or skip the comparables search |
 | Be standard where the standard is right (security, correctness, law, familiar UI) and distinct where it counts (problem choice, edge, message) | Stand out in the wrong place |
 | When you want to ask, write down why, answer it from files, code, the web, data or analysis, decide and act (§3) | Ask "which one should we do?" with the easy option marked recommended |
 | Ask only for credentials and personal data, information only people have, and legal or ethical grey zones — human-only questions early, in one go (§4) | Guess what only people know (a budget said in a meeting, an unwritten agreement) |
@@ -45,7 +45,7 @@ The result is **external** when someone other than the user and their team judge
 Write these six items in the answer or the plan's Context, short:
 
 1. **Average answer first.** Write the answer most people — or a model — would give, then one or two lines on why it fails for this judge (already taken, forgettable, no edge, the judge has seen it a hundred times).
-2. **Comparables.** What already exists and what gets attention (stars, sales, reviews, discussion). Search the channel where it will be judged — the store, marketplace, GitHub, HN, the job board. These facts fall under rule 12.
+2. **Comparables.** What already exists and what gets attention (stars, sales, reviews, discussion). Two searches: the channel where it will be judged — the store, marketplace, GitHub, HN, the job board — **before** choosing the direction, and the chosen idea itself (does it already exist, who does it, what makes this one different) before building it. This step is not optional: "not researched" listed as a risk does not replace it. Only when no search tool is available, say so and mark the direction unchecked against comparables. These facts fall under rule 12.
 3. **Judge and criteria.** Who decides (buyer, recruiter, reviewer, investor, audience) and what they look at first.
 4. **Standard / distinct map.**
 
