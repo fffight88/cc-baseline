@@ -15,7 +15,7 @@ What Claude reports as fact cannot be vouched for by Claude. A producer that che
 | Verify every fact in a report whose truth the user will act on — web/document research, analysis conclusions, comparisons, counts, dates, names, states — before reporting it, with or without `/plan`, whatever the size | Skip it because the work is not coding or the report is short |
 | Fewer than 30 claims → **light** (every claim checked, ≥ 2 canaries, a mark per claim); 30 or more, or one rule applied to 10+ places → **bulk** (≥ 3 canaries per channel; a human sample and an error bound only on the §1 conditions) | Ask the user to check 30–50 items for a 10-claim report, or on every bulk run |
 | Run `claims.js recheck` after `score`: it reads every file, log line and SELECT the verdicts name again, without the auditor | Report a claim whose evidence did not reproduce as confirmed |
-| Write the ledgers: `claims.jsonl` (one fact each) and `premises.jsonl` (the rules your judgment used); give every web claim its `source_url` | Hand over prose and say "verify this" |
+| Write the ledgers: `claims.jsonl` (one fact each) and `premises.jsonl` (the rules your judgment used); give every web claim its `source_url` | Hand over prose and say "verify this", or put the claims in the fact-auditor prompt instead of a run |
 | Verify premises first, with strong evidence; claims resting on a refuted premise come back `stale` | Check claims one by one and never the rule they share |
 | Give fact-auditor only `claims-run.json` + `audit-input.jsonl`; list your own tools, results and golden sets in `forbidden_paths` | Show it your scripts, your verdicts, your quotes or your summary |
 | Keep the canary key where `claims.js` puts it (outside the project, 0600) | Copy the key into the run dir or a prompt |
@@ -132,8 +132,10 @@ Return format:
 - check-verifiers: pass | fail
 - jev samples: N (0 → why)
 - recheck recipes: N of M
-- next_action: score | screens_then_score | rerun
+- next_action: score | screens_then_score | rerun | no_run
 ```
+
+`no_run` — the run files were missing (or the claims were written into the prompt): fact-auditor checked nothing; prepare the run (§4) and call it again.
 
 Never pass the producer's reasoning, sources or expected verdicts in the prompt.
 

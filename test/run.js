@@ -4860,6 +4860,12 @@ t('verify before report: rule 12 does not let the check be handed back (TC verif
   assert.ok(donts.some(l => /Write "not verified — run `\/verify-claims`" instead of running the check/.test(l) && /hands the check back to the user/.test(l)), 'a DON\'T forbids the hand-back note');
   assert.match(r12, /The only reason to skip is a missing Agent tool or fact-auditor; then say so/);
   assert.match(r12, /read `reference_claim_verification\.md` and run `\/verify-claims` before answering/);
+  assert.ok(donts.some(l => /Put the claims in a fact-auditor prompt and call it a light run/.test(l) && /goes through `claims\.js`/.test(l)), 'a DON\'T forbids the direct fact-auditor call');
+  const auditor = tplText('agents', 'fact-auditor.md');
+  assert.match(auditor, /A prompt without `claims_run` and `audit_input` paths to existing run files is not a run/);
+  assert.match(auditor, /I check nothing and return only `next_action: no_run` and the `note` line saying why/);
+  assert.match(tplText('commands', 'verify-claims.md'), /A `next_action: no_run` return means it found no run files and checked nothing: redo steps 3–4/);
+  assert.match(auditor, /^- next_action: score \| screens_then_score \| rerun \| no_run$/m);
 });
 
 t('verify before report: the claim guide says not checked is not unverifiable (TC verify-before-report.claim-guide)', () => {

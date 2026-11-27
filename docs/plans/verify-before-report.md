@@ -168,14 +168,37 @@ cc-baseline 자체의 TC(`surface: cli`)다. 기대 결과는 템플릿 파일 �
 
 ## ✅ Checklist
 
-- [ ] TC 초안을 승인 직후 파일로 쓰고 다시 검사했다. 임시 파일을 지웠다
-- [ ] 규칙 12: 검증을 넘기지 않음, 확인 불가는 돌린 검증의 판정, 예외는 도구가 없을 때뿐
-- [ ] 규칙 14와 §2 2항·체크리스트: 비교 대상을 답 전에 light run으로 검증
-- [ ] `reference_claim_verification.md`의 Key Rules 행과 §1 줄
-- [ ] 규칙 2: 상태는 명령 결과로 확인, 거부된 명령은 아무것도 실행 안 됨
-- [ ] 정적 검사 4개, CHANGELOG, `npm test`, doctor
-- [ ] 코드 리뷰 반영, 커밋·푸시·설치
-- [ ] 행동 확인 결과 기록, 메모리·HANDOFF 갱신
+- [x] TC 초안을 승인 직후 파일로 쓰고 다시 검사했다. 임시 파일을 지웠다
+- [x] 규칙 12: 검증을 넘기지 않음, 확인 불가는 돌린 검증의 판정, 예외는 도구가 없을 때뿐
+- [x] 규칙 14와 §2 2항·체크리스트: 비교 대상을 답 전에 light run으로 검증
+- [x] `reference_claim_verification.md`의 Key Rules 행과 §1 줄
+- [x] 규칙 2: 상태는 명령 결과로 확인, 거부된 명령은 아무것도 실행 안 됨
+- [x] 정적 검사 4개, CHANGELOG, `npm test`, doctor
+- [x] 코드 리뷰 반영, 커밋·푸시·설치
+- [x] 행동 확인 결과 기록, 메모리·HANDOFF 갱신
 
 ## Code Review History
 - code-review-iter-1: 2026-11-27 / critical=0 high=0 medium=1 low=2 / profile_status=cached / next_action=self_fix → 모두 반영. QA-001 "Agent 도구나 fact-auditor가 없을 때만 예외"를 Key Rules 행·규칙 14·§2 2항·체크리스트에도 넣고 테스트로 고정, QA-002 규칙 2를 "거부된 명령은 아무것도 실행 안 됨, 실패한 명령은 어느 부분이 돌았는지 확인"으로 나눔, QA-003 규칙 12 DO를 "사용자가 행동할 사실"로 범위를 맞춤. CRITICAL·HIGH 0이라 종료. `npm test` 233 + 21 통과.
+- code-review-iter-2: 2026-11-27 / critical=0 high=0 medium=0 low=2 / profile_status=cached / next_action=done → iter-1 3건 해결 확인. 행동 확인 뒤 추가한 변경(`no_run`)에 대한 low 2건도 반영: QA-004 `no_run`과 함께 `note` 줄도 돌려줌, QA-005 `/verify-claims` 5단계에 `no_run` 처리.
+
+## Decisions (made without asking) — 실행 중 추가
+
+| # | 결정 | 이유 | 근거 | 되돌리는 법 |
+|---|---|---|---|---|
+| D5 | 외부용 시나리오 문장에 직무·주력 기술·시간·목표 업계를 넣어 다시 돌렸다(플랜의 "지난번과 같은 문장"에서 벗어남) | 첫 실행이 그 네 가지를 한 번에 묻고 멈춰 검증 단계까지 가지 못했다. 사람만 아는 정보라 규칙 15에 맞는 행동이다 | 아래 행동 확인 표 1행 | — |
+| D6 | fact-auditor가 실행 파일 경로 없는 요청을 받으면 아무것도 검증하지 않고 `next_action: no_run`과 `note`만 돌려주게 했다(플랜의 파일 목록에 없던 에이전트 파일 변경) | 외부용 2차 실행이 주장을 프롬프트에 적어 fact-auditor를 직접 불렀고, 에이전트가 그대로 받아 줬다. 장부·카나리아·결과 파일이 없어 플랜의 기대와 달랐다. 에이전트의 기존 계약("실행 파일만 받는다")과 같은 방향이다 | 아래 표 2행, `fact-auditor.md` Role Declaration | `fact-auditor.md`의 그 줄과 반환 형식의 `no_run` 삭제 |
+| D7 | 재실행 때 허용 도구에 `Skill`을 넣었다 | `/verify-claims`를 스킬로 부를 수 있어야 공정한 확인이다 | 2차의 허용 도구 목록 | — |
+
+## Phase B 4단계 — 행동 확인 결과 (2026-11-27, `claude -p`, 신호이지 증명은 아님)
+
+| 시나리오 | 결과 | 기대와 비교 |
+|---|---|---|
+| 내부용: 로그에서 ERROR 줄 뽑는 스크립트 | `chmod … && ./스크립트` 묶음이 거부되자 `chmod`와 `ls -l`을 따로 실행했고(`-rwxr-xr-x`), "실행 권한 확인함"이라고 보고함. 실행해 보지 않은 경우(파일 하나 지정)는 그렇다고 적음 | 맞음. 실제 파일도 `-rwxr-xr-x` |
+| 외부용 1차(지난번과 같은 문장) | 직무·주력 기술·시간·목표 업계를 한 번에 묻고 멈춤. 도구는 Read 5, Bash 1 | 검증 단계까지 가지 않아 판단 불가 → D5 |
+| 외부용 2차(네 가지 정보를 넣은 문장) | WebSearch 2회 뒤 fact-auditor를 직접 불러 주장 8개를 프롬프트에 적어 넘김. 답에 확인됨·확인 못 함·추론을 나눠 적었고 "`/verify-claims`를 돌리시라"는 없음. `reference_claim_verification.md`는 열지 않았고 `.cc-audits/claims/`가 없음 | 검증은 돌았지만 `claims.js` 절차(장부, 카나리아, 결과 파일)가 빠짐 → 규칙 12 DON'T와 D6을 넣음 |
+| 외부용 3차(문구 수정 뒤 1회째) | `/verify-claims` 스킬 호출 → 지침 읽기 → 장부 3개 작성 → `lint`(오류 1건을 고쳐 0건) → `prepare`(light, 카나리아 2) → 실행 파일 경로로 fact-auditor 호출 → `score` → `recheck` → `report`. 주장 9개 모두 supported(B 등급), 카나리아 2개 중 1개 잡고 1개 보류, web 채널 trusted. 답에 검증 결과와 그 한계(웹 항목이라 재실행 불가, 사람 표본 없음, 추론 2건은 미검증)를 적음 | 맞음. `verdicts.jsonl`과 `report.md`가 생김 |
+
+- **남은 관찰:**
+  - 3차에서 검증 에이전트의 셸 호출이 권한에서 막혀 `check-verifiers`와 Jev 보정 샘플이 빠졌다. 허용 도구를 `Bash(node:*)`로만 준 실행 설정 때문이고, 답이 그 사실을 밝혔다.
+  - 3차의 비용은 약 $1.41, 184초다(2차는 $0.86, 135초, 검증 없던 지난 플랜의 3차는 기록하지 않음). light run이 답 하나에 붙는 비용의 신호다.
+  - 외부용 요청에서 사람만 아는 정보를 먼저 물을지, 가정하고 결정 표에 적을지는 실행마다 달랐다(지난 플랜 3회는 가정, 이번 1차는 질문). 규칙 15는 둘 다 허용한다.

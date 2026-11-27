@@ -135,6 +135,7 @@ Facts in a report to the user that would change the user's decision if wrong —
 - ❌ DON'T: Verify your own output with your own scripts, results or golden set and call it verified
 - ❌ DON'T: Report "all correct" — report what was checked, how strongly, and what could not be checked
 - ❌ DON'T: Write "not verified — run `/verify-claims`" instead of running the check: that hands the check back to the user (rule 15)
+- ❌ DON'T: Put the claims in a fact-auditor prompt and call it a light run — a run goes through `claims.js` (ledgers, canaries, `score`), the steps of `/verify-claims`; without canaries nothing shows whether the auditor only agreed
 - ❌ DON'T: Treat "could not be checked" as a reason to skip — it is a verdict of a check that ran (UNVERIFIABLE). The only reason to skip is a missing Agent tool or fact-auditor; then say so
 - Out of scope: opinions, recommendations, plans, and facts read in this turn straight from a deterministic local tool output (a command result, a file's content). Web search / fetch results and summaries of them are in scope.
 
