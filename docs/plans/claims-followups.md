@@ -242,7 +242,7 @@ cc-baseline 자체의 TC(`surface: cli`)다. 승인 직후 `docs/tc/claims.tc.js
 - [x] `/verify-claims`·fact-auditor·지침·README·CHANGELOG
 - [x] 보안 감사와 코드 리뷰 반영, 커밋·푸시·설치
 - [x] 행동 확인 결과(턴·금액 비교) 기록, 메모리·HANDOFF 갱신
-- [ ] grimbang B·D 플랜을 올렸다
+- [x] grimbang B·D 플랜을 올렸다
 
 ## Decisions (made without asking) — 실행 중 추가
 
