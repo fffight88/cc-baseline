@@ -1,0 +1,353 @@
+{
+  "schema_version": 1,
+  "feature": "phase-e-fixes",
+  "title": "Fixes from the first real-project claim runs (Phase E)",
+  "plan": "phase-e-fixes",
+  "sources": [
+    {
+      "id": "REQ.phase-e-plan",
+      "kind": "requirement",
+      "locator": "docs/plans/phase-e-fixes.md (approved 2026-11-27)"
+    },
+    {
+      "id": "OBS.phase-e",
+      "kind": "source",
+      "locator": "docs/plans/claim-verification-d-fixes.md §Phase E 결과 (ERP session report 2026-11-27: E1-E5)"
+    }
+  ],
+  "actions": [
+    {
+      "id": "ACT.phase-e-fixes.score",
+      "title": "Score a claims run",
+      "actor": "orchestrator",
+      "trigger": "runs claims.js score <run dir>",
+      "preconditions": [
+        "verdicts for every item"
+      ],
+      "outputs": [
+        "score.json"
+      ],
+      "evidence_refs": [
+        "OBS.phase-e"
+      ]
+    },
+    {
+      "id": "ACT.phase-e-fixes.lint",
+      "title": "Lint and prepare a claims run",
+      "actor": "orchestrator",
+      "trigger": "runs claims.js lint and prepare",
+      "preconditions": [
+        "claims.jsonl"
+      ],
+      "outputs": [
+        "warnings",
+        "audit-input.jsonl"
+      ],
+      "evidence_refs": [
+        "OBS.phase-e"
+      ]
+    },
+    {
+      "id": "ACT.phase-e-fixes.sweep",
+      "title": "Sweep a screen",
+      "actor": "e2e-tester",
+      "trigger": "runs tc-sweep.js",
+      "preconditions": [
+        "a run file"
+      ],
+      "outputs": [
+        "sweep result file"
+      ],
+      "evidence_refs": [
+        "OBS.phase-e"
+      ]
+    },
+    {
+      "id": "ACT.phase-e-fixes.axe",
+      "title": "Run the a11y scan",
+      "actor": "publisher",
+      "trigger": "Step 6 a11y runtime scan",
+      "preconditions": [
+        "a rendered screen"
+      ],
+      "outputs": [
+        "axe violations"
+      ],
+      "evidence_refs": [
+        "OBS.phase-e"
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "id": "TC.phase-e-fixes.code-structure-b",
+      "title": "A decision claim backed by re-runnable code evidence at grade B is supported",
+      "action_refs": [
+        "ACT.phase-e-fixes.score"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claim C-0001 has impact decision and channel code",
+        "its verdict is SUPPORTED, grade B, with a recheck recipe"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js score on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "score.json gives C-0001 the status supported",
+          "observe": {
+            "channel": "artifact",
+            "key": "score.json .claims[C-0001].status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "OBS.phase-e"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.phase-e-fixes.code-b-needs-recipe",
+      "title": "Grade B on code without a re-run recipe counts as C",
+      "action_refs": [
+        "ACT.phase-e-fixes.score"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claim C-0002 has impact decision and channel code",
+        "its verdict is SUPPORTED, grade B, with no recheck recipe"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js score on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "score.json gives C-0002 the status not_established",
+          "observe": {
+            "channel": "artifact",
+            "key": "score.json .claims[C-0002].status"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "OBS.phase-e"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.phase-e-fixes.sentence-expected",
+      "title": "A whole sentence as expected value draws a lint warning",
+      "action_refs": [
+        "ACT.phase-e-fixes.lint"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claim C-0003 has an expected string of 60 characters"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js lint on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The output warns that C-0003 should use one value as expected",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "OBS.phase-e"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.phase-e-fixes.no-sentence-swap",
+      "title": "No swap canary is made from a sentence-long expected value",
+      "action_refs": [
+        "ACT.phase-e-fixes.lint"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "every claim of the run has an expected string longer than 40 characters"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js prepare with --seed 1",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The canary key has no item made by the swap operation",
+          "observe": {
+            "channel": "artifact",
+            "key": "key.json items op"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "OBS.phase-e"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.phase-e-fixes.sweep-redact",
+      "title": "A redacting sweep keeps control text out of its result file",
+      "action_refs": [
+        "ACT.phase-e-fixes.sweep"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "tc-run.json has sweep_labels redact",
+        "the page has a dead button labelled 'Kim Minsu'"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-sweep.js on the page",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The sweep result file does not contain the text 'Kim Minsu'",
+          "observe": {
+            "channel": "artifact",
+            "key": "sweep result file"
+          }
+        },
+        {
+          "text": "The failing control is listed with a label that starts with '<label:'",
+          "observe": {
+            "channel": "artifact",
+            "key": "sweep result .fail[0].control"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "OBS.phase-e"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.phase-e-fixes.local-axe",
+      "title": "Publisher loads axe-core from the local install",
+      "action_refs": [
+        "ACT.phase-e-fixes.axe"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "templates/agents/publisher.md"
+      ],
+      "steps": [
+        {
+          "goal": "Read the a11y scan step",
+          "done_when": {
+            "expect": "The step is read"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The step has no cdn.jsdelivr.net URL",
+          "observe": {
+            "channel": "artifact",
+            "key": "publisher.md Step 6.4"
+          }
+        },
+        {
+          "text": "The step names the local axe-core path under ~/.claude/vendor",
+          "observe": {
+            "channel": "artifact",
+            "key": "publisher.md Step 6.4"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "OBS.phase-e"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.phase-e-fixes.doctor-axe",
+      "title": "Doctor warns when the local axe-core is missing",
+      "action_refs": [
+        "ACT.phase-e-fixes.axe"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a temporary HOME installed with --skip-scanners"
+      ],
+      "steps": [
+        {
+          "goal": "Run the doctor in that HOME",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The doctor output has a warning line about axe-core",
+          "observe": {
+            "channel": "artifact",
+            "key": "doctor stdout"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "OBS.phase-e"
+        ]
+      },
+      "readiness": "ready"
+    }
+  ],
+  "open_questions": []
+}

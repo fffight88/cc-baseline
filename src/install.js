@@ -14,6 +14,7 @@ const { mergeMcpServers, adaptMcpServers } = require('./merge/mcp-servers');
 const { installScanners } = require('./installers/scanners');
 const { installNotifier } = require('./installers/notifier');
 const { installPlaywrightMcp } = require('./installers/playwright-mcp');
+const { installAxe } = require('./installers/axe');
 const { installAside } = require('./installers/aside');
 
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
@@ -329,11 +330,12 @@ async function install(opts = {}) {
 
   // ── 8. External tools (skippable via --skip-scanners) ─────────────────────
   if (skipScanners) {
-    console.log('\n⏭️  Skipping security scanners + Playwright MCP install (--skip-scanners)');
+    console.log('\n⏭️  Skipping security scanners + Playwright MCP + axe-core install (--skip-scanners)');
   } else {
     await installScanners(dryRun);
     await installNotifier(dryRun);
     await installPlaywrightMcp(dryRun);
+    await installAxe(dryRun);
   }
   if (skipScanners || skipAside) {
     console.log(`\n⏭️  Skipping Aside install (${skipAside ? '--skip-aside' : '--skip-scanners'}) — browser work uses Playwright MCP`);

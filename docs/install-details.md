@@ -56,6 +56,7 @@
 | `scripts/test-env-check.js` | `~/.claude/scripts/test-env-check.js` | Overwrite |
 | `scripts/claims.js` | `~/.claude/scripts/claims.js` | Overwrite |
 | `design-previews/` (69 files) | `~/.claude/design-previews/` | Overwrite each file; uninstall removes them and any folder left empty |
+| `~/.claude/vendor/node_modules/axe-core/` | npm package (not a template) | Installed with the external tools for publisher's a11y scan; `--skip-scanners` skips it, `--remove-scanners` removes it |
 
 ## JSON merge details
 

@@ -7,6 +7,9 @@ const HOME = os.homedir();
 const PLACEHOLDER = '{{HOME}}';
 const NPM_GLOBAL_PREFIX = path.join(HOME, '.npm-global');
 const PLAYWRIGHT_MCP_BIN = path.join(NPM_GLOBAL_PREFIX, 'bin', 'playwright-mcp');
+// Local axe-core for publisher's a11y scan — global even for project installs.
+const AXE_VENDOR_DIR = path.join(HOME, '.claude', 'vendor');
+const AXE_FILE = path.join(AXE_VENDOR_DIR, 'node_modules', 'axe-core', 'axe.min.js');
 // Aside (primary browser tool): CLI symlink + install dir, app bundle, daemon dir
 const ASIDE_BIN = path.join(HOME, '.local', 'bin', 'aside');
 const ASIDE_CLI_DIR = path.join(HOME, '.aside', 'cli');
@@ -57,6 +60,8 @@ module.exports = {
   toPlaceholder,
   NPM_GLOBAL_PREFIX,
   PLAYWRIGHT_MCP_BIN,
+  AXE_VENDOR_DIR,
+  AXE_FILE,
   ASIDE_BIN,
   ASIDE_CLI_DIR,
   ASIDE_APP_PATHS,

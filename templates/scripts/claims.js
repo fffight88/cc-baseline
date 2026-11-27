@@ -64,6 +64,10 @@ const BULK_CANARIES_PER_CHANNEL = 3;
 const DEFAULT_RATE = 0.1;
 const DEFAULT_SAMPLE = 50;
 const FILE_MAX = 2 * 1024 * 1024;
+// An expected value this long is a sentence, not the one value a claim asserts:
+// a canary made from it may by chance still be true (Phase E: 9 of 21 caught).
+const LONG_EXPECTED_CHARS = 40;
+const LONG_EXPECTED_WORDS = 6;
 const LOG_MAX = 50 * 1024 * 1024;
 const RECHECK_LINE_SLACK = 3;
 const CONTAINS_MAX = 300;
@@ -194,6 +198,10 @@ function keyFileFor(runDir, keyRoot) {
 
 // ── lint ──────────────────────────────────────────────────────────────────
 
+function isLongValue(v) {
+  return typeof v === 'string' && (v.length > LONG_EXPECTED_CHARS || v.trim().split(/\s+/).length >= LONG_EXPECTED_WORDS);
+}
+
 function checkItem(x, kind, seen, problems) {
   const isClaim = kind === 'claim';
   const where = x && isStr(x.id) ? x.id : `${kind} line`;
@@ -221,6 +229,7 @@ function checkItem(x, kind, seen, problems) {
   // A claim whose expected value is a list (the origins are A and B) is one fact about one list.
   if (isStr(x.text) && !Array.isArray(x.expected) && CONJUNCTION_RE.test(x.text)) warn('may state more than one fact — split it, or keep it if it is one fact');
   if (isStr(x.text) && SUBJECTIVE_RE.test(x.text)) warn('subjective word — say what can be checked');
+  if (isLongValue(x.expected)) warn(`expected should be the one value the claim asserts (a number, a name, true/false) — a whole sentence (${x.expected.length} chars) can make a canary true by chance`);
 }
 
 // claims-run.json, when there is one: the db spec must give a read-only way in,
@@ -427,7 +436,7 @@ function mutateNegation(c) {
 function mutateSwap(c, claims, rng) {
   if (!(typeof c.expected === 'string' || typeof c.expected === 'number')) return null;
   const own = String(c.expected);
-  if (!own.trim()) return null;
+  if (!own.trim() || isLongValue(c.expected)) return null;
   const shape = valueShape(c.expected, c.text);
   if (shape === 'date') return null;   // a date only moves by a few days (mutateDate)
   // Only from another target: a value of the same target (another column of the same table)
@@ -436,7 +445,7 @@ function mutateSwap(c, claims, rng) {
   const others = claims.filter(o => o.id !== c.id && o.channel === c.channel && o.target && c.target && o.target.kind === c.target.kind
     && o.target.ref !== c.target.ref
     && (typeof o.expected === 'string' || typeof o.expected === 'number') && String(o.expected) !== own && String(o.expected).trim()
-    && valueShape(o.expected, o.text) === shape);
+    && !isLongValue(o.expected) && valueShape(o.expected, o.text) === shape);
   if (others.length === 0) return null;
   const o = others[Math.floor(rng() * others.length)];
   const text = replaceWhole(c.text, own, String(o.expected));
@@ -751,6 +760,12 @@ function jevSampleOf(bank, sha, run, id) {
   return bank.find(x => x.request_sha256 === sha && x.question === question && x.tc === `claims:${run}` && x.index === id) || null;
 }
 
+// Grade B on code means a structural fact read at a known place: a file recipe with its
+// line, so recheck finds the deciding text there and not anywhere in the file.
+function codeBCapped(x, v) {
+  return x.channel === 'code' && v.grade === 'B' && !(v.recheck && isStr(v.recheck.file) && Number.isInteger(v.recheck.line));
+}
+
 function score(runDir, { keyRoot = keyRootDefault(), jevDir = jevDirDefault() } = {}) {
   const p = runPaths(runDir);
   const input = readJsonl(p.input);
@@ -792,8 +807,13 @@ function score(runDir, { keyRoot = keyRootDefault(), jevDir = jevDirDefault() } 
     const k = key.items[x.id];
     if (k.canary) continue;
     const v = verdicts.get(x.id);
-    const row = { audit_id: x.id, channel: x.channel, verdict: v.verdict, grade: v.grade, verifier: v.verifier || null,
-      evidence: v.evidence || null, ...(v.jev_sample ? { jev_sample: v.jev_sample } : {}) };
+    // A structural fact read from code is grade B only with a recipe recheck can run again;
+    // without one it counts as reading the source (C).
+    const capped = codeBCapped(x, v);
+    const grade = capped ? 'C' : v.grade;
+    const row = { audit_id: x.id, channel: x.channel, verdict: v.verdict, grade, verifier: v.verifier || null,
+      evidence: v.evidence || null, ...(v.jev_sample ? { jev_sample: v.jev_sample } : {}),
+      ...(capped ? { grade_capped: 'B→C (no file recipe with a line)' } : {}) };
     if (x.kind === 'premise') { premisesOut[k.orig] = { ...row, status: channels[x.channel].trusted === false ? 'untrusted' : v.verdict.toLowerCase() }; continue; }
     const c = claims.get(k.orig) || {};
     const rested = Array.isArray(c.premises) ? c.premises : [];
@@ -803,7 +823,7 @@ function score(runDir, { keyRoot = keyRootDefault(), jevDir = jevDirDefault() } 
     else if (rested.some(id => premiseVerdict[id] === 'REFUTED')) status = 'stale';
     else if (rested.some(id => premiseVerdict[id] === 'UNVERIFIABLE')) status = 'premise_unverified';
     else if (channels[x.channel].trusted === false) status = 'untrusted';
-    else if (c.impact === 'decision' && (v.grade === 'C' || v.grade === 'D')) status = 'not_established';
+    else if (c.impact === 'decision' && (grade === 'C' || grade === 'D')) status = 'not_established';
     else status = 'supported';
     items[k.orig] = { ...row, text: c.text, impact: c.impact, premises: rested, status };
   }
@@ -829,7 +849,7 @@ function score(runDir, { keyRoot = keyRootDefault(), jevDir = jevDirDefault() } 
   // a run without any is flagged, so the bank does not silently stop growing.
   const question = `${CLAIM_QUESTION.id}@${CLAIM_QUESTION.version}`;
   const jevSamples = bank.filter(s => s.question === question && s.tc === `claims:${p.name}`).length;
-  const decidedAB = input.filter(x => { const v = verdicts.get(x.id); return v.verdict !== 'UNVERIFIABLE' && ['A', 'B'].includes(v.grade) && v.verifier !== 'e2e'; }).length;
+  const decidedAB = input.filter(x => { const v = verdicts.get(x.id); return v.verdict !== 'UNVERIFIABLE' && ['A', 'B'].includes(v.grade) && !codeBCapped(x, v) && v.verifier !== 'e2e'; }).length;
   const warnings = [];
   if (decidedAB > 0 && jevSamples === 0) {
     warnings.push(`no Jev claim sample was stored for this run although ${decidedAB} item(s) were decided at A or B — ask fact-auditor for its calibration samples (step 5), unless Jev has no key`);

@@ -116,7 +116,7 @@ Use the existing procedures unchanged: `mcp__playwright-test-{N}__*`, `browser_c
 
 | Need | Why |
 |---|---|
-| Page with a Content-Security-Policy that blocks the CDN `<script>` used for axe-core | axe is injected with a `<script>` tag |
+| Page with a Content-Security-Policy that blocks the injected axe-core `<script>` (local copy, `page.addScriptTag({ path })`) | axe is injected as a script tag; axe is never loaded from a CDN |
 | Full network list with response bodies for every request | no response events; the recorder sees fetch/XHR only |
 | Errors raised during initial page load | the recorder is injected after load |
 | File download tests (`waitForEvent('download')`) | not verified on Aside |

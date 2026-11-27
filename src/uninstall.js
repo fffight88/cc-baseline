@@ -1,6 +1,6 @@
 'use strict';
 
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 
 function checkCmd(cmd) {
   try { execSync(`which ${cmd}`, { stdio: 'ignore' }); return true; } catch { return false; }
@@ -9,7 +9,7 @@ function checkCmd(cmd) {
 const fs = require('fs');
 const path = require('path');
 
-const { HOME, NPM_GLOBAL_PREFIX, PLAYWRIGHT_MCP_BIN, resolveTarget } = require('./paths');
+const { HOME, NPM_GLOBAL_PREFIX, PLAYWRIGHT_MCP_BIN, AXE_VENDOR_DIR, AXE_FILE, resolveTarget } = require('./paths');
 const { createBackup } = require('./backup');
 const { confirm } = require('./prompt');
 const { removeMarkerBlock, hasMarkerBlock } = require('./merge/markdown');
@@ -131,16 +131,20 @@ function buildSummary(layout) {
   if (target.mode === 'global' && fs.existsSync(PLAYWRIGHT_MCP_BIN)) {
     lines.push(`  🗑️  ~/.npm-global/bin/playwright-mcp (with --remove-scanners)`);
   }
+  if (target.mode === 'global' && fs.existsSync(AXE_FILE)) {
+    lines.push(`  🗑️  ~/.claude/vendor/node_modules/axe-core (with --remove-scanners)`);
+  }
 
   return lines;
 }
 
-async function uninstallScanners(dryRun) {
+async function uninstallScanners(dryRun, { mode = 'global' } = {}) {
   const scanners = ['semgrep', 'gitleaks', 'trivy'];
   const present = scanners.filter(s => checkCmd(s));
   const pwInstalled = fs.existsSync(PLAYWRIGHT_MCP_BIN);
+  const axeInstalled = mode === 'global' && fs.existsSync(AXE_FILE);
 
-  if (present.length === 0 && !pwInstalled) {
+  if (present.length === 0 && !pwInstalled && !axeInstalled) {
     console.log('\n🔍 External tools: nothing to remove, skipping.');
     return;
   }
@@ -185,6 +189,23 @@ async function uninstallScanners(dryRun) {
         console.log('  ✅ @playwright/mcp removed');
       } catch (e) {
         console.log(`  ⚠️  @playwright/mcp removal failed (manual removal required): ${e.message}`);
+      }
+    }
+  }
+
+  if (axeInstalled) {
+    console.log('\n♿ Removing axe-core (~/.claude/vendor)');
+    if (dryRun) {
+      console.log('[DRY RUN] Skipping axe-core removal.');
+    } else {
+      try {
+        execFileSync('npm', ['uninstall', '--prefix', AXE_VENDOR_DIR, 'axe-core'], { stdio: 'inherit' });
+        // npm leaves its package files behind; the vendor folder holds nothing else of ours.
+        for (const f of ['package.json', 'package-lock.json']) fs.rmSync(path.join(AXE_VENDOR_DIR, f), { force: true });
+        try { fs.rmdirSync(path.join(AXE_VENDOR_DIR, 'node_modules')); } catch { /* not empty, or gone */ }
+        console.log('  ✅ axe-core removed');
+      } catch (e) {
+        console.log(`  ⚠️  axe-core removal failed (manual removal required): ${e.message}`);
       }
     }
   }
@@ -397,7 +418,7 @@ async function uninstall(opts = {}) {
 
   // ── 12. Remove external scanners ─────────────────────────────────────────
   if (doRemoveScanners) {
-    await uninstallScanners(dryRun);
+    await uninstallScanners(dryRun, { mode: target.mode });
   }
 
   // ── 13. Summary ──────────────────────────────────────────────────────────

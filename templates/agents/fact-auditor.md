@@ -65,9 +65,12 @@ Each `audit-input.jsonl` line: `{ id, kind: premise|claim, text, target?: {kind,
 | A log line, a DB value, a screen opened, a command run again — runtime evidence you obtained | A |
 | A configuration file — a file whose job is to hold settings: `*.config.*` (`vite.config.ts`), YAML / TOML / INI, `.env.example`, a compose file — a deploy record, a system record | B |
 | A primary web source read again (official docs, original data, a repository API, the text of a law or terms) | B |
-| Reading source code (grep, a file read, a parse) — **also when you read it yourself**, and also setting defaults written in code (a `Settings` class in `config.py`, a constant) | C |
+| A **structural fact** of the code — what the code says: a file, route, function, annotation, import, call site or constant exists / is declared / is configured as — read so `recheck` can read it again at the same place (a `recheck` recipe `{ "file": "<path>", "line": <n>, "contains": "<the deciding text>" }` in the verdict — the line is required) | B |
+| Reading source code to conclude what happens **at run time** (is executed or not, is used or not, order, effect, reachability) — **also when you read it yourself**, and also setting defaults written in code (a `Settings` class in `config.py`, a constant) whose effect at run time is the claim | C |
 | A secondary web source (article, blog, vendor page) | C |
 | Model judgment (Jev, or your own call when Jev returns REVIEW) | D |
+
+Structure or run time? "`/api/report` carries `@PreAuthorize("hasRole('ADMIN')")`" is structure (B with a recipe). "A duplicated function is never executed" is run time (C — only a log, a trace or a re-run shows it). A B verdict on `code` without a `file` recipe that names the line is scored as C.
 
 A claim with `impact: decision` needs A or B to be shown as confirmed; grading a source read as A hides that it is not established.
 

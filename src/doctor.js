@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { HOME, applyHome, PLAYWRIGHT_MCP_BIN, ASIDE_BIN, resolveTarget } = require('./paths');
+const { HOME, applyHome, PLAYWRIGHT_MCP_BIN, ASIDE_BIN, AXE_FILE, resolveTarget } = require('./paths');
 const { spawnSync } = require('child_process');
 const manifest = require('./manifest');
 const { harnessIdOf } = require('./merge/settings-hooks');
@@ -276,6 +276,13 @@ function checkProjectMemoryMd(claudeDir) {
   return ok('Project MEMORY.md', 'marker block present');
 }
 
+// publisher injects axe-core from this local copy; without it the a11y runtime scan is skipped.
+function checkAxe({ file = AXE_FILE } = {}) {
+  const label = 'axe-core (local, publisher a11y scan)';
+  if (fs.existsSync(file)) return ok(label, file.replace(HOME, '~'));
+  return warn(label, 'not found — publisher skips the a11y runtime scan (it never loads axe from a CDN)', 'run `cc-baseline --yes` (installs it into ~/.claude/vendor)');
+}
+
 function checkScanners() {
   const scanners = ['semgrep', 'gitleaks', 'trivy'];
   const present = scanners.filter(s => checkCmd(s));
@@ -386,6 +393,7 @@ function runChecks(opts) {
     checkMcpServers(target.mcpJsonPath, target),
     checkScanners(),
     checkPlaywrightMcp(),
+    checkAxe(),
     checkReplayBrowser(),
     checkAside({ configPath: path.join(target.claudeDir, 'cc-baseline-browser.json') }),
     checkNotifier(),

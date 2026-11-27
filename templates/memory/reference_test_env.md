@@ -93,6 +93,7 @@ export async function GET(request: Request) {
 
 ## 5. Origins and CSP
 
+- A screen with real data (a copy of production, real names): set `"sweep_labels": "redact"` in `tc-run.json`, so sweep results carry `<label:…>` instead of the text on each control and no page error text. Off loopback it is the default; on loopback with a copy of real data you must set it.
 - Every other https origin the app's browser code calls (the backend, its storage) goes in `browser_origins`. Replays and sweeps abort everything else.
 - The app's CSP (`connect-src`, `img-src`) must allow the **test** backend. Read the host from the same env var the app uses (`NEXT_PUBLIC_SUPABASE_URL`) instead of hard-coding the production host; otherwise the browser blocks the test backend and screens show empty data.
 

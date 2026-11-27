@@ -156,6 +156,7 @@ node ~/.claude/scripts/tc-sweep.js --run <run_file> --run-id <run_id> --urls </p
 ```
 
 It clicks every visible control on a fresh copy of the page (cookies and localStorage put back as the first open left them, a modal that opens on load dismissed first), ignores what changes on its own (animations, polling), aborts every request that is not GET / HEAD (so it never changes data), skips destructive controls, clicks controls that appear later (toasts, dialogs), and writes `.cc-audits/<slug>/sweep/<run_id>/`. Its line lists the failing paths; report them in `SWEEP` and set `sweep: "fail"` on the TC record (TC Judging 6).
+- Real data on the screen (a production copy, real names): the run file must say `"sweep_labels": "redact"` (off loopback it is the default) — the sweep then names controls by `<label:…>` and hides page error text. If it does not and the screen shows real data, ask the manager to add it before sweeping; do not sweep by hand to avoid the file.
 - Signed-in screens: after writing the TC's recording, pass `--login-from <TC id>` — the sweep runs that recording's login steps once and reuses the browser state (cookies and localStorage, so token-in-localStorage apps work too). It replaces the state saved for that recording's session, and refuses a recording whose TC text changed. `--session <name>` reuses `replay-state/<name>.json` or the `tc-api-run.js` login of that session. Sweep by hand only when neither works, and say so under `NOTES`.
 - No script (no `run_file`, or it says there is no Playwright module): sweep by hand as below.
 

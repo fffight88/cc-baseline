@@ -25,6 +25,7 @@
 // Output: `.cc-audits/<slug>/sweep/<run_id>/<url>.json` (one file per URL, 0600) and one JSON line.
 // Exit 0 = done, 1 = error, 2 = refused / usage.
 
+const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -115,7 +116,39 @@ function runContext(runFile) {
   const root = fs.realpathSync(api.projectRoot(runFile));
   const dir = path.dirname(fs.realpathSync(path.resolve(runFile)));
   const base = api.baseOrigin(run);
-  return { runFile, run, root, dir, base, origins: new Set([base.origin, ...browserOrigins(run)]) };
+  if (run.sweep_labels !== undefined && !['redact', 'plain'].includes(run.sweep_labels)) throw new Refused('"sweep_labels" must be "redact" or "plain"');
+  // Off loopback the screen may hold real data: redact unless the run file says "plain".
+  const redact = run.sweep_labels === 'redact' || (run.sweep_labels === undefined && !isLoopback(base.hostname));
+  return { runFile, run, root, dir, base, origins: new Set([base.origin, ...browserOrigins(run)]), redact };
+}
+
+function isLoopback(host) {
+  const h = String(host).replace(/^\[|\]$/g, '').toLowerCase();
+  return h === 'localhost' || h.endsWith('.localhost') || /^127\./.test(h) || h === '::1';
+}
+
+// What a result names a control by. With "sweep_labels": "redact" (real-data screens) the
+// text on the control (a person's name in a link) never reaches the result file: it is
+// replaced by a short hash, the same text always giving the same label.
+function shown(rc, c) {
+  if (!c.name) return c.tag;
+  return rc.redact ? `<label:${crypto.createHmac('sha256', labelSalt(rc)).update(String(c.name)).digest('hex').slice(0, 12)}>` : c.name;
+}
+
+// A random key per project (sweep/.label-salt, 0600): a label cannot be matched against a
+// list of names by hashing them, and labels of two projects never line up.
+function labelSalt(rc) {
+  if (rc.salt) return rc.salt;
+  const f = path.join(privateDir(path.join(rc.dir, 'sweep')), '.label-salt');
+  try { fs.writeFileSync(f, crypto.randomBytes(16).toString('hex'), { mode: 0o600, flag: 'wx' }); } catch (e) { if (e.code !== 'EEXIST') throw e; }
+  if (fs.lstatSync(f).isSymbolicLink()) throw new Refused(`${f} must not be a symlink`);
+  rc.salt = fs.readFileSync(f, 'utf8').trim();
+  return rc.salt;
+}
+
+// Error text from the page can carry what the page shows (a record's name): hidden when redacting.
+function hidden(rc, text, what) {
+  return rc.redact ? `${what} (text hidden: sweep_labels redact)` : text;
 }
 
 function privateDir(dir) {
@@ -413,13 +446,13 @@ async function sweepUrl(ctx, rc, urlPath) {
         const active = ['aria-pressed', 'aria-selected', 'aria-current'].some(a => { const v = el.getAttribute(a); return v !== null && v !== 'false'; });
         return { disabled: !!el.disabled || el.getAttribute('aria-disabled') === 'true', covered, active };
       }), STEP_TIMEOUT_MS, 'state').catch(() => null);
-      if (!state) { result.skipped.push({ control: c.name || c.tag, reason: 'gone (re-rendered)' }); return { added: [] }; }
-      if (state.disabled) { result.skipped.push({ control: c.name || c.tag, reason: 'disabled' }); return { added: [] }; }
-      dbg('state', JSON.stringify(c.name).slice(0, 30), JSON.stringify(state));
-      if (state.covered) { result.skipped.push({ control: c.name || c.tag, reason: 'covered (e.g. by an open dialog)' }); return { added: [] }; }
+      if (!state) { result.skipped.push({ control: shown(rc, c), reason: 'gone (re-rendered)' }); return { added: [] }; }
+      if (state.disabled) { result.skipped.push({ control: shown(rc, c), reason: 'disabled' }); return { added: [] }; }
+      dbg('state', JSON.stringify(shown(rc, c)).slice(0, 30), JSON.stringify(state));
+      if (state.covered) { result.skipped.push({ control: shown(rc, c), reason: 'covered (e.g. by an open dialog)' }); return { added: [] }; }
       let r = await clickAndSee(page, ctx, selector, page.url());
       // a click that did not go through judges nothing, whatever else changed on the page meanwhile
-      if (r.clickError) { result.skipped.push({ control: c.name || c.tag, reason: `not clickable: ${r.clickError}` }); return r; }
+      if (r.clickError) { result.skipped.push({ control: shown(rc, c), reason: hidden(rc, `not clickable: ${r.clickError}`, 'not clickable') }); return r; }
       result.clicked++;
       // "no effect" may only mean the handler was not attached yet (client rendering):
       // open the page again, give it more time, and click once more before calling it dead
@@ -429,13 +462,13 @@ async function sweepUrl(ctx, rc, urlPath) {
           await page.waitForTimeout(2000);
           r = await clickAndSee(page, ctx, again, page.url());
           result.retried = (result.retried || 0) + 1;
-          if (r.clickError) { result.skipped.push({ control: c.name || c.tag, reason: `not clickable on retry: ${r.clickError}` }); return r; }
+          if (r.clickError) { result.skipped.push({ control: shown(rc, c), reason: hidden(rc, `not clickable on retry: ${r.clickError}`, 'not clickable on retry') }); return r; }
         }
       }
-      dbg('effect', JSON.stringify(c.name).slice(0, 30), JSON.stringify({ effect: r.effect, nav: r.navigated, err: r.clickError, errors: r.errors.length }));
-      if (!r.effect && !r.errors.length && state.active) { result.skipped.push({ control: c.name || c.tag, reason: 'already active (aria-pressed / selected / current), no change expected' }); return r; }
+      dbg('effect', JSON.stringify(shown(rc, c)).slice(0, 30), JSON.stringify({ effect: r.effect, nav: r.navigated, err: hidden(rc, r.clickError, 'error'), errors: r.errors.length }));
+      if (!r.effect && !r.errors.length && state.active) { result.skipped.push({ control: shown(rc, c), reason: 'already active (aria-pressed / selected / current), no change expected' }); return r; }
       const dead = r.errors.some(e => /ReferenceError|TypeError/.test(e)) || !r.effect;
-      if (dead) result.fail.push({ control: c.name || c.tag, tag: c.tag, reason: r.errors.length ? r.errors[0] : r.noise ? `no effect (page changes on its own: ${r.noise} nodes)` : 'no effect' });
+      if (dead) result.fail.push({ control: shown(rc, c), tag: c.tag, reason: r.errors.length ? hidden(rc, r.errors[0], 'page error') : r.noise ? `no effect (page changes on its own: ${r.noise} nodes)` : 'no effect' });
       return r;
     };
     for (let i = 0; i < first.length; i++) {
@@ -443,12 +476,12 @@ async function sweepUrl(ctx, rc, urlPath) {
       const c = first[i];
       if (seen.has(c.key)) continue;
       seen.add(c.key);
-      if (DESTRUCTIVE_RE.test(c.name) || DESTRUCTIVE_RE.test(c.href)) { result.skipped.push({ control: c.name || c.tag, reason: 'destructive' }); continue; }
-      dbg(urlPath, `#${i}`, c.tag, JSON.stringify(c.name).slice(0, 40), 'open');
+      if (DESTRUCTIVE_RE.test(c.name) || DESTRUCTIVE_RE.test(c.href)) { result.skipped.push({ control: shown(rc, c), reason: 'destructive' }); continue; }
+      dbg(urlPath, `#${i}`, c.tag, JSON.stringify(shown(rc, c)).slice(0, 40), 'open');
       const list = await open();
       dbg(urlPath, `#${i}`, 'click');
       const same = list[i] && list[i].key === c.key ? i : list.findIndex(x => x.key === c.key);
-      if (same < 0) { result.skipped.push({ control: c.name || c.tag, reason: 'gone after reopening (the page differs from the first open)' }); continue; }
+      if (same < 0) { result.skipped.push({ control: shown(rc, c), reason: 'gone after reopening (the page differs from the first open)' }); continue; }
       const reopen = async () => {
         const l2 = await open();
         const k = l2[i] && l2[i].key === c.key ? i : l2.findIndex(x => x.key === c.key);
@@ -460,10 +493,10 @@ async function sweepUrl(ctx, rc, urlPath) {
       for (const a of r.navigated ? [] : r.added || []) {
         if (seen.has(a.key) || known.has(a.key)) continue;   // late controls are keyed without an occurrence index
         seen.add(a.key);
-        if (DESTRUCTIVE_RE.test(a.name)) { result.skipped.push({ control: a.name || a.tag, reason: 'destructive' }); continue; }
-        if (Date.now() > deadline) { result.skipped.push({ control: a.name || a.tag, reason: 'time budget used up' }); continue; }
+        if (DESTRUCTIVE_RE.test(a.name)) { result.skipped.push({ control: shown(rc, a), reason: 'destructive' }); continue; }
+        if (Date.now() > deadline) { result.skipped.push({ control: shown(rc, a), reason: 'time budget used up' }); continue; }
         const exists = await withTimeout(page.$(`[data-cc-sweep="${a.id}"]`), STEP_TIMEOUT_MS, 'find').catch(() => null);
-        if (!exists) { result.skipped.push({ control: a.name || a.tag, reason: 'transient-missed' }); continue; }
+        if (!exists) { result.skipped.push({ control: shown(rc, a), reason: 'transient-missed' }); continue; }
         grow();   // a late control that will be clicked adds its share
         try { await withTimeout(watch(page), STEP_TIMEOUT_MS, 'watch'); } catch { /* page gone */ }
         await judgeOne(a, `[data-cc-sweep="${a.id}"]`);
@@ -471,7 +504,7 @@ async function sweepUrl(ctx, rc, urlPath) {
     }
   } catch (e) {
     result.status = 'error';
-    result.error = String(e.message || e).split('\n')[0].slice(0, 200);
+    result.error = hidden(rc, String(e.message || e).split('\n')[0].slice(0, 200), 'sweep error');
   } finally {
     await page.close().catch(() => {});
   }

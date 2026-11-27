@@ -4655,6 +4655,86 @@ t('UserPromptSubmit hook: a project install registers the project hook once, doc
   });
 });
 
+t('claims.js Phase E fixes: code structure at B with a recipe is established, without one it counts as C; a sentence expected is warned and never swapped (TC phase-e-fixes.code-structure-b/code-b-needs-recipe/sentence-expected/no-sentence-swap)', async () => {
+  const { prepare, score } = require(CLAIMS);
+  const code = (i, extra) => ({ id: `C-000${i}`, text: `src/Report${i}.java declares the role ADMIN${i}`, target: { kind: 'file', ref: `src/Report${i}.java` },
+    channel: 'code', expected: `ADMIN${i}`, impact: 'decision', ...extra });
+  const r = claimsRun({ claims: [code(1), code(2), code(3), code(4)] });
+  try {
+    prepare(r.run, { seed: 3, keyRoot: r.keys });
+    writeVerdicts(r, (id, x, k) => {
+      if (k.canary) return null;
+      const base = { id, verdict: 'SUPPORTED', grade: 'B', evidence: { source: 'code', excerpt: 'hasRole', how: 'file read' } };
+      if (k.orig === 'C-0001') return { ...base, recheck: { file: 'src/Report1.java', line: 3, contains: 'ADMIN1' } };
+      if (k.orig === 'C-0003') return { ...base, recheck: { file: 'src/Report3.java', contains: 'ADMIN3' } };
+      return base;
+    });
+    const sc = score(r.run, { keyRoot: r.keys, jevDir: r.jev });
+    assert.equal(sc.claims['C-0001'].status, 'supported');
+    assert.equal(sc.claims['C-0002'].status, 'not_established');
+    assert.equal(sc.claims['C-0002'].grade, 'C');
+    assert.match(sc.claims['C-0002'].grade_capped, /no file recipe with a line/);
+    assert.equal(sc.claims['C-0003'].status, 'not_established', 'a recipe without its line does not make B');
+  } finally { r.done(); }
+  const sentence = 'the monthly settlement screen totals every lesson payment by teacher';
+  const longs = Array.from({ length: 6 }, (_, i) => ({ id: `C-000${i + 1}`, text: `Screen ${i} says ${sentence} ${i}`, target: { kind: 'screen', ref: `/s${i}` },
+    channel: 'doc', expected: `${sentence} ${i}`, impact: 'descriptive' }));
+  const l = claimsRun({ claims: longs });
+  try {
+    const out = await runNode([CLAIMS, 'lint', l.run], l.env);
+    assert.equal(out.status, 0);
+    assert.match(out.stdout, /C-0003: expected should be the one value the claim asserts/);
+    for (const seed of [1, 2, 3]) {
+      prepare(l.run, { seed, keyRoot: l.keys });
+      const ops = Object.values(claimsKey(l).items).filter(i => i.canary).map(i => i.op);
+      assert.ok(!ops.includes('swap'), `seed ${seed}: no swap canary from a sentence`);
+    }
+  } finally { l.done(); }
+});
+
+t('Phase E fixes: a redacting sweep keeps control text out of its files; publisher loads axe-core locally; doctor warns without it (TC phase-e-fixes.sweep-redact/local-axe/doctor-axe)', async () => {
+  const pub = fs.readFileSync(path.join(ROOT, 'templates', 'agents', 'publisher.md'), 'utf8');
+  const step = pub.slice(pub.indexOf('4. **a11y runtime scan (axe-core)**'), pub.indexOf('Record violations by impact'));
+  assert.ok(!/cdn\.jsdelivr\.net/.test(step), 'no CDN in the a11y step');
+  assert.match(step, /~\/\.claude\/vendor\/node_modules\/axe-core\/axe\.min\.js/);
+  const os = require('os');
+  const { spawnSync } = require('child_process');
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-baseline-home-'));
+  try {
+    fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
+    const env = { ...process.env, HOME: home, USERPROFILE: home };
+    assert.equal(spawnSync(process.execPath, [path.join(ROOT, 'bin', 'cli.js'), '--yes', '--skip-scanners'], { env, encoding: 'utf8' }).status, 0);
+    const doctor = spawnSync(process.execPath, [path.join(ROOT, 'bin', 'cli.js'), '--doctor'], { env, encoding: 'utf8' });
+    assert.match(doctor.stdout, /⚠️ {2}axe-core \(local, publisher a11y scan\)/);
+  } finally { fs.rmSync(home, { recursive: true, force: true }); }
+  const sweepMod = require(TC_SWEEP);
+  if (!HAS_BROWSER) { console.log('     (sweep part skipped: no Playwright module)'); return; }
+  const srv = await httpServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end('<!doctype html><body><main><p id=p>x</p><button type=button>Kim Minsu</button></main></body>');
+  });
+  const q = replayProject(srv.url);
+  try {
+    const run = JSON.parse(fs.readFileSync(q.runFile, 'utf8'));
+    fs.writeFileSync(q.runFile, JSON.stringify({ ...run, sweep_labels: 'redact' }));
+    const out = await cliAsync(TC_SWEEP, ['--run', q.runFile, '--run-id', 'SR', '--urls', '/']);
+    const u = out.json.results['/'];
+    assert.equal(u.fail.length, 1);
+    assert.match(u.fail[0].control, /^<label:[0-9a-f]{12}>$/);
+    const dir = path.join(path.dirname(q.runFile), 'sweep');
+    const files = fs.readdirSync(dir, { recursive: true }).map(f => path.join(dir, String(f))).filter(f => fs.statSync(f).isFile());
+    assert.ok(files.length > 0, 'the sweep wrote its result');
+    for (const f of files) assert.ok(!fs.readFileSync(f, 'utf8').includes('Kim Minsu'), `${f} keeps no control text`);
+    assert.ok(!JSON.stringify(out.json).includes('Kim Minsu'), 'stdout keeps no control text');
+    fs.writeFileSync(q.runFile, JSON.stringify({ ...run, sweep_labels: 'secret' }));
+    assert.throws(() => sweepMod.runContext(q.runFile), /sweep_labels/);
+    fs.writeFileSync(q.runFile, JSON.stringify({ ...run, base_url: 'https://staging.example.com', api_remote_ok: true }));
+    assert.equal(sweepMod.runContext(q.runFile).redact, true, 'off loopback the sweep redacts by default');
+    fs.writeFileSync(q.runFile, JSON.stringify({ ...run, base_url: 'https://staging.example.com', api_remote_ok: true, sweep_labels: 'plain' }));
+    assert.equal(sweepMod.runContext(q.runFile).redact, false, 'plain is an explicit choice');
+  } finally { await srv.close(); q.done(); }
+});
+
 async function run() {
   let pass = 0, fail = 0;
   const failures = [];

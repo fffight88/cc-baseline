@@ -264,12 +264,14 @@ Any violation → fix before reporting (this is a self-fix, not a finding for th
    - Capture **all key states**, not just the default/empty one: empty/new form **and** a form populated with real data **and** any popups/dialogs.
    - Assert each visual-contract item as **PASS/FAIL + a measured computed value** (e.g. alignment = `getComputedStyle(el).textAlign`), not "looks good". Also flag raw/duplicated value rendering as a mismatch.
 3. **Runtime invariants**: on each rendered screen/state assert no "Whitelabel Error Page" text and zero console errors (Aside: the `__e2e` recorder from `reference_browser_tools.md` §3.3, injected right after navigation; Playwright: `browser_console_messages`). A whitelabel/error render or console error → `visual_status: mismatch`. (The full interactive dead-control sweep belongs to e2e-tester — I assert the invariant only on the screens I render.)
-4. **a11y runtime scan (axe-core)**: inject axe-core with a `<script>` tag and run it (Aside: `page.evaluate`; Playwright: `browser_evaluate`). The Aside REPL rejects any code containing `import(`, so use the tag on both:
+4. **a11y runtime scan (axe-core)**: inject the **local** axe-core installed by cc-baseline — `~/.claude/vendor/node_modules/axe-core/axe.min.js` — with `page.addScriptTag({ path })`, then run it. Never load axe (or any script) from a CDN or another host: a screen may show real data, and an external script on it is a way out for that data. Run it where `page` is available — Aside: `send` with `page`; Playwright: `browser_run_code` (`browser_run_code_unsafe` in some versions), not `browser_evaluate`:
    ```js
-   if (!window.axe) await new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/axe-core@4/axe.min.js'; s.onload = ok; s.onerror = () => no(new Error('axe load failed')); document.head.append(s); });
-   return await window.axe.run();
+   const axePath = require('os').homedir() + '/.claude/vendor/node_modules/axe-core/axe.min.js';
+   if (!require('fs').existsSync(axePath)) return { skipped: 'axe-core not installed (run cc-baseline --yes)' };
+   if (!(await page.evaluate(() => !!window.axe))) await page.addScriptTag({ path: axePath });
+   return await page.evaluate(() => window.axe.run());
    ```
-   If the page's Content-Security-Policy blocks the script on Aside, run only this scan on the Playwright fallback (`fallback_reason: aside-unsupported: csp-blocks-axe`).
+   If the file is missing, record `a11y: skipped (axe-core not installed)` and go on — never fall back to a CDN. If the page's Content-Security-Policy refuses the inline script on Aside, run only this scan on the Playwright fallback (`fallback_reason: aside-unsupported: csp-blocks-axe`).
    Record violations by impact (critical/serious/moderate/minor).
 5. **Responsive** (if flag on): resize to each breakpoint and screenshot.
 6. If `base_url` is absent/unreachable → set `visual_status: skipped` and proceed (do not start a server).

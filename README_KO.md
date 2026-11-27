@@ -253,6 +253,10 @@ npm install -g @playwright/mcp --prefix ~/.npm-global
 | `--version`, `-v` | 버전 출력 |
 | `--help`, `-h` | 도움말 표시 |
 
+### axe-core (로컬)
+
+`npm install --prefix ~/.claude/vendor axe-core@4` — publisher의 a11y 런타임 검사는 이 로컬 사본을 `page.addScriptTag({ path })`로 넣습니다. 화면에 실데이터가 있을 수 있고 외부 스크립트는 그 데이터가 나가는 통로가 될 수 있어서, CDN에서는 절대 불러오지 않습니다. 없으면 검사를 건너뛰고 `--doctor`가 경고합니다. `--skip-scanners`면 설치하지 않고, `--uninstall --remove-scanners`로 지웁니다.
+
 ### 설치 확인
 
 ```bash

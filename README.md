@@ -253,6 +253,10 @@ The five `playwright-test-*` MCP server entries in `~/.claude.json` point to the
 | `--version`, `-v` | Print version |
 | `--help`, `-h` | Show help |
 
+### axe-core (local)
+
+`npm install --prefix ~/.claude/vendor axe-core@4` — publisher's a11y runtime scan injects this local copy with `page.addScriptTag({ path })`. It never loads axe from a CDN, because a screen may show real data and an external script on it is a way out for that data. Without it the scan is skipped and `--doctor` warns. Skipped with `--skip-scanners`; removed by `--uninstall --remove-scanners`.
+
 ### Verifying your install
 
 ```bash
