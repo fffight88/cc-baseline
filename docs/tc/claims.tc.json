@@ -43,6 +43,16 @@
       "id": "SRC.claims-ext3-run",
       "kind": "source",
       "locator": "verify-before-report behavior check 2026-11-27, external run 3: recheck gave not_rerunnable for all 10 web items; fact-auditor returned check-verifiers fail (one compound Bash call refused) and next_action rerun, and the orchestrator scored and reported anyway"
+    },
+    {
+      "id": "REQ.claims-followups",
+      "kind": "requirement",
+      "locator": "docs/plans/claims-followups.md"
+    },
+    {
+      "id": "SRC.claims-run1-cost",
+      "kind": "source",
+      "locator": "claims-recheck-web behavior check 2026-11-27: the main session took 14 turns and 85% of the run's cost (cost-state of the run); the 'mainly Rust' claim was re-read on a Cargo.toml line that does not show Rust"
     }
   ],
   "actions": [
@@ -269,6 +279,72 @@
       ],
       "evidence_refs": [
         "REQ.claims-recheck-web"
+      ]
+    },
+    {
+      "id": "ACT.claims.open",
+      "title": "Lint and prepare a run in one call",
+      "actor": "orchestrator",
+      "trigger": "runs claims.js open <run dir>",
+      "preconditions": [
+        "claims.jsonl is written"
+      ],
+      "outputs": [
+        "audit-input.jsonl",
+        "one JSON line with the lint and prepare results"
+      ],
+      "evidence_refs": [
+        "REQ.claims-followups"
+      ]
+    },
+    {
+      "id": "ACT.claims.close",
+      "title": "Score, re-read and report in one call",
+      "actor": "orchestrator",
+      "trigger": "runs claims.js close <run dir>",
+      "preconditions": [
+        "the run was prepared",
+        "verdicts.jsonl exists"
+      ],
+      "outputs": [
+        "score.json",
+        "recheck.json",
+        "report.md",
+        "one JSON line with the counts and the report path"
+      ],
+      "evidence_refs": [
+        "REQ.claims-followups"
+      ]
+    },
+    {
+      "id": "ACT.claims.coverage",
+      "title": "List fact-like tokens of a draft that no claim holds",
+      "actor": "orchestrator",
+      "trigger": "runs claims.js coverage <run dir> --draft <file>",
+      "preconditions": [
+        "claims.jsonl is written",
+        "the draft is a file inside the project"
+      ],
+      "outputs": [
+        "a list of uncovered tokens with their draft lines"
+      ],
+      "evidence_refs": [
+        "REQ.claims-followups"
+      ]
+    },
+    {
+      "id": "ACT.claims.diff",
+      "title": "Show what changed between two runs of the same report",
+      "actor": "orchestrator",
+      "trigger": "runs claims.js diff <old run dir> <new run dir>",
+      "preconditions": [
+        "both runs have score.json"
+      ],
+      "outputs": [
+        "receipts.md in the new run dir"
+      ],
+      "evidence_refs": [
+        "REQ.claims-followups"
       ]
     }
   ],
@@ -2106,6 +2182,610 @@
         "refs": [
           "REQ.claims-recheck-web",
           "SRC.claims-ext3-run"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.open-prepares",
+      "title": "open lints and prepares a clean ledger",
+      "action_refs": [
+        "ACT.claims.open"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claims.jsonl holds 3 valid db claims"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js open on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 0",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        },
+        {
+          "text": "audit-input.jsonl exists in the run dir",
+          "observe": {
+            "channel": "artifact",
+            "key": "audit-input.jsonl"
+          }
+        },
+        {
+          "text": "The output names the mode light",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout .mode"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-followups",
+          "SRC.claims-run1-cost"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.open-lint-stops",
+      "title": "open stops at a lint error",
+      "action_refs": [
+        "ACT.claims.open"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "one claim in claims.jsonl has no channel"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js open on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 1",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        },
+        {
+          "text": "No audit-input.jsonl is written",
+          "observe": {
+            "channel": "artifact",
+            "key": "audit-input.jsonl"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-followups"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.close-one-call",
+      "title": "close scores, re-reads and reports",
+      "action_refs": [
+        "ACT.claims.close"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the run was prepared and every item has a verdict",
+        "one verdict has a file recipe that reproduces"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js close on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 0",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        },
+        {
+          "text": "score.json exists in the run dir",
+          "observe": {
+            "channel": "artifact",
+            "key": "score.json"
+          }
+        },
+        {
+          "text": "recheck.json exists in the run dir",
+          "observe": {
+            "channel": "artifact",
+            "key": "recheck.json"
+          }
+        },
+        {
+          "text": "report.md exists in the run dir",
+          "observe": {
+            "channel": "artifact",
+            "key": "report.md"
+          }
+        },
+        {
+          "text": "The output names the path of report.md",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout .report"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-followups",
+          "SRC.claims-run1-cost"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.close-missing-verdict",
+      "title": "close stops when a verdict is missing",
+      "action_refs": [
+        "ACT.claims.close"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the run was prepared",
+        "one item has no verdict line"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js close on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 1",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        },
+        {
+          "text": "No report.md is written",
+          "observe": {
+            "channel": "artifact",
+            "key": "report.md"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-followups"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.close-not-reproduced",
+      "title": "close reports evidence that did not come back",
+      "action_refs": [
+        "ACT.claims.close"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the run was prepared and every item has a verdict",
+        "one verdict has a file recipe whose text is not in the file"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js close on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 1",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        },
+        {
+          "text": "report.md counts 1 claim under evidence did not reproduce",
+          "observe": {
+            "channel": "artifact",
+            "key": "report.md summary line"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-followups"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.weak-recipe",
+      "title": "A recipe that does not show the expected value is marked weak",
+      "action_refs": [
+        "ACT.claims.close"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the claim of A-0001 expects the value Rust",
+        "the SUPPORTED verdict of A-0001 has a file recipe containing members = [\"svix-server\"]",
+        "the file holds that line"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js close on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "score.json marks the claim of A-0001 as a weak recipe",
+          "observe": {
+            "channel": "artifact",
+            "key": "score.json .claims[…].weak_recipe"
+          }
+        },
+        {
+          "text": "report.md counts 1 weak recipe",
+          "observe": {
+            "channel": "artifact",
+            "key": "report.md summary line"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-followups",
+          "SRC.claims-run1-cost"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.recipe-shows-value",
+      "title": "A recipe that shows the expected value is not marked",
+      "action_refs": [
+        "ACT.claims.close"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the claim of A-0001 expects the value MIT",
+        "the SUPPORTED verdict of A-0001 has a file recipe containing \"spdx_id\":\"MIT\"",
+        "the file holds that line"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js close on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "score.json does not mark the claim of A-0001 as a weak recipe",
+          "observe": {
+            "channel": "artifact",
+            "key": "score.json .claims[…].weak_recipe"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-followups"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.coverage-uncovered",
+      "title": "coverage lists draft tokens that no claim holds",
+      "action_refs": [
+        "ACT.claims.coverage"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "claims.jsonl holds one claim: Table orders has 27 rows",
+        "draft.md line 3 reads The API answers in 340 ms at https://api.example.org/health"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js coverage on the run dir with the draft",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The output lists 340 as uncovered on line 3",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout .uncovered"
+          }
+        },
+        {
+          "text": "The output lists the draft's URL as uncovered on line 3",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout .uncovered"
+          }
+        },
+        {
+          "text": "The output does not list 27",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout .uncovered"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-followups"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.coverage-outside-refused",
+      "title": "coverage refuses a draft outside the project",
+      "action_refs": [
+        "ACT.claims.coverage"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the draft path points outside the project root"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js coverage on the run dir with that draft",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The exit code is 2",
+          "observe": {
+            "channel": "artifact",
+            "key": "exit code"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-followups"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.unverifiable-share",
+      "title": "A run that checked little says so",
+      "action_refs": [
+        "ACT.claims.close"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the run was prepared with 4 claims",
+        "2 of the 4 claims have the verdict UNVERIFIABLE"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js close on the run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The warning output says 2 of 4 claims could not be checked",
+          "observe": {
+            "channel": "artifact",
+            "key": "stderr"
+          }
+        },
+        {
+          "text": "report.md shows could not be checked 2 (50%)",
+          "observe": {
+            "channel": "artifact",
+            "key": "report.md summary line"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-followups"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.sample-risk",
+      "title": "The human sample adds risk-weighted items outside the bound",
+      "action_refs": [
+        "ACT.claims.sample"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a bulk run was scored",
+        "3 claims are decision claims judged at grade C",
+        "the random draw of 5 does not hold them"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js sample on the run dir with --n 5",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "sample.json lists the 3 claims under risk",
+          "observe": {
+            "channel": "artifact",
+            "key": "sample.json .risk"
+          }
+        },
+        {
+          "text": "sample.json keeps 5 items in the random sample",
+          "observe": {
+            "channel": "artifact",
+            "key": "sample.json .items"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-followups"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.diff-receipts",
+      "title": "diff lists what was corrected between two runs",
+      "action_refs": [
+        "ACT.claims.diff"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the old run refuted claim C-0002 (expected 27)",
+        "the new run has C-0002 with expected 31 judged SUPPORTED",
+        "claim C-0003, refuted in the old run, is not in the new run"
+      ],
+      "steps": [
+        {
+          "goal": "Run claims.js diff on the old and the new run dir",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "receipts.md lists C-0002 as corrected from 27 to 31",
+          "observe": {
+            "channel": "artifact",
+            "key": "receipts.md"
+          }
+        },
+        {
+          "text": "receipts.md lists C-0003 as dropped",
+          "observe": {
+            "channel": "artifact",
+            "key": "receipts.md"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-followups"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.claims.verify-claims-short",
+      "title": "/verify-claims uses open and close",
+      "action_refs": [
+        "ACT.claims.install-guides"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "templates/commands/verify-claims.md"
+      ],
+      "steps": [
+        {
+          "goal": "Read the command's steps",
+          "done_when": {
+            "expect": "The steps are read"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The command prepares the run with claims.js open",
+          "observe": {
+            "channel": "artifact",
+            "key": "verify-claims.md steps"
+          }
+        },
+        {
+          "text": "The command finishes the run with claims.js close",
+          "observe": {
+            "channel": "artifact",
+            "key": "verify-claims.md steps"
+          }
+        },
+        {
+          "text": "The command says to write the ledger files in one message",
+          "observe": {
+            "channel": "artifact",
+            "key": "verify-claims.md steps"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.claims-followups",
+          "SRC.claims-run1-cost"
         ]
       },
       "readiness": "ready"

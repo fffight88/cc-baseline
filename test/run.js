@@ -4397,9 +4397,10 @@ t('claims.js recheck: files ±3 lines, logs, read-only SQL; outside paths, secre
     assert.match(fs.readFileSync(path.join(r.run, 'report.md'), 'utf8'), /Evidence re-run: reproduced 3 · differ 2 · refused 6/);
     sample(r.run, { n: 30, seed: 2 });
     const sheet = fs.readFileSync(path.join(r.run, 'sample.md'), 'utf8');
-    const random = sheet.split('## Coverage')[0];
+    const random = sheet.split(/## (?:Coverage|Risk-weighted)/)[0];
     const entries = random.split('\n### ').slice(1);
     assert.equal(entries.length, 30);
+    assert.match(sheet, /## Risk-weighted \(\d+, /, 'evidence that did not come back puts claims outside the draw on the risk list');
     for (const e of entries) assert.match(e, /- Re-read by claims\.js: (?:reproduced|differs|refused|failed|not_rerunnable)/);
     const cli = await runNode([CLAIMS, 'recheck', r.run], r.env);
     assert.equal(cli.status, 1, 'evidence that did not reproduce fails the check');
@@ -4992,12 +4993,351 @@ t('claims guides: fact-auditor writes with Write and runs one plain command per 
   const step7 = cmd.split('\n').find(l => l.startsWith('7. '));
   assert.match(step7, /`next_action: rerun`, `check-verifiers: fail` or names a command it could not run is not a clean run/);
   assert.match(step7, /call fact-auditor once more \(`iteration` \+ 1\)/);
-  assert.match(cmd.split('\n').find(l => l.startsWith('11. ')), /Name what fact-auditor could not run/);
+  assert.match(cmd.split('\n').find(l => l.startsWith('10. ')), /Name what fact-auditor could not run/);
   const guide = tplText('memory', 'reference_claim_verification.md');
   assert.match(mdSection(guide, '## 8. '), /`Bash\(node:\*\)`/);
   assert.match(mdSection(guide, '## 8. '), /A url recipe shows that the text is on the page now/);
   for (const doc of [guide, tplText('agents', 'fact-auditor.md')]) assert.doesNotMatch(doc, /15 s and 2 MB per page/, 'the limits are per request');
   assert.match(guide, /15 s and 2 MB per request, 40 start URLs per run and no new URL after 120 s/);
+});
+
+// ── claims.js follow-ups: open / close, weak recipes, coverage, unverifiable share, risk sample, diff — docs/plans/claims-followups.md
+const readRunJson = (r, f) => JSON.parse(fs.readFileSync(path.join(r.run, f), 'utf8'));
+const realId = (r, orig) => Object.entries(claimsKey(r).items).find(([, k]) => k.orig === orig && !k.canary)[0];
+
+t('claims.js open: lint and prepare in one call; a lint error prepares nothing; a draft adds coverage (TC claims.open-prepares, claims.open-lint-stops)', async () => {
+  const r = claimsRun({ claims: dbClaims(3), spec: { project: 'demo' } });
+  try {
+    fs.writeFileSync(path.join(r.proj, 'draft.md'), 'Table t1 has 4 rows and 99 columns\n');
+    const out = await runNode([CLAIMS, 'open', r.run, '--seed', '2', '--draft', path.join(r.proj, 'draft.md')], r.env);
+    assert.equal(out.status, 0, out.stderr);
+    const res = JSON.parse(out.stdout);
+    assert.equal(res.mode, 'light');
+    assert.equal(res.canaries, 2);
+    assert.ok(fs.existsSync(path.join(r.run, 'audit-input.jsonl')));
+    assert.deepEqual(res.coverage.uncovered.map(u => u.token), ['99']);
+    assert.equal(res.key_file, undefined, 'the key path is not printed');
+  } finally { r.done(); }
+  const bad = dbClaims(3);
+  delete bad[1].channel;
+  const b = claimsRun({ claims: bad });
+  try {
+    const out = await runNode([CLAIMS, 'open', b.run], b.env);
+    assert.equal(out.status, 1);
+    assert.match(out.stderr, /ERROR C-0002: channel must be one of/);
+    assert.ok(!fs.existsSync(path.join(b.run, 'audit-input.jsonl')), 'nothing is prepared on a lint error');
+  } finally { b.done(); }
+  const d = claimsRun({ claims: dbClaims(3) });
+  try {
+    const out = await runNode([CLAIMS, 'open', d.run, '--draft', path.join(d.base, 'elsewhere.md')], d.env);
+    assert.equal(out.status, 2);
+    assert.ok(!fs.existsSync(path.join(d.run, 'audit-input.jsonl')), 'a bad draft stops open before prepare');
+  } finally { d.done(); }
+});
+
+// A prepared run over code.root with one file; `recipes` (by claim id) become SUPPORTED file-recipe verdicts.
+function fileRun(claims, fileLines, recipes, override = () => null) {
+  const { prepare } = require(CLAIMS);
+  const r = claimsRun({ claims });
+  fs.writeFileSync(path.join(r.proj, 'facts.txt'), fileLines.join('\n') + '\n');
+  fs.writeFileSync(path.join(r.run, 'claims-run.json'), JSON.stringify({ project: 'demo', code: { root: r.proj } }));
+  prepare(r.run, { seed: 5, keyRoot: r.keys });
+  writeVerdicts(r, (id, x, k) => override(id, x, k) || (!k.canary && recipes[k.orig]
+    ? { id, verdict: 'SUPPORTED', grade: 'A', evidence: { source: x.channel, excerpt: 'read again' }, recheck: { file: 'facts.txt', contains: recipes[k.orig] } } : null));
+  return r;
+}
+
+t('claims.js close: score, recheck and report in one call; a missing verdict stops it; evidence that did not come back is reported with exit 1 (TC claims.close-one-call, claims.close-missing-verdict, claims.close-not-reproduced)', async () => {
+  const ok = fileRun(dbClaims(3), ['t1 rows: 4'], { 'C-0001': 't1 rows: 4' });
+  try {
+    const out = await runNode([CLAIMS, 'close', ok.run], ok.env);
+    assert.equal(out.status, 0, out.stderr);
+    for (const f of ['score.json', 'recheck.json', 'report.md', 'report.json']) assert.ok(fs.existsSync(path.join(ok.run, f)), f);
+    const res = JSON.parse(out.stdout);
+    assert.equal(res.report, path.join(ok.run, 'report.md'));
+    assert.deepEqual(res.recheck, { reproduced: 1, differs: 0, refused: 0, failed: 0, not_rerunnable: 2, of: 3 });
+    assert.equal(res.counts.supported, 3);
+    assert.deepEqual(res.verifiers, { files: 0, problems: 0 });
+    assert.ok(res.summary.some(l => l.startsWith('- Claims: 3')), 'the report summary lines come back, so the report need not be read');
+    assert.equal(res.ok, undefined);
+    // the single commands still work on the same run
+    assert.equal((await runNode([CLAIMS, 'score', ok.run], ok.env)).status, 0);
+    assert.equal((await runNode([CLAIMS, 'report', ok.run], ok.env)).status, 0);
+  } finally { ok.done(); }
+  const miss = fileRun(dbClaims(3), ['t1 rows: 4'], {});
+  try {
+    const lines = fs.readFileSync(path.join(miss.run, 'verdicts.jsonl'), 'utf8').trim().split('\n');
+    fs.writeFileSync(path.join(miss.run, 'verdicts.jsonl'), lines.slice(1).join('\n') + '\n');
+    const out = await runNode([CLAIMS, 'close', miss.run], miss.env);
+    assert.equal(out.status, 1);
+    assert.match(out.stderr, /no verdict for A-0001/);
+    assert.ok(!fs.existsSync(path.join(miss.run, 'report.md')), 'no report on a failing score');
+    assert.ok(!fs.existsSync(path.join(miss.run, 'recheck.json')));
+  } finally { miss.done(); }
+  const gone = fileRun(dbClaims(3), ['t1 rows: 4'], { 'C-0001': 't1 rows: 5' });
+  try {
+    const out = await runNode([CLAIMS, 'close', gone.run], gone.env);
+    assert.equal(out.status, 1);
+    assert.match(out.stderr, new RegExp(`claims: ${realId(gone, 'C-0001')} differs`));
+    assert.match(fs.readFileSync(path.join(gone.run, 'report.md'), 'utf8'), /evidence did not reproduce 1/);
+    assert.equal(JSON.parse(out.stdout).problems.length, 1);
+  } finally { gone.done(); }
+});
+
+t('claims.js score: a recipe that does not show the expected value is a weak recipe; numbers with separators, other case, booleans and long values are not (TC claims.weak-recipe, claims.recipe-shows-value)', async () => {
+  const claim = (n, text, expected) => ({ id: `C-000${n}`, text, target: { kind: 'file', ref: 'facts.txt' }, channel: 'doc', expected, impact: 'descriptive' });
+  const lines = ['members = ["svix-server"]', '"spdx_id":"MIT"', 'Rust: 1,482,037 bytes', 'license: Apache-2.0', 'servers are listed here', 'a sentence that says many things about the project'];
+  const r = fileRun([
+    claim(1, 'The server is written mainly in Rust', 'Rust'),
+    claim(2, 'The project is licensed under MIT', 'MIT'),
+    claim(3, 'Rust code is 1482037 bytes', 1482037),
+    claim(4, 'The licence is apache-2.0', 'apache-2.0'),
+    claim(5, 'The file lists servers', true),
+    claim(6, 'The file describes the project', 'a sentence that says many things about the project in more than forty characters'),
+  ], lines, { 'C-0001': lines[0], 'C-0002': lines[1], 'C-0003': lines[2], 'C-0004': lines[3], 'C-0005': lines[4], 'C-0006': lines[5] });
+  try {
+    fs.writeFileSync(path.join(r.run, 'claims-run.json'), JSON.stringify({ project: 'demo', code: { root: r.proj }, doc: { paths: [path.join(r.proj, 'facts.txt')] } }));
+    const out = await runNode([CLAIMS, 'close', r.run], r.env);
+    assert.equal(out.status, 0, out.stderr);
+    const sc = readRunJson(r, 'score.json');
+    assert.equal(sc.claims['C-0001'].weak_recipe, true);
+    for (const c of ['C-0002', 'C-0003', 'C-0004', 'C-0005', 'C-0006']) assert.equal(sc.claims[c].weak_recipe, undefined, c);
+    assert.deepEqual(sc.weak_recipes, ['C-0001']);
+    assert.match(out.stderr, /WARN {2}1 supported claim\(s\) are re-read on text that does not show the expected value \(weak recipe\): C-0001/);
+    const md = fs.readFileSync(path.join(r.run, 'report.md'), 'utf8');
+    assert.match(md, /weak recipes 1 \(the re-read text does not show the expected value\)/);
+    assert.match(md, /\| C-0001 [^|]*\| confirmed · weak recipe \|/);
+    assert.deepEqual(JSON.parse(out.stdout).weak_recipes, ['C-0001']);
+    assert.equal(sc.claims['C-0001'].status, 'supported', 'a weak recipe is a mark, not a verdict');
+  } finally { r.done(); }
+  const edge = ['share: 30 %', 'ratio 0.50', 'answer: no way', 'delta -5'];
+  const e = fileRun([claim(1, 'The share is 30%', '30%'), claim(2, 'The ratio is 0.5', 0.5), claim(3, 'The flag is no', 'no'), claim(4, 'The delta is 5', 5)], edge,
+    { 'C-0001': edge[0], 'C-0002': edge[1], 'C-0003': edge[2], 'C-0004': edge[3] });
+  try {
+    fs.writeFileSync(path.join(e.run, 'claims-run.json'), JSON.stringify({ project: 'demo', code: { root: e.proj }, doc: { paths: [path.join(e.proj, 'facts.txt')] } }));
+    const { score } = require(CLAIMS);
+    const sc = score(e.run, { keyRoot: e.keys, jevDir: e.jev });
+    assert.deepEqual(sc.weak_recipes, ['C-0002'], '"30 %" shows 30%; 0.50 is not 0.5; a two-letter word is not checked; 5 is found in "-5" (a known miss)');
+  } finally { e.done(); }
+});
+
+t('claims.js coverage: fact-like tokens of a draft that no claim holds are listed with their line; a draft outside the project or a secret-looking file is refused (TC claims.coverage-uncovered, claims.coverage-outside-refused)', async () => {
+  const r = claimsRun({ claims: [{ id: 'C-0001', text: 'Table orders has 27 rows', target: { kind: 'table', ref: 'orders' }, channel: 'db', expected: 27, impact: 'descriptive' },
+    { id: 'C-0002', text: 'The page is public', target: { kind: 'web', ref: 'docs' }, channel: 'web', expected: true, impact: 'descriptive', source_url: 'https://docs.example.org/guide' }] });
+  try {
+    const draft = path.join(r.proj, 'draft.md');
+    fs.writeFileSync(draft, ['# Report', '', 'The API answers in 340 ms at https://api.example.org/health.',
+      'Table orders has 27 rows (step 3), see `orders_v2`, v1.2.3 of 2026-11-27, 45% of 1,200 rows; guide: https://docs.example.org/guide/', 'Again 340 ms.'].join('\n') + '\n');
+    const out = await runNode([CLAIMS, 'coverage', r.run, '--draft', draft], r.env);
+    assert.equal(out.status, 0, out.stderr);
+    const res = JSON.parse(out.stdout);
+    const at = tok => (res.uncovered.find(u => u.token === tok) || {}).line;
+    assert.equal(at('340'), 3);
+    assert.equal(at('https://api.example.org/health'), 3, 'the trailing full stop is not part of the URL');
+    for (const tok of ['orders_v2', 'v1.2.3', '2026-11-27', '45%', '1,200']) assert.equal(at(tok), 4, tok);
+    for (const tok of ['27', '3', 'https://docs.example.org/guide/']) assert.equal(at(tok), undefined, `${tok} is in the ledger or too small to be a fact`);
+    assert.equal(res.uncovered.filter(u => u.token === '340').length, 1, 'a token is listed once');
+    assert.equal(res.tokens, res.covered + res.uncovered.length);
+    assert.equal(res.draft, 'draft.md');
+    // numbers next to commas and letters; what counts as held
+    fs.writeFileSync(path.join(r.run, 'claims.jsonl'), [
+      { id: 'C-0001', text: 'There are 100 users, 3,000 rows and 약30명 in src/12.js', target: { kind: 'file', ref: 'src/77.js' }, channel: 'code', expected: 100, impact: 'descriptive' },
+      { id: 'C-0002', text: 'The identifier column exists', target: { kind: 'table', ref: 'orders' }, channel: 'db', expected: true, impact: 'descriptive' },
+    ].map(c => JSON.stringify(c)).join('\n') + '\n');
+    fs.writeFileSync(draft, 'rows 100, 3,000, and 40. 약30명, v2 and ES2022; file 77; `id` and `identifier`; 10,20\n');
+    const two = JSON.parse((await runNode([CLAIMS, 'coverage', r.run, '--draft', draft], r.env)).stdout);
+    assert.deepEqual(two.uncovered.map(u => u.token).sort(), ['10', '20', '40', '77', 'id'],
+      'a comma after a number is not part of it; 77 stands only in a target; `id` is not held by "identifier"; 10,20 is two numbers');
+    fs.writeFileSync(draft, Array.from({ length: 60 }, (_, i) => `value ${1000 + i}`).join('\n') + '\n');
+    const many = JSON.parse((await runNode([CLAIMS, 'coverage', r.run, '--draft', draft], r.env)).stdout);
+    assert.equal(many.uncovered.length, 50);
+    assert.equal(many.more, 10);
+    const outside = path.join(r.base, 'outside.md');
+    fs.writeFileSync(outside, 'It has 99 rows\n');
+    const no = await runNode([CLAIMS, 'coverage', r.run, '--draft', outside], r.env);
+    assert.equal(no.status, 2);
+    assert.match(no.stderr, /the draft must be a file inside the project/);
+    fs.writeFileSync(path.join(r.proj, '.env'), 'PORT=8080\n');
+    assert.equal((await runNode([CLAIMS, 'coverage', r.run, '--draft', path.join(r.proj, '.env')], r.env)).status, 2);
+    fs.symlinkSync(outside, path.join(r.proj, 'link.md'));
+    assert.equal((await runNode([CLAIMS, 'coverage', r.run, '--draft', path.join(r.proj, 'link.md')], r.env)).status, 2, 'a link out of the project is not followed');
+    assert.equal((await runNode([CLAIMS, 'coverage', r.run], r.env)).status, 2);
+    // forbidden places: a forbidden path of the run, the run's own files (only draft.md), the key root inside the project
+    fs.mkdirSync(path.join(r.proj, 'tools'));
+    fs.writeFileSync(path.join(r.proj, 'tools', 'golden.md'), 'golden 4242\n');
+    fs.writeFileSync(path.join(r.run, 'claims-run.json'), JSON.stringify({ project: 'demo', forbidden_paths: ['tools'] }));
+    const forb = await runNode([CLAIMS, 'coverage', r.run, '--draft', path.join(r.proj, 'tools', 'golden.md')], r.env);
+    assert.equal(forb.status, 2);
+    assert.match(forb.stderr, /the draft is in a forbidden path/);
+    assert.equal((await runNode([CLAIMS, 'coverage', r.run, '--draft', path.join(r.run, 'claims.jsonl')], r.env)).status, 2, 'a run file is not a draft');
+    fs.writeFileSync(path.join(r.run, 'draft.md'), 'It has 99 rows\n');
+    assert.equal((await runNode([CLAIMS, 'coverage', r.run, '--draft', path.join(r.run, 'draft.md')], r.env)).status, 0, 'draft.md in the run dir is the one exception');
+    const { coverage } = require(CLAIMS);
+    const innerKeys = path.join(r.proj, '.claude', 'claims-keys');
+    fs.mkdirSync(innerKeys, { recursive: true });
+    fs.writeFileSync(path.join(innerKeys, 'k.md'), 'canary 31337\n');
+    assert.throws(() => coverage(r.run, { draft: path.join(innerKeys, 'k.md'), keyRoot: innerKeys }), /forbidden path/, 'a key root inside the project is not readable as a draft');
+    // hostile drafts: one long line, a secret in a URL, an endless digit run — bounded time and output
+    fs.writeFileSync(path.join(r.run, 'claims-run.json'), JSON.stringify({ project: 'demo' }));
+    const longLine = Array.from({ length: 15000 }, (_, i) => 100000 + i).join(' ');
+    fs.writeFileSync(draft, `${longLine}\nsee https://example.org/a?api_key=AKIAABCDEFGHIJKLMNOP&x=1 and ${'7'.repeat(300000)}\n`);
+    const started = Date.now();
+    const hostile = await runNode([CLAIMS, 'coverage', r.run, '--draft', draft], r.env);
+    assert.ok(Date.now() - started < 5000, `a 100 KB line took ${Date.now() - started} ms`);
+    assert.equal(hostile.status, 0, hostile.stderr.slice(0, 200));
+    assert.ok(hostile.stdout.length < 40000, `the output stays small (${hostile.stdout.length} bytes)`);
+    assert.ok(!hostile.stdout.includes('AKIAABCDEFGHIJKLMNOP'), 'a key in a URL query is not printed');
+    const hres = JSON.parse(hostile.stdout);
+    assert.ok(hres.uncovered.every(u => u.token.length <= 200 && u.text.length <= 200));
+    fs.writeFileSync(draft, `see https://example.org/a?api_key=AKIAABCDEFGHIJKLMNOP&x=1 and ${'7'.repeat(300000)}\n`);
+    const tail = JSON.parse((await runNode([CLAIMS, 'coverage', r.run, '--draft', draft], r.env)).stdout);
+    assert.deepEqual(tail.uncovered.map(u => u.token), ['https://example.org/a?…', '7'.repeat(200)], 'the query is cut; an endless digit run is listed cut to 200 characters and never matched');
+  } finally { r.done(); }
+});
+
+t('claims.js score: a run where many claims could not be checked warns and the report shows the share (TC claims.unverifiable-share)', async () => {
+  const r = fileRun(dbClaims(4), ['x'], {}, (id, x, k) => (!k.canary && ['C-0001', 'C-0003'].includes(k.orig) ? { id, verdict: 'UNVERIFIABLE', grade: 'D' } : null));
+  try {
+    const out = await runNode([CLAIMS, 'close', r.run], r.env);
+    assert.equal(out.status, 0, out.stderr);
+    assert.match(out.stderr, /WARN {2}2 of 4 claims could not be checked/);
+    assert.match(fs.readFileSync(path.join(r.run, 'report.md'), 'utf8'), /could not be checked 2 \(50%\)/);
+    const sc = readRunJson(r, 'score.json');
+    assert.deepEqual(sc.unverifiable_share, { all: 0.5, by_channel: { db: 0.5 } });
+    assert.equal(JSON.parse(out.stdout).unverifiable_share, 0.5);
+  } finally { r.done(); }
+  const few = fileRun(dbClaims(3), ['x'], {}, (id, x, k) => (!k.canary && k.orig === 'C-0001' ? { id, verdict: 'UNVERIFIABLE', grade: 'D' } : null));
+  try {
+    const out = await runNode([CLAIMS, 'close', few.run], few.env);
+    assert.doesNotMatch(out.stderr, /could not be checked/, 'fewer than 4 claims: no warning');
+  } finally { few.done(); }
+});
+
+t('claims.js sample: risk-weighted items are added outside the random sample and outside the bound (TC claims.sample-risk)', async () => {
+  const { prepare, score, sample, human, report } = require(CLAIMS);
+  const risky = ['C-0007', 'C-0019', 'C-0033'];
+  const r = claimsRun({ claims: dbClaims(40, { 7: { impact: 'decision' }, 19: { impact: 'decision' }, 33: { impact: 'decision' } }) });
+  try {
+    prepare(r.run, { seed: 4, keyRoot: r.keys });
+    writeVerdicts(r, (id, x, k) => (!k.canary && risky.includes(k.orig) ? { id, verdict: 'SUPPORTED', grade: 'C', evidence: { source: 'db', excerpt: 'read' }, verifier: 'verify-db' } : null));
+    assert.equal(score(r.run, { keyRoot: r.keys, jevDir: r.jev }).ok, true);
+    // a seed whose random 5 hold none of the three
+    let seed = 1;
+    let smp;
+    for (; seed <= 30; seed++) { smp = sample(r.run, { n: 5, seed }); if (!smp.items.some(it => risky.includes(it.claim_id))) break; }
+    assert.ok(seed <= 30, 'a seed was found');
+    const out = await runNode([CLAIMS, 'sample', r.run, '--n', '5', '--seed', String(seed)], r.env);
+    assert.equal(out.status, 0, out.stderr);
+    smp = readRunJson(r, 'sample.json');
+    assert.equal(smp.items.length, 5);
+    assert.deepEqual(smp.risk.map(it => it.claim_id).sort(), risky);
+    assert.ok(smp.risk.every(it => it.risk_score === 4), 'decision (2) + grade C (2)');
+    assert.deepEqual(smp.risk_basis, { recheck: 'not_run' });
+    assert.match(fs.readFileSync(path.join(r.run, 'sample.md'), 'utf8'), /The evidence re-run was not run when this list was made/);
+    const taken = new Set([...smp.items, ...smp.coverage].map(it => it.audit_id));
+    assert.ok(smp.risk.every(it => !taken.has(it.audit_id)), 'a risk item is never also a random or coverage item');
+    assert.match(fs.readFileSync(path.join(r.run, 'sample.md'), 'utf8'), /## Risk-weighted \(3, [^)]*shown, not in the bound\)/);
+    // disagreeing with every risk item leaves the bound untouched
+    const answers = path.join(r.base, 'answers.json');
+    fs.writeFileSync(answers, JSON.stringify(Object.fromEntries([...smp.items.map(it => [it.audit_id, 'agree']), ...smp.risk.map(it => [it.audit_id, 'disagree'])])));
+    const h = human(r.run, { answers, jevDir: r.jev });
+    assert.equal(h.sampled, 5);
+    assert.equal(h.disagree, 0);
+    assert.deepEqual(h.risk, { answered: 3, disagree: 3 });
+    const rep = report(r.run);
+    assert.equal(rep.human.disagree, 0);
+    assert.deepEqual(rep.human.risk, { answered: 3, disagree: 3 });
+    assert.match(fs.readFileSync(path.join(r.run, 'report.md'), 'utf8'), /risk items: 3 disagreement\(s\) in 3 \(not in the bound\)/);
+    // files written before this change: a sample without risk, a human.json without risk
+    const { risk, risk_basis: basis, ...oldSample } = smp;
+    fs.writeFileSync(path.join(r.run, 'sample.json'), JSON.stringify(oldSample));
+    const h2 = human(r.run, { answers, jevDir: r.jev });
+    assert.deepEqual(h2.risk, { answered: 0, disagree: 0 });
+    assert.equal(h2.sampled, 5);
+    const { risk: gone, ...oldHuman } = h2;
+    fs.writeFileSync(path.join(r.run, 'human.json'), JSON.stringify(oldHuman));
+    assert.equal(report(r.run).human.risk, undefined);
+  } finally { r.done(); }
+});
+
+t('claims.js diff: claims not confirmed in the old run are listed as corrected, dropped or unchanged from the two ledgers (TC claims.diff-receipts)', async () => {
+  const { prepare, score } = require(CLAIMS);
+  const old = dbClaims(4, { 2: { text: 'Table t2 has 27 rows', expected: 27 } });
+  const r = claimsRun({ claims: old });
+  try {
+    prepare(r.run, { seed: 2, keyRoot: r.keys });
+    writeVerdicts(r, (id, x, k) => (!k.canary && ['C-0002', 'C-0003', 'C-0004'].includes(k.orig) ? { id, verdict: 'REFUTED', grade: 'A', evidence: { source: 'db', excerpt: 'another value' }, verifier: 'verify-db' } : null));
+    assert.equal(score(r.run, { keyRoot: r.keys, jevDir: r.jev }).ok, true);
+    const run2 = path.join(path.dirname(r.run), 'r2');
+    fs.mkdirSync(run2);
+    const next = [old[0], { ...old[1], text: 'Table t2 has 31 rows', expected: 31 }, old[3],
+      { id: 'C-0009', text: 'Table t9 has 5 rows', target: { kind: 'table', ref: 't9' }, channel: 'db', expected: 5, impact: 'descriptive' }];
+    fs.writeFileSync(path.join(run2, 'claims.jsonl'), next.map(c => JSON.stringify(c)).join('\n') + '\n');
+    const r2 = { ...r, run: run2 };
+    prepare(run2, { seed: 2, keyRoot: r.keys });
+    writeVerdicts(r2, (id, x, k) => (!k.canary && k.orig === 'C-0004' ? { id, verdict: 'REFUTED', grade: 'A', evidence: { source: 'db', excerpt: 'still another value' }, verifier: 'verify-db' } : null));
+    assert.equal(score(run2, { keyRoot: r.keys, jevDir: r.jev }).ok, true);
+    const out = await runNode([CLAIMS, 'diff', r.run, run2], r.env);
+    assert.equal(out.status, 0, out.stderr);
+    assert.deepEqual(JSON.parse(out.stdout), { corrected: 1, dropped: 1, unchanged: 1, added: 1, file: path.join(run2, 'receipts.md') });
+    const md = fs.readFileSync(path.join(run2, 'receipts.md'), 'utf8');
+    assert.match(md, /\| C-0002 \| differs from the evidence \| 27 → 31 \| Table t2 has 31 rows \| confirmed \|/);
+    assert.match(md, /## Dropped[\s\S]*\| C-0003 \| differs from the evidence \|/);
+    assert.match(md, /## Unchanged[\s\S]*\| C-0004 \| differs from the evidence \| differs from the evidence \|/);
+    assert.doesNotMatch(md, /C-0001/, 'a claim that was confirmed is not a correction');
+    assert.ok(!fs.existsSync(path.join(r.run, 'receipts.md')), 'nothing is written into the old run');
+    // a new run that is not scored yet; an object expected whose keys moved is not a correction
+    const run3 = path.join(path.dirname(r.run), 'r3');
+    fs.mkdirSync(run3);
+    fs.writeFileSync(path.join(run3, 'claims.jsonl'), next.map(c => JSON.stringify(c)).join('\n') + '\n');
+    const early = JSON.parse((await runNode([CLAIMS, 'diff', r.run, run3], r.env)).stdout);
+    assert.deepEqual([early.corrected, early.dropped, early.unchanged], [1, 1, 1]);
+    assert.match(fs.readFileSync(path.join(run3, 'receipts.md'), 'utf8'), /\| C-0002 \|[^\n]*\| not judged \|/);
+    const { diff: diffRuns } = require(CLAIMS);
+    const objA = path.join(path.dirname(r.run), 'oa');
+    const objB = path.join(path.dirname(r.run), 'ob');
+    for (const [dir, expected] of [[objA, { a: 1, b: 2 }], [objB, { b: 2, a: 1 }]]) {
+      fs.mkdirSync(dir);
+      fs.writeFileSync(path.join(dir, 'claims.jsonl'), JSON.stringify({ ...old[0], expected }) + '\n');
+    }
+    fs.writeFileSync(path.join(objA, 'score.json'), JSON.stringify({ claims: { 'C-0001': { status: 'refuted' } } }));
+    const same = diffRuns(objA, objB);
+    assert.deepEqual([same.corrected.length, same.unchanged.length], [0, 1]);
+    // receipts.md is never written through a link, and claim text cannot break out of its table cell
+    const lure = path.join(r.base, 'lure.txt');
+    fs.writeFileSync(lure, 'untouched');
+    fs.rmSync(path.join(run3, 'receipts.md'));
+    fs.symlinkSync(lure, path.join(run3, 'receipts.md'));
+    const linked = await runNode([CLAIMS, 'diff', r.run, run3], r.env);
+    assert.equal(linked.status, 2);
+    assert.match(linked.stderr, /receipts\.md is a symlink/);
+    assert.equal(fs.readFileSync(lure, 'utf8'), 'untouched');
+    fs.rmSync(path.join(run3, 'receipts.md'));
+    fs.writeFileSync(path.join(run3, 'claims.jsonl'), [{ ...next[1], text: 'Table <img src=x> | [t2](http://x) `has` 31 rows' }].map(c => JSON.stringify(c)).join('\n') + '\n');
+    await runNode([CLAIMS, 'diff', r.run, run3], r.env);
+    assert.match(fs.readFileSync(path.join(run3, 'receipts.md'), 'utf8'), /Table \\<img src=x\\> \\\| \\\[t2\\\]\(http:\/\/x\) \\`has\\` 31 rows/);
+    // refusals: the same run twice, a run of another project, one argument
+    assert.equal((await runNode([CLAIMS, 'diff', r.run, r.run], r.env)).status, 2);
+    const other = claimsRun({ claims: dbClaims(2) });
+    try { assert.equal((await runNode([CLAIMS, 'diff', r.run, other.run], r.env)).status, 2); } finally { other.done(); }
+    assert.equal((await runNode([CLAIMS, 'diff', r.run], r.env)).status, 2);
+  } finally { r.done(); }
+});
+
+t('claims guides: /verify-claims prepares with open and finishes with close, ledgers written in one message; the guide names the new outputs (TC claims.verify-claims-short)', () => {
+  const steps = tplText('commands', 'verify-claims.md').split('\n');
+  assert.match(steps.find(l => l.startsWith('3. ')), /all files in one message \(parallel Write calls\)/);
+  assert.match(steps.find(l => l.startsWith('4. ')), /`node ~\/\.claude\/scripts\/claims\.js open <run> --seed <n> --draft <the draft file>`/);
+  assert.match(steps.find(l => l.startsWith('7. ')), /`node ~\/\.claude\/scripts\/claims\.js close <run>`/);
+  assert.ok(!steps.some(l => /^\d+\. `claims\.js (score|recheck|report|lint) <run>`/.test(l)), 'no step is a single script command any more');
+  assert.match(steps.find(l => l.startsWith('9. ')), /`claims\.js diff <old run> <new run>` writes `receipts\.md`/);
+  assert.match(steps.join('\n'), /one plain command per Bash call/);
+  const guide = tplText('memory', 'reference_claim_verification.md');
+  const flow = mdSection(guide, '## 4. ');
+  for (const re of [/`claims\.js open <run> \[--draft <file>\]`/, /`claims\.js close <run>`/, /\*\*Coverage\*\*/, /\*\*Weak recipes\*\*/, /\*\*Little checked\*\*/, /\*\*Corrections\*\*/]) assert.match(flow, re);
+  assert.match(mdSection(guide, '## 2. '), /`receipts\.md` \| `claims\.js diff`/);
+  assert.match(mdSection(guide, '## 8. '), /`coverage` compares tokens, so it is a floor/);
+  assert.match(tplText('agents', 'fact-auditor.md'), /it must show the expected value itself/);
 });
 
 // ── work judgment: stakes mode (rule 14) and deciding instead of asking (rule 15) — docs/plans/work-judgment.md, docs/tc/judgment.tc.json

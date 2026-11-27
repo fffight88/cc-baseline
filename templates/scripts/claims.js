@@ -20,6 +20,10 @@
 //   node claims.js sample <run dir> [--n 50] [--seed N]
 //   node claims.js human <run dir> --answers <answers.json>
 //   node claims.js report <run dir>
+//   node claims.js open <run dir> [--seed N] [--mode light|bulk] [--draft <file>]   lint → prepare → coverage
+//   node claims.js close <run dir>                                               score → recheck → report
+//   node claims.js coverage <run dir> --draft <file>
+//   node claims.js diff <old run dir> <new run dir>
 //
 // Exit 0 ok · 1 the check failed (lint errors, a forbidden verifier, missing
 // verdicts, evidence that did not reproduce) · 2 usage or I/O error.
@@ -86,6 +90,12 @@ const WEB_MAX_URLS = 40;
 const WEB_MAX_REDIRECTS = 3;
 const WEB_RUN_BUDGET_MS = 120000;
 const WEB_UA = 'cc-baseline-claims-recheck';
+const UNVERIFIABLE_WARN_MIN = 4;
+const UNVERIFIABLE_WARN_SHARE = 0.3;
+const COVERAGE_MAX = 50;
+const COVERAGE_TOKEN_MAX = 200;   // a longer token is never matched or printed whole
+const COVERAGE_LINE_MAX = 4000;   // tokens are looked for in the first 4000 characters of a line
+const RISK_MAX = 10;
 const SQL_OUT_MAX = 1024 * 1024;
 // Status codes a canary may use instead of a real one, so a changed status still looks like a status.
 const HTTP_STATUSES = [200, 201, 204, 301, 302, 304, 400, 401, 403, 404, 405, 409, 422, 429, 500, 502, 503];
@@ -167,7 +177,7 @@ function runPaths(runDir) {
     input: p('audit-input.jsonl'), freeze: p('freeze.json'), verdicts: p('verdicts.jsonl'),
     verifiers: p('verifiers'), screenTc: p('screen.tc.json'), score: p('score.json'),
     sample: p('sample.json'), sampleMd: p('sample.md'), human: p('human.json'), recheck: p('recheck.json'),
-    reportJson: p('report.json'), reportMd: p('report.md'),
+    reportJson: p('report.json'), reportMd: p('report.md'), receipts: p('receipts.md'),
   };
 }
 
@@ -780,6 +790,23 @@ function codeBCapped(x, v) {
   return x.channel === 'code' && v.grade === 'B' && !(v.recheck && isStr(v.recheck.file) && Number.isInteger(v.recheck.line));
 }
 
+// A value short enough to be looked for as it stands: a number, or a string of at most 40 characters.
+function shortValue(v) {
+  if (typeof v === 'number') return Number.isFinite(v) ? String(v) : null;
+  // a word of one or two letters ("no", "on") is found in almost any passage — not checked
+  return typeof v === 'string' && v.trim().length <= 40 && !/^\p{L}{0,2}$/u.test(v.trim()) ? v.trim() : null;
+}
+
+// A SUPPORTED verdict whose recipe re-reads text that does not show the claim's expected value:
+// recheck can then say "reproduced" about a passage that does not decide the claim.
+function weakRecipe(c, v) {
+  if (v.verdict !== 'SUPPORTED' || !v.recheck || !isStr(v.recheck.contains)) return false;
+  const want = shortValue(c.expected);
+  if (want === null) return false;
+  const fold = t => String(t).toLowerCase().replace(/(?<=\d),(?=\d{3}(?!\d))/g, '').replace(/(?<=\d)\s+(?=%)/g, '');
+  return !hasWhole(fold(v.recheck.contains), fold(want));
+}
+
 function score(runDir, { keyRoot = keyRootDefault(), jevDir = jevDirDefault() } = {}) {
   const p = runPaths(runDir);
   const input = readJsonl(p.input);
@@ -842,7 +869,7 @@ function score(runDir, { keyRoot = keyRootDefault(), jevDir = jevDirDefault() } 
     else if (channels[x.channel].trusted === false) status = 'untrusted';
     else if (c.impact === 'decision' && (grade === 'C' || grade === 'D')) status = 'not_established';
     else status = 'supported';
-    items[k.orig] = { ...row, text: c.text, impact: c.impact, premises: rested, status };
+    items[k.orig] = { ...row, text: c.text, impact: c.impact, premises: rested, status, ...(weakRecipe(c, v) ? { weak_recipe: true } : {}) };
   }
 
   // A canary Jev was asked about is a sample whose answer is known: false. The
@@ -872,6 +899,16 @@ function score(runDir, { keyRoot = keyRootDefault(), jevDir = jevDirDefault() } 
     warnings.push(`no Jev claim sample was stored for this run although ${decidedAB} item(s) were decided at A or B — ask fact-auditor for its calibration samples (step 5), unless Jev has no key`);
   }
 
+  const weak = Object.entries(items).filter(([, r]) => r.weak_recipe).map(([id]) => id);
+  if (weak.length) warnings.push(`${weak.length} supported claim(s) are re-read on text that does not show the expected value (weak recipe): ${weak.join(', ')}`);
+  // How much of the run could not be checked at all — a run with few refutations may simply have checked little.
+  const share = rows => (rows.length ? Number((rows.filter(r => r.status === 'unverifiable').length / rows.length).toFixed(2)) : 0);
+  const all = Object.values(items);
+  const unverifiableShare = { all: share(all), by_channel: Object.fromEntries([...new Set(all.map(r => r.channel))].sort().map(ch => [ch, share(all.filter(r => r.channel === ch))])) };
+  const lost = all.filter(r => r.status === 'unverifiable').length;
+  if (all.length >= UNVERIFIABLE_WARN_MIN && lost / all.length >= UNVERIFIABLE_WARN_SHARE) {
+    warnings.push(`${lost} of ${all.length} claims could not be checked — the run verified little; fix the access in claims-run.json or say so in the answer`);
+  }
   const count = s => Object.values(items).filter(r => r.status === s).length;
   const out = {
     ok: true, run: p.name, mode: freeze.mode, items: input.length, channels,
@@ -887,6 +924,8 @@ function score(runDir, { keyRoot = keyRootDefault(), jevDir = jevDirDefault() } 
       missed: Object.values(channels).reduce((a, c) => a + c.missed.length, 0),
       abstained: Object.values(channels).reduce((a, c) => a + c.abstained, 0),
     },
+    unverifiable_share: unverifiableShare,
+    weak_recipes: weak,
     jev_labeled: jevLabeled,
     jev_samples: jevSamples,
     ...(refused.length ? { jev_label_refused: refused } : {}),
@@ -1273,7 +1312,7 @@ function currentRecheck(p) {
 // A simple random sample of n real verdicts (canaries never) — the error bound is
 // computed on these only. Verdict × channel groups the random draw missed get one
 // extra `coverage` item each, shown to the person but kept out of the bound.
-function sample(runDir, { n = DEFAULT_SAMPLE, seed = 1, coverageMax = 10 } = {}) {
+function sample(runDir, { n = DEFAULT_SAMPLE, seed = 1, coverageMax = 10, riskMax = RISK_MAX } = {}) {
   const p = runPaths(runDir);
   const freeze = readJson(p.freeze);
   checkFreeze(p, freeze);
@@ -1298,7 +1337,24 @@ function sample(runDir, { n = DEFAULT_SAMPLE, seed = 1, coverageMax = 10 } = {})
     return { audit_id: r.audit_id, claim_id: r.orig, text: r.text, channel: r.channel, target: c.target || null,
       verdict: r.verdict, grade: r.grade, evidence: r.evidence, check_at: c.source_url || (c.target && c.target.ref) || null };
   };
-  const out = { run: p.name, n: picked.length, seed, items: picked.map(view), coverage: coverage.map(view) };
+  // Risk-weighted items: the claims most likely to matter if the verifier was wrong. Shown to the
+  // person after the random sample and never part of the bound (the bound needs a simple random draw).
+  const cur = currentRecheck(p);
+  const rcItems = cur.state === 'current' ? cur.rc.items : {};
+  const riskOf = r => {
+    const c = claims.get(r.orig) || {};
+    const rc = rcItems[r.audit_id];
+    return (c.impact === 'decision' ? 2 : 0) + (r.grade === 'D' ? 3 : r.grade === 'C' ? 2 : 0)
+      + (rc && ['differs', 'refused', 'failed'].includes(rc.status) ? 2 : 0) + (r.weak_recipe ? 2 : 0)
+      + (sc.channels[r.channel] && sc.channels[r.channel].trusted !== true ? 1 : 0);
+  };
+  const taken = new Set([...picked, ...coverage].map(r => r.audit_id));
+  const risk = drawn.filter(r => !taken.has(r.audit_id)).map(r => ({ r, s: riskOf(r) })).filter(x => x.s >= 2)
+    .sort((a, b) => b.s - a.s || a.r.audit_id.localeCompare(b.r.audit_id)).slice(0, riskMax);
+  const out = { run: p.name, n: picked.length, seed, items: picked.map(view), coverage: coverage.map(view),
+    risk: risk.map(x => ({ ...view(x.r), risk_score: x.s })),
+    // what the risk scores could see: without a current recheck, "evidence did not come back" is not counted
+    risk_basis: { recheck: cur.state } };
   writeJson(p.sample, out);
   writeSampleSheet(p, out);
   return out;
@@ -1330,6 +1386,9 @@ function writeSampleSheet(p, smp) {
     `Answer as \`{ "answers": { "${smp.items[0] ? smp.items[0].audit_id : 'A-0001'}": "agree", … } }\`, then run \`claims.js human ${p.name} --answers <file>\`.`, '',
     `## Random sample (${smp.items.length}, these make the error bound)`, '', ...smp.items.map(entry)];
   if (smp.coverage.length) md.push(`## Coverage (${smp.coverage.length}, groups the draw missed — shown, not in the bound)`, '', ...smp.coverage.map(entry));
+  if (smp.risk && smp.risk.length) md.push(`## Risk-weighted (${smp.risk.length}, decision claims, grade C or D, weak recipes or evidence that did not come back — shown, not in the bound)`, '',
+    ...(smp.risk_basis && smp.risk_basis.recheck !== 'current' ? [`The evidence re-run was ${smp.risk_basis.recheck === 'stale' ? 'older than the verdicts' : 'not run'} when this list was made, so evidence that did not come back is not counted in it.`, ''] : []),
+    ...smp.risk.map(entry));
   fs.writeFileSync(p.sampleMd, md.join('\n') + '\n', { mode: 0o600 });
 }
 
@@ -1341,7 +1400,7 @@ function human(runDir, { answers, jevDir = jevDirDefault() } = {}) {
   const scored = readJson(p.score).claims;
   const bank = readSamples(jevDir);
   let labeled = 0;
-  const record = (list, inBound) => list.map(it => {
+  const record = (list, group) => list.map(it => {
     const a = given && given[it.audit_id];
     const answer = ['agree', 'disagree', 'skip'].includes(a) ? a : 'skip';
     const sc = scored[it.claim_id] || {};
@@ -1351,9 +1410,10 @@ function human(runDir, { answers, jevDir = jevDirDefault() } = {}) {
       jevLabel(jevDir, { sample: sc.jev_sample, value: claimTrue ? 'PASS' : 'FAIL', source: 'human' });
       labeled++;
     }
-    return { audit_id: it.audit_id, verdict: it.verdict, answer, in_bound: inBound };
+    return { audit_id: it.audit_id, verdict: it.verdict, answer, in_bound: group === 'random', group };
   });
-  const rows = [...record(smp.items, true), ...record(smp.coverage || [], false)];
+  const rows = [...record(smp.items, 'random'), ...record(smp.coverage || [], 'coverage'), ...record(smp.risk || [], 'risk')];
+  const outside = g => ({ answered: rows.filter(r => r.group === g && r.answer !== 'skip').length, disagree: rows.filter(r => r.group === g && r.answer === 'disagree').length });
   const bound = rows.filter(r => r.in_bound);
   const out = {
     run: p.name, sampled: bound.length,
@@ -1361,7 +1421,7 @@ function human(runDir, { answers, jevDir = jevDirDefault() } = {}) {
     agree: bound.filter(r => r.answer === 'agree').length,
     disagree: bound.filter(r => r.answer === 'disagree').length,
     skip: bound.filter(r => r.answer === 'skip').length,
-    coverage: { answered: rows.filter(r => !r.in_bound && r.answer !== 'skip').length, disagree: rows.filter(r => !r.in_bound && r.answer === 'disagree').length },
+    coverage: outside('coverage'), risk: outside('risk'),
     jev_labeled: labeled, items: rows,
   };
   writeJson(p.human, out);
@@ -1410,6 +1470,7 @@ function report(runDir) {
     return r.verdict !== 'UNVERIFIABLE' && rc && ['differs', 'refused', 'failed'].includes(rc.status) ? 'not_reproduced' : r.status;
   };
   const claimsList = Object.entries(sc.claims).map(([id, r]) => ({ id, text: r.text, verdict: r.verdict, grade: r.grade, status: statusOf(r),
+    ...(r.weak_recipe ? { weak_recipe: true } : {}),
     ...(rcItems[r.audit_id] ? { recheck: rcItems[r.audit_id].status } : {}),
     mark: MARK[statusOf(r)], evidence: r.evidence ? [r.evidence.source, r.evidence.excerpt || r.evidence.how].filter(Boolean).join(' — ').slice(0, 300) : null }))
     .sort((a, b) => a.id.localeCompare(b.id));
@@ -1428,7 +1489,7 @@ function report(runDir) {
       const ub = upperBound95(h.disagree, h.answered);
       out.human = { n: h.answered, disagree: h.disagree, upper_bound_95: Number(ub.toFixed(3)),
         statement: `verifier verdicts wrong at most ${(ub * 100).toFixed(1)}% (one-sided 95%), from ${h.disagree} disagreement(s) in ${h.answered} randomly sampled`,
-        ...(h.coverage && h.coverage.answered ? { coverage: h.coverage } : {}) };
+        ...(h.coverage && h.coverage.answered ? { coverage: h.coverage } : {}), ...(h.risk && h.risk.answered ? { risk: h.risk } : {}) };
     } else if (h) {
       out.human = { n: 0, status: 'skipped', statement: 'skipped by the user — no error bound on the verifier\'s reading of the evidence' };
     } else {
@@ -1437,15 +1498,194 @@ function report(runDir) {
   }
   writeJson(p.reportJson, out);
   const md = [`# Claim verification — ${p.name} (${sc.mode})`, ''];
-  md.push(`- Claims: ${claimsList.length} · supported ${counts.supported} · refuted ${counts.refuted} · could not be checked ${counts.unverifiable} · stale ${counts.stale} · premise unchecked ${counts.premise_unverified} · not established ${counts.not_established} · untrusted ${counts.untrusted} · evidence did not reproduce ${counts.not_reproduced}`);
+  md.push(`- Claims: ${claimsList.length} · supported ${counts.supported} · refuted ${counts.refuted} · could not be checked ${counts.unverifiable}${counts.unverifiable && claimsList.length ? ` (${Math.round(counts.unverifiable * 100 / claimsList.length)}%)` : ''} · stale ${counts.stale} · premise unchecked ${counts.premise_unverified} · not established ${counts.not_established} · untrusted ${counts.untrusted} · evidence did not reproduce ${counts.not_reproduced}`);
   md.push(`- Channels: ${Object.entries(channels).map(([k, c]) => `${k} ${c.trusted === null ? 'untested' : c.trusted ? 'trusted' : 'NOT trusted'} (${c.caught}/${c.canaries} canaries)`).join(' · ')}`);
   const rcn = out.recheck;
-  md.push(`- Evidence re-run: ${rcn.status || `reproduced ${rcn.reproduced} · differ ${rcn.differs} · refused ${rcn.refused} · failed ${rcn.failed} · not re-runnable ${rcn.not_rerunnable} (of ${rcn.of} claims and premises)`}`);
-  if (out.human) md.push(`- Human check: ${out.human.statement || out.human.status}${out.human.coverage ? ` · coverage items: ${out.human.coverage.disagree} disagreement(s) in ${out.human.coverage.answered} (not in the bound)` : ''}`);
+  const weakCount = claimsList.filter(c => c.weak_recipe).length;
+  md.push(`- Evidence re-run: ${rcn.status || `reproduced ${rcn.reproduced} · differ ${rcn.differs} · refused ${rcn.refused} · failed ${rcn.failed} · not re-runnable ${rcn.not_rerunnable} (of ${rcn.of} claims and premises)`}${weakCount ? ` · weak recipes ${weakCount} (the re-read text does not show the expected value)` : ''}`);
+  if (out.human) md.push(`- Human check: ${out.human.statement || out.human.status}${out.human.coverage ? ` · coverage items: ${out.human.coverage.disagree} disagreement(s) in ${out.human.coverage.answered} (not in the bound)` : ''}${out.human.risk ? ` · risk items: ${out.human.risk.disagree} disagreement(s) in ${out.human.risk.answered} (not in the bound)` : ''}`);
   md.push('', '| Claim | Status | Grade | Evidence |', '|---|---|---|---|');
-  for (const c of claimsList) md.push(`| ${c.id} ${String(c.text || '').replace(/\|/g, '\\|')} | ${c.mark} | ${c.grade} | ${String(c.evidence || '').replace(/\|/g, '\\|')} |`);
+  for (const c of claimsList) md.push(`| ${c.id} ${String(c.text || '').replace(/\|/g, '\\|')} | ${c.mark}${c.weak_recipe ? ' · weak recipe' : ''} | ${c.grade} | ${String(c.evidence || '').replace(/\|/g, '\\|')} |`);
   fs.writeFileSync(p.reportMd, md.join('\n') + '\n', { mode: 0o600 });
   return out;
+}
+
+// ── coverage: fact-like tokens of a draft that no claim holds ──────────────
+// A floor, not a completeness check: it sees numbers, versions, dates, URLs and `code`
+// spans only — a fact told in plain words is not found.
+
+function draftTokens(line) {
+  const out = [];
+  let rest = line;
+  const take = (re, kind, keep = () => true) => {
+    rest = rest.replace(re, (m, g1) => { const t = kind === 'code' ? g1 : m; if (keep(t)) out.push({ kind, token: t }); return ' '.repeat(m.length); });
+  };
+  take(/https?:\/\/[^\s<>()\[\]"'`]+/g, 'url');
+  take(/`([^`\n]{1,60})`/g, 'code', t => t.trim() !== '');
+  take(/\b\d{4}-\d{2}-\d{2}\b/g, 'date');
+  take(/\bv?\d+(?:\.\d+){2,}\b|\bv\d+(?:\.\d+)+\b/g, 'version');
+  // thousands only in groups of three, so the comma of "100, 200" stays outside; a Latin letter before it
+  // makes it part of a name (v2, ES2022), a Hangul or other letter does not (약30명)
+  take(/(?<![A-Za-z\p{N}_.])\d+(?:,\d{3})*(?:\.\d+)?%?/gu, 'number', t => t.replace(/\D/g, '').length >= 2 || /[.%]/.test(t));
+  return out.map(t => ({ ...t, token: t.kind === 'url' ? t.token.replace(/[.,;:!?]+$/, '') : t.token }));
+}
+
+// The draft as text, or a ClaimsError: a file inside the project, not secret-looking, read like a recheck file.
+function readDraft(p, draft, keyRoot) {
+  if (!isStr(draft)) throw new ClaimsError('coverage needs --draft <file>');
+  const root = projectRoot(p.dir);
+  const real = realish(path.resolve(draft));
+  if (!within(real, root)) throw new ClaimsError('the draft must be a file inside the project');
+  let spec = {};
+  try { spec = readJson(p.run, { optional: true }) || {}; } catch { /* lint reports a broken claims-run.json */ }
+  const runDir = fs.realpathSync(p.dir);
+  // the same places a recipe may not read; inside the run dir only draft.md (the other files are the run's own)
+  if (deniedRoots(spec, p, keyRoot).some(d => d !== runDir && within(real, d))) throw new ClaimsError('the draft is in a forbidden path');
+  if (within(real, runDir) && real !== path.join(runDir, 'draft.md')) throw new ClaimsError('inside the run dir only draft.md may be the draft');
+  if (DENIED_READ_RE.test(path.relative(root, real).split(path.sep).join('/'))) throw new ClaimsError('the draft is a secret-looking file');
+  if (!fs.existsSync(real)) throw new ClaimsError(`no draft ${draft}`);
+  try { return { text: readCapped(real, FILE_MAX), rel: path.relative(root, real) }; } catch (e) {
+    if (e instanceof Refusal) throw new ClaimsError(`cannot read the draft: ${e.message}`);
+    throw e;
+  }
+}
+
+function coverage(runDir, { draft, keyRoot = keyRootDefault() } = {}) {
+  const p = runPaths(runDir);
+  const { text, rel } = readDraft(p, draft, keyRoot);
+  const ledger = [...readJsonl(p.claims), ...(fs.existsSync(p.premises) ? readJsonl(p.premises) : [])];
+  const said = c => [c.text, typeof c.expected === 'object' ? JSON.stringify(c.expected) : c.expected].filter(v => v !== undefined && v !== null).join(' ');
+  // names and URLs may also stand in a claim's target or source; a number counts only where the claim states it
+  const hay = ledger.map(c => [said(c), c.target && c.target.ref, c.source_url].filter(v => v !== undefined && v !== null).join(' ')).join('\n');
+  const plain = t => String(t).replace(/(?<=\d),(?=\d{3}(?!\d))/g, '');
+  const stated = plain(ledger.map(said).join('\n'));
+  const numberIn = tok => new RegExp(`(?<![A-Za-z\\p{N}_.])${escapeRe(tok)}(?!\\p{N}|\\.\\p{N})`, 'u').test(stated);
+  const held = t => (t.kind === 'url' ? hay.includes(t.token.replace(/\/$/, ''))
+    : t.kind === 'code' ? hasWhole(hay, t.token.trim())
+      : t.kind === 'number' ? numberIn(plain(t.token)) || numberIn(plain(t.token).replace(/%$/, ''))
+        : hasWhole(hay, t.token));
+  // What is printed: masked, capped, and for a URL without its query (a key in it is not the fact).
+  const shown = t => clip(t.kind === 'url' ? t.token.replace(/[?#].*$/, m => (m[0] === '?' ? '?…' : '')) : t.token);
+  const seen = new Set();
+  const uncovered = [];
+  let tokens = 0;
+  let covered = 0;
+  let more = 0;
+  text.split('\n').forEach((full, i) => {
+    const line = full.slice(0, COVERAGE_LINE_MAX);
+    let lineText;
+    for (const t of draftTokens(line)) {
+      if (seen.has(t.token)) continue;
+      seen.add(t.token);
+      tokens++;
+      // an over-long token (a 300,000-digit run) is not a fact to look up: listed, never matched
+      if (t.token.length <= COVERAGE_TOKEN_MAX && held(t)) { covered++; continue; }
+      if (uncovered.length >= COVERAGE_MAX) { more++; continue; }
+      if (lineText === undefined) lineText = clip(line);
+      uncovered.push({ token: shown(t), kind: t.kind, line: i + 1, text: lineText });
+    }
+  });
+  return { draft: rel, tokens, covered, uncovered, ...(more ? { more } : {}) };
+}
+
+// ── open / close: the script steps of a run in two calls ───────────────────
+
+// lint → prepare (→ coverage with a draft). Nothing is prepared on a lint error.
+function open(runDir, { seed = 1, rate = DEFAULT_RATE, mode, draft, keyRoot = keyRootDefault() } = {}) {
+  const l = lintRun(runDir);
+  if (l.errors.length) return { ok: false, errors: l.errors, warnings: l.warnings };
+  if (draft) readDraft(runPaths(runDir), draft, keyRoot);   // a bad draft stops here, before anything is prepared
+  const prep = prepare(runDir, { seed, rate, mode, keyRoot });
+  return { ok: true, warnings: l.warnings, ...prep, ...(draft ? { coverage: coverage(runDir, { draft, keyRoot }) } : {}) };
+}
+
+// score → recheck → report. A failing score stops before anything is re-read; evidence that
+// did not come back still gets its report, and the caller its exit 1.
+async function close(runDir, { keyRoot = keyRootDefault(), jevDir = jevDirDefault(), fetchUrl } = {}) {
+  const sc = score(runDir, { keyRoot, jevDir });
+  if (!sc.ok) return { ok: false, stage: 'score', missing: sc.missing, invalid: sc.invalid };
+  const rc = await recheck(runDir, { keyRoot, ...(fetchUrl ? { fetchUrl } : {}) });
+  const rep = report(runDir);
+  const p = runPaths(runDir);
+  return {
+    ok: rc.problems.length === 0, mode: rep.mode, counts: rep.counts, canaries: sc.canaries,
+    untrusted_channels: Object.entries(sc.channels).filter(([, c]) => c.trusted === false).map(([k]) => k),
+    untested_channels: Object.entries(sc.channels).filter(([, c]) => c.trusted === null).map(([k]) => k),
+    verifiers: sc.verifiers, recheck: rc.counts,
+    problems: rc.problems.map(id => ({ id, status: rc.items[id].status, reason: rc.items[id].reason || '' })),
+    weak_recipes: sc.weak_recipes, unverifiable_share: sc.unverifiable_share.all, jev_samples: sc.jev_samples,
+    warnings: sc.warnings, human: rep.human || null, report: p.reportMd,
+    summary: fs.readFileSync(p.reportMd, 'utf8').split('\n').filter(l => l.startsWith('- ')),
+  };
+}
+
+// ── diff: what a later run of the same report corrected ─────────────────────
+
+// Claim statuses of a run: the report's (it knows what did not reproduce), else the score's.
+function runStatuses(p) {
+  const mtime = f => (fs.existsSync(f) ? fs.statSync(f).mtimeMs : -1);
+  // a report older than the score describes an earlier scoring
+  const rep = mtime(p.reportJson) >= mtime(p.score) ? readJson(p.reportJson, { optional: true }) : null;
+  if (rep && Array.isArray(rep.claims)) return new Map(rep.claims.map(c => [c.id, c.status]));
+  const sc = readJson(p.score, { optional: true });
+  return sc && sc.claims ? new Map(Object.entries(sc.claims).map(([id, r]) => [id, r.status])) : null;
+}
+
+function diff(oldDir, newDir) {
+  const a = runPaths(oldDir);
+  const b = runPaths(newDir);
+  const ra = fs.realpathSync(a.dir);
+  const rb = fs.realpathSync(b.dir);
+  if (ra === rb) throw new ClaimsError('diff needs two different runs');
+  const home = path.dirname(ra);
+  if (path.dirname(rb) !== home || path.basename(home) !== 'claims' || path.basename(path.dirname(home)) !== '.cc-audits') {
+    throw new ClaimsError('both runs must be folders of the same .cc-audits/claims');
+  }
+  const was = runStatuses(a);
+  if (!was) throw new ClaimsError(`${a.name} has no score.json — nothing to compare`);
+  const now = runStatuses(b);
+  const oldClaims = new Map(readJsonl(a.claims).map(c => [c.id, c]));
+  const newClaims = new Map(readJsonl(b.claims).map(c => [c.id, c]));
+  const val = v => (v === undefined ? '' : typeof v === 'string' ? v : canonical(v));
+  const out = { old: a.name, new: b.name, corrected: [], dropped: [], unchanged: [], added: [...newClaims.keys()].filter(id => !oldClaims.has(id)).length };
+  for (const [id, o] of [...oldClaims].sort((x, y) => x[0].localeCompare(y[0]))) {
+    const before = was.get(id);
+    if (!before || before === 'supported') continue;
+    const n = newClaims.get(id);
+    const after = n && now ? now.get(id) || 'not judged' : 'not judged';
+    if (!n) out.dropped.push({ id, was: before, text: o.text });
+    else if (n.text !== o.text || val(n.expected) !== val(o.expected)) {
+      out.corrected.push({ id, was: before, now: after, old: { text: o.text, expected: o.expected }, new: { text: n.text, expected: n.expected } });
+    } else out.unchanged.push({ id, was: before, now: after, text: o.text });
+  }
+  // claim text and statuses are data from run files: no table break, no markup
+  const cell = t => clip(String(t === undefined ? '' : t)).replace(/[|<>[\]`]/g, c => `\\${c}`);
+  const mark = st => cell(MARK[st] || st);
+  const md = [`# Corrections — ${cell(a.name)} → ${cell(b.name)}`, '',
+    `Claims that were not confirmed in ${cell(a.name)}, compared by claim id with ${cell(b.name)}. Read from the two ledgers and their results, not from the producer's account.`, '',
+    `- Corrected ${out.corrected.length} · dropped ${out.dropped.length} · unchanged ${out.unchanged.length} · new claims ${out.added}`, ''];
+  if (out.corrected.length) {
+    md.push('## Corrected', '', '| Claim | Was | Expected before → now | Text now | Now |', '|---|---|---|---|---|');
+    for (const c of out.corrected) md.push(`| ${cell(c.id)} | ${mark(c.was)} | ${cell(val(c.old.expected))} → ${cell(val(c.new.expected))} | ${cell(c.new.text)} | ${mark(c.now)} |`);
+    md.push('');
+  }
+  if (out.dropped.length) {
+    md.push('## Dropped', '', '| Claim | Was | Text before |', '|---|---|---|');
+    for (const c of out.dropped) md.push(`| ${cell(c.id)} | ${mark(c.was)} | ${cell(c.text)} |`);
+    md.push('');
+  }
+  if (out.unchanged.length) {
+    md.push('## Unchanged', '', '| Claim | Was | Now | Text |', '|---|---|---|---|');
+    for (const c of out.unchanged) md.push(`| ${cell(c.id)} | ${mark(c.was)} | ${mark(c.now)} | ${cell(c.text)} |`);
+    md.push('');
+  }
+  // never through a link planted in the run dir
+  let fd;
+  try { fd = fs.openSync(b.receipts, fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_TRUNC | (fs.constants.O_NOFOLLOW || 0), 0o600); } catch (e) {
+    throw new ClaimsError(e.code === 'ELOOP' ? 'receipts.md is a symlink — not written' : `cannot write receipts.md (${e.code || e.message})`);
+  }
+  try { fs.writeFileSync(fd, md.join('\n')); } finally { fs.closeSync(fd); }
+  return { ...out, file: b.receipts };
 }
 
 // ── CLI ───────────────────────────────────────────────────────────────────
@@ -1459,7 +1699,11 @@ const USAGE = 'usage: claims.js lint <run dir>\n' +
   '       claims.js recheck <run dir>\n' +
   '       claims.js sample <run dir> [--n 50] [--seed N]\n' +
   '       claims.js human <run dir> --answers <answers.json>\n' +
-  '       claims.js report <run dir>';
+  '       claims.js report <run dir>\n' +
+  '       claims.js open <run dir> [--seed N] [--canary-rate 0.1] [--mode light|bulk] [--draft <file>]   (lint → prepare → coverage)\n' +
+  '       claims.js close <run dir>   (score → recheck → report)\n' +
+  '       claims.js coverage <run dir> --draft <file>\n' +
+  '       claims.js diff <old run dir> <new run dir>';
 
 function intOpt(v, name, def) {
   if (v === undefined) return def;
@@ -1471,7 +1715,9 @@ function intOpt(v, name, def) {
 async function main(argv) {
   const [cmd, ...rest] = argv.slice(2);
   const spec = {
-    lint: {}, 'check-verifiers': {}, 'screen-tc': {}, score: {}, recheck: {}, report: {},
+    lint: {}, 'check-verifiers': {}, 'screen-tc': {}, score: {}, recheck: {}, report: {}, close: {}, diff: {},
+    open: { values: ['--seed', '--canary-rate', '--mode', '--draft'] },
+    coverage: { values: ['--draft'] },
     prepare: { values: ['--seed', '--canary-rate', '--mode'] },
     'import-results': { values: ['--results', '--run-id'] },
     sample: { values: ['--n', '--seed'] },
@@ -1480,9 +1726,37 @@ async function main(argv) {
   if (!spec) { console.error(USAGE); return 2; }
   let opts, positional;
   try { ({ opts, positional } = parseArgs(rest, spec)); } catch (e) { console.error(`claims: ${e.message}\n${USAGE}`); return 2; }
-  if (positional.length !== 1) { console.error(USAGE); return 2; }
+  if (positional.length !== (cmd === 'diff' ? 2 : 1)) { console.error(USAGE); return 2; }
   const run = positional[0];
   try {
+    if (cmd === 'open') {
+      const rate = opts['--canary-rate'] === undefined ? DEFAULT_RATE : Number(opts['--canary-rate']);
+      const r = open(run, { seed: intOpt(opts['--seed'], '--seed', 1), rate, mode: opts['--mode'], draft: opts['--draft'] });
+      for (const e of r.errors || []) console.error(`ERROR ${e}`);
+      for (const w of r.warnings) console.error(`WARN  ${w}`);
+      console.log(JSON.stringify(r.ok ? { mode: r.mode, items: r.items, canaries: r.canaries, audit_input: r.audit_input, warnings: r.warnings.length, ...(r.coverage ? { coverage: r.coverage } : {}) }
+        : { errors: r.errors.length, warnings: r.warnings.length }));
+      return r.ok ? 0 : 1;
+    }
+    if (cmd === 'close') {
+      const r = await close(run);
+      if (r.stage === 'score') {
+        if (r.missing.length) console.error(`claims: no verdict for ${r.missing.join(', ')}`);
+        for (const i of r.invalid) console.error(`ERROR ${i}`);
+        return 1;
+      }
+      for (const w of r.warnings) console.error(`WARN  ${w}`);
+      for (const x of r.problems) console.error(`claims: ${x.id} ${x.status} — ${x.reason}`.trim());
+      const { ok, warnings, ...shown } = r;
+      console.log(JSON.stringify({ ...shown, warnings: warnings.length }));
+      return ok ? 0 : 1;
+    }
+    if (cmd === 'coverage') { console.log(JSON.stringify(coverage(run, { draft: opts['--draft'] }))); return 0; }
+    if (cmd === 'diff') {
+      const r = diff(positional[0], positional[1]);
+      console.log(JSON.stringify({ corrected: r.corrected.length, dropped: r.dropped.length, unchanged: r.unchanged.length, added: r.added, file: r.file }));
+      return 0;
+    }
     if (cmd === 'lint') {
       const r = lintRun(run);
       for (const e of r.errors) console.error(`ERROR ${e}`);
@@ -1540,7 +1814,7 @@ async function main(argv) {
     console.log(JSON.stringify({ mode: r.mode, counts: r.counts, human: r.human || null, file: runPaths(run).reportMd }));
     return 0;
   } catch (e) {
-    console.error(`claims: ${e.message}`);
+    console.error(`claims: ${String(e.message).split('\n')[0].slice(0, 300)}`);
     return 2;
   }
 }
@@ -1549,6 +1823,7 @@ if (require.main === module) main(process.argv).then(code => { process.exitCode 
 
 module.exports = {
   lintRun, prepare, checkVerifiers, screenTc, importResults, score, recheck, sample, human, report, upperBound95,
+  open, close, coverage, diff,
   publicAddress, checkWebUrl, fetchUrlOnce, htmlText,
   keyFileFor, projectRoot, mulberry32, main, ClaimsError, CHANNELS, VERDICTS, GRADES, HTTP_STATUSES,
 };
