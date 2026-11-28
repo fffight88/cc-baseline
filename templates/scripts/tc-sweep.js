@@ -385,136 +385,182 @@ async function clickAndSee(page, ctx, selector, startUrl) {
   return { effect, navigated, clickError, errors: events.errors, added: seen.added, noise: seen.noise };
 }
 
-async function sweepUrl(ctx, rc, urlPath) {
+// Sweeps one path. `more` are extra browser contexts (same login, same routing): the controls are
+// shared out between the contexts and clicked at the same time, one page per context, each
+// control from a fresh open as before. The caller closes the contexts.
+async function sweepUrl(ctx, rc, urlPath, { more = [] } = {}) {
   const target = api.targetUrl(rc.base, urlPath).toString();
-  const page = await ctx.newPage();
   const result = { status: 'clean', fail: [], skipped: [], clicked: 0 };
-  let overlayWait = OVERLAY_WAIT_MS;   // after the first open: wait only if a dialog opened then
   let saved = null;                    // cookies + localStorage as the first open left them
-  try {
-    const open = async () => {
-      // a click may have saved state (language, theme, filters): start every open from the first one's
-      if (saved) {
-        await ctx.clearCookies().catch(() => {});
-        if (saved.cookies.length) await ctx.addCookies(saved.cookies).catch(() => {});
-        let here = null;
-        try { here = new URL(page.url()).origin; } catch { /* about:blank */ }
-        if (here === rc.base.origin && saved.origin === rc.base.origin) {
-          await withTimeout(page.evaluate(items => { localStorage.clear(); for (const [k, v] of items) localStorage.setItem(k, v); }, saved.local), STEP_TIMEOUT_MS, 'restore').catch(() => {});
-        }
-      }
-      dbg(urlPath, 'goto');
-      await page.goto(target, { waitUntil: 'load', timeout: 15000 });
-      dbg(urlPath, 'loaded', page.url());
-      await page.waitForLoadState('networkidle', { timeout: NETWORK_IDLE_MS }).catch(() => {});
-      await settleDom(page);
-      const ov = await dismissStartupOverlay(page, overlayWait);
-      if (!('startup_overlay' in result)) { result.startup_overlay = ov; overlayWait = ov ? OVERLAY_WAIT_MS : 0; } else if (!ov) overlayWait = 0;   // dismissed for good (stored state)
-      if (ov) { dbg(urlPath, 'startup dialog', JSON.stringify(ov)); if (ov.dismissed) await settleDom(page); }
-      if (!saved) {
-        const local = await withTimeout(page.evaluate(() => Object.entries(localStorage)), STEP_TIMEOUT_MS, 'save').catch(() => []);
-        let origin = null;
-        try { origin = new URL(page.url()).origin; } catch { /* about:blank */ }
-        saved = { cookies: await ctx.cookies().catch(() => []), local, origin };
-      }
-      dbg(urlPath, 'list');
-      const list = await withTimeout(listControls(page), STEP_TIMEOUT_MS, 'list controls');
-      await withTimeout(watch(page), STEP_TIMEOUT_MS, 'watch');
-      dbg(urlPath, 'watching');
-      return list;
-    };
-    const started = Date.now();
-    const first = await open();
-    dbg(urlPath, 'controls', first.length);
-    // a page with many controls gets more time; a late control adds its share when it is queued
-    let budget = Math.min(URL_BUDGET_MAX_MS, Math.max(URL_BUDGET_MS, PER_CONTROL_MS * first.length));
-    let deadline = started + budget;
-    const grow = () => { budget = Math.min(URL_BUDGET_MAX_MS, budget + PER_CONTROL_MS); deadline = started + budget; };
-    const seen = new Set();
-    const known = new Set(first.map(c => c.base));   // a re-render of these is not a new control
-    const judgeOne = async (c, selector, retry) => {
-      // a control that is disabled or covered right now is not judged (not a dead control)
-      const state = await withTimeout(page.$eval(selector, el => {
-        el.scrollIntoView({ block: 'center', inline: 'center' });
-        const r = el.getBoundingClientRect();
-        const x = Math.min(Math.max(r.left + r.width / 2, 0), innerWidth - 1), y = Math.min(Math.max(r.top + r.height / 2, 0), innerHeight - 1);
-        const root = el.getRootNode && el.getRootNode().elementFromPoint ? el.getRootNode() : document;
-        const top = root.elementFromPoint(x, y);
-        // something else (a modal backdrop, an overlay) sits on top of the control
-        const covered = !!top && top !== el && !el.contains(top) && !top.contains(el) && r.top < innerHeight && r.bottom > 0;
-        // the current tab / pressed segment / current page link: clicking it again may change nothing
-        const active = ['aria-pressed', 'aria-selected', 'aria-current'].some(a => { const v = el.getAttribute(a); return v !== null && v !== 'false'; });
-        return { disabled: !!el.disabled || el.getAttribute('aria-disabled') === 'true', covered, active };
-      }), STEP_TIMEOUT_MS, 'state').catch(() => null);
-      if (!state) { result.skipped.push({ control: shown(rc, c), reason: 'gone (re-rendered)' }); return { added: [] }; }
-      if (state.disabled) { result.skipped.push({ control: shown(rc, c), reason: 'disabled' }); return { added: [] }; }
-      dbg('state', JSON.stringify(shown(rc, c)).slice(0, 30), JSON.stringify(state));
-      if (state.covered) { result.skipped.push({ control: shown(rc, c), reason: 'covered (e.g. by an open dialog)' }); return { added: [] }; }
-      let r = await clickAndSee(page, ctx, selector, page.url());
-      // a click that did not go through judges nothing, whatever else changed on the page meanwhile
-      if (r.clickError) { result.skipped.push({ control: shown(rc, c), reason: hidden(rc, `not clickable: ${r.clickError}`, 'not clickable') }); return r; }
-      result.clicked++;
-      // "no effect" may only mean the handler was not attached yet (client rendering):
-      // open the page again, give it more time, and click once more before calling it dead
-      if (!r.effect && !r.errors.length && retry && Date.now() < deadline) {
-        const again = await retry();
-        if (again) {
-          await page.waitForTimeout(2000);
-          r = await clickAndSee(page, ctx, again, page.url());
-          result.retried = (result.retried || 0) + 1;
-          if (r.clickError) { result.skipped.push({ control: shown(rc, c), reason: hidden(rc, `not clickable on retry: ${r.clickError}`, 'not clickable on retry') }); return r; }
-        }
-      }
-      dbg('effect', JSON.stringify(shown(rc, c)).slice(0, 30), JSON.stringify({ effect: r.effect, nav: r.navigated, err: hidden(rc, r.clickError, 'error'), errors: r.errors.length }));
-      if (!r.effect && !r.errors.length && state.active) { result.skipped.push({ control: shown(rc, c), reason: 'already active (aria-pressed / selected / current), no change expected' }); return r; }
-      const dead = r.errors.some(e => /ReferenceError|TypeError/.test(e)) || !r.effect;
-      if (dead) result.fail.push({ control: shown(rc, c), tag: c.tag, reason: r.errors.length ? hidden(rc, r.errors[0], 'page error') : r.noise ? `no effect (page changes on its own: ${r.noise} nodes)` : 'no effect' });
-      return r;
-    };
-    for (let i = 0; i < first.length; i++) {
-      if (Date.now() > deadline) { result.status = 'error'; result.error = `time budget (${Math.round(budget / 1000)} s) used up after ${i} of ${first.length} controls`; break; }
-      const c = first[i];
-      if (seen.has(c.key)) continue;
-      seen.add(c.key);
-      if (DESTRUCTIVE_RE.test(c.name) || DESTRUCTIVE_RE.test(c.href)) { result.skipped.push({ control: shown(rc, c), reason: 'destructive' }); continue; }
-      dbg(urlPath, `#${i}`, c.tag, JSON.stringify(shown(rc, c)).slice(0, 40), 'open');
-      const list = await open();
-      dbg(urlPath, `#${i}`, 'click');
-      const same = list[i] && list[i].key === c.key ? i : list.findIndex(x => x.key === c.key);
-      if (same < 0) { result.skipped.push({ control: shown(rc, c), reason: 'gone after reopening (the page differs from the first open)' }); continue; }
-      const reopen = async () => {
-        const l2 = await open();
-        const k = l2[i] && l2[i].key === c.key ? i : l2.findIndex(x => x.key === c.key);
-        return k < 0 ? null : `[data-cc-sweep="${k}"]`;
-      };
-      const r = await judgeOne(c, `[data-cc-sweep="${same}"]`, reopen);
-      // controls that appeared after the click (toast buttons, dialogs): click them now —
-      // unless the click moved to another view, whose controls belong to that page's sweep
-      for (const a of r.navigated ? [] : r.added || []) {
-        if (seen.has(a.key) || known.has(a.key)) continue;   // late controls are keyed without an occurrence index
-        seen.add(a.key);
-        if (DESTRUCTIVE_RE.test(a.name)) { result.skipped.push({ control: shown(rc, a), reason: 'destructive' }); continue; }
-        if (Date.now() > deadline) { result.skipped.push({ control: shown(rc, a), reason: 'time budget used up' }); continue; }
-        const exists = await withTimeout(page.$(`[data-cc-sweep="${a.id}"]`), STEP_TIMEOUT_MS, 'find').catch(() => null);
-        if (!exists) { result.skipped.push({ control: shown(rc, a), reason: 'transient-missed' }); continue; }
-        grow();   // a late control that will be clicked adds its share
-        try { await withTimeout(watch(page), STEP_TIMEOUT_MS, 'watch'); } catch { /* page gone */ }
-        await judgeOne(a, `[data-cc-sweep="${a.id}"]`);
+  const lanes = [ctx, ...more].map(c => ({ ctx: c, page: null, overlayWait: OVERLAY_WAIT_MS }));
+  let started = Date.now();
+  let budget = URL_BUDGET_MS;
+  let deadline = started + budget;
+  const grow = () => { budget = Math.min(URL_BUDGET_MAX_MS, budget + PER_CONTROL_MS); deadline = started + budget; };
+  const seen = new Set();
+  let known = new Set();
+  const makeOpen = lane => async () => {
+    const { page } = lane;
+    // a click may have saved state (language, theme, filters): start every open from the first one's
+    if (saved) {
+      await lane.ctx.clearCookies().catch(() => {});
+      if (saved.cookies.length) await lane.ctx.addCookies(saved.cookies).catch(() => {});
+      let here = null;
+      try { here = new URL(page.url()).origin; } catch { /* about:blank */ }
+      if (here === rc.base.origin && saved.origin === rc.base.origin) {
+        await withTimeout(page.evaluate(items => { localStorage.clear(); for (const [k, v] of items) localStorage.setItem(k, v); }, saved.local), STEP_TIMEOUT_MS, 'restore').catch(() => {});
       }
     }
+    dbg(urlPath, 'goto');
+    await page.goto(target, { waitUntil: 'load', timeout: 15000 });
+    dbg(urlPath, 'loaded', page.url());
+    await page.waitForLoadState('networkidle', { timeout: NETWORK_IDLE_MS }).catch(() => {});
+    await settleDom(page);
+    const ov = await dismissStartupOverlay(page, lane.overlayWait);
+    if (!('startup_overlay' in result)) { result.startup_overlay = ov; lane.overlayWait = ov ? OVERLAY_WAIT_MS : 0; } else if (!ov) lane.overlayWait = 0;   // dismissed for good (stored state)
+    if (ov) { dbg(urlPath, 'startup dialog', JSON.stringify(ov)); if (ov.dismissed) await settleDom(page); }
+    if (!saved) {
+      const local = await withTimeout(page.evaluate(() => Object.entries(localStorage)), STEP_TIMEOUT_MS, 'save').catch(() => []);
+      let origin = null;
+      try { origin = new URL(page.url()).origin; } catch { /* about:blank */ }
+      saved = { cookies: await lane.ctx.cookies().catch(() => []), local, origin };
+    }
+    dbg(urlPath, 'list');
+    const list = await withTimeout(listControls(page), STEP_TIMEOUT_MS, 'list controls');
+    await withTimeout(watch(page), STEP_TIMEOUT_MS, 'watch');
+    dbg(urlPath, 'watching');
+    return list;
+  };
+  const judgeOne = async (lane, c, selector, retry) => {
+    const { page } = lane;
+    // a control that is disabled or covered right now is not judged (not a dead control)
+    const state = await withTimeout(page.$eval(selector, el => {
+      el.scrollIntoView({ block: 'center', inline: 'center' });
+      const r = el.getBoundingClientRect();
+      const x = Math.min(Math.max(r.left + r.width / 2, 0), innerWidth - 1), y = Math.min(Math.max(r.top + r.height / 2, 0), innerHeight - 1);
+      const root = el.getRootNode && el.getRootNode().elementFromPoint ? el.getRootNode() : document;
+      const top = root.elementFromPoint(x, y);
+      // something else (a modal backdrop, an overlay) sits on top of the control
+      const covered = !!top && top !== el && !el.contains(top) && !top.contains(el) && r.top < innerHeight && r.bottom > 0;
+      // the current tab / pressed segment / current page link: clicking it again may change nothing
+      const active = ['aria-pressed', 'aria-selected', 'aria-current'].some(a => { const v = el.getAttribute(a); return v !== null && v !== 'false'; });
+      return { disabled: !!el.disabled || el.getAttribute('aria-disabled') === 'true', covered, active };
+    }), STEP_TIMEOUT_MS, 'state').catch(() => null);
+    if (!state) { result.skipped.push({ control: shown(rc, c), reason: 'gone (re-rendered)' }); return { added: [] }; }
+    if (state.disabled) { result.skipped.push({ control: shown(rc, c), reason: 'disabled' }); return { added: [] }; }
+    dbg('state', JSON.stringify(shown(rc, c)).slice(0, 30), JSON.stringify(state));
+    if (state.covered) { result.skipped.push({ control: shown(rc, c), reason: 'covered (e.g. by an open dialog)' }); return { added: [] }; }
+    let r = await clickAndSee(page, lane.ctx, selector, page.url());
+    // a click that did not go through judges nothing, whatever else changed on the page meanwhile
+    if (r.clickError) { result.skipped.push({ control: shown(rc, c), reason: hidden(rc, `not clickable: ${r.clickError}`, 'not clickable') }); return r; }
+    result.clicked++;
+    // "no effect" may only mean the handler was not attached yet (client rendering):
+    // open the page again, give it more time, and click once more before calling it dead
+    if (!r.effect && !r.errors.length && retry && Date.now() < deadline) {
+      const again = await retry();
+      if (again) {
+        await page.waitForTimeout(2000);
+        r = await clickAndSee(page, lane.ctx, again, page.url());
+        result.retried = (result.retried || 0) + 1;
+        if (r.clickError) { result.skipped.push({ control: shown(rc, c), reason: hidden(rc, `not clickable on retry: ${r.clickError}`, 'not clickable on retry') }); return r; }
+      }
+    }
+    dbg('effect', JSON.stringify(shown(rc, c)).slice(0, 30), JSON.stringify({ effect: r.effect, nav: r.navigated, err: hidden(rc, r.clickError, 'error'), errors: r.errors.length }));
+    if (!r.effect && !r.errors.length && state.active) { result.skipped.push({ control: shown(rc, c), reason: 'already active (aria-pressed / selected / current), no change expected' }); return r; }
+    const dead = r.errors.some(e => /ReferenceError|TypeError/.test(e)) || !r.effect;
+    if (dead) result.fail.push({ control: shown(rc, c), tag: c.tag, reason: r.errors.length ? hidden(rc, r.errors[0], 'page error') : r.noise ? `no effect (page changes on its own: ${r.noise} nodes)` : 'no effect' });
+    return r;
+  };
+  try {
+    for (const lane of lanes) lane.page = await lane.ctx.newPage();
+    started = Date.now();
+    const first = await makeOpen(lanes[0])();
+    dbg(urlPath, 'controls', first.length, 'lanes', lanes.length);
+    // a page with many controls gets more time; a late control adds its share when it is queued
+    budget = Math.min(URL_BUDGET_MAX_MS, Math.max(URL_BUDGET_MS, PER_CONTROL_MS * first.length));
+    deadline = started + budget;
+    known = new Set(first.map(c => c.base));   // a re-render of these is not a new control
+    for (const lane of lanes.slice(1)) lane.overlayWait = result.startup_overlay ? OVERLAY_WAIT_MS : 0;
+    let next = 0;
+    const runLane = async lane => {
+      const open = makeOpen(lane);
+      for (;;) {
+        const i = next++;
+        if (i >= first.length) return;
+        if (Date.now() > deadline) {
+          if (result.status !== 'error') { result.status = 'error'; result.error = `time budget (${Math.round(budget / 1000)} s) used up after ${i} of ${first.length} controls`; }
+          return;
+        }
+        const c = first[i];
+        if (seen.has(c.key)) continue;
+        seen.add(c.key);
+        if (DESTRUCTIVE_RE.test(c.name) || DESTRUCTIVE_RE.test(c.href)) { result.skipped.push({ control: shown(rc, c), reason: 'destructive' }); continue; }
+        dbg(urlPath, `#${i}`, c.tag, JSON.stringify(shown(rc, c)).slice(0, 40), 'open');
+        const list = await open();
+        dbg(urlPath, `#${i}`, 'click');
+        const same = list[i] && list[i].key === c.key ? i : list.findIndex(x => x.key === c.key);
+        if (same < 0) { result.skipped.push({ control: shown(rc, c), reason: 'gone after reopening (the page differs from the first open)' }); continue; }
+        const reopen = async () => {
+          const l2 = await open();
+          const k = l2[i] && l2[i].key === c.key ? i : l2.findIndex(x => x.key === c.key);
+          return k < 0 ? null : `[data-cc-sweep="${k}"]`;
+        };
+        const r = await judgeOne(lane, c, `[data-cc-sweep="${same}"]`, reopen);
+        // controls that appeared after the click (toast buttons, dialogs): click them now —
+        // unless the click moved to another view, whose controls belong to that page's sweep
+        for (const a of r.navigated ? [] : r.added || []) {
+          if (seen.has(a.key) || known.has(a.key)) continue;   // late controls are keyed without an occurrence index
+          seen.add(a.key);
+          if (DESTRUCTIVE_RE.test(a.name)) { result.skipped.push({ control: shown(rc, a), reason: 'destructive' }); continue; }
+          if (Date.now() > deadline) { result.skipped.push({ control: shown(rc, a), reason: 'time budget used up' }); continue; }
+          const exists = await withTimeout(lane.page.$(`[data-cc-sweep="${a.id}"]`), STEP_TIMEOUT_MS, 'find').catch(() => null);
+          if (!exists) { result.skipped.push({ control: shown(rc, a), reason: 'transient-missed' }); continue; }
+          grow();   // a late control that will be clicked adds its share
+          try { await withTimeout(watch(lane.page), STEP_TIMEOUT_MS, 'watch'); } catch { /* page gone */ }
+          await judgeOne(lane, a, `[data-cc-sweep="${a.id}"]`);
+        }
+      }
+    };
+    // a lane that breaks (its page crashed) is an error for the path; the others finish their work
+    const done = await Promise.allSettled(lanes.map(runLane));
+    const broke = done.find(d => d.status === 'rejected');
+    if (broke) throw broke.reason;
   } catch (e) {
     result.status = 'error';
     result.error = hidden(rc, String(e.message || e).split('\n')[0].slice(0, 200), 'sweep error');
   } finally {
-    await page.close().catch(() => {});
+    for (const lane of lanes) if (lane.page) await lane.page.close().catch(() => {});
   }
   if (result.status !== 'error' && result.fail.length) result.status = 'fail';
   if (result.status === 'error' && result.fail.length) result.status = 'fail';
   result.covered = result.skipped.filter(x => /^covered/.test(x.reason)).length;   // many covered = an overlay hid the page
   if (result.covered && result.covered * 2 > result.clicked + result.skipped.length) result.hint = 'a dialog that opens on load covers the page';
   if (result.startup_overlay === null) delete result.startup_overlay;
-  dbg(urlPath, 'done', result.status, `clicked=${result.clicked}`);
+  dbg(urlPath, 'done', result.status, `clicked=${result.clicked}`, `lanes=${lanes.length}`);
   return result;
+}
+
+// How many browser contexts sweep one path at once (CC_SWEEP_LANES, 1–4; default 3).
+function laneCount(env = process.env) {
+  const n = Number(env.CC_SWEEP_LANES);
+  return Number.isInteger(n) && n >= 1 && n <= 4 ? n : 3;
+}
+
+// Extra contexts for sweepUrl's `more`: the same routing and login as `opts`, plus the cookies given.
+// Returns [{ ctx, blocked }] — what each context blocked counts with the first one's.
+async function extraContexts(browser, rc, opts, cookies, env = process.env) {
+  const out = [];
+  try {
+    for (let k = 1; k < laneCount(env); k++) {
+      const x = await openContext(browser, rc, opts);
+      out.push(x);
+      if (cookies && cookies.length) await x.ctx.addCookies(cookies).catch(() => {});
+    }
+  } catch (e) {
+    for (const x of out) await x.ctx.close().catch(() => {});   // none left open when one fails
+    throw e;
+  }
+  return out;
 }
 
 // One file per URL (sweep/<run_id>/<base64url of the path>.json), so testers sweeping
@@ -556,9 +602,15 @@ async function sweep({ runFile, runId, urls, session, loginFrom, env = process.e
     // signed-in screens before any replay: run the recording's login once (cookies or localStorage)
     if (loginFrom !== undefined) session = await require('./tc-replay').saveLoginState(browser, rc, loginFrom, env);
     const { ctx, blocked } = await openContext(browser, rc, { session, blockMutations: true });
+    const extra = await extraContexts(browser, rc, { session, blockMutations: true }, [], env);
+    const more = extra.map(x => x.ctx);
     const results = {};
-    for (const u of urls) results[u] = await sweepUrl(ctx, rc, u);
-    await ctx.close();
+    try {
+      for (const u of urls) results[u] = await sweepUrl(ctx, rc, u, { more });
+    } finally {
+      for (const c of [ctx, ...more]) await c.close().catch(() => {});
+    }
+    blocked.mutations += extra.reduce((n, x) => n + x.blocked.mutations, 0);
     mergeSweep(rc, runId, results);
     const fail = Object.entries(results).filter(([, r]) => r.status !== 'clean').map(([u]) => u);
     return { run_id: runId, urls: urls.length, fail, blocked_mutations: blocked.mutations, results };
@@ -585,4 +637,4 @@ async function main(argv) {
 
 if (require.main === module) main(process.argv).then(c => { process.exitCode = c; });
 
-module.exports = { loadPlaywright, runContext, browserOrigins, openContext, saveState, stateFile, sweepUrl, sweep, readSweep, mergeSweep, normPath, writePrivate, privateDir, DESTRUCTIVE_RE };
+module.exports = { loadPlaywright, runContext, browserOrigins, openContext, saveState, stateFile, sweepUrl, extraContexts, laneCount, sweep, readSweep, mergeSweep, normPath, writePrivate, privateDir, DESTRUCTIVE_RE };

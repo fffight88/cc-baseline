@@ -3784,6 +3784,117 @@ t('tc-replay: api checks — all_equals / not_in with field, own GET request, db
   } finally { await srv.close(); p.done(); }
 });
 
+t('tc-replay: header part, differs_from, console_count, shared-fixture warning and phase times (TC header-part, differs-from, console-count-*, shared-fixture-warning, phase-times)', async () => {
+  const state = { n: 0, same: false, csp: false };
+  const srv = await httpServer((req, res) => {
+    state.n += 1;
+    const nonce = state.same ? 'fixed' : `n${state.n}`;
+    if (req.url.startsWith('/page')) {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      if (state.flood) return res.end(`<!doctype html><body><main><h1>Page</h1></main><script>for (let i = 0; i < 520; i++) console.warn('noise ' + i)</script></body>`);
+      return res.end(`<!doctype html><body><main><h1>Page</h1></main><script>${state.csp ? "console.error(\"Refused to load the image because it violates the following Content Security Policy directive: img-src 'self'\")" : "console.log('ready')"}</script></body>`);
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Content-Security-Policy': `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic'; style-src 'self' 'unsafe-inline'` });
+    res.end('{}');
+  });
+  const p = replayProject(srv.url);
+  try {
+    const doc = JSON.parse(fs.readFileSync(p.tcFile, 'utf8'));
+    doc.test_cases.push({ id: 'TC.f.csp', title: 'csp', surface: 'api', readiness: 'ready', steps: [{ goal: 'GET twice', done_when: { expect: 'answers' } }],
+      expected: [{ text: 'script-src has a nonce', observe: { channel: 'api', key: 'csp' } }, { text: 'the nonce differs', observe: { channel: 'api', key: 'csp' } }] });
+    doc.test_cases.push({ id: 'TC.f.console', title: 'console', surface: 'ui-web', readiness: 'ready', steps: [{ goal: 'open', done_when: { expect: 'page' } }],
+      expected: [{ text: 'no CSP violation in the console', observe: { channel: 'log', key: 'browser console' } }] });
+    doc.test_cases.push({ id: 'TC.f.console2', title: 'console2', surface: 'ui-web', readiness: 'ready', steps: [{ goal: 'open', done_when: { expect: 'page' } }],
+      expected: [{ text: 'no CSP violation in the console', observe: { channel: 'log', key: 'browser console' } }] });
+    fs.writeFileSync(p.tcFile, JSON.stringify(doc));
+    const jjm = require(path.join(ROOT, 'templates', 'scripts', 'tc-jev-judge.js'));
+    const dig2 = (id, d) => require('crypto').createHash('sha256').update(jjm.canonical(d.test_cases.find(t => t.id === id))).digest('hex');
+    const dig = id => dig2(id, doc);
+    const req2 = [{ op: 'request', method: 'GET', path: '/a', session: 's1', save_as: 'first' }, { op: 'request', method: 'GET', path: '/a', session: 's1', save_as: 'second' }];
+    const csp = { schema: 1, tc: 'TC.f.csp', tc_file: 'docs/tc/f.tc.json', tc_digest: dig('TC.f.csp'), status: 'candidate', steps: [{ step: 0, actions: req2 }],
+      expected: [{ index: 0, check: { op: 'api', response: 'first', header: 'content-security-policy', part: 'script-src', includes: "'nonce-" } },
+        { index: 1, check: { op: 'api', response: 'second', header: 'content-security-policy', part: 'script-src', differs_from: 'first' } }] };
+    p.write(csp);
+    assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.csp'])).status, 0);
+    for (const bad of [{ op: 'api', response: 'first', json_path: 'x', part: 'script-src', equals: 1 }, { op: 'api', response: 'second', header: 'x', differs_from: 'first', equals: 'y' },
+      { op: 'api', response: 'second', header: 'x', differs_from: 'second' }]) {
+      p.write({ ...csp, expected: [csp.expected[0], { index: 1, check: bad }] });
+      assert.equal((await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.csp'])).status, 2, JSON.stringify(bad));
+    }
+    // an api TC has no browser console: console_count is refused, also on a log-channel result
+    const docLog = JSON.parse(fs.readFileSync(p.tcFile, 'utf8'));
+    docLog.test_cases.find(t => t.id === 'TC.f.csp').expected[1].observe = { channel: 'log', key: 'console' };
+    fs.writeFileSync(p.tcFile, JSON.stringify(docLog));
+    p.write({ ...csp, tc_digest: dig2('TC.f.csp', docLog), expected: [csp.expected[0], { index: 1, check: { op: 'console_count', grep: ['x'], equals: 0 } }] });
+    const apiCon = await cliAsync(TC_REPLAY, ['check', '--run', p.runFile, '--tc', 'TC.f.csp']);
+    assert.equal(apiCon.status, 2);
+    assert.match(apiCon.stderr, /console_count reads a browser console/);
+    fs.writeFileSync(p.tcFile, JSON.stringify(doc));
+    p.write(csp, { accept: true });
+    let r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'H1', '--tcs', 'TC.f.csp']);
+    assert.equal(r.status, 0, r.stderr);
+    let last = p.lines().pop();
+    assert.deepEqual(last.expected.map(e => e.verdict), ['PASS', 'PASS']);
+    assert.match(last.expected[0].observed, /^script-src /);
+    assert.ok(!/style-src/.test(last.expected[0].observed), last.expected[0].observed);
+    assert.match(last.expected[1].observed, /^differs from first/);
+    state.same = true;
+    await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'H2', '--tcs', 'TC.f.csp']);
+    last = p.lines().pop();
+    assert.equal(last.expected[1].verdict, 'FAIL');
+    assert.match(last.expected[1].observed, /^same as first/);
+    if (!HAS_BROWSER) { console.log('     (console part skipped: no Playwright module)'); return; }
+    const con = id => ({ schema: 1, tc: id, tc_file: 'docs/tc/f.tc.json', tc_digest: dig(id), status: 'candidate', start_path: '/page', session: 'u1',
+      login: [{ op: 'goto', path: '/login' }],   // a JSON answer: no console message of its own
+      steps: [{ step: 0, actions: [], done_when: { op: 'visible', target: { role: 'heading', name: 'Page' } } }],
+      expected: [{ index: 0, check: { op: 'console_count', grep: ['Content Security Policy'], equals: 0 } }], invariants_baseline: { http: [], console: [] } });
+    p.write(con('TC.f.console'), { accept: true });
+    p.write(con('TC.f.console2'), { accept: true });
+    r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'C1', '--tcs', 'TC.f.console', '--no-sweep']);
+    assert.equal(r.status, 0, r.stderr);
+    last = p.lines().pop();
+    assert.deepEqual([last.expected[0].verdict, last.expected[0].observed], ['PASS', '0 console message(s)']);
+    for (const k of ['steps', 'expected', 'sweep']) assert.ok(Number.isInteger(r.json.tcs[0].ms[k]), `ms.${k} in ${JSON.stringify(r.json.tcs[0].ms)}`);
+    assert.ok(last.replay_ms && Number.isInteger(last.replay_ms.steps));
+    state.csp = true;
+    fs.writeFileSync(p.runFile, JSON.stringify({ base_url: srv.url, readable: {}, tcs: { 'TC.f.console': { fixture: 'account-1' }, 'TC.f.console2': { fixture: 'account-1' } } }));
+    r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'C2', '--tcs', 'TC.f.console,TC.f.console2', '--no-sweep']);
+    assert.equal(r.status, 0, r.stderr);
+    const w = r.stderr.split('\n').find(l => l.startsWith('WARN '));
+    assert.ok(w, r.stderr);
+    for (const x of ['account-1', 'TC.f.console', 'TC.f.console2']) assert.ok(w.includes(x), `${x} in ${w}`);
+    const c2 = p.lines().filter(l => l.run_id === 'C2');
+    assert.equal(c2[0].expected[0].verdict, 'FAIL');
+    assert.match(c2[0].expected[0].observed, /^1 console message\(s\) — first: Refused to load the image/);
+    // a setup command on every TC of the group silences the warning
+    const tdir = path.join(p.proj, 'scripts'); fs.mkdirSync(tdir, { recursive: true });
+    fs.writeFileSync(path.join(tdir, 'reset.js'), '');
+    require('child_process').execFileSync('git', ['init', '-q'], { cwd: p.proj });
+    require('child_process').execFileSync('git', ['add', 'scripts/reset.js'], { cwd: p.proj });
+    require('child_process').execFileSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-qm', 'x'], { cwd: p.proj });
+    fs.writeFileSync(p.runFile, JSON.stringify({ base_url: srv.url, readable: {}, tcs: { 'TC.f.console': { fixture: 'account-1', data: { reset_command: 'node scripts/reset.js' } }, 'TC.f.console2': { fixture: 'account-1', data: { reset_command: 'node scripts/reset.js' } } } }));
+    p.write({ ...con('TC.f.console'), setup: [{ op: 'command', name: 'reset_command' }] }, { accept: true });
+    p.write({ ...con('TC.f.console2'), setup: [{ op: 'command', name: 'reset_command' }] }, { accept: true });
+    r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'C3', '--tcs', 'TC.f.console,TC.f.console2', '--no-sweep']);
+    assert.equal(r.status, 0, r.stderr);
+    assert.ok(!/WARN /.test(r.stderr), r.stderr);
+    // past the 500-message cap the count is unknown: FAIL, and observed says so
+    state.flood = true;
+    r = await cliAsync(TC_REPLAY, ['run', '--run', p.runFile, '--run-id', 'C4', '--tcs', 'TC.f.console', '--no-sweep']);
+    assert.equal(r.status, 0, r.stderr);
+    last = p.lines().pop();
+    assert.equal(last.expected[0].verdict, 'FAIL');
+    assert.match(last.expected[0].observed, /past the 500-message cap were not read/);
+  } finally { await srv.close(); p.done(); }
+});
+
+t('tc-sweep: lanes — CC_SWEEP_LANES picks 1–4 contexts, anything else is 3', () => {
+  assert.equal(sweepMod.laneCount({}), 3);
+  assert.equal(sweepMod.laneCount({ CC_SWEEP_LANES: '1' }), 1);
+  assert.equal(sweepMod.laneCount({ CC_SWEEP_LANES: '4' }), 4);
+  for (const v of ['0', '5', 'x', '2.5']) assert.equal(sweepMod.laneCount({ CC_SWEEP_LANES: v }), 3, v);
+});
+
 t('tc-sweep: controls of a page that re-renders after load are clicked, not reported transient or dead', async () => {
   if (!HAS_BROWSER) { console.log('     (skipped: no Playwright module)'); return; }
   const srv = await httpServer((req, res) => {

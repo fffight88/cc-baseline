@@ -8,6 +8,13 @@ versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Changed
+- **Replay sees what grimbang B·D could not replay** (`docs/plans/replay-observe.md`, 6 new TCs in `docs/tc/tc-replay.tc.json`).
+  - `console_count` (channel `log`, screen TCs): counts the browser console messages of the TC's pages that contain every `grep` text (`types` defaults to error and warning); observed shows the count and the first message.
+  - api checks: `part` picks one `;`-separated part of a header by its first word (a CSP directive); `differs_from: "<save_as>"` passes when the same value read from another saved response differs (a per-request nonce).
+  - `run` warns when TCs of the round share a fixture (or a signed-in recording session) and one has no `setup` command, with the order they ran in.
+  - Every TC's output entry has `ms` per phase (open, setup, login, steps, expected, settle, sweep, teardown); the result line has `replay_ms`.
+  - `reference_test_env.md`: stop a server by its port (`ss` → pid → `kill`), never `pkill -f` with its command line.
+  - The dead-control sweep clicks one path's controls in 3 browser contexts at once (`CC_SWEEP_LANES`, 1–4), each control still from a fresh open. Measured on grimbang (dev server): the sweep of `/` and `/dashboard` went from 296 s to 188 s, both clean; the sweep was 75% of a 397 s replay round.
 - **Claim verification follow-ups** (`docs/plans/claims-followups.md`, 13 new TCs in `docs/tc/claims.tc.json`). A verification run cost most in the orchestrator's turns (14 turns, 85% of a measured run), not in the verifier.
   - `claims.js open <run> [--draft <file>]` (lint → prepare → coverage) and `claims.js close <run>` (score → recheck → report), one JSON line each; `/verify-claims` uses them, writes the ledgers in one message and runs one plain command per call. The single commands remain.
   - Weak recipes: `score` marks a SUPPORTED claim whose recipe text does not show the expected value (a number or a string of at most 40 characters); the report counts them. A mark, not a verdict.

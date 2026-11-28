@@ -277,7 +277,9 @@ File: `<project_dir>/.cc-audits/<plan-slug>/replay/<tc id>.json`, then `node ~/.
     - `field` picks one key of each item (e.g. `"field": "status"`)
   - `api`: `{ "op": "api", "response": "<save_as>", "status": 403 }`, a response header `{ "op": "api", "response": "<save_as>", "header": "x-frame-options", "equals": "DENY" }`, or its own read: `{ "op": "api", "request": { "method": "GET", "path": "/api/orders?page=2", "session": "<name>" }, "json_path": "orders[0].id", "field": "id", "not_in": "{{p1}}" }`
   - `db`: `{ "op": "db", "json_path": "…", "equals": … }` or `"count": n` / `"count": "{{captured_total}}"`
-  - `log`: `{ "op": "log_count", "grep": [...], "equals": n }`
+    - one `;`-separated part of a header, picked by its first word (a CSP directive): `{ "op": "api", "response": "<save_as>", "header": "content-security-policy", "part": "script-src", "includes": "'nonce-" }`
+    - two responses: `"differs_from": "<other save_as>"` instead of a comparison — the same value (`header`, `part` or `json_path`) read from both must differ, e.g. a per-request nonce
+  - `log`: a log file `{ "op": "log_count", "grep": [...], "equals": n }`; the browser console of this TC (screen TCs, every page it opened) `{ "op": "console_count", "grep": ["Content Security Policy"], "equals": 0 }` — counts messages that contain every grep text, `types` defaults to `["error", "warning"]`
   - Jev / LLM-judged screen results: `"judge": "jev"` (+ `region`, `item`)
   - what was NOT_OBSERVABLE: `"not_observable": true`
   - The check must test the same fact as the sentence; a looser check (e.g. `includes` where you compared the whole text) is a wrong recording.

@@ -83,6 +83,16 @@
       "id": "DEC.commands-docker",
       "kind": "decision",
       "locator": "user decision 2026-11-20: run-file commands accept node, bash, sh, python3"
+    },
+    {
+      "id": "REQ.replay-observe",
+      "kind": "requirement",
+      "locator": "docs/plans/replay-observe.md"
+    },
+    {
+      "id": "SRC.grimbang-bd-gaps",
+      "kind": "source",
+      "locator": ".cc-audits/HANDOFF-next.md grimbang B·D 결과: console, header directive, two-response comparison, shared-account order, 14 min round"
     }
   ],
   "actions": [
@@ -1500,6 +1510,285 @@
         "kind": "requirement",
         "refs": [
           "DEC.commands-docker"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.console-count-pass",
+      "title": "A console_count check passes when no message matches",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "an accepted recording whose expected result on channel log is console_count with grep 'Content Security Policy' and equals 0",
+        "the page logs no such message"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The result line has verdict PASS for that expected result with observed '0 console message(s)'",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-results.jsonl"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.replay-observe",
+          "SRC.grimbang-bd-gaps"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.console-count-fail",
+      "title": "A console_count check fails when the page logs a matching message",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "the same recording",
+        "the page logs one console error containing 'Content Security Policy'"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The result line has verdict FAIL for that expected result with observed '1 console message(s)'",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-results.jsonl"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.replay-observe"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.header-part",
+      "title": "An api check reads one part of a header",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "an accepted api recording whose check reads header content-security-policy part script-src with includes 'nonce-'",
+        "the server sends script-src with a nonce and style-src without one"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The result line has verdict PASS for that check",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-results.jsonl"
+          }
+        },
+        {
+          "text": "The observed text of that check starts with 'script-src'",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-results.jsonl"
+          }
+        },
+        {
+          "text": "The observed text of that check does not contain 'style-src'",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-results.jsonl"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.replay-observe",
+          "SRC.grimbang-bd-gaps"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.differs-from",
+      "title": "An api check compares two saved responses",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "an accepted api recording with two GET requests saved as first and second and a check on second with differs_from first on one header"
+      ],
+      "steps": [
+        {
+          "goal": "Run it against a server that sends a new header value per request",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        },
+        {
+          "goal": "Run it against a server that sends the same value twice",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The first run's result line has verdict PASS for that check",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-results.jsonl"
+          }
+        },
+        {
+          "text": "The second run's result line has verdict FAIL for that check",
+          "observe": {
+            "channel": "artifact",
+            "key": "tc-results.jsonl"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.replay-observe",
+          "SRC.grimbang-bd-gaps"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.shared-fixture-warning",
+      "title": "A run warns when TCs share a fixture without a reset",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "a run file where two TCs name the same fixture and neither recording has a setup command"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run for both TCs",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "stderr has a WARN line that names the fixture",
+          "observe": {
+            "channel": "artifact",
+            "key": "stderr"
+          }
+        },
+        {
+          "text": "That WARN line names the first TC id",
+          "observe": {
+            "channel": "artifact",
+            "key": "stderr"
+          }
+        },
+        {
+          "text": "That WARN line names the second TC id",
+          "observe": {
+            "channel": "artifact",
+            "key": "stderr"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.replay-observe",
+          "SRC.grimbang-bd-gaps"
+        ]
+      },
+      "readiness": "ready"
+    },
+    {
+      "id": "TC.tc-replay.phase-times",
+      "title": "A run prints how long each phase took",
+      "action_refs": [
+        "ACT.tc-replay.run"
+      ],
+      "level": "functional",
+      "surface": "cli",
+      "preconditions": [
+        "an accepted screen recording"
+      ],
+      "steps": [
+        {
+          "goal": "Run tc-replay.js run for that TC",
+          "done_when": {
+            "expect": "The command exits"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "text": "The TC's output line has a millisecond time for steps",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout"
+          }
+        },
+        {
+          "text": "The TC's output line has a millisecond time for expected",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout"
+          }
+        },
+        {
+          "text": "The TC's output line has a millisecond time for sweep",
+          "observe": {
+            "channel": "artifact",
+            "key": "stdout"
+          }
+        }
+      ],
+      "basis": {
+        "kind": "requirement",
+        "refs": [
+          "REQ.replay-observe",
+          "SRC.grimbang-bd-gaps"
         ]
       },
       "readiness": "ready"

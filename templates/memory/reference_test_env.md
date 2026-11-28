@@ -16,6 +16,7 @@ type: reference
 | Bind test databases and dev servers to 127.0.0.1 | Publish a dev database on 0.0.0.0 on a public machine |
 | Replace a paid third-party API with a loopback fake server only when approved, recorded in `external_stubs` and named in the report | Override functions in JS, or report faked results without saying so |
 | Run `test-env-check.js` before the first round; fix every `fail` | Discover CSP or cookie problems in the middle of a round |
+| Stop a server you started by its port (`ss -ltnpH 'sport = :3200'` → pid → `kill <pid>`) | `pkill -f "<its command line>"` — the pattern is in your own shell's command too, so it kills that shell |
 
 ---
 
@@ -88,6 +89,12 @@ export async function GET(request: Request) {
   ```
 - Start dev servers on loopback too (`vite --host 127.0.0.1`, `uvicorn --host 127.0.0.1`).
 - `test-env-check.js` warns (`docker_ports`) when a compose container of the project publishes on `0.0.0.0` / `[::]`.
+- **Stopping a server you started:** find it by its port, not by its command line.
+  ```bash
+  ss -ltnpH 'sport = :3200'        # users:(("next-server (v1…",pid=12345,fd=…))
+  kill 12345                       # the pid from that line
+  ```
+  `pkill -f "next dev -p 3200"` also matches the shell that runs it (its own command line holds the same text), so it kills that shell before or with the server. `lsof` skips a process whose name has parentheses (`next-server (v16.4.6)`); `ss` does not. At the end, `/clean` stops what is left in the project.
 
 ---
 
@@ -138,3 +145,4 @@ It requests only `base_url` and the `external_stubs` URLs (GET), writes nothing,
 - [ ] One host in `base_url`, site URL and redirects
 - [ ] Faked paid APIs approved, in `external_stubs`, named in the report; no JS overrides
 - [ ] `test-env-check.js` ran with no `fail`
+- [ ] Servers stopped by port (or `/clean`), never with `pkill -f`

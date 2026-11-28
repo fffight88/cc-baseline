@@ -53,7 +53,9 @@ const COMMAND_NAME_RE = /^[a-z0-9_]+_command$/;
 const MAX_HOOKS = 5;
 const COMMAND_TIMEOUT = 60000;
 const SCREEN_CHECKS = ['text', 'count', 'visible', 'hidden', 'enabled', 'disabled', 'url_path', 'url', 'value'];
-const DATA_CHECKS = { api: ['api'], db: ['db'], log: ['log_count'] };
+const DATA_CHECKS = { api: ['api'], db: ['db'], log: ['log_count', 'console_count'] };
+const CONSOLE_TYPES = ['error', 'warning', 'info', 'log', 'debug'];
+const MAX_CONSOLE = 500;
 const FORM_ROLES = ['combobox', 'listbox', 'textbox', 'searchbox', 'spinbutton', 'checkbox', 'radio', 'switch', 'slider'];
 const LOCATOR_KEYS = ['role', 'label', 'text', 'selector', 'placeholder', 'test_id'];
 const COMPARE_KEYS = ['equals', 'includes', 'starts', 'excludes', 'in', 'not_in', 'all_equals'];
@@ -223,13 +225,22 @@ function checkCondition(c, where, rc, allowed) {
       if (typeof q.session !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/.test(q.session)) throw new Refused(`${where}: request needs a session name`);
     }
     if (c.status === undefined && c.json_path === undefined && c.header === undefined) throw new Refused(`${where}: api check needs status, json_path or header`);
+    // differs_from: the same value read from another saved response must differ (instead of a comparison)
+    const compareOrDiffers = () => {
+      if (c.differs_from === undefined) return checkCompare(c, where);
+      if (typeof c.differs_from !== 'string' || !NAME_RE.test(c.differs_from)) throw new Refused(`${where}: differs_from must be a save_as name`);
+      if (COMPARE_KEYS.some(k => c[k] !== undefined) || c.field !== undefined) throw new Refused(`${where}: differs_from replaces ${COMPARE_KEYS.join(', ')} — give one or the other`);
+      if (c.response !== undefined && c.response === c.differs_from) throw new Refused(`${where}: differs_from names the same response`);
+    };
+    if (c.part !== undefined && (c.header === undefined || typeof c.part !== 'string' || !/^[A-Za-z0-9-]{1,60}$/.test(c.part))) throw new Refused(`${where}: part (a directive name such as script-src) goes with header`);
     if (c.header !== undefined) {
       if (typeof c.header !== 'string' || !/^[A-Za-z0-9-]{1,80}$/.test(c.header)) throw new Refused(`${where}: header must be a response header name`);
       if (c.json_path !== undefined) throw new Refused(`${where}: give either header or json_path, not both`);
-      checkCompare(c, where);
+      compareOrDiffers();
     }
+    if (c.differs_from !== undefined && c.header === undefined && c.json_path === undefined) throw new Refused(`${where}: differs_from needs header or json_path`);
     if (c.status !== undefined && !Number.isInteger(c.status)) throw new Refused(`${where}: status must be an integer`);
-    if (c.json_path !== undefined) { checkTemplate(c.json_path, where); checkCompare(c, where); }
+    if (c.json_path !== undefined) { checkTemplate(c.json_path, where); compareOrDiffers(); }
   }
   if (c.op === 'db') {
     if (typeof c.json_path !== 'string') throw new Refused(`${where}: db check needs json_path`);
@@ -244,6 +255,12 @@ function checkCondition(c, where, rc, allowed) {
     if (!Array.isArray(c.grep) || !c.grep.length || c.grep.some(g => typeof g !== 'string' || !g)) throw new Refused(`${where}: log_count needs grep texts`);
     c.grep.forEach(g => checkTemplate(g, where));
     if (!Number.isInteger(c.equals)) throw new Refused(`${where}: log_count needs an integer equals`);
+  }
+  if (c.op === 'console_count') {
+    if (!Array.isArray(c.grep) || !c.grep.length || c.grep.length > 5 || c.grep.some(g => typeof g !== 'string' || !g || g.length > 200)) throw new Refused(`${where}: console_count needs 1–5 grep texts`);
+    c.grep.forEach(g => checkTemplate(g, where));
+    if (!Number.isInteger(c.equals) || c.equals < 0) throw new Refused(`${where}: console_count needs an integer equals`);
+    if (c.types !== undefined && (!Array.isArray(c.types) || !c.types.length || c.types.some(t => !CONSOLE_TYPES.includes(t)))) throw new Refused(`${where}: types is a list of ${CONSOLE_TYPES.join(', ')}`);
   }
 }
 
@@ -327,6 +344,7 @@ function checkRecording(rc, rec, { requireCurrent = true } = {}) {
     const acts = [...(Array.isArray(login) ? login : []), ...(Array.isArray(rec.steps) ? rec.steps.flatMap(x => (x && Array.isArray(x.actions) ? x.actions : [])) : [])];
     if (acts.some(a => a && screenOps.includes(a.op))) throw new Refused(`${rec.tc} is an api TC — use request actions, not screen actions`);
     if ((rec.expected || []).some(e => e && (e.judge || (e.check && SCREEN_CHECKS.includes(e.check.op))))) throw new Refused(`${rec.tc} is an api TC — no screen checks or Jev judging`);
+    if ((rec.expected || []).some(e => e && e.check && e.check.op === 'console_count')) throw new Refused(`${rec.tc} is an api TC — console_count reads a browser console, which an api TC has none of`);
   }
   if (!Array.isArray(login) || login.length > MAX_ACTIONS) throw new Refused('login must be a list of actions');
   login.forEach((a, i) => checkAction(a, `login[${i}]`, rc, rec.tc));
@@ -450,6 +468,21 @@ async function screenCheck(page, c, scope, timeout = CHECK_TIMEOUT) {
   }
 }
 
+// The value an api check reads from one response: a header (or one ";"-separated part of it,
+// picked by its first word — a CSP directive) or a json_path.
+function apiValue(c, r, scope) {
+  if (c.header !== undefined) {
+    const v = (r.headers || {})[c.header.toLowerCase()];
+    if (v === undefined) return { found: false, observed: `no ${c.header} header` };
+    if (c.part === undefined) return { found: true, value: v, observed: `${c.header}: ${String(v).slice(0, 300)}` };
+    const want = c.part.toLowerCase();
+    const p = String(v).split(';').map(x => x.trim()).find(x => x.split(/\s+/)[0].toLowerCase() === want);
+    return p === undefined ? { found: false, observed: `no ${c.part} in ${c.header}` } : { found: true, value: p, observed: p.slice(0, 300) };
+  }
+  const v = api.jsonPath(r.json, resolve(c.json_path, scope));
+  return { found: v.found, value: v.value, observed: v.found ? JSON.stringify(v.value).slice(0, 300) : 'not found' };
+}
+
 async function dataCheck(rc, c, scope) {
   if (c.op === 'api') {
     if (c.request) await syncSession(rc, scope, c.request.session);
@@ -458,13 +491,27 @@ async function dataCheck(rc, c, scope) {
       : scope.responses[c.response];
     if (!r) return { ok: false, observed: `no response saved as ${c.response}` };
     if (c.status !== undefined && r.status !== c.status) return { ok: false, observed: `status=${r.status}` };
-    if (c.header !== undefined) {
-      const v = (r.headers || {})[c.header.toLowerCase()];
-      return { ok: v !== undefined && compare(c, v, scope), observed: v === undefined ? `no ${c.header} header` : `${c.header}: ${String(v).slice(0, 300)}` };
+    if (c.header === undefined && c.json_path === undefined) return { ok: true, observed: `status=${r.status}` };
+    const got = apiValue(c, r, scope);
+    if (c.differs_from !== undefined) {
+      const o = scope.responses[c.differs_from];
+      if (!o) return { ok: false, observed: `no response saved as ${c.differs_from}` };
+      const other = apiValue(c, o, scope);
+      if (!got.found || !other.found) return { ok: false, observed: got.found ? `${c.differs_from}: ${other.observed}` : got.observed };
+      const same = JSON.stringify(got.value) === JSON.stringify(other.value);
+      return { ok: !same, observed: same ? `same as ${c.differs_from}: ${got.observed}` : `differs from ${c.differs_from}: ${got.observed}` };
     }
-    if (c.json_path === undefined) return { ok: true, observed: `status=${r.status}` };
-    const v = api.jsonPath(r.json, resolve(c.json_path, scope));
-    return { ok: v.found && compare(c, v.value, scope), observed: v.found ? JSON.stringify(v.value).slice(0, 300) : 'not found' };
+    return { ok: got.found && compare(c, got.value, scope), observed: got.observed };
+  }
+  if (c.op === 'console_count') {
+    const want = c.types || ['error', 'warning'];
+    const grep = c.grep.map(g => String(resolve(g, scope)));
+    const hits = ((scope.seen && scope.seen.consoleAll) || []).filter(m => want.includes(m.type) && grep.every(g => m.text.includes(g)));
+    const first = hits.length ? ` — first: ${api.maskTokens(hits[0].text, scope.secrets).replace(/\s+/g, ' ').slice(0, 200)}` : '';
+    // past the cap the count is unknown: never a PASS
+    const dropped = (scope.seen && scope.seen.consoleDropped) || 0;
+    if (dropped) return { ok: false, observed: `${hits.length}+ console message(s) — ${dropped} later message(s) past the ${MAX_CONSOLE}-message cap were not read${first}` };
+    return { ok: hits.length === c.equals, observed: `${hits.length} console message(s)${first}` };
   }
   if (c.op === 'db') {
     const out = api.readSource({ runFile: rc.runFile, source: c.source || 'db', jsonPathExpr: resolve(c.json_path, scope), count: c.count !== undefined });
@@ -573,7 +620,12 @@ function normConsole(s) {
 async function replayTc(browser, rc, rec, tc, runId, opts) {
   const scope = { data: ((rc.run.tcs || {})[rec.tc] || {}).data || {}, cap: Object.create(null), responses: Object.create(null), env: opts.env, allowedEnv: allowedEnv(rc.run), secrets: [] };
   const surfaceScreen = tc.surface !== 'api';
-  const seen = { http: new Set(), console: new Set(), pageErrors: [], visited: new Set() };
+  const seen = { http: new Set(), console: new Set(), consoleAll: [], pageErrors: [], visited: new Set() };
+  scope.seen = seen;
+  // how long each phase took (ms), so a slow round shows where its time went
+  const times = {};
+  let mark = Date.now();
+  const lap = k => { const now = Date.now(); times[k] = (times[k] || 0) + (now - mark); mark = now; };
   let ctx = null;
   let page = null;
   let blocked = null;
@@ -583,7 +635,11 @@ async function replayTc(browser, rc, rec, tc, runId, opts) {
     p.on('requestfinished', () => { seen.inflight = Math.max(0, seen.inflight - 1); });
     p.on('requestfailed', () => { seen.inflight = Math.max(0, seen.inflight - 1); });
     p.on('response', r => { if (r.status() >= 400) { try { seen.http.add(`${r.request().method()} ${sw.normPath(new URL(r.url()).pathname)} ${r.status()}`); } catch { /* bad url */ } } });
-    p.on('console', m => { if (m.type() === 'error' && !/^Failed to load resource/.test(m.text())) seen.console.add(normConsole(m.text())); });
+    p.on('console', m => {
+      if (m.type() === 'error' && !/^Failed to load resource/.test(m.text())) seen.console.add(normConsole(m.text()));
+      if (seen.consoleAll.length < MAX_CONSOLE) seen.consoleAll.push({ type: m.type(), text: String(m.text()).slice(0, 2000) });
+      else seen.consoleDropped = (seen.consoleDropped || 0) + 1;
+    });
     p.on('pageerror', e => seen.pageErrors.push(String(e.message).slice(0, 200)));
     p.on('framenavigated', f => { if (f === p.mainFrame()) { try { seen.visited.add(new URL(f.url()).pathname); } catch { /* about:blank */ } } });
   };
@@ -615,9 +671,12 @@ async function replayTc(browser, rc, rec, tc, runId, opts) {
   let failedAt;
   let result = null;
   try {
+    lap('open');
     for (const [i, a] of (rec.setup || []).entries()) await act(a, `setup${i}`);
+    lap('setup');
     for (const [i, a] of (rec.login || []).entries()) await act(a, `login${i}`);
     if (surfaceScreen && rec.session && (rec.login || []).length) await sw.saveState(ctx, rc, rec.session);
+    lap('login');
     if (surfaceScreen && rec.start_path) await doAction(page, rc, { op: 'goto', path: rec.start_path }, scope, 'start');
     for (const s of rec.steps) {
       for (const [j, a] of s.actions.entries()) await act(a, `${s.step}.${j}`);
@@ -626,6 +685,7 @@ async function replayTc(browser, rc, rec, tc, runId, opts) {
         if (!ok) { failedAt = s.step; break; }
       }
     }
+    lap('steps');
     const expected = [];
     const pending = [];
     for (const e of [...rec.expected].sort((x, y) => x.index - y.index)) {
@@ -645,6 +705,7 @@ async function replayTc(browser, rc, rec, tc, runId, opts) {
       if ((j.verdict === 'PASS' || j.verdict === 'FAIL') && j.judged_by === 'jev' && !j.audit) expected.push({ index: e.index, verdict: j.verdict, judged_by: 'jev', observed: `jev ${j.verdict}`, ...extra });
       else pending.push({ index: e.index, obs_file: obsFile, jev: { verdict: j.verdict, audit: !!j.audit, sample: j.sample, status: j.status }, ...extra });
     }
+    lap('expected');
     // let requests the page already started finish, so their errors count (at most 3 s;
     // a live connection never "finishes", so it only delays up to the cap)
     if (page) {
@@ -656,6 +717,7 @@ async function replayTc(browser, rc, rec, tc, runId, opts) {
         await page.waitForTimeout(100);
       }
     }
+    lap('settle');
     // invariants against what the tester accepted when recording
     const base = rec.invariants_baseline || {};
     const okHttp = new Set((base.http || []).map(h => { const [m, p, s] = h.split(' '); return `${m} ${sw.normPath(p || '')} ${s}`; }));
@@ -670,13 +732,16 @@ async function replayTc(browser, rc, rec, tc, runId, opts) {
       if (todo.length) {
         const res = {};
         const { ctx: sctx } = await sw.openContext(browser, rc, { session: rec.session, blockMutations: true });
+        let more = [];
         try {
-          await sctx.addCookies(await ctx.cookies());
+          const cookies = await ctx.cookies();
+          await sctx.addCookies(cookies);
+          more = (await sw.extraContexts(browser, rc, { session: rec.session, blockMutations: true }, cookies, opts.env)).map(x => x.ctx);
           if (process.env.CC_SWEEP_DEBUG === '1') process.stderr.write(`[replay] sweep todo ${JSON.stringify(todo)}\n`);
-          for (const u of todo) res[u] = await sw.sweepUrl(sctx, rc, u);
+          for (const u of todo) res[u] = await sw.sweepUrl(sctx, rc, u, { more });
         } catch (e) {
           for (const u of todo) if (!res[u]) res[u] = { status: 'error', error: String(e.message).split('\n')[0].slice(0, 200), fail: [], skipped: [], clicked: 0 };
-        } finally { await sctx.close().catch(() => {}); }
+        } finally { for (const c of [sctx, ...more]) await c.close().catch(() => {}); }
         sw.mergeSweep(rc, runId, res);
       }
       const all = sw.readSweep(rc, runId).urls || {};
@@ -684,6 +749,7 @@ async function replayTc(browser, rc, rec, tc, runId, opts) {
       sweep = failed.length ? 'fail' : 'clean';
       if (failed.length) scope.sweepFail = failed;
     }
+    lap('sweep');
     result = {
       expected, pending, failedAt, visited: [...seen.visited],
       invariants: surfaceScreen ? (bad.length ? 'fail' : 'clean') : undefined, invariants_detail: bad.slice(0, 10),
@@ -700,6 +766,8 @@ async function replayTc(browser, rc, rec, tc, runId, opts) {
     }
     if (tdFailed.length && result) result.teardown_failed = tdFailed;
     if (ctx) await ctx.close().catch(() => {});
+    lap('teardown');
+    if (result) result.times = times;
   }
 }
 
@@ -710,6 +778,7 @@ function resultEntry(rec, runId, r) {
     ...(r.invariants ? { invariants: r.invariants } : {}), ...(r.invariants_detail && r.invariants_detail.length ? { invariants_detail: r.invariants_detail } : {}),
     ...(r.sweep ? { sweep: r.sweep } : {}), ...(r.sweep_fail ? { sweep_fail: r.sweep_fail } : {}),
     ...(r.teardown_failed ? { teardown_failed: r.teardown_failed } : {}),
+    ...(r.times ? { replay_ms: r.times } : {}),
   };
 }
 
@@ -780,9 +849,11 @@ async function run({ runFile, runId, tcs, verify = false, retryRejected = false,
     if (verify && !retryRejected && acc.status === 'rejected') { out.push({ tc: id, outcome: 'fallback', reason: 'rejected' }); continue; }
     plan.push({ rec, info });
   }
-  if (!plan.length) return { run_id: runId, verify, tcs: out };
+  const warnings = sharedFixtureWarnings(rc, plan);
+  for (const w of warnings) process.stderr.write(`WARN ${w}\n`);
+  if (!plan.length) return { run_id: runId, verify, tcs: out, ...(warnings.length ? { warnings } : {}) };
   const loaded = plan.some(p => p.info.tc.surface !== 'api') ? sw.loadPlaywright(env) : { pw: null };
-  if (!loaded) { for (const p of plan) out.push({ tc: p.rec.tc, outcome: 'fallback', reason: 'no_browser' }); return { run_id: runId, verify, tcs: out }; }
+  if (!loaded) { for (const p of plan) out.push({ tc: p.rec.tc, outcome: 'fallback', reason: 'no_browser' }); return { run_id: runId, verify, tcs: out, ...(warnings.length ? { warnings } : {}) }; }
   const browser = loaded.pw ? await loaded.pw.chromium.launch({ headless: true }) : null;
   const jevConfig = loadConfig({ env });
   const tester = verify ? jj_lines(results).filter(l => l.run_id === runId && l.browser_tool !== 'replay') : [];
@@ -817,7 +888,7 @@ async function run({ runFile, runId, tcs, verify = false, retryRejected = false,
         store[rec.tc] = { status: mismatch.length ? 'rejected' : 'accepted', digest: contentDigest(rec), run_id: runId, at: new Date().toISOString(),
           ...(mismatch.length ? { mismatch } : {}), ...(unverified.length ? { unverified } : {}), urls: r.visited };
         sw.writePrivate(acceptFile(rc), JSON.stringify(store, null, 2) + '\n');
-        out.push({ tc: rec.tc, outcome: store[rec.tc].status, ...(mismatch.length ? { mismatch } : {}), ...(unverified.length ? { unverified } : {}) });
+        out.push({ tc: rec.tc, outcome: store[rec.tc].status, ...(mismatch.length ? { mismatch } : {}), ...(unverified.length ? { unverified } : {}), ms: r.times });
         continue;
       }
       // a failure the replay itself may have caused: no line, a tester runs this TC
@@ -825,11 +896,11 @@ async function run({ runFile, runId, tcs, verify = false, retryRejected = false,
       const entry = resultEntry(rec, runId, r);
       if (r.pending.length) {
         pend[rec.tc] = { entry, tc_file: info.tcFile, pending: r.pending };
-        out.push({ tc: rec.tc, outcome: 'pending', pending: r.pending.map(p => ({ index: p.index, obs_file: p.obs_file, jev: p.jev })) });
+        out.push({ tc: rec.tc, outcome: 'pending', pending: r.pending.map(p => ({ index: p.index, obs_file: p.obs_file, jev: p.jev })), ms: r.times });
         continue;
       }
       jj.record({ results, tcFile: info.tcFile, entry });
-      out.push({ tc: rec.tc, outcome: 'recorded', verdicts: r.expected.map(e => `${e.index}:${e.verdict}`).join(' '), ...(Number.isInteger(r.failedAt) ? { failed_at_step: r.failedAt } : {}), ...(r.invariants === 'fail' ? { invariants: 'fail' } : {}), ...(r.sweep === 'fail' ? { sweep: 'fail' } : {}), ...(r.teardown_failed ? { teardown_failed: r.teardown_failed } : {}) });
+      out.push({ tc: rec.tc, outcome: 'recorded', verdicts: r.expected.map(e => `${e.index}:${e.verdict}`).join(' '), ...(Number.isInteger(r.failedAt) ? { failed_at_step: r.failedAt } : {}), ...(r.invariants === 'fail' ? { invariants: 'fail' } : {}), ...(r.sweep === 'fail' ? { sweep: 'fail' } : {}), ...(r.teardown_failed ? { teardown_failed: r.teardown_failed } : {}), ms: r.times });
     }
   } finally {
     if (browser) await browser.close();
@@ -840,7 +911,27 @@ async function run({ runFile, runId, tcs, verify = false, retryRejected = false,
     try { prev = JSON.parse(fs.readFileSync(f, 'utf8')); } catch { /* none */ }
     sw.writePrivate(f, JSON.stringify({ ...prev, ...pend }, null, 2));
   }
-  return { run_id: runId, verify, tcs: out };
+  return { run_id: runId, verify, tcs: out, ...(warnings.length ? { warnings } : {}) };
+}
+
+// TCs of one round that sign in to the same fixture (or the same recording session) change each
+// other's data — credits, rate limits — unless each puts it back first with a setup command.
+// Then the result depends on the order they run in; name them and the order.
+function sharedFixtureWarnings(rc, plan) {
+  const groups = new Map();
+  plan.forEach(({ rec }) => {
+    const entry = (rc.run.tcs || {})[rec.tc] || {};
+    const key = typeof entry.fixture === 'string' && entry.fixture ? `fixture ${entry.fixture}` : (rec.session && (rec.login || []).length ? `session ${rec.session}` : null);
+    if (!key) return;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push({ tc: rec.tc, reset: (rec.setup || []).length > 0 });
+  });
+  const out = [];
+  for (const [key, list] of groups) {
+    if (list.length < 2 || list.every(x => x.reset)) continue;
+    out.push(`${key} is shared by ${list.map(x => x.tc).join(', ')} (run in this order) and ${list.filter(x => !x.reset).length} of them have no setup command — a result may depend on the order; give each TC its own fixture or a setup command that resets it`);
+  }
+  return out;
 }
 
 function jj_lines(file) {
