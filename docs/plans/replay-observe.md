@@ -260,16 +260,16 @@
 
 ## ✅ Checklist
 
-- [ ] 플랜·TC 파일을 쓰고 두 검사를 다시 돌렸다
-- [ ] cc-baseline: `console_count`, `part`, `differs_from`, fixture 경고, 단계별 시간, 문서, 테스트, 감사, 푸시, 설치
-- [ ] grimbang 기준선: csp-nonce 재녹화와 채택, 기존 24개 라운드와 시간 측정, 기준 스크린샷
-- [ ] 402 구분 구현과 새 TC 5개 통과
-- [ ] lint 0건
-- [ ] 메이저: lucide, three, motion, eslint, @types/node, typescript, Polar(각각 커밋 또는 되돌림 기록)
-- [ ] 스타일 CSP 측정과 적용(또는 유지 이유)
-- [ ] 보안 감사·코드 리뷰 반영, 마지막 전체 라운드 통과
-- [ ] 브랜치 푸시, `/clean`, HANDOFF·메모리 갱신
-- [ ] main 병합·운영 배포는 사용자 확인을 받는다
+- [x] 플랜·TC 파일을 쓰고 두 검사를 다시 돌렸다
+- [x] cc-baseline: `console_count`, `part`, `differs_from`, fixture 경고, 단계별 시간, 문서, 테스트, 감사, 푸시, 설치
+- [x] grimbang 기준선: csp-nonce 재녹화와 채택, 기존 24개 라운드와 시간 측정, 기준 스크린샷
+- [x] 402 구분 구현과 새 TC 5개 통과
+- [x] lint 0건
+- [x] 메이저: lucide, three, motion, eslint, @types/node, typescript, Polar(각각 커밋 또는 되돌림 기록)
+- [x] 스타일 CSP 측정과 적용(또는 유지 이유)
+- [x] 보안 감사·코드 리뷰 반영, 마지막 전체 라운드 통과
+- [x] 브랜치 푸시, `/clean`, HANDOFF·메모리 갱신
+- [ ] main 병합·운영 배포는 사용자 확인을 받는다 (완료 보고에서 물음)
 
 ## Results (Phase A)
 
