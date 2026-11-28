@@ -87,7 +87,7 @@ export async function GET(request: Request) {
       ports: !override
         - "127.0.0.1:5433:5432"
   ```
-- Start dev servers on loopback too (`vite --host 127.0.0.1`, `uvicorn --host 127.0.0.1`).
+- Start dev servers on loopback too (`vite --host 127.0.0.1`, `uvicorn --host 127.0.0.1`, `next dev -H 127.0.0.1`), and a local production build as well (`next start -H 127.0.0.1` — without `-H` it listens on every interface).
 - `test-env-check.js` warns (`docker_ports`) when a compose container of the project publishes on `0.0.0.0` / `[::]`.
 - **Stopping a server you started:** find it by its port, not by its command line.
   ```bash
@@ -122,6 +122,7 @@ The No Mock policy (`reference_e2e_manager_guide.md` §4) still holds. One excep
 - The user approved it in the plan, and `tc-run.json` lists it: `"external_stubs": [{ "name": "gemini", "url": "http://127.0.0.1:4010", "env": "GEMINI_BASE_URL" }]`.
 - The report names every faked API ("faked external API: gemini"). An expected result about the quality of the external output (the generated image itself) is `NOT_OBSERVABLE`, never PASS.
 - Overriding functions or return values in JS is still forbidden.
+- **A production build ignores the switch** (that is the point of "ignored in production builds"), so a local production build calls the real, paid API. Start it with a placeholder key (`GEMINI_API_KEY=disabled-for-local-production-check next start -H 127.0.0.1 -p 3201`) and send it no request that reaches the third party. A production-build check (CSP, headers, a test login that must answer 404) needs none.
 
 ---
 
